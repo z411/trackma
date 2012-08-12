@@ -1,0 +1,5 @@
+wmal-python by z411 (electrik.persona@gmail.com)
+===========
+This is a experimental remake of the original wmal (written in Perl) to see which language may be better for the task. Currently wmal-python only can read lists and work with cache and queues, it still can't update episodes, or have alternative interfaces like the original wmal yet.
+
+If you have suggestions about which language would be better for the project, please send me an e-mail.

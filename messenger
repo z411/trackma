@@ -1,0 +1,22 @@
+class Messenger:
+    TYPE_DEBUG = 1
+    TYPE_INFO = 2
+    TYPE_ERROR = 3
+    TYPE_FATAL = 4
+    
+    _handler = None
+    
+    def __init__(self, handler):
+        self._handler = handler
+    
+    def debug(self, msg):
+        self._handler(TYPE_DEBUG, msg)
+        
+    def info(self, msg):
+        self._handler(TYPE_INFO, msg)
+    
+    def error(self, msg):
+        self._handler(TYPE_ERROR, msg)
+    
+    def fatal(self, msg):
+        self._handler(TYPE_FATAL, msg)
