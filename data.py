@@ -1,9 +1,11 @@
-import messenger
-import libmal
 import cPickle
 import os.path
 
-class Data:
+import messenger
+import libmal
+import utils
+
+class Data(object):
     """
     Data Handler Class
     
@@ -18,6 +20,9 @@ class Data:
     showlist = None
     queue = list()
     config = dict()
+    
+    queue_file = utils.get_filename('queue.db')
+    cache_file = utils.get_filename('cache.db')
     
     def __init__(self, messenger, config):
         self.msg = messenger
@@ -35,16 +40,13 @@ class Data:
         if self._cache_exists():
             self._load_cache()
         else:
-            if not self.api.check_credentials():
-                self.msg.fatal(self.name, "Can't log-in.")
-                return False
+            try:
+                self.api.check_credentials()
+                self._download_data()
+            except utils.APIError, e:
+                raise utils.APIFatal(e.message)
             
-            self._download_data()
             self._save_cache()
-        
-        if not self.showlist:
-            self.msg.fatal(self.name, "Can't fetch list.")
-            return False
         
         if self._queue_exists():
             self._load_queue()
@@ -61,17 +63,30 @@ class Data:
     
     def queue_update(self, show):
         """Insert update into queue"""
-        self.queue.insert(0, show)
-        self.msg.info(self.name, 'Queued update for ' + show['title'])
+        self.queue.append(show)
+        self.msg.info(self.name, "Queued update for %s" % show['title'])
         self._save_queue()
+        self._save_cache()
     
     def process_queue(self):
         """Process stuff in queue"""
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
+            
+            # Check log-in
+            try:
+                self.api.check_credentials()
+            except utils.APIError, e:
+                raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
+            
+            # Run through queue
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
-                print 'update' + repr(show)
+                try:
+                    self.api.update_show(show)
+                except utils.APIError:
+                    self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
+                    self.queue.append(show)
             
             self._save_queue()
         else:
@@ -79,28 +94,29 @@ class Data:
         
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
-        self.showlist = cPickle.load( open( "cache.db", "rb" ) )
+        self.showlist = cPickle.load( open( self.cache_file , "rb" ) )
     
     def _save_cache(self):
         self.msg.debug(self.name, "Saving cache...")
-        cPickle.dump(self.showlist, open( "cache.db", "wb" ) )
+        cPickle.dump(self.showlist, open( self.cache_file , "wb" ) )
     
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")
-        self.queue = cPickle.load( open( "queue.db", "rb" ) )
+        self.queue = cPickle.load( open( self.queue_file , "rb" ) )
     
     def _save_queue(self):
         self.msg.debug(self.name, "Saving queue...")
-        cPickle.dump(self.queue, open( "queue.db", "wb" ) )
+        cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
         
     def _download_data(self):
         self.showlist = self.api.fetch_list()
         
     def _cache_exists(self):
-        return os.path.isfile('cache.db')
+        return os.path.isfile(self.cache_file)
     
     def _queue_exists(self):
-        return os.path.isfile('queue.db')
+        return os.path.isfile(self.queue_file)
+
 
 STATUSES = {
     1: 'Watching',

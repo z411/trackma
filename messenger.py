@@ -1,9 +1,10 @@
 TYPE_DEBUG = 1
 TYPE_INFO = 2
-TYPE_ERROR = 3
-TYPE_FATAL = 4
+#TYPE_ERROR = 3
+#TYPE_FATAL = 4
+TYPE_WARN = 5
 
-class Messenger:
+class Messenger(object):
     _handler = None
     
     def __init__(self, handler):
@@ -20,10 +21,6 @@ class Messenger:
         if self._handler:
             self._handler(classname, TYPE_INFO, msg)
     
-    def error(self, classname, msg):
+    def warn(self, classname, msg):
         if self._handler:
-            self._handler(classname, TYPE_ERROR, msg)
-    
-    def fatal(self, classname, msg):
-        if self._handler:
-            self._handler(classname, TYPE_FATAL, msg)
+            self._handler(classname, TYPE_WARN, msg)
