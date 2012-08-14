@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import urwid
 import engine
+import messenger
 import utils
 from operator import itemgetter
 from itertools import cycle
@@ -60,9 +61,12 @@ class wMAL_urwid(object):
             
         self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke)
+        
+        self.mainloop.set_alarm_in(0, self.start)
+        self.mainloop.run()
     
-    def start(self):
-        """Runs the main loop"""
+    def start(self, loop, data):
+        """Starts the engine"""
         self.engine = engine.Engine(self.message_handler)
         self.engine.start()
         
@@ -72,7 +76,6 @@ class wMAL_urwid(object):
         self.build_list()
         
         self.status('Ready.')
-        self.mainloop.run()
     
     def clear_list(self):
         try:
@@ -91,17 +94,21 @@ class wMAL_urwid(object):
         self.statusbar.base_widget.set_text(msg)
         
     def message_handler(self, classname, msgtype, msg):
-        self.status(msg)
+        if msgtype != messenger.TYPE_DEBUG:
+            self.status(msg)
+            self.mainloop.draw_screen()
         
     def keystroke(self, input):
         if input == 'f1':
             self.do_filter()
         elif input == 'f2':
             self.do_sort()
+        elif input == 'f3':
+            self.do_update()
         elif input == 'f4':
             self.do_play()
         elif input == 'f12':
-            raise urwid.ExitMainLoop()
+            self.do_quit()
 
         #if input is 'enter':
         #    focus = self.listbox.get_focus()[0].showid
@@ -121,11 +128,39 @@ class wMAL_urwid(object):
         self.clear_list()
         self.build_list()
     
+    def do_update(self):
+        self.asker = Asker('Episde # to update to: ')
+        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
+        self.view.set_focus('footer')
+        urwid.connect_signal(self.asker, 'done', self.update_request)
+        
     def do_play(self):
-        self.asker = Asker('Episde # to play: ')
+        self.asker = Asker('Episode # to play: ')
         self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', self.play_request)
+    
+    def do_quit(self):
+        self.engine.unload()
+        raise urwid.ExitMainLoop()
+    
+    def update_request(self, data):
+        self.view.set_focus('body')
+        urwid.disconnect_signal(self, self.asker, 'done', self.update_request)
+        self.view.set_footer(self.statusbar)
+        if data:
+            item = self.listbox.get_focus()[0]
+            show = item.show
+            
+            try:
+                self.engine.set_episode(show['id'], int(data))
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
+                return
+            
+            #self.status('Ready.')
+            show['my_episodes'] = int(data)
+            item.show = show
     
     def play_request(self, data):
         self.view.set_focus('body')
@@ -142,8 +177,6 @@ class wMAL_urwid(object):
                 return
             
             self.status('Ready.')
-            #show['my_episodes'] = int(data)
-            #item.show = show
         
 class ShowItem(urwid.WidgetWrap):
     def __init__ (self, show):
@@ -190,4 +223,4 @@ class Asker(urwid.Edit):
 
 
 if __name__ == '__main__':
-    wMAL_urwid().start()
+    wMAL_urwid()
