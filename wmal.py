@@ -130,7 +130,10 @@ class wmal_cmd(cmd.Cmd):
                 # otherwise play the next episode not watched yet
                 try:
                     episode = args[1]
-                    playing_next = False
+                    if episode == (show['my_episodes'] + 1):
+                        playing_next = True
+                    else:
+                        playing_next = False
                 except IndexError:
                     playing_next = True
                 
