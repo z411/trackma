@@ -72,6 +72,7 @@ class libmal(object):
                         'my_score':     int(child.find('my_score').text),
                         'episodes':     int(child.find('series_episodes').text),
                         'status':       int(child.find('series_status').text),
+                        'image':        child.find('series_image').text,
                     }
             
             return showlist

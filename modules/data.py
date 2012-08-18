@@ -42,7 +42,7 @@ class Data(object):
         else:
             try:
                 self.api.check_credentials()
-                self._download_data()
+                self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
             
@@ -108,7 +108,7 @@ class Data(object):
         self.msg.debug(self.name, "Saving queue...")
         cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
         
-    def _download_data(self):
+    def download_data(self):
         self.showlist = self.api.fetch_list()
         
     def _cache_exists(self):
@@ -124,6 +124,8 @@ STATUSES = {
     3: 'On Hold',
     4: 'Dropped',
     6: 'Plan to Watch' }
+
+STATUSES_NUMS =  [1, 2, 3, 4, 6]
 
 STATUSES_KEYS = {
     'watching': 1,

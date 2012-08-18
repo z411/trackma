@@ -1,8 +1,10 @@
 #!/usr/bin/python
+import urwid.curses_display
 import urwid
-import engine
-import messenger
-import utils
+
+import modules.engine as engine
+import modules.messenger as messenger
+import modules.utils as utils
 from operator import itemgetter
 from itertools import cycle
 
@@ -14,7 +16,6 @@ class wMAL_urwid(object):
     """Main objects"""
     engine = None
     mainloop = None
-    cur_filter = 1
     cur_sort = 'title'
     sorts_iter = cycle(('id', 'title', 'my_episodes', 'episodes'))
     
@@ -39,11 +40,11 @@ class wMAL_urwid(object):
         self.header_sort = urwid.Text('Sort:title')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
-            ('fixed', 20, self.header_filter),
+            ('fixed', 23, self.header_filter),
             ('fixed', 20, self.header_sort)]), 'status')
         
         self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text('F1:Filter  F2:Sort  F3:Update  F4:Play  F10:Sync  F12:Quit'), 'status')
+            urwid.AttrMap(urwid.Text('F2:Filter  F3:Sort  F4:Update  F5:Play  F10:Sync  F12:Quit'), 'status')
         ])
         
         self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v0.1'), 'status')
@@ -60,9 +61,10 @@ class wMAL_urwid(object):
         self.listframe = urwid.Frame(self.listbox, header=self.listheader)
             
         self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
-        self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke)
+        self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
-        self.mainloop.set_alarm_in(0, self.start)
+        self.mainloop.set_alarm_in(0, self.start)                       # See dev note [1]
+        #self.idlehandle = self.mainloop.event_loop.enter_idle(self.start) # See dev note [1]
         self.mainloop.run()
     
     def start(self, loop, data):
@@ -70,8 +72,11 @@ class wMAL_urwid(object):
         self.engine = engine.Engine(self.message_handler)
         self.engine.start()
         
-        self.filters = self.engine.statuses_keys()
-        self.filters_iter = cycle(self.engine.statuses_keys())
+        self.filters = self.engine.statuses()
+        self.filters_iter = cycle(self.engine.statuses_nums())
+        
+        self.cur_filter = self.filters_iter.next()
+        print self.cur_filter
         
         self.build_list()
         
@@ -99,14 +104,16 @@ class wMAL_urwid(object):
             self.mainloop.draw_screen()
         
     def keystroke(self, input):
-        if input == 'f1':
+        if input == 'f2':
             self.do_filter()
-        elif input == 'f2':
-            self.do_sort()
         elif input == 'f3':
-            self.do_update()
+            self.do_sort()
         elif input == 'f4':
+            self.do_update()
+        elif input == 'f5':
             self.do_play()
+        elif input == 'f10':
+            self.do_sync()
         elif input == 'f12':
             self.do_quit()
 
@@ -116,8 +123,8 @@ class wMAL_urwid(object):
     
     def do_filter(self):
         _filter = self.filters_iter.next()
-        self.cur_filter = self.filters[_filter]
-        self.header_filter.set_text("Filter:%s" % _filter)
+        self.cur_filter = _filter
+        self.header_filter.set_text("Filter:%s" % self.filters[_filter])
         self.clear_list()
         self.build_list()
     
@@ -129,60 +136,86 @@ class wMAL_urwid(object):
         self.build_list()
     
     def do_update(self):
-        self.asker = Asker('Episde # to update to: ')
-        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
-        self.view.set_focus('footer')
-        urwid.connect_signal(self.asker, 'done', self.update_request)
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+        self.ask('[Update] Episode # to update to: ', self.update_request, show['my_episodes'])
         
     def do_play(self):
-        self.asker = Asker('Episode # to play: ')
-        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
-        self.view.set_focus('footer')
-        urwid.connect_signal(self.asker, 'done', self.play_request)
+        show = self.listbox.get_focus()[0].show
+        self.ask('[Play] Episode # to play: ', self.play_request, show['my_episodes']+1)
+    
+    def do_sync(self):
+        self.engine.list_upload()
+        self.engine.list_download()
+        self.clear_list()
+        self.build_list()
+        self.status("Ready.")
     
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
     
     def update_request(self, data):
-        self.view.set_focus('body')
-        urwid.disconnect_signal(self, self.asker, 'done', self.update_request)
-        self.view.set_footer(self.statusbar)
+        self.ask_finish(self.update_request)
         if data:
             item = self.listbox.get_focus()[0]
-            show = item.show
             
             try:
-                self.engine.set_episode(show['id'], int(data))
+                show = self.engine.set_episode(item.showid, int(data))
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
             
-            #self.status('Ready.')
-            show['my_episodes'] = int(data)
-            item.show = show
+            item.update(show)
     
     def play_request(self, data):
-        self.view.set_focus('body')
-        urwid.disconnect_signal(self, self.asker, 'done', self.play_request)
-        self.view.set_footer(self.statusbar)
+        self.ask_finish(self.play_request)
         if data:
             item = self.listbox.get_focus()[0]
-            show = item.show
+            show = self.engine.get_show_info(item.showid)
             
             try:
-                self.engine.play_episode(show, int(data))
+                played_episode = self.engine.play_episode(show, int(data))
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
             
-            self.status('Ready.')
+            if played_episode == (show['my_episodes'] + 1):
+                self.ask("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
+            else:
+                self.status('Ready.')
+    
+    def update_next_request(self, data):
+        self.ask_finish(self.update_next_request)
+        if data == 'y':
+            item = self.listbox.get_focus()[0]
+            next_episode = show['my_episodes'] + 1
+            
+            try:
+                show = self.engine.set_episode(item.showid, next_episode)
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
+                return
+            
+            item.update(show)
+        
+        self.status('Ready.')
+        
+    def ask(self, msg, callback, data=u''):
+        self.asker = Asker(msg, str(data))
+        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
+        self.view.set_focus('footer')
+        urwid.connect_signal(self.asker, 'done', callback)
+    
+    def ask_finish(self, callback):
+        self.view.set_focus('body')
+        urwid.disconnect_signal(self, self.asker, 'done', callback)
+        self.view.set_footer(self.statusbar)
         
 class ShowItem(urwid.WidgetWrap):
     def __init__ (self, show):
-        self.episodes_str = urwid.Text('')
+        self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
         
-        self.show = show
         self.showid = show['id']
         self.item = [
             ('fixed', 7, urwid.Text("%d" % self.showid)),
@@ -192,12 +225,14 @@ class ShowItem(urwid.WidgetWrap):
         w = urwid.AttrWrap(urwid.Columns(self.item), 'body', 'focus')
         self.__super.__init__(w)
     
-    def get_show(self):
-        return self._show
+    def get_showid(self):
+        return self.showid
     
-    def set_show(self, show):
-        self.episodes_str.set_text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
-        self._show = show
+    def update(self, show):
+        if show['id'] == self.showid:
+            self.episodes_str.set_text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
+        else:
+            print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
         
     def selectable (self):
         return True
@@ -205,7 +240,6 @@ class ShowItem(urwid.WidgetWrap):
     def keypress(self, size, key):
         return key
     
-    show = property(get_show, set_show)
 
 class Asker(urwid.Edit):
     __metaclass__ = urwid.signals.MetaSignals

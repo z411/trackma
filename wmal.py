@@ -24,11 +24,11 @@ import cmd
 import re
 from operator import itemgetter # Used for sorting list
 
-import messenger
-import engine
-import utils
+import modules.messenger as messenger
+import modules.engine as engine
+import modules.utils as utils
 
-_DEBUG = True
+_DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'
@@ -56,9 +56,9 @@ class wmal_cmd(cmd.Cmd):
         Creates an Engine object and starts it.
         """
         print 'wMAL v0.1  Copyright (C) 2012  z411'
-        print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `license\''
+        print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
         print 'This is free software, and you are welcome to redistribute it'
-        print 'under certain conditions; type `license conditions\' for details.'
+        print 'under certain conditions; see the file COPYING for details.'
         print
         print 'Initializing engine...'
         self.engine = engine.Engine(self.messagehandler)
@@ -165,7 +165,20 @@ class wmal_cmd(cmd.Cmd):
                 self.display_error(e)
         else:
             print "Missing arguments."
+    
+    def do_sync(self, arg):
+        self.engine.list_upload()
+        self.engine.list_download()
         
+    def do_viewqueue(self, arg):
+        queue = self.engine.get_queue()
+        if len(queue):
+            print "Queue:"
+            for show in queue:
+                print "- %s (%d)" % (show['title'], show['my_episodes'])
+        else:
+            print "Queue is empty."
+    
     def do_quit(self, arg):
         """Quits the program."""
         self.engine.unload()

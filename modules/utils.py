@@ -33,7 +33,7 @@ def regex_find_file(regex, subdirectory=''):
     return False
 
 def get_filename(filename):
-    return os.path.expanduser(os.path.join('~', '.wmal-python', filename))
+    return os.path.expanduser(os.path.join('~', '.wmal', filename))
     
 def get_terminal_size(fd=1):
     """

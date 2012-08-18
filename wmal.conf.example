@@ -1,0 +1,15 @@
+# wMAL configuration file
+
+# This is an example configuration file.
+# You must rename this to "wmal.conf"
+# and move it to "~/.wmal" with your
+# own options.
+
+# Enter your MyAnimeList credentials here.
+# The ones you use in the site should work.
+username = CHANGEME
+password = CHANGEME
+# Search directory for videos to play
+searchdir = /home/user/videos
+# Movie player to use when playing videos
+player = mplayer2

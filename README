@@ -1,5 +1,60 @@
-wmal-python by z411 (electrik.persona@gmail.com)
-===========
-This is a experimental remake of the original wmal (written in Perl) to see which language may be better for the task. Currently wmal-python only can read lists and work with cache and queues, it still can't update episodes, or have alternative interfaces like the original wmal yet.
+-------------------------------------------------------------------------------
+wMAL v0.1 Copyright (c) 2012 z411 (electrik.persona@gmail.com)
+Distributed under the GNU General Public License v3, see COPYING for details.
+-------------------------------------------------------------------------------
+wMAL aims to be a lightweight and simple but feature-rich terminal-based
+script for fetching, updating and using data from MyAnimeList anime lists.
 
-If you have suggestions about which language would be better for the project, please send me an e-mail.
+The script logs into your MyAnimeList account, and lets you review your list,
+search for shows, and update your episodes all directly from the terminal.
+Aditionally it can search for a specified folder for the next episode
+you have to watch and it starts your media player of choice automatically.
+It also updates the episode automatically whenever the media player is closed.
+
+SETUP
+=====
+For now there isn't an installer so for the first run you must copy
+the file "wmal.conf.example" as "~/.wmal/wmal.conf" and edit it with
+your own options.
+
+USAGE
+=====
+Start the program by running it normally:
+
+$ ./wmal.py
+
+You will then enter in an interactive command line where you can run your
+commands. You can type 'help' to see the available commands you can use,
+and as in Bash you can press 'tab' to perform autocompletion and
+up/down arrow keys for command history. To exit anytime type 'quit'
+or enter an EOL (Ctrl+D).
+
+You may also try the experimental curses and GTK interfaces.
+$ ./wmal-curses.py
+$ ./wmal-gtk.py
+
+PROPOSED MODEL
+==============
+The project aims to be scalable as to support different clients and anime
+databases in the future. Here's the expected design method (may change):
+
+Client (CLI)    <-->                          <--> libmelative <-->
+Client (curses) <--> Engine <--> Data Handler <--> libmal      <--> Internet (API)
+Client (GTK)    <-->                  |       <--> libanidb    <-->
+                                      v              etc...
+                                   Local DB
+
+CHANGELOG
+=========
+v0.1
+- Initial version
+
+TO DO LIST
+==========
+- Clean up code.
+- Improve regex for episode search.
+- Add/delete support.
+- Support for manga lists.
+- Show user information.
+- Win32 interface?
+- Melative and AniDB support.

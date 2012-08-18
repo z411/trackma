@@ -21,6 +21,9 @@ class Engine:
     def __init__(self, message_handler=None):
         self.msg = messenger.Messenger(message_handler)
         self.msg.info(self.name, 'Version v0.1')
+    
+    def set_message_handler(self, message_handler):
+        self.msg = messenger.Messenger(message_handler)
         
     def start(self):
         """Starts the engine."""
@@ -114,7 +117,7 @@ class Engine:
             self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
             self.data_handler.queue_update(show)
             
-            return True
+            return show
         else:
             raise utils.EngineError('Show not found.')
     
@@ -140,7 +143,7 @@ class Engine:
             filename = utils.regex_find_file(regex, self.config['searchdir'])
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
-                subprocess.call(['mplayer2', filename])
+                subprocess.call([self.config['player'], filename])
                 return playep
             else:
                 raise utils.EngineError('Episode file not found.')
@@ -152,9 +155,21 @@ class Engine:
             return list(v for k, v in showlist.iteritems() if v['my_status'] == filter_num)
         else:
             return showlist.values()
-            
+    
+    def list_download(self):
+        self.data_handler.download_data()
+    
+    def list_upload(self):
+        self.data_handler.process_queue()
+    
+    def get_queue(self):
+        return self.data_handler.queue
+        
     def statuses(self):
         return data.STATUSES
+    
+    def statuses_nums(self):
+        return data.STATUSES_NUMS
     
     def statuses_keys(self):
         return data.STATUSES_KEYS
