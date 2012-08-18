@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import gobject
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -41,6 +42,11 @@ class wmal_gtk(object):
     close_thread = None
     
     def main(self):
+        # Create engine
+        self.engine = engine.Engine()
+        statuses_nums = self.engine.statuses_nums()
+        statuses_names = self.engine.statuses()
+        
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
         self.main.connect('destroy', self.on_destroy)
@@ -84,6 +90,18 @@ class wmal_gtk(object):
 
         top_buttons = gtk.HBox(False, 5)
         
+        # Top Panel: Combo box
+        combomodel = gtk.ListStore(int, str)
+        for status in statuses_nums:
+            combomodel.append([status, statuses_names[status]])
+            
+        combobox = gtk.ComboBox(combomodel)
+        cell = gtk.CellRendererText()
+        combobox.pack_start(cell, True)
+        combobox.add_attribute(cell, 'text', 1) 
+        top_buttons.pack_start(combobox, False, False, 0)
+        
+        # Top Panel: Spin button
         self.show_ep_num = gtk.SpinButton()
         top_buttons.pack_start(self.show_ep_num, False, False, 0)
         
@@ -100,17 +118,11 @@ class wmal_gtk(object):
         top_hbox.pack_start(top_right_box, True, True, 0)
         vbox.pack_start(top_hbox, False, False, 0)
         
-        # Create engine
-        self.engine = engine.Engine()
-        
         # Create lists
         notebook = gtk.Notebook()
         notebook.set_tab_pos(gtk.POS_TOP)
         notebook.set_scrollable(True)
         notebook.set_border_width(3)
-        
-        statuses_nums = self.engine.statuses_nums()
-        statuses_names = self.engine.statuses()
         
         for status in statuses_nums:
             name = statuses_names[status]
@@ -153,7 +165,9 @@ class wmal_gtk(object):
         try:
             show = self.engine.set_episode(self.selected_show, ep)
             status = show['my_status']
+            gtk.threads_enter()
             self.show_lists[status].update(show)
+            gtk.threads_leave()
         except utils.wmalError, e:
             self.error(e.message)
         
@@ -193,9 +207,11 @@ class wmal_gtk(object):
     def task_start_engine(self):
         self.engine.start()
         
+        gtk.threads_enter()
         self.build_list()
+        gtk.threads_leave()
         
-        self.statusbar.push(0, "Ready.")
+        self.status("Ready.")
         self.allow_buttons(True)
     
     def select_show(self, widget):
@@ -238,8 +254,9 @@ class wmal_gtk(object):
             widget.append_finish()
         
     def message_handler(self, classname, msgtype, msg):
+        # Thread safe
         if msgtype != messenger.TYPE_DEBUG:
-            self.statusbar.push(0, "%s: %s" % (classname, msg))
+            gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
     def error(self, msg):
         dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
@@ -250,9 +267,17 @@ class wmal_gtk(object):
         widget.destroy()
         
     def status(self, msg):
+        # Thread safe
+        gobject.idle_add(self.status_push, msg)
+    
+    def status_push(self, msg):
         self.statusbar.push(0, msg)
     
     def allow_buttons(self, boolean):
+        # Thread safe
+        gobject.idle_add(self.allow_buttons_push, boolean)
+        
+    def allow_buttons_push(self, boolean):
         for widget in self.show_lists.itervalues():
             widget.set_sensitive(boolean)
         
@@ -287,7 +312,9 @@ class ImageTask(threading.Thread):
         if self.cancelled:
             return
         
+        gtk.threads_enter()
         self.show_image.set_from_file(self.local)
+        gtk.threads_leave()
         print "done"
         
     def cancel(self):
@@ -386,9 +413,7 @@ class ShowView(gtk.TreeView):
 
 if __name__ == '__main__':
     app = wmal_gtk()
-    try:
-        gtk.gdk.threads_enter()
-        app.main()
-    finally:
-        gtk.gdk.threads_leave()
+    gtk.gdk.threads_enter()
+    app.main()
+    gtk.gdk.threads_leave()
     

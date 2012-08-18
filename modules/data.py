@@ -77,9 +77,29 @@ class Data(object):
         """Get list from memory"""
         return self.showlist
     
-    def queue_update(self, show):
-        """Insert update into queue"""
-        self.queue.append(show)
+    def queue_update(self, show, key, value):
+        """Do update and insert into queue"""
+        if key not in show.keys():
+            raise utils.DataError('Invalid key for queue update.')
+        
+        # Do update on memory
+        show[key] = value
+        
+        # Check if the show is already in queue
+        exists = False
+        for q in self.queue:
+            if q['id'] == show['id']:
+                # Add the changed value to the already existing queue item
+                q[key] = value
+                exists = True
+                break
+            
+        if not exists:
+            # Create queue item and append it
+            item = {'id': show['id'], 'title': show['title']}
+            item[key] = value
+            self.queue.append(item)
+        
         self.msg.info(self.name, "Queued update for %s" % show['title'])
         self._save_queue()
         self._save_cache()

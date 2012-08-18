@@ -129,9 +129,9 @@ class Engine:
                 raise utils.EngineError("Show already at episode %d" % newep)
             
             # Change episode
-            show['my_episodes'] = newep;
+            #show['my_episodes'] = newep;
             self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
-            self.data_handler.queue_update(show)
+            self.data_handler.queue_update(show, 'my_episodes', newep)
             
             return show
         else:

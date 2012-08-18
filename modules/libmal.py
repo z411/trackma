@@ -95,25 +95,29 @@ class libmal(object):
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
     
-    def update_show(self, show):
+    def update_show(self, item):
         """Sends a show update to the server"""
-        self.msg.info(self.name, "Updating show %s..." % show['title'])
+        self.msg.info(self.name, "Updating show %s..." % item['title'])
         
         # Start building XML
         root = ET.Element("entry")
         
-        episode = ET.SubElement(root, "episode")
-        episode.text = str(show['my_episodes'])
-        status = ET.SubElement(root, "status")
-        status.text = str(show['my_status'])
-        status = ET.SubElement(root, "score")
-        status.text = str(show['my_score'])
+        # Update necessary keys
+        if 'my_episodes' in item.keys():
+            episode = ET.SubElement(root, "episode")
+            episode.text = str(item['my_episodes'])
+        if 'status' in item.keys():
+            status = ET.SubElement(root, "status")
+            status.text = str(item['my_status'])
+        if 'score' in item.keys():
+            status = ET.SubElement(root, "score")
+            status.text = str(item['my_score'])
         
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': ET.tostring(root)}
         data = urllib.urlencode(values)
         try:
-            response = self.opener.open("http://myanimelist.net/api/animelist/update/"+str(show['id'])+".xml", data)
+            response = self.opener.open("http://myanimelist.net/api/animelist/update/"+str(item['id'])+".xml", data)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
