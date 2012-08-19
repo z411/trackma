@@ -39,6 +39,7 @@ class Data(object):
     
     queue_file = utils.get_filename('queue.db')
     cache_file = utils.get_filename('cache.db')
+    lock_file = utils.get_filename('lock')
     
     def __init__(self, messenger, config):
         self.msg = messenger
@@ -47,6 +48,10 @@ class Data(object):
     def start(self):
         """Initialize the data handler and its children"""
         self.msg.info(self.name, "Version v0.1")
+        
+        # Lock the database
+        self.msg.debug(self.name, "Locking database...")
+        self._lock()
         
         # Init API
         self.api = libmal.libmal(self.msg, self.config['username'], self.config['password'])
@@ -72,6 +77,9 @@ class Data(object):
     def unload(self):
         self.msg.debug(self.name, "Unloading...")
         self.process_queue()
+        
+        self.msg.debug(self.name, "Unlocking database...")
+        self._unlock()
     
     def get(self):
         """Get list from memory"""
@@ -152,7 +160,18 @@ class Data(object):
     
     def _queue_exists(self):
         return os.path.isfile(self.queue_file)
-
+    
+    def _lock(self):
+        if os.path.isfile(self.lock_file):
+            raise utils.DataFatal("Database is locked by another process. "
+                            "If you\'re sure there's no other process is using it, "
+                            "remove the file ~/.wmal/lock")
+        
+        f = open(self.lock_file, 'w')
+        f.close()
+    
+    def _unlock(self):
+        os.unlink(self.lock_file)
 
 STATUSES = {
     1: 'Watching',

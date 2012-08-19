@@ -160,7 +160,8 @@ class wMAL_urwid(object):
         self.ask('[Update] Episode # to update to: ', self.update_request, show['my_episodes'])
         
     def do_play(self):
-        show = self.listbox.get_focus()[0].show
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
         self.ask('[Play] Episode # to play: ', self.play_request, show['my_episodes']+1)
     
     def do_sync(self):
