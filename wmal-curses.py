@@ -209,6 +209,7 @@ class wMAL_urwid(object):
         self.ask_finish(self.update_next_request)
         if data == 'y':
             item = self.listbox.get_focus()[0]
+            show = self.engine.get_show_info(item.showid)
             next_episode = show['my_episodes'] + 1
             
             try:
@@ -218,8 +219,8 @@ class wMAL_urwid(object):
                 return
             
             item.update(show)
-        
-        self.status('Ready.')
+        else:
+            self.status('Ready.')
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))

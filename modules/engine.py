@@ -91,7 +91,6 @@ class Engine:
                 if show['title'] == pattern:
                     return show
             raise utils.EngineError("Show not found.")
-            return False
     
     def regex_list(self, pattern):
         """Matches the list against a regex pattern and returns a new list"""
@@ -121,21 +120,61 @@ class Engine:
         
         # Get the show and update it
         show = self.get_show_info(show_pattern)
-        if show:
-            # More checks
-            if show['episodes'] and newep > show['episodes']:
-                raise utils.EngineError('Episode out of limits.')
-            if show['my_episodes'] == newep:
-                raise utils.EngineError("Show already at episode %d" % newep)
-            
-            # Change episode
-            #show['my_episodes'] = newep;
-            self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
-            self.data_handler.queue_update(show, 'my_episodes', newep)
-            
-            return show
-        else:
-            raise utils.EngineError('Show not found.')
+        # More checks
+        if show['episodes'] and newep > show['episodes']:
+            raise utils.EngineError('Episode out of limits.')
+        if show['my_episodes'] == newep:
+            raise utils.EngineError("Show already at episode %d" % newep)
+        
+        # Change episode
+        #show['my_episodes'] = newep;
+        self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
+        self.data_handler.queue_update(show, 'my_episodes', newep)
+        
+        return show
+    
+    def set_score(self, show_pattern, newscore):
+        """Tells the data handler to update a show score"""
+        # Check for the correctness of the score
+        try:
+            newscore = int(newscore)
+        except ValueError:
+            raise utils.EngineError('Score must be numeric.')
+        
+        # Get the show and update it
+        show = self.get_show_info(show_pattern)
+        # More checks
+        if newscore > 10:
+            raise utils.EngineError('Score out of limits.')
+        if show['my_score'] == newscore:
+            raise utils.EngineError("Score already at %d" % newscore)
+        
+        # Change score
+        self.msg.info(self.name, "Updating show %s to score %d..." % (show['title'], newscore))
+        self.data_handler.queue_update(show, 'my_score', newscore)
+        
+        return show
+    
+    def set_status(self, show_pattern, newstatus):
+        """Tells the data handler to update a show score"""
+        # Check for the correctness of the score
+        try:
+            newstatus = int(newstatus)
+        except ValueError:
+            raise utils.EngineError('Status must be numeric.')
+        
+        # Get the show and update it
+        _statuses = self.statuses()
+        show = self.get_show_info(show_pattern)
+        # More checks
+        if show['my_status'] == newstatus:
+            raise utils.EngineError("Show already in %s." % _statuses[newstatus])
+        
+        # Change score
+        self.msg.info(self.name, "Updating show %s status to %s..." % (show['title'], _statuses[newstatus]))
+        self.data_handler.queue_update(show, 'my_status', newstatus)
+        
+        return show
     
     def play_episode(self, show, playep=0):
         """Searches the hard disk for an episode and launches the media player for it"""
@@ -163,6 +202,9 @@ class Engine:
                 return playep
             else:
                 raise utils.EngineError('Episode file not found.')
+    
+    def undoall(self):
+        return self.data_handler.queue_clear()
         
     def filter_list(self, filter_num):
         """Returns a list of shows only of a specified status"""

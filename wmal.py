@@ -62,7 +62,10 @@ class wmal_cmd(cmd.Cmd):
         print
         print 'Initializing engine...'
         self.engine = engine.Engine(self.messagehandler)
-        return self.engine.start()
+        self.engine.start()
+        
+        self.statuses = self.engine.statuses()
+        self.statuses_keys = self.engine.statuses_keys()
     
     def do_filter(self, arg):
         """
@@ -72,12 +75,11 @@ class wmal_cmd(cmd.Cmd):
         """
         # Query the engine for the available statuses
         # that the user can choose
-        statuses = self.engine.statuses()
-        statuses_keys = self.engine.statuses_keys()
+        
         if arg:
             try:
-                self.filter_num = statuses_keys[arg]
-                self.prompt = 'wMAL ' + statuses[self.filter_num] + '> '
+                self.filter_num = self.statuses_keys[arg]
+                self.prompt = 'wMAL ' + self.statuses[self.filter_num] + '> '
             except KeyError:
                 print "Invalid filter."
         else:
@@ -166,16 +168,68 @@ class wmal_cmd(cmd.Cmd):
         else:
             print "Missing arguments."
     
+    def do_score(self, arg):
+        """
+        score - Changes the given score of a show.
+        
+        Usage: update <show id or name> <score>
+        """
+        if arg:
+            args = self.parse_args(arg)
+            try:
+                self.engine.set_score(args[0], args[1])
+            except IndexError:
+                print "Missing arguments."
+            except utils.wmalError, e:
+                self.display_error(e)
+        else:
+            print "Missing arguments."
+    
+    def do_status(self, arg):
+        """
+        status - Changes the status of a show.
+        
+        Usage: status <show id or name> <status name>
+        """
+        if arg:
+            args = self.parse_args(arg)
+            try:
+                _showname = args[0]
+                _filter = args[1]
+            except IndexError:
+                print "Missing arguments."
+            
+            try:
+                _filter_num = self.statuses_keys[_filter]
+            except KeyError:
+                print "Invalid filter."
+            
+            try:
+                self.engine.set_status(_showname, _filter_num)
+            except utils.wmalError, e:
+                self.display_error(e)
+        
     def do_sync(self, arg):
         self.engine.list_upload()
         self.engine.list_download()
+    
+    def do_undoall(self, arg):
+        """
+        undo - Undo all changes
+        
+        Usage: undoall
+        """
+        try:
+            self.engine.undoall()
+        except utils.wmalError, e:
+            self.display_error(e)
         
     def do_viewqueue(self, arg):
         queue = self.engine.get_queue()
         if len(queue):
             print "Queue:"
             for show in queue:
-                print "- %s (%d)" % (show['title'], show['my_episodes'])
+                print "- %s" % show['title']
         else:
             print "Queue is empty."
     
@@ -190,6 +244,14 @@ class wmal_cmd(cmd.Cmd):
             return self.engine.regex_list_titles(text)
     
     def complete_play(self, text, line, begidx, endidx):
+        if text:
+            return self.engine.regex_list_titles(text)
+    
+    def complete_score(self, text, line, begidx, endidx):
+        if text:
+            return self.engine.regex_list_titles(text)
+    
+    def complete_status(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
     

@@ -106,10 +106,10 @@ class libmal(object):
         if 'my_episodes' in item.keys():
             episode = ET.SubElement(root, "episode")
             episode.text = str(item['my_episodes'])
-        if 'status' in item.keys():
+        if 'my_status' in item.keys():
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
-        if 'score' in item.keys():
+        if 'my_score' in item.keys():
             status = ET.SubElement(root, "score")
             status.text = str(item['my_score'])
         

@@ -112,6 +112,14 @@ class Data(object):
         self._save_queue()
         self._save_cache()
     
+    def queue_clear(self):
+        if len(self.queue) == 0:
+            raise utils.DataError('Queue is already empty.')
+        
+        self.queue = []
+        self._save_queue()
+        self.msg.info(self.name, "Cleared queue.")
+        
     def process_queue(self):
         """Process stuff in queue"""
         if len(self.queue):
@@ -128,8 +136,9 @@ class Data(object):
                 show = self.queue.pop(0)
                 try:
                     self.api.update_show(show)
-                except utils.APIError:
+                except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
+                    self.msg.debug(self.name, "Info: %s" % e.message)
                     self.queue.append(show)
             
             self._save_queue()
