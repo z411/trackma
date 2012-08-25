@@ -54,22 +54,31 @@ class wmal_gtk(object):
         #self.main.set_size_request(500,500)
         
         # Menus
-        mb_options = gtk.Menu()
+        mb_show = gtk.Menu()
+        mb_play = gtk.MenuItem("Play")
+        #mb_exit = gtk.MenuItem("Exit")
+        mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        mb_exit.connect("activate", self.on_destroy)
+        mb_show.append(mb_play)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(mb_exit)
         
+        mb_options = gtk.Menu()
         mb_sync = gtk.MenuItem("Sync")
         mb_sync.connect("activate", self.do_sync)
         mb_about = gtk.MenuItem("About")
-        mb_exit = gtk.MenuItem("Exit")
-        mb_exit.connect("activate", self.on_destroy)
+        mb_about.connect("activate", self.on_about)
         mb_options.append(mb_sync)
         mb_options.append(mb_about)
-        mb_options.append(mb_exit)
         
         # Root menubar
-        root_menu = gtk.MenuItem("Options")
-        root_menu.set_submenu(mb_options)
+        root_menu1 = gtk.MenuItem("Show")
+        root_menu1.set_submenu(mb_show)
+        root_menu2 = gtk.MenuItem("Options")
+        root_menu2.set_submenu(mb_options)
         mb = gtk.MenuBar()
-        mb.append(root_menu)
+        mb.append(root_menu1)
+        mb.append(root_menu2)
         
         # Create vertical box
         vbox = gtk.VBox(False, 6)
@@ -77,43 +86,88 @@ class wmal_gtk(object):
         
         vbox.pack_start(mb, False, False, 0)
         
-        top_hbox = gtk.HBox(False, 6)
+        top_hbox = gtk.HBox(False, 10)
         top_hbox.set_border_width(5)
 
         self.show_image = gtk.Image()
-        self.show_image.set_size_request(150, 200)
+        self.show_image.set_size_request(100, 149)
         top_hbox.pack_start(self.show_image, False, False, 0)
-
+        
+        # Right box
         top_right_box = gtk.VBox(False, 5)
-        self.show_info = gtk.Label('test')
-        top_right_box.pack_start(self.show_info, True, True, 0)
-
-        top_buttons = gtk.HBox(False, 5)
         
-        # Top Panel: Combo box
-        combomodel = gtk.ListStore(int, str)
-        for status in statuses_nums:
-            combomodel.append([status, statuses_names[status]])
-            
-        combobox = gtk.ComboBox(combomodel)
-        cell = gtk.CellRendererText()
-        combobox.pack_start(cell, True)
-        combobox.add_attribute(cell, 'text', 1) 
-        top_buttons.pack_start(combobox, False, False, 0)
+        # Line 1: Title
+        line1 = gtk.HBox(False, 5)
+        self.show_title = gtk.Label('<span size="14000"><b>Show title</b></span>')
+        self.show_title.set_use_markup(True)
+        self.show_title.set_alignment(0, 0.5)
+        line1.pack_start(self.show_title, True, True, 0)
         
-        # Top Panel: Spin button
+        # Spinner
+        self.spinner = gtk.Spinner()
+        alignment1 = gtk.Alignment(xalign=1, yalign=0)
+        alignment1.add(self.spinner)
+        line1.pack_start(alignment1, False, False, 0)
+        
+        top_right_box.pack_start(line1, True, True, 0)
+        
+        # Line 2: Episode
+        line2 = gtk.HBox(False, 5)
+        line2_t = gtk.Label('  Episode')
+        line2_t.set_size_request(70, -1)
+        line2_t.set_alignment(0, 0.5)
+        line2.pack_start(line2_t, False, False, 0)
         self.show_ep_num = gtk.SpinButton()
-        top_buttons.pack_start(self.show_ep_num, False, False, 0)
+        #self.show_ep_num.connect("value_changed", self.do_update)
+        line2.pack_start(self.show_ep_num, False, False, 0)
+        
+        # Buttons
+        top_buttons = gtk.HBox(False, 5)
         
         self.update_button = gtk.Button('Update')
         self.update_button.connect("clicked", self.do_update)
-        top_buttons.pack_start(self.update_button, True, True, 0)
+        line2.pack_start(self.update_button, False, False, 0)
         
         self.play_button = gtk.Button('Play')
         self.play_button.connect("clicked", self.do_play)
-        top_buttons.pack_start(self.play_button, True, True, 0)
-
-        top_right_box.pack_start(top_buttons, False, False, 0)
+        line2.pack_start(self.play_button, False, False, 0)
+        
+        top_right_box.pack_start(line2, True, False, 0)
+        
+        # Line 3: Score
+        line3 = gtk.HBox(False, 5)
+        line3_t = gtk.Label('  Score')
+        line3_t.set_size_request(70, -1)
+        line3_t.set_alignment(0, 0.5)
+        line3.pack_start(line3_t, False, False, 0)
+        self.show_score = gtk.SpinButton()
+        self.show_score.set_adjustment(gtk.Adjustment(upper=10, step_incr=1))
+        line3.pack_start(self.show_score, False, False, 0)
+        
+        top_right_box.pack_start(line3, True, False, 0)
+        
+        # Line 4: Status
+        line4 = gtk.HBox(False, 5)
+        line4_t = gtk.Label('  Status')
+        line4_t.set_size_request(70, -1)
+        line4_t.set_alignment(0, 0.5)
+        line4.pack_start(line4_t, False, False, 0)
+        
+        self.statusmodel = gtk.ListStore(int, str)
+        for status in statuses_nums:
+            self.statusmodel.append([status, statuses_names[status]])
+            
+        self.statusbox = gtk.ComboBox(self.statusmodel)
+        cell = gtk.CellRendererText()
+        self.statusbox.pack_start(cell, True)
+        self.statusbox.add_attribute(cell, 'text', 1)
+        
+        alignment = gtk.Alignment(xalign=0, yalign=0.5)
+        alignment.add(self.statusbox)
+        
+        line4.pack_start(alignment, True, True, 0)
+        
+        top_right_box.pack_start(line4, True, False, 0)
 
         top_hbox.pack_start(top_right_box, True, True, 0)
         vbox.pack_start(top_hbox, False, False, 0)
@@ -165,9 +219,7 @@ class wmal_gtk(object):
         try:
             show = self.engine.set_episode(self.selected_show, ep)
             status = show['my_status']
-            gtk.threads_enter()
             self.show_lists[status].update(show)
-            gtk.threads_leave()
         except utils.wmalError, e:
             self.error(e.message)
         
@@ -196,7 +248,9 @@ class wmal_gtk(object):
         self.allow_buttons(False)
         self.engine.list_upload()
         self.engine.list_download()
+        gtk.threads_enter()
         self.build_list()
+        gtk.threads_leave()
         self.status("Ready.")
         self.allow_buttons(True)
         
@@ -219,18 +273,14 @@ class wmal_gtk(object):
         if self.image_thread is not None:
             self.image_thread.cancel()
         
-        #self.selected_show = widget.get_showid()
         (tree_model, tree_iter) = widget.get_selected()
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
         show = self.engine.get_show_info(self.selected_show)
         
-        self.show_info.set_text(
-            "Title: {0}\n"
-            "Current episode: {1}/{2}".format(
-            show['title'],
-            show['my_episodes'],
-            show['episodes']))
+        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(show['title']))
+        self.show_title.set_use_markup(True)
         
+        # Episode selector
         adjustment = gtk.Adjustment(upper=show['episodes'], step_incr=1)
         self.show_ep_num.set_adjustment(adjustment)
         if show['my_episodes'] >= show['episodes']:
@@ -238,6 +288,16 @@ class wmal_gtk(object):
         else:
             self.show_ep_num.set_value(show['my_episodes'] + 1)
         
+        # Status selector
+        for i in self.statusmodel:
+            if i[0] == show['my_status']:
+                self.statusbox.set_active_iter(i.iter)
+                break
+        
+        # Score selector
+        self.show_score.set_value(show['my_score'])
+        
+        # Image
         filename = utils.get_filename("%d.jpg" % show['id'])
         
         if os.path.isfile(filename):
@@ -253,12 +313,26 @@ class wmal_gtk(object):
                 widget.append(show)
             widget.append_finish()
         
+    def on_about(self, widget):
+        about = gtk.AboutDialog()
+        about.set_program_name("wMAL-gtk")
+        about.set_version("0.1")
+        about.set_comments("wMAL is an open source client for media tracking websites.")
+        about.set_website("http://github.com/z411/wmal-python")
+        about.set_copyright("(c) z411")
+        about.run()
+        about.destroy()
+        
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
         if msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
     def error(self, msg):
+        # Thread safe
+        gobject.idle_add(self.error_push, msg)
+        
+    def error_push(self, msg):
         dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
         dialog.show_all()
         dialog.connect("response", self.error_close)
@@ -278,6 +352,13 @@ class wmal_gtk(object):
         gobject.idle_add(self.allow_buttons_push, boolean)
         
     def allow_buttons_push(self, boolean):
+        if boolean == True:
+            self.spinner.stop()
+            self.spinner.set_visible(False)
+        else:
+            self.spinner.set_visible(True)
+            self.spinner.start()
+        
         for widget in self.show_lists.itervalues():
             widget.set_sensitive(boolean)
         
@@ -306,7 +387,7 @@ class ImageTask(threading.Thread):
         # If there's a better solution for this please tell me/implement it.
         img_file = StringIO(urllib.urlopen(self.remote).read())
         im = Image.open(img_file)
-        im.thumbnail((150, 200), Image.ANTIALIAS)
+        im.thumbnail((100, 149), Image.ANTIALIAS)
         im.save(self.local)
         
         if self.cancelled:

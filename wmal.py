@@ -238,7 +238,11 @@ class wmal_cmd(cmd.Cmd):
         self.engine.unload()
         print 'Bye!'
         sys.exit(0)
-        
+    
+    def do_EOF(self, arg):
+        print
+        self.do_quit(arg)
+    
     def complete_update(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)

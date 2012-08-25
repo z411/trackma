@@ -36,7 +36,7 @@ class wMAL_urwid(object):
     engine = None
     mainloop = None
     cur_sort = 'title'
-    sorts_iter = cycle(('id', 'title', 'my_episodes', 'episodes'))
+    sorts_iter = cycle(('id', 'title', 'my_episodes', 'episodes', 'my_score'))
     
     """Widgets"""
     header = None
@@ -52,6 +52,9 @@ class wMAL_urwid(object):
         ('head','light red', 'black'),
         ('header','bold', ''),
         ('status', 'yellow', 'dark blue'),
+        ('window', 'yellow', 'dark blue'),
+        ('button', 'black', 'light gray'),
+        ('button hilight', 'white', 'dark red'),
         ]
         
         self.header_title = urwid.Text('wMAL-urwid v0.1')
@@ -63,7 +66,7 @@ class wMAL_urwid(object):
             ('fixed', 20, self.header_sort)]), 'status')
         
         self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text('F2:Filter  F3:Sort  F4:Update  F5:Play  F10:Sync  F12:Quit'), 'status')
+            urwid.AttrMap(urwid.Text('F2:Filter  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F10:Sync  F12:Quit'), 'status')
         ])
         
         self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v0.1'), 'status')
@@ -72,7 +75,8 @@ class wMAL_urwid(object):
             urwid.Columns([
                 ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
-                ('fixed', 15, urwid.Text('Episodes')),
+                ('fixed', 10, urwid.Text('Episodes')),
+                ('fixed', 7, urwid.Text('Score')),
             ]), 'header')
         
         self.listwalker = urwid.SimpleListWalker([])
@@ -92,6 +96,7 @@ class wMAL_urwid(object):
         self.engine.start()
         
         self.filters = self.engine.statuses()
+        self.filters_nums = self.engine.statuses_nums()
         self.filters_iter = cycle(self.engine.statuses_nums())
         
         self.cur_filter = self.filters_iter.next()
@@ -123,7 +128,9 @@ class wMAL_urwid(object):
             self.mainloop.draw_screen()
         
     def keystroke(self, input):
-        if input == 'f2':
+        if input == 'f1':
+            self.do_help()
+        elif input == 'f2':
             self.do_filter()
         elif input == 'f3':
             self.do_sort()
@@ -131,6 +138,10 @@ class wMAL_urwid(object):
             self.do_update()
         elif input == 'f5':
             self.do_play()
+        elif input == 'f6':
+            self.do_status()
+        elif input == 'f7':
+            self.do_score()
         elif input == 'f10':
             self.do_sync()
         elif input == 'f12':
@@ -171,10 +182,64 @@ class wMAL_urwid(object):
         self.build_list()
         self.status("Ready.")
     
+    def do_help(self):
+        helptext = "wMAL-curses v0.1  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext += "wMAL is an open source client for media tracking websites.\n"
+        helptext += "http://github.com/z411/wmal-python\n\n"
+        pile = urwid.Pile([urwid.Text(helptext), urwid.AttrWrap(urwid.Button('OK'), 'button', 'button hilight')])
+        self.dialog = Dialog(pile, self.mainloop, width=('relative', 80))
+        self.dialog.show()
+        
+    def do_score(self):
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+        self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
+        
+    def do_status(self):
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+        
+        buttons = list()
+        num = 1
+        selected = 1
+        title = urwid.Text('Choose status:')
+        title.align = 'center'
+        buttons.append(title)
+        for status in self.filters_nums:
+            name = self.filters[status]
+            button = urwid.Button(name, self.status_request, status)
+            button._label.align = 'center'
+            buttons.append(urwid.AttrWrap(button, 'button', 'button hilight'))
+            if status == show['my_status']:
+                selected = num
+            num += 1
+        pile = urwid.Pile(buttons)
+        pile.set_focus(selected)
+        self.dialog = Dialog(pile, self.mainloop, width=22)
+        self.dialog.show()
+        
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
-    
+        
+    def status_request(self, widget, data):
+        self.dialog.close()
+        if data:
+            item = self.listbox.get_focus()[0]
+            
+            try:
+                show = self.engine.set_status(item.showid, int(data))
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
+                return
+            
+            item.update(show)
+            
+            self.cur_filter = show['my_status']
+            self.header_filter.set_text("Filter:%s" % self.filters[self.cur_filter])
+            self.clear_list()
+            self.build_list()
+            
     def update_request(self, data):
         self.ask_finish(self.update_request)
         if data:
@@ -182,6 +247,19 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.set_episode(item.showid, int(data))
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
+                return
+            
+            item.update(show)
+    
+    def score_request(self, data):
+        self.ask_finish(self.score_request)
+        if data:
+            item = self.listbox.get_focus()[0]
+            
+            try:
+                show = self.engine.set_score(item.showid, int(data))
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
@@ -232,16 +310,42 @@ class wMAL_urwid(object):
         self.view.set_focus('body')
         urwid.disconnect_signal(self, self.asker, 'done', callback)
         self.view.set_footer(self.statusbar)
+
+class Dialog(urwid.Overlay):
+    def __init__(self, widget, loop, width=30):
+        self.widget = urwid.AttrWrap(urwid.LineBox(widget), 'window')
+        self.oldwidget = loop.widget
+        self.loop = loop
+        self.__super.__init__(self.widget, loop.widget,
+                align="center",
+                width=width,
+                valign="middle",
+                height=None)
+    
+    def show(self):
+        self.loop.widget = self
         
+    def close(self):
+        self.loop.widget = self.oldwidget
+        
+    def keypress(self, size, key):
+        if key in ('up', 'down', 'enter'):
+            self.widget.keypress(size, key)
+        elif key == 'esc':
+            self.close()
+        
+    
 class ShowItem(urwid.WidgetWrap):
     def __init__ (self, show):
         self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
+        self.score_str = urwid.Text("{0:5}".format(show['my_score']))
         
         self.showid = show['id']
         self.item = [
             ('fixed', 7, urwid.Text("%d" % self.showid)),
             ('weight', 1, urwid.Text(show['title'])),
-            ('fixed', 15, self.episodes_str),
+            ('fixed', 10, self.episodes_str),
+            ('fixed', 7, self.score_str),
         ]
         w = urwid.AttrWrap(urwid.Columns(self.item), 'body', 'focus')
         self.__super.__init__(w)
@@ -252,6 +356,7 @@ class ShowItem(urwid.WidgetWrap):
     def update(self, show):
         if show['id'] == self.showid:
             self.episodes_str.set_text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
+            self.score_str.set_text("{0:5}".format(show['my_score']))
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
         
