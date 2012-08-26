@@ -14,12 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import lib
 import urllib, urllib2
 import xml.etree.ElementTree as ET
 
 import utils
 
-class libmal(object):
+class libmal(lib.lib):
     """
     API class to communicate with MyAnimeList
     Should inherit a base library interface.
@@ -32,6 +33,8 @@ class libmal(object):
     handler = None
     opener = None
     msg = None
+    
+    api_info = { 'name': 'MAL' }
     
     def __init__(self, messenger, username, password):
         """Initializes the useragent through credentials."""

@@ -45,7 +45,7 @@ class Engine:
         """Starts the engine."""
         self.msg.info(self.name, 'Reading config file...')
         try:
-            self.config = utils.parse_config(utils.get_filename('wmal.conf'))
+            self.config = utils.parse_config(utils.get_root_filename('wmal.conf'))
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
@@ -56,7 +56,7 @@ class Engine:
         # Create data handler and start it
         try:
             self.data_handler = data.Data(self.msg, self.config)
-            self.data_handler.start()
+            self.api_info = self.data_handler.start()
         except utils.DataError, e:
             raise utils.DataFatal(e.message)
         except utils.APIError, e:

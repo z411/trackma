@@ -338,7 +338,7 @@ class Dialog(urwid.Overlay):
 class ShowItem(urwid.WidgetWrap):
     def __init__ (self, show):
         self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
-        self.score_str = urwid.Text("{0:5}".format(show['my_score']))
+        self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         
         self.showid = show['id']
         self.item = [
@@ -356,7 +356,7 @@ class ShowItem(urwid.WidgetWrap):
     def update(self, show):
         if show['id'] == self.showid:
             self.episodes_str.set_text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
-            self.score_str.set_text("{0:5}".format(show['my_score']))
+            self.score_str.set_text("{0:^5}".format(show['my_score']))
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
         

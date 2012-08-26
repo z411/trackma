@@ -18,8 +18,8 @@ import cPickle
 import os.path
 
 import messenger
-import libmal
 import utils
+import sys
 
 class Data(object):
     """
@@ -37,10 +37,6 @@ class Data(object):
     queue = list()
     config = dict()
     
-    queue_file = utils.get_filename('queue.db')
-    cache_file = utils.get_filename('cache.db')
-    lock_file = utils.get_filename('lock')
-    
     def __init__(self, messenger, config):
         self.msg = messenger
         self.config = config
@@ -49,12 +45,31 @@ class Data(object):
         """Initialize the data handler and its children"""
         self.msg.info(self.name, "Version v0.1")
         
+        # Import the API
+        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
+        libname = "lib{0}".format(self.config['api'])
+        try:
+            modulename = "modules.{0}".format(libname)
+            self.msg.info(self.name, "Using %s" % libname)
+            __import__(modulename)
+            apimodule = sys.modules[modulename]
+        except ImportError:
+            raise utils.DataFatal("Couldn't import API module.")
+        
+        # Get files
+        utils.make_dir(self.config['api'])
+        self.queue_file = utils.get_filename(self.config['api'], 'queue.db')
+        self.cache_file = utils.get_filename(self.config['api'], 'cache.db')
+        self.lock_file = utils.get_filename(self.config['api'], 'lock')
+        
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
         
         # Init API
-        self.api = libmal.libmal(self.msg, self.config['username'], self.config['password'])
+        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
+        libclass = getattr(apimodule, libname)
+        self.api = libclass(self.msg, self.config['username'], self.config['password'])
         
         # If cache exists, load from it
         # otherwise query the API for a remote list
@@ -72,7 +87,7 @@ class Data(object):
         if self._queue_exists():
             self._load_queue()
             
-        return True
+        return self.api.api_info
     
     def unload(self):
         self.msg.debug(self.name, "Unloading...")

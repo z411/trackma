@@ -13,3 +13,5 @@ password = CHANGEME
 searchdir = /home/user/videos
 # Movie player to use when playing videos
 player = mplayer2
+# Library to use
+api = mal

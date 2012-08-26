@@ -48,7 +48,15 @@ def regex_find_file(regex, subdirectory=''):
                 return os.path.join(root, filename)
     return False
 
-def get_filename(filename):
+def make_dir(directory):
+    path = os.path.expanduser(os.path.join('~', '.wmal', directory))
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    
+def get_filename(subdir, filename):
+    return os.path.expanduser(os.path.join('~', '.wmal', subdir, filename))
+    
+def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.wmal', filename))
     
 def get_terminal_size(fd=1):

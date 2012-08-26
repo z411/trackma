@@ -40,6 +40,7 @@ class wmal_gtk(object):
     show_lists = dict()
     image_thread = None
     close_thread = None
+    can_close = False
     
     def main(self):
         # Create engine
@@ -49,6 +50,7 @@ class wmal_gtk(object):
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
+        self.main.connect("delete_event", self.delete_event)
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('wMAL-gtk v0.1')
         #self.main.set_size_request(500,500)
@@ -161,6 +163,7 @@ class wmal_gtk(object):
         cell = gtk.CellRendererText()
         self.statusbox.pack_start(cell, True)
         self.statusbox.add_attribute(cell, 'text', 1)
+        self.statusbox_handler = self.statusbox.connect("changed", self.do_status);
         
         alignment = gtk.Alignment(xalign=0, yalign=0.5)
         alignment.add(self.statusbox)
@@ -173,10 +176,10 @@ class wmal_gtk(object):
         vbox.pack_start(top_hbox, False, False, 0)
         
         # Create lists
-        notebook = gtk.Notebook()
-        notebook.set_tab_pos(gtk.POS_TOP)
-        notebook.set_scrollable(True)
-        notebook.set_border_width(3)
+        self.notebook = gtk.Notebook()
+        self.notebook.set_tab_pos(gtk.POS_TOP)
+        self.notebook.set_scrollable(True)
+        self.notebook.set_border_width(3)
         
         for status in statuses_nums:
             name = statuses_names[status]
@@ -188,11 +191,12 @@ class wmal_gtk(object):
         
             self.show_lists[status] = ShowView(status)
             self.show_lists[status].get_selection().connect("changed", self.select_show);
+            self.show_lists[status].pagenumber = self.notebook.get_n_pages()
             sw.add(self.show_lists[status])
             
-            notebook.append_page(sw, gtk.Label(name))
+            self.notebook.append_page(sw, gtk.Label(name))
         
-        vbox.pack_start(notebook, True, True, 0)
+        vbox.pack_start(self.notebook, True, True, 0)
 
         self.statusbar = gtk.Statusbar()
         self.statusbar.push(0, 'wMAL-gtk v0.1')
@@ -208,8 +212,12 @@ class wmal_gtk(object):
         gtk.main()
         
     def on_destroy(self, widget):
+        gtk.main_quit()
+    
+    def delete_event(self, widget, event, data=None):
         if self.close_thread is None:
             self.close_thread = threading.Thread(target=self.task_unload).start()
+        return True
     
     def do_play(self, widget):
         threading.Thread(target=self.task_play).start()
@@ -220,6 +228,35 @@ class wmal_gtk(object):
             show = self.engine.set_episode(self.selected_show, ep)
             status = show['my_status']
             self.show_lists[status].update(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+    
+    def do_score(self, widget):
+        score = self.show_score.get_value_as_int()
+        try:
+            show = self.engine.set_score(self.selected_show, score)
+            status = show['my_status']
+            self.show_lists[status].update(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+            
+    def do_status(self, widget):
+        statusiter = self.statusbox.get_active_iter()
+        status = self.statusmodel.get(statusiter, 0)[0]
+        
+        try:
+            show = self.engine.set_status(self.selected_show, status)
+            
+            # Rebuild lists
+            self.build_list()
+            
+            status = show['my_status']
+            self.show_lists[status].update(show)
+            
+            pagenumber = self.show_lists[status].pagenumber
+            self.notebook.set_current_page(pagenumber)
+            
+            self.show_lists[status].select(show)
         except utils.wmalError, e:
             self.error(e.message)
         
@@ -237,9 +274,11 @@ class wmal_gtk(object):
         self.allow_buttons(True)
     
     def task_unload(self):
+        print "Unloading engine"
         self.allow_buttons(False)
         self.engine.unload()
-        gtk.main_quit()
+        self.can_close = True
+        self.main.destroy()
         
     def do_sync(self, widget):
         threading.Thread(target=self.task_sync).start()
@@ -270,12 +309,21 @@ class wmal_gtk(object):
     
     def select_show(self, widget):
         print "select show"
+        
+        (tree_model, tree_iter) = widget.get_selected()
+        if not tree_iter:
+            print "Unselected show"
+            return
+        
+        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        show = self.engine.get_show_info(self.selected_show)
+        
+        # Block handlers
+        self.statusbox.handler_block(self.statusbox_handler)
+        
         if self.image_thread is not None:
             self.image_thread.cancel()
         
-        (tree_model, tree_iter) = widget.get_selected()
-        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
-        show = self.engine.get_show_info(self.selected_show)
         
         self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(show['title']))
         self.show_title.set_use_markup(True)
@@ -298,13 +346,17 @@ class wmal_gtk(object):
         self.show_score.set_value(show['my_score'])
         
         # Image
-        filename = utils.get_filename("%d.jpg" % show['id'])
+        utils.make_dir('cache')
+        filename = utils.get_filename('cache', "%d.jpg" % show['id'])
         
         if os.path.isfile(filename):
             self.show_image.set_from_file(filename)
         else:
             self.image_thread = ImageTask(self.show_image, show['image'], filename)
             self.image_thread.start()
+        
+        # Unblock handlers
+        self.statusbox.handler_unblock(self.statusbox_handler)
     
     def build_list(self):
         for widget in self.show_lists.itervalues():
@@ -491,6 +543,14 @@ class ShowView(gtk.TreeView):
                 return
         
         print "Warning: Show ID not found in ShowView (%d)" % show['id']
+    
+    def select(self, show):
+        """Select specified row"""
+        for row in self.store:
+            if int(row[0]) == show['id']:
+                selection = self.get_selection()
+                selection.select_iter(row.iter)
+                break
 
 if __name__ == '__main__':
     app = wmal_gtk()

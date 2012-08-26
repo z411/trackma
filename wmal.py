@@ -66,6 +66,8 @@ class wmal_cmd(cmd.Cmd):
         
         self.statuses = self.engine.statuses()
         self.statuses_keys = self.engine.statuses_keys()
+        
+        self.prompt = "{0} Watching> ".format(self.engine.api_info['name'])
     
     def do_filter(self, arg):
         """
@@ -79,7 +81,7 @@ class wmal_cmd(cmd.Cmd):
         if arg:
             try:
                 self.filter_num = self.statuses_keys[arg]
-                self.prompt = 'wMAL ' + self.statuses[self.filter_num] + '> '
+                self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.statuses[self.filter_num])
             except KeyError:
                 print "Invalid filter."
         else:
@@ -235,7 +237,11 @@ class wmal_cmd(cmd.Cmd):
     
     def do_quit(self, arg):
         """Quits the program."""
-        self.engine.unload()
+        try:
+            self.engine.unload()
+        except utils.wmalError, e:
+            self.display_error(e)
+        
         print 'Bye!'
         sys.exit(0)
     
@@ -345,7 +351,6 @@ def make_list(showlist):
     
 if __name__ == '__main__':
     main_cmd = wmal_cmd()
-    main_cmd.prompt = 'wMAL Watching> '
     try:
         main_cmd.start()
         print
