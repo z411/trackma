@@ -20,17 +20,27 @@ class lib(object):
     """
     Base interface for creating API implementations for wMAL
     """
-    name = 'libvndb'
+    name = 'lib'
+    version = 'dummy'
     msg = None
     
-    api_info = { 'name': 'vndb' }
+    api_info = { 'name': 'BaseAPI', 'version': 'undefined' }
     
-    def __init__(self, messenger, username, password):
-        """Initializes the class"""
+    mediatypes = dict()
+    
+    def __init__(self, messenger, mediatype):
+        """Initializes the base for the API"""
         self.msg = messenger
+        self.msg.info(self.name, 'Version %s' % self.api_info['version'])
         
-        self.msg.info(self.name, 'Version v0.1')
-    
+        if mediatype in self.mediatypes:
+            self.mediatype = mediatype
+        else:
+            raise utils.APIFatal('Unsupported mediatype.')
+        
+        self.api_info['mediatype'] = self.mediatype
+        self.api_info['supported_mediatypes'] = self.mediatypes.keys()
+        
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
         raise NotImplementedError
@@ -43,3 +53,6 @@ class lib(object):
     def update_show(self, item):
         """Sends a show update to the server"""
         raise NotImplementedError
+    
+    def media_info(self):
+        return self.mediatypes[self.mediatype]

@@ -105,7 +105,7 @@ class wmal_cmd(cmd.Cmd):
         # using the current sort
         showlist = self.engine.filter_list(self.filter_num)
         sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
-        make_list(sortedlist)
+        self._make_list(sortedlist)
     
     def do_search(self, arg):
         """
@@ -116,7 +116,7 @@ class wmal_cmd(cmd.Cmd):
         if(arg):
             showlist = self.engine.regex_list(arg)
             sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
-            make_list(sortedlist)
+            self._make_list(sortedlist)
         else:
             print "Missing arguments."
     
@@ -303,58 +303,61 @@ class wmal_cmd(cmd.Cmd):
                 return k
         raise KeyError
 
-def make_list(showlist):
-    """
-    Helper function for printing a formatted show list
-    """
-    # Fixed column widths
-    col_id_length = 7
-    col_title_length = 5
-    col_episodes_length = 9
-    
-    # Calculate maximum width for the title column
-    # based on the width of the terminal
-    (height, width) = utils.get_terminal_size()
-    max_title_length = width - col_id_length - col_episodes_length - 5
-    
-    # Find the widest title so we can adjust the title column
-    for show in showlist:
-        if len(show['title']) > col_title_length:
-            if len(show['title']) > max_title_length:
-                # Stop if we exceeded the maximum column width
-                col_title_length = max_title_length
-                break
+    def _make_list(self, showlist):
+        """
+        Helper function for printing a formatted show list
+        """
+        # Fixed column widths
+        col_id_length = 7
+        col_title_length = 5
+        col_episodes_length = 9
+        
+        # Calculate maximum width for the title column
+        # based on the width of the terminal
+        (height, width) = utils.get_terminal_size()
+        max_title_length = width - col_id_length - col_episodes_length - 5
+        
+        # Find the widest title so we can adjust the title column
+        for show in showlist:
+            if len(show['title']) > col_title_length:
+                if len(show['title']) > max_title_length:
+                    # Stop if we exceeded the maximum column width
+                    col_title_length = max_title_length
+                    break
+                else:
+                    col_title_length = len(show['title'])
+            
+        # Print header
+        print "| {0:{1}} {2:{3}} {4:{5}}|".format(
+                'ID',       col_id_length,
+                'Title',    col_title_length,
+                'Progress', col_episodes_length)
+        
+        # List shows
+        for show in showlist:
+            if self.engine.mediainfo['has_progress']:
+                episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
             else:
-                col_title_length = len(show['title'])
+                episodes_str = "-"
+            
+            # Truncate title if needed
+            title_str = show['title']
+            title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
+            
+            # Color title according to status
+            if show['status'] == 1:
+                colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
+            else:
+                colored_title = title_str
+            
+            print "| {0:<{1}} {2}{3} {4:{5}}|".format(
+                show['id'],     col_id_length,
+                colored_title,  '.' * (col_title_length-len(show['title'].decode('utf-8'))),
+                episodes_str,   col_episodes_length)
         
-    # Print header
-    print "| {0:{1}} {2:{3}} {4:{5}}|".format(
-            'ID',       col_id_length,
-            'Title',    col_title_length,
-            'Progress', col_episodes_length)
-    
-    # List shows
-    for show in showlist:
-        episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
-        
-        # Truncate title if needed
-        title_str = show['title']
-        title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
-        
-        # Color title according to status
-        if show['status'] == 1:
-            colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
-        else:
-            colored_title = title_str
-        
-        print "| {0:<{1}} {2}{3} {4:{5}}|".format(
-            show['id'],     col_id_length,
-            colored_title,  '.' * (col_title_length-len(show['title'].decode('utf-8'))),
-            episodes_str,   col_episodes_length)
-    
-    # Print result count
-    print '%d results' % len(showlist)
-    print
+        # Print result count
+        print '%d results' % len(showlist)
+        print
     
 if __name__ == '__main__':
     main_cmd = wmal_cmd()

@@ -129,6 +129,11 @@ class wmal_gtk(object):
         self.update_button.connect("clicked", self.do_update)
         line2.pack_start(self.update_button, False, False, 0)
         
+        # Disable update button if it's not supported
+        if not self.engine.mediainfo['has_progress']:
+            self.update_button.set_sensitive(False)
+            self.show_ep_num.set_sensitive(False)
+        
         self.play_button = gtk.Button('Play')
         self.play_button.connect("clicked", self.do_play)
         line2.pack_start(self.play_button, False, False, 0)
@@ -192,7 +197,7 @@ class wmal_gtk(object):
             sw.set_size_request(550, 300)
             sw.set_border_width(5)
         
-            self.show_lists[status] = ShowView(status)
+            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
             self.show_lists[status].get_selection().connect("changed", self.select_show);
             self.show_lists[status].pagenumber = self.notebook.get_n_pages()
             sw.add(self.show_lists[status])
@@ -349,14 +354,15 @@ class wmal_gtk(object):
         self.show_score.set_value(show['my_score'])
         
         # Image
-        utils.make_dir('cache')
-        filename = utils.get_filename('cache', "%d.jpg" % show['id'])
-        
-        if os.path.isfile(filename):
-            self.show_image.set_from_file(filename)
-        else:
-            self.image_thread = ImageTask(self.show_image, show['image'], filename)
-            self.image_thread.start()
+        if show.get('image'):
+            utils.make_dir('cache')
+            filename = utils.get_filename('cache', "%d.jpg" % show['id'])
+            
+            if os.path.isfile(filename):
+                self.show_image.set_from_file(filename)
+            else:
+                self.image_thread = ImageTask(self.show_image, show['image'], filename)
+                self.image_thread.start()
         
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
@@ -419,9 +425,10 @@ class wmal_gtk(object):
         
         if self.engine.mediainfo['can_play']:
             self.play_button.set_sensitive(boolean)
-            
-        self.update_button.set_sensitive(boolean)
-        self.show_ep_num.set_sensitive(boolean)
+        
+        if self.engine.mediainfo['has_progress']:
+            self.update_button.set_sensitive(boolean)
+            self.show_ep_num.set_sensitive(boolean)
 
 class ImageTask(threading.Thread):
     cancelled = False
@@ -459,9 +466,10 @@ class ImageTask(threading.Thread):
         self.cancelled = True
         
 class ShowView(gtk.TreeView):
-    def __init__(self, status):
+    def __init__(self, status, has_progress=True):
         gtk.TreeView.__init__(self)
         
+        self.has_progress = has_progress
         self.status_filter = status
         
         self.enable_search = True
@@ -507,11 +515,15 @@ class ShowView(gtk.TreeView):
         self.store.clear()
         
     def append(self, show):
-        if show['total'] and show['my_progress'] <= show['total']:
-            progress = (float(show['my_progress']) / show['total']) * 100
+        if self.has_progress:
+            if show['total'] and show['my_progress'] <= show['total']:
+                progress = (float(show['my_progress']) / show['total']) * 100
+            else:
+                progress = 0
+            episodes_str = "%d / %d" % (show['my_progress'], show['total'])
         else:
+            episodes_str = ''
             progress = 0
-        episodes_str = "%d / %d" % (show['my_progress'], show['total'])
         
         if show['status'] == 1:
             color = 'blue'
@@ -536,15 +548,16 @@ class ShowView(gtk.TreeView):
     def update(self, show):
         for row in self.store:
             if int(row[0]) == show['id']:
-                if show['total']:
-                    progress = (float(show['my_progress']) / show['total']) * 100
-                else:
-                    progress = 0
-                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+                if self.has_progress:
+                    if show['total']:
+                        progress = (float(show['my_progress']) / show['total']) * 100
+                    else:
+                        progress = 0
+                    episodes_str = "%d / %d" % (show['my_progress'], show['total'])                    
+                    row[2] = episodes_str
+                    row[4] = progress
                 
-                row[2] = episodes_str
                 row[3] = show['my_score']
-                row[4] = progress
                 return
         
         print "Warning: Show ID not found in ShowView (%d)" % show['id']

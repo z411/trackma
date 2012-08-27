@@ -50,8 +50,8 @@ class Data(object):
             self.msg.info(self.name, "Using %s (%s)" % (libname, self.config['mediatype']))
             __import__(modulename)
             apimodule = sys.modules[modulename]
-        except ImportError:
-            raise utils.DataFatal("Couldn't import API module.")
+        except ImportError, e:
+            raise utils.DataFatal("Couldn't import API module: %s" % e.message)
         
         # Get files
         foldername = "{0}_{1}".format(self.config['api'], self.config['mediatype'])

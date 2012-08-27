@@ -117,7 +117,7 @@ class wMAL_urwid(object):
         showlist = self.engine.filter_list(self.cur_filter)
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
         for show in sortedlist:
-            self.listwalker.append(ShowItem(show))
+            self.listwalker.append(ShowItem(show, self.engine.mediainfo['has_progress']))
         
     def status(self, msg):
         self.statusbar.base_widget.set_text(msg)
@@ -336,9 +336,14 @@ class Dialog(urwid.Overlay):
         
     
 class ShowItem(urwid.WidgetWrap):
-    def __init__ (self, show):
-        self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
+    def __init__ (self, show, has_progress=True):
+        if has_progress:
+            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
+        else:
+            self.episodes_str = urwid.Text("-")
+        
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
+        self.has_progress = has_progress
         
         self.showid = show['id']
         self.item = [
@@ -355,7 +360,8 @@ class ShowItem(urwid.WidgetWrap):
     
     def update(self, show):
         if show['id'] == self.showid:
-            self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
+            if self.has_progress:
+                self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)

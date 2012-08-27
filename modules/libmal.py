@@ -32,12 +32,10 @@ class libmal(lib.lib):
     password_mgr = None
     handler = None
     opener = None
-    msg = None
     
-    api_info =  { 'name': 'MAL' }
+    api_info =  { 'name': 'MAL', 'version': 'v0.1' }
     
     mediatypes = dict()
-    
     mediatypes['anime'] = {
         'has_progress': True,
         'can_play': True,
@@ -53,15 +51,9 @@ class libmal(lib.lib):
     
     def __init__(self, messenger, username, password, mediatype):
         """Initializes the useragent through credentials."""
-        self.msg = messenger
+        super(libmal, self).__init__(messenger, mediatype)
+        
         self.username = username
-        
-        self.msg.info(self.name, 'Version v0.1')
-        
-        if mediatype in self.mediatypes:
-            self.mediatype = mediatype
-        else:
-            raise utils.APIFatal('Unsupported mediatype.')
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", username, password);
@@ -139,9 +131,6 @@ class libmal(lib.lib):
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
-    
-    def media_info(self):
-        return self.mediatypes[self.mediatype]
     
     def _parse_anime(self, root):
         showlist = dict()
