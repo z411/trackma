@@ -45,15 +45,14 @@ class wmal_gtk(object):
     def main(self):
         # Create engine
         self.engine = engine.Engine()
-        statuses_nums = self.engine.statuses_nums()
-        statuses_names = self.engine.statuses()
+        statuses_nums = self.engine.mediainfo['statuses']
+        statuses_names = self.engine.mediainfo['statuses_dict']
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
         self.main.connect("delete_event", self.delete_event)
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('wMAL-gtk v0.1')
-        #self.main.set_size_request(500,500)
         
         # Menus
         mb_show = gtk.Menu()
@@ -115,7 +114,7 @@ class wmal_gtk(object):
         
         # Line 2: Episode
         line2 = gtk.HBox(False, 5)
-        line2_t = gtk.Label('  Episode')
+        line2_t = gtk.Label('  Progress')
         line2_t.set_size_request(70, -1)
         line2_t.set_alignment(0, 0.5)
         line2.pack_start(line2_t, False, False, 0)
@@ -135,6 +134,10 @@ class wmal_gtk(object):
         line2.pack_start(self.play_button, False, False, 0)
         
         top_right_box.pack_start(line2, True, False, 0)
+        
+        # Disable play button if it's not supported by the mediatype
+        if not self.engine.mediainfo['can_play']:
+            self.play_button.set_sensitive(False)
         
         # Line 3: Score
         line3 = gtk.HBox(False, 5)
@@ -324,17 +327,17 @@ class wmal_gtk(object):
         if self.image_thread is not None:
             self.image_thread.cancel()
         
-        
         self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(show['title']))
         self.show_title.set_use_markup(True)
         
         # Episode selector
-        adjustment = gtk.Adjustment(upper=show['episodes'], step_incr=1)
-        self.show_ep_num.set_adjustment(adjustment)
-        if show['my_episodes'] >= show['episodes']:
-            self.show_ep_num.set_value(show['my_episodes'])
+        if show['total']:
+            adjustment = gtk.Adjustment(upper=show['total'], step_incr=1)
         else:
-            self.show_ep_num.set_value(show['my_episodes'] + 1)
+            adjustment = gtk.Adjustment(upper=1000, step_incr=1)
+        
+        self.show_ep_num.set_adjustment(adjustment)
+        self.show_ep_num.set_value(show['my_progress'])
         
         # Status selector
         for i in self.statusmodel:
@@ -414,7 +417,9 @@ class wmal_gtk(object):
         for widget in self.show_lists.itervalues():
             widget.set_sensitive(boolean)
         
-        self.play_button.set_sensitive(boolean)
+        if self.engine.mediainfo['can_play']:
+            self.play_button.set_sensitive(boolean)
+            
         self.update_button.set_sensitive(boolean)
         self.show_ep_num.set_sensitive(boolean)
 
@@ -464,7 +469,7 @@ class ShowView(gtk.TreeView):
         
         self.cols = dict()
         i = 0
-        for name in ('ID', 'Title', 'Episodes', 'Score', 'Progress'):
+        for name in ('ID', 'Title', 'Progress', 'Score', 'Percent'):
             self.cols[name] = gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(i)
             self.append_column(self.cols[name])
@@ -481,18 +486,18 @@ class ShowView(gtk.TreeView):
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
         self.cols['Title'].add_attribute(renderer_title, 'foreground', 5)
         
-        renderer_episodes = gtk.CellRendererText()
-        self.cols['Episodes'].pack_start(renderer_episodes, False)
-        self.cols['Episodes'].add_attribute(renderer_episodes, 'text', 2)
+        renderer_progress = gtk.CellRendererText()
+        self.cols['Progress'].pack_start(renderer_progress, False)
+        self.cols['Progress'].add_attribute(renderer_progress, 'text', 2)
         
         renderer_score = gtk.CellRendererText()
         self.cols['Score'].pack_start(renderer_score, False)
         self.cols['Score'].add_attribute(renderer_score, 'text', 3)
         
-        renderer_progress = gtk.CellRendererProgress()
-        self.cols['Progress'].pack_start(renderer_progress, False)
-        self.cols['Progress'].add_attribute(renderer_progress, 'value', 4)
-        renderer_progress.set_fixed_size(100, -1)
+        renderer_percent = gtk.CellRendererProgress()
+        self.cols['Percent'].pack_start(renderer_percent, False)
+        self.cols['Percent'].add_attribute(renderer_percent, 'value', 4)
+        renderer_percent.set_fixed_size(100, -1)
         
         self.store = gtk.ListStore(str, str, str, str, int, str)
         self.set_model(self.store)
@@ -502,11 +507,11 @@ class ShowView(gtk.TreeView):
         self.store.clear()
         
     def append(self, show):
-        if show['episodes'] and show['my_episodes'] <= show['episodes']:
-            progress = (float(show['my_episodes']) / show['episodes']) * 100
+        if show['total'] and show['my_progress'] <= show['total']:
+            progress = (float(show['my_progress']) / show['total']) * 100
         else:
             progress = 0
-        episodes_str = "%d / %d" % (show['my_episodes'], show['episodes'])
+        episodes_str = "%d / %d" % (show['my_progress'], show['total'])
         
         if show['status'] == 1:
             color = 'blue'
@@ -531,11 +536,11 @@ class ShowView(gtk.TreeView):
     def update(self, show):
         for row in self.store:
             if int(row[0]) == show['id']:
-                if show['episodes']:
-                    progress = (float(show['my_episodes']) / show['episodes']) * 100
+                if show['total']:
+                    progress = (float(show['my_progress']) / show['total']) * 100
                 else:
                     progress = 0
-                episodes_str = "%d / %d" % (show['my_episodes'], show['episodes'])
+                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
                 
                 row[2] = episodes_str
                 row[3] = show['my_score']

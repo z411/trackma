@@ -64,9 +64,6 @@ class wmal_cmd(cmd.Cmd):
         self.engine = engine.Engine(self.messagehandler)
         self.engine.start()
         
-        self.statuses = self.engine.statuses()
-        self.statuses_keys = self.engine.statuses_keys()
-        
         self.prompt = "{0} Watching> ".format(self.engine.api_info['name'])
     
     def do_filter(self, arg):
@@ -80,8 +77,8 @@ class wmal_cmd(cmd.Cmd):
         
         if arg:
             try:
-                self.filter_num = self.statuses_keys[arg]
-                self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.statuses[self.filter_num])
+                self.filter_num = self._guess_status(arg)
+                self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
             except KeyError:
                 print "Invalid filter."
         else:
@@ -92,9 +89,9 @@ class wmal_cmd(cmd.Cmd):
         sort - Change sort
         
         Usage: sort <sort type>
-        Available types: id, title, my_episodes, episodes
+        Available types: id, title, my_progress, episodes
         """
-        sorts = ('id', 'title', 'my_episodes', 'episodes')
+        sorts = ('id', 'title', 'my_progress', 'total')
         if arg in sorts:
             self.sort = arg
         else:
@@ -134,7 +131,7 @@ class wmal_cmd(cmd.Cmd):
                 # otherwise play the next episode not watched yet
                 try:
                     episode = args[1]
-                    if episode == (show['my_episodes'] + 1):
+                    if episode == (show['my_progress'] + 1):
                         playing_next = True
                     else:
                         playing_next = False
@@ -202,9 +199,10 @@ class wmal_cmd(cmd.Cmd):
                 print "Missing arguments."
             
             try:
-                _filter_num = self.statuses_keys[_filter]
+                _filter_num = self._guess_status(_filter)
             except KeyError:
                 print "Invalid filter."
+                return
             
             try:
                 self.engine.set_status(_showname, _filter_num)
@@ -265,6 +263,9 @@ class wmal_cmd(cmd.Cmd):
         if text:
             return self.engine.regex_list_titles(text)
     
+    def complete_filter(self, text, line, begidx, endidx):
+        return self.engine.mediainfo['statuses_dict'].values()
+    
     def parse_args(self, arg):
         if arg:
             return list(v.strip('"') for v in self.__re_cmd.findall(arg))
@@ -295,6 +296,12 @@ class wmal_cmd(cmd.Cmd):
             print "%s%s warning: %s%s" % (color_escape, classname, msg, color_reset)
         elif _DEBUG and msgtype == messenger.TYPE_DEBUG:
             print "%s%s: %s%s" % (color_escape, classname, msg, color_reset)
+    
+    def _guess_status(self, string):
+        for k, v in self.engine.mediainfo['statuses_dict'].items():
+            if string == v.lower().replace(' ', ''):
+                return k
+        raise KeyError
 
 def make_list(showlist):
     """
@@ -324,11 +331,11 @@ def make_list(showlist):
     print "| {0:{1}} {2:{3}} {4:{5}}|".format(
             'ID',       col_id_length,
             'Title',    col_title_length,
-            'Episodes', col_episodes_length)
+            'Progress', col_episodes_length)
     
     # List shows
     for show in showlist:
-        episodes_str = "{0:3} / {1}".format(show['my_episodes'], show['episodes'])
+        episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
         
         # Truncate title if needed
         title_str = show['title']

@@ -40,9 +40,6 @@ class Data(object):
     def __init__(self, messenger, config):
         self.msg = messenger
         self.config = config
-    
-    def start(self):
-        """Initialize the data handler and its children"""
         self.msg.info(self.name, "Version v0.1")
         
         # Import the API
@@ -50,26 +47,30 @@ class Data(object):
         libname = "lib{0}".format(self.config['api'])
         try:
             modulename = "modules.{0}".format(libname)
-            self.msg.info(self.name, "Using %s" % libname)
+            self.msg.info(self.name, "Using %s (%s)" % (libname, self.config['mediatype']))
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError:
             raise utils.DataFatal("Couldn't import API module.")
         
         # Get files
-        utils.make_dir(self.config['api'])
-        self.queue_file = utils.get_filename(self.config['api'], 'queue.db')
-        self.cache_file = utils.get_filename(self.config['api'], 'cache.db')
-        self.lock_file = utils.get_filename(self.config['api'], 'lock')
+        foldername = "{0}_{1}".format(self.config['api'], self.config['mediatype'])
         
+        utils.make_dir(foldername)
+        self.queue_file = utils.get_filename(foldername, 'queue.db')
+        self.cache_file = utils.get_filename(foldername, 'cache.db')
+        self.lock_file = utils.get_filename(foldername, 'lock')
+        
+        # Instance API
+        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
+        libclass = getattr(apimodule, libname)
+        self.api = libclass(self.msg, self.config['username'], self.config['password'], self.config['mediatype'])
+    
+    def start(self):
+        """Initialize the data handler and its children"""
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
-        
-        # Init API
-        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
-        libclass = getattr(apimodule, libname)
-        self.api = libclass(self.msg, self.config['username'], self.config['password'])
         
         # If cache exists, load from it
         # otherwise query the API for a remote list
@@ -87,7 +88,7 @@ class Data(object):
         if self._queue_exists():
             self._load_queue()
             
-        return self.api.api_info
+        return (self.api.api_info, self.api.media_info())
     
     def unload(self):
         self.msg.debug(self.name, "Unloading...")
@@ -196,19 +197,6 @@ class Data(object):
     
     def _unlock(self):
         os.unlink(self.lock_file)
-
-STATUSES = {
-    1: 'Watching',
-    2: 'Completed',
-    3: 'On Hold',
-    4: 'Dropped',
-    6: 'Plan to Watch' }
-
-STATUSES_NUMS =  [1, 2, 3, 4, 6]
-
-STATUSES_KEYS = {
-    'watching': 1,
-    'completed': 2,
-    'onhold': 3,
-    'dropped': 4,
-    'plantowatch': 6 }
+    
+    def get_api_info(self):
+        return (self.api.api_info, self.api.media_info())

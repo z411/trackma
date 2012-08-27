@@ -36,7 +36,7 @@ class wMAL_urwid(object):
     engine = None
     mainloop = None
     cur_sort = 'title'
-    sorts_iter = cycle(('id', 'title', 'my_episodes', 'episodes', 'my_score'))
+    sorts_iter = cycle(('id', 'title', 'my_progress', 'total', 'my_score'))
     
     """Widgets"""
     header = None
@@ -75,7 +75,7 @@ class wMAL_urwid(object):
             urwid.Columns([
                 ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
-                ('fixed', 10, urwid.Text('Episodes')),
+                ('fixed', 10, urwid.Text('Progress')),
                 ('fixed', 7, urwid.Text('Score')),
             ]), 'header')
         
@@ -95,9 +95,9 @@ class wMAL_urwid(object):
         self.engine = engine.Engine(self.message_handler)
         self.engine.start()
         
-        self.filters = self.engine.statuses()
-        self.filters_nums = self.engine.statuses_nums()
-        self.filters_iter = cycle(self.engine.statuses_nums())
+        self.filters = self.engine.mediainfo['statuses_dict']
+        self.filters_nums = self.engine.mediainfo['statuses']
+        self.filters_iter = cycle(self.engine.mediainfo['statuses'])
         
         self.cur_filter = self.filters_iter.next()
         print self.cur_filter
@@ -168,12 +168,12 @@ class wMAL_urwid(object):
     def do_update(self):
         showid = self.listbox.get_focus()[0].showid
         show = self.engine.get_show_info(showid)
-        self.ask('[Update] Episode # to update to: ', self.update_request, show['my_episodes'])
+        self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
         
     def do_play(self):
         showid = self.listbox.get_focus()[0].showid
         show = self.engine.get_show_info(showid)
-        self.ask('[Play] Episode # to play: ', self.play_request, show['my_episodes']+1)
+        self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
     
     def do_sync(self):
         self.engine.list_upload()
@@ -278,7 +278,7 @@ class wMAL_urwid(object):
                 self.status("Error: %s" % e.message)
                 return
             
-            if played_episode == (show['my_episodes'] + 1):
+            if played_episode == (show['my_progress'] + 1):
                 self.ask("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
             else:
                 self.status('Ready.')
@@ -288,7 +288,7 @@ class wMAL_urwid(object):
         if data == 'y':
             item = self.listbox.get_focus()[0]
             show = self.engine.get_show_info(item.showid)
-            next_episode = show['my_episodes'] + 1
+            next_episode = show['my_progress'] + 1
             
             try:
                 show = self.engine.set_episode(item.showid, next_episode)
@@ -337,7 +337,7 @@ class Dialog(urwid.Overlay):
     
 class ShowItem(urwid.WidgetWrap):
     def __init__ (self, show):
-        self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
+        self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         
         self.showid = show['id']
@@ -355,7 +355,7 @@ class ShowItem(urwid.WidgetWrap):
     
     def update(self, show):
         if show['id'] == self.showid:
-            self.episodes_str.set_text("{0:3} / {1}".format(show['my_episodes'], show['episodes']))
+            self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)

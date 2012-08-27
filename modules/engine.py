@@ -37,12 +37,7 @@ class Engine:
     def __init__(self, message_handler=None):
         self.msg = messenger.Messenger(message_handler)
         self.msg.info(self.name, 'Version v0.1')
-    
-    def set_message_handler(self, message_handler):
-        self.msg = messenger.Messenger(message_handler)
         
-    def start(self):
-        """Starts the engine."""
         self.msg.info(self.name, 'Reading config file...')
         try:
             self.config = utils.parse_config(utils.get_root_filename('wmal.conf'))
@@ -53,10 +48,20 @@ class Engine:
         if self.config['username'] == 'CHANGEME':
             raise utils.EngineFatal("Please set your username and password in the config file.")
         
-        # Create data handler and start it
+        # Create data handler
+        self.data_handler = data.Data(self.msg, self.config)
+        
+        # Record the API details
+        (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
+    
+    def set_message_handler(self, message_handler):
+        self.msg = messenger.Messenger(message_handler)
+        
+    def start(self):
+        """Starts the engine."""
+        # Start the data handler
         try:
-            self.data_handler = data.Data(self.msg, self.config)
-            self.api_info = self.data_handler.start()
+            (self.api_info, self.mediainfo) = self.data_handler.start()
         except utils.DataError, e:
             raise utils.DataFatal(e.message)
         except utils.APIError, e:
@@ -121,15 +126,14 @@ class Engine:
         # Get the show and update it
         show = self.get_show_info(show_pattern)
         # More checks
-        if show['episodes'] and newep > show['episodes']:
+        if show['total'] and newep > show['total']:
             raise utils.EngineError('Episode out of limits.')
-        if show['my_episodes'] == newep:
+        if show['my_progress'] == newep:
             raise utils.EngineError("Show already at episode %d" % newep)
         
         # Change episode
-        #show['my_episodes'] = newep;
         self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
-        self.data_handler.queue_update(show, 'my_episodes', newep)
+        self.data_handler.queue_update(show, 'my_progress', newep)
         
         return show
     
@@ -164,7 +168,7 @@ class Engine:
             raise utils.EngineError('Status must be numeric.')
         
         # Get the show and update it
-        _statuses = self.statuses()
+        _statuses = self.mediainfo['statuses_dict']
         show = self.get_show_info(show_pattern)
         # More checks
         if show['my_status'] == newstatus:
@@ -186,7 +190,7 @@ class Engine:
             
             playing_next = False
             if not playep:
-                playep = show['my_episodes'] + 1
+                playep = show['my_progress'] + 1
                 playing_next = True
                 
             searchep = str(playep).zfill(2)
@@ -222,13 +226,5 @@ class Engine:
     
     def get_queue(self):
         return self.data_handler.queue
-        
-    def statuses(self):
-        return data.STATUSES
     
-    def statuses_nums(self):
-        return data.STATUSES_NUMS
-    
-    def statuses_keys(self):
-        return data.STATUSES_KEYS
 

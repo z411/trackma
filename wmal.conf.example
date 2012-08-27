@@ -13,5 +13,8 @@ password = CHANGEME
 searchdir = /home/user/videos
 # Movie player to use when playing videos
 player = mplayer2
-# Library to use
+# Library to use (mal)
 api = mal
+# Media type to use, depends if the library supports it
+# mal: (anime|manga)
+mediatype = anime

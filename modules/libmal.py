@@ -34,14 +34,34 @@ class libmal(lib.lib):
     opener = None
     msg = None
     
-    api_info = { 'name': 'MAL' }
+    api_info =  { 'name': 'MAL' }
     
-    def __init__(self, messenger, username, password):
+    mediatypes = dict()
+    
+    mediatypes['anime'] = {
+        'has_progress': True,
+        'can_play': True,
+        'statuses':  [1, 2, 3, 4, 6],
+        'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
+    }
+    mediatypes['manga'] = {
+        'has_progress': True,
+        'can_play': False,
+        'statuses': [1, 2, 3, 4, 6],
+        'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
+    }
+    
+    def __init__(self, messenger, username, password, mediatype):
         """Initializes the useragent through credentials."""
         self.msg = messenger
         self.username = username
         
         self.msg.info(self.name, 'Version v0.1')
+        
+        if mediatype in self.mediatypes:
+            self.mediatype = mediatype
+        else:
+            raise utils.APIFatal('Unsupported mediatype.')
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", username, password);
@@ -67,34 +87,23 @@ class libmal(lib.lib):
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
-        self.msg.info(self.name, 'Downloading anime list...')
+        self.msg.info(self.name, 'Downloading list...')
         
-        showlist = dict()
         try:
             # Get an XML list from MyAnimeList API
-            response = self.opener.open("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type=anime")
+            response = self.opener.open("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
             data = response.read()
             
             # Load data from the XML into a parsed dictionary
             root = ET.fromstring(data)
-            self.msg.info(self.name, 'Parsing list...')
-            
-            for child in root:
-                if child.tag == 'anime':
-                    show_id = int(child.find('series_animedb_id').text)
-                    
-                    showlist[show_id] = {
-                        'id':           show_id,
-                        'title':        child.find('series_title').text.encode('utf-8'),
-                        'my_episodes':  int(child.find('my_watched_episodes').text),
-                        'my_status':    int(child.find('my_status').text),
-                        'my_score':     int(child.find('my_score').text),
-                        'episodes':     int(child.find('series_episodes').text),
-                        'status':       int(child.find('series_status').text),
-                        'image':        child.find('series_image').text,
-                    }
-            
-            return showlist
+            if self.mediatype == 'anime':
+                self.msg.info(self.name, 'Parsing anime list...')
+                return self._parse_anime(root)
+            elif self.mediatype == 'manga':
+                self.msg.info(self.name, 'Parsing manga list...')
+                return self._parse_manga(root)
+            else:
+                raise utils.APIFatal('Attempted to parse unsupported media type.')
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
     
@@ -105,10 +114,16 @@ class libmal(lib.lib):
         # Start building XML
         root = ET.Element("entry")
         
+        # Use the correct name depending on mediatype
+        if self.mediatype == 'anime':
+            progressname = 'episode'
+        else:
+            progressname = 'chapter'
+        
         # Update necessary keys
-        if 'my_episodes' in item.keys():
-            episode = ET.SubElement(root, "episode")
-            episode.text = str(item['my_episodes'])
+        if 'my_progress' in item.keys():
+            episode = ET.SubElement(root, progressname)
+            episode.text = str(item['my_progress'])
         if 'my_status' in item.keys():
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
@@ -124,3 +139,42 @@ class libmal(lib.lib):
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
+    
+    def media_info(self):
+        return self.mediatypes[self.mediatype]
+    
+    def _parse_anime(self, root):
+        showlist = dict()
+        for child in root:
+            if child.tag == 'anime':
+                show_id = int(child.find('series_animedb_id').text)
+                
+                showlist[show_id] = {
+                    'id':           show_id,
+                    'title':        child.find('series_title').text.encode('utf-8'),
+                    'my_progress':  int(child.find('my_watched_episodes').text),
+                    'my_status':    int(child.find('my_status').text),
+                    'my_score':     int(child.find('my_score').text),
+                    'total':     int(child.find('series_episodes').text),
+                    'status':       int(child.find('series_status').text),
+                    'image':        child.find('series_image').text,
+                }
+        return showlist
+    
+    def _parse_manga(self, root):
+        mangalist = dict()
+        for child in root:
+            if child.tag == 'manga':
+                manga_id = int(child.find('series_mangadb_id').text)
+                
+                mangalist[manga_id] = {
+                    'id':           manga_id,
+                    'title':        child.find('series_title').text.encode('utf-8'),
+                    'my_progress':  int(child.find('my_read_chapters').text),
+                    'my_status':    int(child.find('my_status').text),
+                    'my_score':     int(child.find('my_score').text),
+                    'total':     int(child.find('series_chapters').text),
+                    'status':       int(child.find('series_status').text),
+                    'image':        child.find('series_image').text,
+                }
+        return mangalist
