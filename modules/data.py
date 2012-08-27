@@ -66,6 +66,10 @@ class Data(object):
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, self.config['username'], self.config['password'], self.config['mediatype'])
     
+    def set_message_handler(self, message_handler):
+        self.msg = message_handler
+        self.api.set_message_handler(self.msg)
+        
     def start(self):
         """Initialize the data handler and its children"""
         # Lock the database

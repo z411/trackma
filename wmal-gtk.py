@@ -211,7 +211,6 @@ class wmal_gtk(object):
         vbox.pack_start(self.statusbar, False, False, 0)
         self.engine.set_message_handler(self.message_handler)
         
-        
         self.main.show_all()
         self.main.show()
         self.allow_buttons(False)
@@ -282,7 +281,6 @@ class wmal_gtk(object):
         self.allow_buttons(True)
     
     def task_unload(self):
-        print "Unloading engine"
         self.allow_buttons(False)
         self.engine.unload()
         self.can_close = True
@@ -386,6 +384,7 @@ class wmal_gtk(object):
         
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
+        print msg
         if msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     

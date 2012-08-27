@@ -56,3 +56,7 @@ class lib(object):
     
     def media_info(self):
         return self.mediatypes[self.mediatype]
+        
+    def set_message_handler(self, message_handler):
+        self.msg = message_handler
+    

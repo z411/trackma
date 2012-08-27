@@ -56,6 +56,7 @@ class Engine:
     
     def set_message_handler(self, message_handler):
         self.msg = messenger.Messenger(message_handler)
+        self.data_handler.set_message_handler(self.msg)
         
     def start(self):
         """Starts the engine."""
