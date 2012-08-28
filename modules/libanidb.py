@@ -47,7 +47,7 @@ class libanidb(lib.lib):
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
         
-        (code, msg) = self._send("AUTH user=z411&pass=199199199&protover=3&client=wmal&clientver=1")
+        (code, msg) = self._send("AUTH user={0}&pass={1}&protover=3&client=wmal&clientver=1".format(self.username, self.password))
         if code == 200:
             sessid = msg.split(' ', 1)[0]
             print "Reponse OK, session ID: %s" % sessid
