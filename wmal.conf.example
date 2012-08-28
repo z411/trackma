@@ -7,31 +7,43 @@
 
 ; Main settings
 [main]
-; Choose the API to connect to, current options: mal|vndb
+; Choose the API to connect to, current options: mal|anidb|melative|vndb
 api = mal
 ; Folder with the videos to play from
 searchdir = /home/user/Videos
 ; Media player to use when playing videos
 player = mplayer2
 
-; ===============
-; = MyAnimeList =
-; ===============
+; MyAnimeList
+; ===========
 [mal]
-; Enter your MyAnimeList credentials here.
-; The ones you use in the site should work.
 username = CHANGEME
 password = CHANGEME
 ; Current options: anime|manga
 mediatype = anime
 
+; AniDB
+; =====
+[anidb]
+username = CHANGEME
+password = CHANGEME
+; Current options: anime
+mediatype = anime
+
+; Melative
 ; ========
-; = vndb =
-; ========
+[melative]
+username = CHANGEME
+password = CHANGEME
+; Current options: anime
+mediatype = anime
+
+; vndb
+; ====
 [vndb]
 ; Enter your vndb user ID as the username
 ; This will change, it's temporary.
-username = 12793
+username = CHANGEME
 password = None ; unused
 ; vn is the only available option
 mediatype = vn

@@ -71,7 +71,7 @@ class libmal(lib.lib):
         self.msg.info(self.name, 'Logging in...')
         try:
             response = self.opener.open("http://myanimelist.net/api/account/verify_credentials.xml")
-            self.loged_in = True
+            self.logged_in = True
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError("Incorrect credentials.")
