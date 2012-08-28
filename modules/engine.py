@@ -44,10 +44,6 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
-        # Check if there's a username
-        if self.config['username'] == 'CHANGEME':
-            raise utils.EngineFatal("Please set your username and password in the config file.")
-        
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config)
         
@@ -200,10 +196,10 @@ class Engine:
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], searchep))
             
             regex = searchfile + r".*\D" + searchep + r"\D.*(mkv|mp4|avi)"
-            filename = utils.regex_find_file(regex, self.config['searchdir'])
+            filename = utils.regex_find_file(regex, self.config['main']['searchdir'])
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
-                subprocess.call([self.config['player'], filename])
+                subprocess.call([self.config['main']['player'], filename])
                 return playep
             else:
                 raise utils.EngineError('Episode file not found.')

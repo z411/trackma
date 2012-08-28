@@ -44,27 +44,32 @@ class Data(object):
         
         # Import the API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
-        libname = "lib{0}".format(self.config['api'])
+        libbase = self.config['main']['api']
+        mediatype = self.config[libbase]['mediatype']
+        
+        libname = "lib{0}".format(libbase)
         try:
             modulename = "modules.{0}".format(libname)
-            self.msg.info(self.name, "Using %s (%s)" % (libname, self.config['mediatype']))
+            self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError, e:
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
         
-        # Get files
-        foldername = "{0}_{1}".format(self.config['api'], self.config['mediatype'])
+        # Check if there's a username
+        if self.config[libbase]['username'] == 'CHANGEME':
+            raise utils.EngineFatal("Please set your username and password in the config file.")
         
-        utils.make_dir(foldername)
-        self.queue_file = utils.get_filename(foldername, 'queue.db')
-        self.cache_file = utils.get_filename(foldername, 'cache.db')
-        self.lock_file = utils.get_filename(foldername, 'lock')
+        # Get files
+        utils.make_dir(libbase)
+        self.queue_file = utils.get_filename(libbase, '%s.queue' % mediatype)
+        self.cache_file = utils.get_filename(libbase, '%s.db' % mediatype)
+        self.lock_file = utils.get_filename(libbase, 'lock')
         
         # Instance API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libclass = getattr(apimodule, libname)
-        self.api = libclass(self.msg, self.config['username'], self.config['password'], self.config['mediatype'])
+        self.api = libclass(self.msg, self.config[libbase]['username'], self.config[libbase]['password'], mediatype)
     
     def set_message_handler(self, message_handler):
         self.msg = message_handler

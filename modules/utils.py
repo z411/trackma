@@ -15,12 +15,13 @@
 #
 
 import os, re
+from ConfigParser import SafeConfigParser
 
 COMMENT_CHAR = '#'
 OPTION_CHAR =  '='
 
 def parse_config(filename):
-    options = {}
+    """options = {}
     f = open(filename)
     for line in f:
         # Remove comments
@@ -33,6 +34,16 @@ def parse_config(filename):
             value = value.strip()
             options[option] = value
     f.close()
+    return options"""
+    
+    options = dict()
+    config = SafeConfigParser()
+    config.read(filename)
+    for section in config.sections():
+        options[section] = dict()
+        for (k, v) in config.items(section):
+            options[section][k] = v
+    
     return options
 
 def regex_find_file(regex, subdirectory=''):

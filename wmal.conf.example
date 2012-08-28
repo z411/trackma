@@ -1,20 +1,37 @@
-# wMAL configuration file
+; wMAL configuration file
 
-# This is an example configuration file.
-# You must rename this to "wmal.conf"
-# and move it to "~/.wmal" with your
-# own options.
+; This is an example configuration file.
+; You must rename this to "wmal.conf"
+; and move it to "~/.wmal" with your
+; own options.
 
-# Enter your MyAnimeList credentials here.
-# The ones you use in the site should work.
+; Main settings
+[main]
+; Choose the API to connect to, current options: mal|vndb
+api = mal
+; Folder with the videos to play from
+searchdir = /home/user/Videos
+; Media player to use when playing videos
+player = mplayer2
+
+; ===============
+; = MyAnimeList =
+; ===============
+[mal]
+; Enter your MyAnimeList credentials here.
+; The ones you use in the site should work.
 username = CHANGEME
 password = CHANGEME
-# Search directory for videos to play
-searchdir = /home/user/videos
-# Movie player to use when playing videos
-player = mplayer2
-# Library to use (mal)
-api = mal
-# Media type to use, depends if the library supports it
-# mal: (anime|manga)
+; Current options: anime|manga
 mediatype = anime
+
+; ========
+; = vndb =
+; ========
+[vndb]
+; Enter your vndb user ID as the username
+; This will change, it's temporary.
+username = 12793
+password = None ; unused
+; vn is the only available option
+mediatype = vn

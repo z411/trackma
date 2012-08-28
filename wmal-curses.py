@@ -57,7 +57,7 @@ class wMAL_urwid(object):
         ('button hilight', 'white', 'dark red'),
         ]
         
-        self.header_title = urwid.Text('wMAL-urwid v0.1')
+        self.header_title = urwid.Text('wMAL-curses v0.1')
         self.header_filter = urwid.Text('Filter:watching')
         self.header_sort = urwid.Text('Sort:title')
         self.header = urwid.AttrMap(urwid.Columns([
