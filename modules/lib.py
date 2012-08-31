@@ -18,14 +18,24 @@ import utils
 
 class lib(object):
     """
-    Base interface for creating API implementations for wMAL
+    Base interface for creating API implementations for wMAL.
+
+    messenger: Messenger object to send useful messages to
+    mediatype: String containing the media type to be used
     """
     name = 'lib'
     version = 'dummy'
     msg = None
     
+    # api_info is a dictionary containing useful information about the API itself
+    # name: API name
+    # version: API version
     api_info = { 'name': 'BaseAPI', 'version': 'undefined' }
     
+    # mediatypes is a dictionary containing the possible mediatypes for the current API.
+    # An example mediatype should look like this:
+    #
+    # 
     mediatypes = dict()
     
     def __init__(self, messenger, config):
@@ -46,15 +56,38 @@ class lib(object):
         raise NotImplementedError
     
     def fetch_list(self):
-        """Queries the full list from the remote server.
-        Returns the list if successful, False otherwise."""
+        """
+        Fetches the remote list and returns a dictionary of show dictionaries
+
+        A show dictionary has the following keys:
+        
+        id: (int) Internal ID of the show
+        title: (string) UTF-8 encoded title of the show
+        my_progress: (int) Current progress for the show
+        my_status: (int) Current status number as defined in the mediatype
+        my_score: (int) Current score or rating
+        total: (int) Maximum possible progress for this show (total episodes, etc.)
+        status: (int) Show status number as in airing, completed, not aired, etc.
+        image: (string) Optional. URL for the show image/cover/etc.
+
+        This function should return a dictionary with the show id as the key,
+        and the show dictionary as the value.
+        """
         raise NotImplementedError
     
     def update_show(self, item):
-        """Sends a show update to the server"""
+        """
+        Send the updates of a show to the remote site
+
+        This function gets called everytime a show should be updated remotely,
+        and in a queue it may be called many times consecutively, so you should
+        use a boolean (or other method) to login only once.
+
+        """
         raise NotImplementedError
     
     def media_info(self):
+        """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
         
     def set_message_handler(self, message_handler):

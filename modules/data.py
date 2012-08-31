@@ -26,8 +26,13 @@ class Data(object):
     Data Handler Class
     
     Class for keeping data in memory, handling list cache and
-    update queues. Gets commands from the engine and sends
-    commands to the API if necessary.
+    update queues. This module cares about keeping the data
+    safe and up to date, and it handles commands given by the engine,
+    and communicates with the API whenever it's necessary.
+
+    messenger: Messenger object to send useful messages to
+    config: Parsed configuration dictionary (given by the engine)
+
     """
     name = 'Data'
     
@@ -38,6 +43,7 @@ class Data(object):
     config = dict()
     
     def __init__(self, messenger, config):
+        """Checks if the config is correct and creates an API object."""
         self.msg = messenger
         self.config = config
         self.msg.info(self.name, "Version v0.1")
@@ -76,7 +82,13 @@ class Data(object):
         self.api.set_message_handler(self.msg)
         
     def start(self):
-        """Initialize the data handler and its children"""
+        """
+        Does all necessary tasks to start the data handler
+        
+        This should be called before doing any other operation with the data handler,
+        as it loads the list cache (or downloads it if necessary) and queue.
+
+        """
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
@@ -100,6 +112,13 @@ class Data(object):
         return (self.api.api_info, self.api.media_info())
     
     def unload(self):
+        """
+        Does unloading of the data handler
+
+        This should be called whenever the data handler won't be used anymore,
+        as it does necessary operations to close the API and the data handler itself.
+
+        """
         self.msg.debug(self.name, "Unloading...")
         self.process_queue()
         
@@ -111,7 +130,16 @@ class Data(object):
         return self.showlist
     
     def queue_update(self, show, key, value):
-        """Do update and insert into queue"""
+        """
+        Queues a show update
+        
+        Call this to change anything of an item in the list, as it will be
+        modified locally and queued for update in the next remote sync.
+
+        show: Show dictionary
+        key: The key that will be modified (it must exist beforehand)
+        value: The value that it should be changed to
+        """
         if key not in show.keys():
             raise utils.DataError('Invalid key for queue update.')
         
@@ -138,6 +166,7 @@ class Data(object):
         self._save_cache()
     
     def queue_clear(self):
+        """Clears the queue completely."""
         if len(self.queue) == 0:
             raise utils.DataError('Queue is already empty.')
         
@@ -146,7 +175,14 @@ class Data(object):
         self.msg.info(self.name, "Cleared queue.")
         
     def process_queue(self):
-        """Process stuff in queue"""
+        """
+        Send updates in queue to the API
+        
+        It starts sending all the queued updates to the API for it to update
+        the remote list. Any successful updates get removed from the queue,
+        and failed updates stay there to be processed the next time.
+
+        """
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
             
@@ -187,6 +223,7 @@ class Data(object):
         cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
         
     def download_data(self):
+        """Forces to overwrite the local list with the remote list"""
         self.showlist = self.api.fetch_list()
         
     def _cache_exists(self):

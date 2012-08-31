@@ -23,10 +23,15 @@ import utils
 
 class Engine:
     """
-    Engine class
+    Main engine class
     
     Controller that handles commands from the visual client
     and then queries the Data Handler for the necessary data.
+    It doesn't care about how the data is fetched, it just
+    handles the commands coming from the visual client.
+
+    message_handler: Reference to a function for the engine
+      to send to. Optional.
     """
     data_handler = None
     config = dict()
@@ -35,6 +40,7 @@ class Engine:
     name = 'Engine'
     
     def __init__(self, message_handler=None):
+        """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
         self.msg.info(self.name, 'Version v0.1')
         
@@ -59,11 +65,17 @@ class Engine:
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
     def set_message_handler(self, message_handler):
+        """Changes the data handler even after the class initialization."""
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
         
     def start(self):
-        """Starts the engine."""
+        """
+        Starts the engine
+        
+        This function should be called before doing anything with the engine,
+        as it initializes the data handler.
+        """
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
@@ -75,6 +87,14 @@ class Engine:
         return True
     
     def unload(self):
+        """
+        Closes the data handler and closes the engine
+
+        This should be called when closing the client application, or when you're
+        sure you're not going to use the engine anymore. This does all the necessary
+        procedures to close the data handler and then itself.
+        
+        """
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
         
@@ -83,7 +103,15 @@ class Engine:
         return self.data_handler.get().values()
     
     def get_show_info(self, pattern):
-        """Looks up the data handler for a specified show and returns it"""
+        """
+        Returns the complete info for a show
+        
+        It asks the data handler for the full details of a show, and returns it as
+        a show dictionary.
+
+        pattern: The show ID as a number or the full show title.
+        
+        """
         showdict = self.data_handler.get()
         
         try:
@@ -102,10 +130,18 @@ class Engine:
                     return show
             raise utils.EngineError("Show not found.")
     
-    def regex_list(self, pattern):
-        """Matches the list against a regex pattern and returns a new list"""
+    def regex_list(self, regex):
+        """
+        Searches for a show and returns a list with the matches
+        
+        It asks the data handler to do a regex search for a show and returns the
+        list with all the matches.
+        
+        pattern: Regex string to search in the show title
+        
+        """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if re.match(pattern, v['title'], re.I))
+        return list(v for k, v in showlist.iteritems() if re.match(regex, v['title'], re.I))
         
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
@@ -121,11 +157,16 @@ class Engine:
         return newlist
     
     def set_episode(self, show_pattern, newep):
-        """Tells the data handler to update a show episode"""
-        # Check if it's supported by the API
-        if not self.mediainfo['can_update']:
-            raise utils.EngineError('Not supported.')
+        """
+        Updates the progress for a show
         
+        It asks the data handler to update the progress of the specified show to
+        a specified number.
+
+        show_pattern: ID or full title of the show
+        newep: The progress number to update the show to
+
+        """
         # Check for the episode number
         try:
             newep = int(newep)
@@ -147,7 +188,16 @@ class Engine:
         return show
     
     def set_score(self, show_pattern, newscore):
-        """Tells the data handler to update a show score"""
+        """
+        Updates the score for a show
+        
+        It asks the data handler to update the score of the specified show
+        to a specified number.
+
+        show_pattern: ID or full title of the show
+        newscore: The score number to update the show to
+        
+        """
         # Check for the correctness of the score
         try:
             newscore = int(newscore)
@@ -169,7 +219,17 @@ class Engine:
         return show
     
     def set_status(self, show_pattern, newstatus):
-        """Tells the data handler to update a show score"""
+        """
+        Updates the status for a show
+        
+        It asks the data handler to update the status of the specified show
+        to a specified number.
+
+        show_pattern: ID or full title of the show
+        newstatus: The status number to update the show to
+
+        """
+        
         # Check for the correctness of the score
         try:
             newstatus = int(newstatus)
@@ -190,7 +250,17 @@ class Engine:
         return show
     
     def play_episode(self, show, playep=0):
-        """Searches the hard disk for an episode and launches the media player for it"""
+        """
+        Searches the hard disk for an episode and plays the episode
+        
+        Does a local search in the hard disk (in the folder specified by the config file)
+        for the specified episode for the specified show.
+
+        show: Show dictionary
+        playep: Episode to play. Optional. If none specified, the next episode will be played.
+
+
+        """
         if show:
             searchfile = show['title']
             searchfile = searchfile.replace(',', ',?')
@@ -217,10 +287,18 @@ class Engine:
                 raise utils.EngineError('Episode file not found.')
     
     def undoall(self):
+        """Clears the data handler queue."""
         return self.data_handler.queue_clear()
         
     def filter_list(self, filter_num):
-        """Returns a list of shows only of a specified status"""
+        """
+        Returns a list filtered by status
+        
+        It asks the data handler to fetch the list and filter it by the specified status.
+
+        filter_num = Status number
+
+        """
         showlist = self.data_handler.get()
         if filter_num:
             return list(v for k, v in showlist.iteritems() if v['my_status'] == filter_num)
@@ -228,12 +306,15 @@ class Engine:
             return showlist.values()
     
     def list_download(self):
+        """Asks the data handler to download the remote list."""
         self.data_handler.download_data()
     
     def list_upload(self):
+        """Asks the data handler to upload the remote list."""
         self.data_handler.process_queue()
     
     def get_queue(self):
+        """Asks the data handler for the current queue."""
         return self.data_handler.queue
     
 
