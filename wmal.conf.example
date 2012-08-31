@@ -29,6 +29,10 @@ username = CHANGEME
 password = CHANGEME
 ; Current options: anime
 mediatype = anime
+; Network options
+local_port = 6969
+address = api.anidb.net
+remote_port = 9000
 
 ; Melative
 ; ========

@@ -28,17 +28,18 @@ class libmelative(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
-        'can_play': True,
+        'can_update': False,
+        'can_play': False,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Current', 2: 'Complete', 3: 'Hold', 4: 'Dropped', 6: 'Wishlisted' },
     }
     
-    def __init__(self, messenger, username, password, mediatype):
+    def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
-        super(libmelative, self).__init__(messenger, mediatype)
+        super(libmelative, self).__init__(messenger, config)
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        self.password_mgr.add_password("Melative", "melative.com:80", username, password);
+        self.password_mgr.add_password("Melative", "melative.com:80", config['username'], config['password']);
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)

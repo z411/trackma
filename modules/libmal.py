@@ -38,25 +38,27 @@ class libmal(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
+        'can_update': True,
         'can_play': True,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
     }
     mediatypes['manga'] = {
         'has_progress': True,
+        'can_update': False,
         'can_play': False,
         'statuses': [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
-    def __init__(self, messenger, username, password, mediatype):
+    def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
-        super(libmal, self).__init__(messenger, mediatype)
+        super(libmal, self).__init__(messenger, config)
         
-        self.username = username
+        self.username = config['username']
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", username, password);
+        self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", config['username'], config['password']);
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)
@@ -79,6 +81,7 @@ class libmal(lib.lib):
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
+        self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
         
         try:
@@ -101,6 +104,7 @@ class libmal(lib.lib):
     
     def update_show(self, item):
         """Sends a show update to the server"""
+        self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
         
         # Start building XML

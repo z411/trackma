@@ -32,16 +32,17 @@ class libvndb(lib.lib):
     mediatypes = dict()
     mediatypes['vn'] = {
         'has_progress': False,
+        'can_update': False,
         'can_play': False,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 6: 'Wishlist' },
     }
     
-    def __init__(self, messenger, username, password, mediatype):
+    def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
-        super(libvndb, self).__init__(messenger, mediatype)
+        super(libvndb, self).__init__(messenger, config)
         
-        self.username = username
+        self.username = config['username']
     
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""

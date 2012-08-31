@@ -28,13 +28,13 @@ class lib(object):
     
     mediatypes = dict()
     
-    def __init__(self, messenger, mediatype):
+    def __init__(self, messenger, config):
         """Initializes the base for the API"""
         self.msg = messenger
         self.msg.info(self.name, 'Version %s' % self.api_info['version'])
         
-        if mediatype in self.mediatypes:
-            self.mediatype = mediatype
+        if config['mediatype'] in self.mediatypes:
+            self.mediatype = config['mediatype']
         else:
             raise utils.APIFatal('Unsupported mediatype.')
         

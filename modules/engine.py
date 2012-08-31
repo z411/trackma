@@ -38,9 +38,17 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.msg.info(self.name, 'Version v0.1')
         
+        # Create home directory
+        utils.make_dir('')
+        configfile = utils.get_root_filename('wmal.conf')
+        
+        # Create config file if it doesn't exist
+        if not utils.file_exists(configfile):
+            utils.copy_file('wmal.conf.example', configfile)
+            
         self.msg.info(self.name, 'Reading config file...')
         try:
-            self.config = utils.parse_config(utils.get_root_filename('wmal.conf'))
+            self.config = utils.parse_config(configfile)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
@@ -114,6 +122,10 @@ class Engine:
     
     def set_episode(self, show_pattern, newep):
         """Tells the data handler to update a show episode"""
+        # Check if it's supported by the API
+        if not self.mediainfo['can_update']:
+            raise utils.EngineError('Not supported.')
+        
         # Check for the episode number
         try:
             newep = int(newep)

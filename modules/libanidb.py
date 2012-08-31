@@ -27,36 +27,45 @@ class libanidb(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
+        'can_update': False,
         'can_play': True,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
     }
     
-    def __init__(self, messenger, username, password, mediatype):
+    def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
-        super(libanidb, self).__init__(messenger, mediatype)
+        super(libanidb, self).__init__(messenger, config)
         
-        self.username = username
-        self.password = password
+        self.username = config['username']
+        self.password = config['password']
         
         # Initialize socket for UDP communication with AniDB
-        self.UDP_ADDR="api.anidb.net"
-        self.UDP_PORT=9000
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(('0.0.0.0', int(config['local_port'])))
+        self.sock.connect((config['address'], int(config['remote_port'])))
     
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
         
         (code, msg) = self._send("AUTH user={0}&pass={1}&protover=3&client=wmal&clientver=1".format(self.username, self.password))
         if code == 200:
-            sessid = msg.split(' ', 1)[0]
-            print "Reponse OK, session ID: %s" % sessid
+            self.sessid = msg.split(' ', 1)[0]
+            print "Reponse OK, session ID: %s" % self.sessid
         else:
             raise utils.APIFatal('Error %d: %s' % (code, msg))
         
+        self._send("LOGOUT")
+
+    def fetch_list(self):
+        self.check_credentials()
+        
+        (code,msg) = self._send("MYLIST s={0}&lid=0".format(self.sessid))
+        print msg
+        
     def _send(self, msg):
         # Handle correctness of message length vs. sent data length
-        self.sock.sendto(msg, (self.UDP_ADDR, self.UDP_PORT))
+        self.sock.sendall(msg)
         response = self.sock.recv(1024).split(' ', 1)
         return int(response[0]), response[1]
     

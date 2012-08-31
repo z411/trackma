@@ -119,6 +119,7 @@ class wmal_gtk(object):
         line2_t.set_alignment(0, 0.5)
         line2.pack_start(line2_t, False, False, 0)
         self.show_ep_num = gtk.SpinButton()
+        self.show_ep_num.set_sensitive(False)
         #self.show_ep_num.connect("value_changed", self.do_update)
         line2.pack_start(self.show_ep_num, False, False, 0)
         
@@ -127,15 +128,12 @@ class wmal_gtk(object):
         
         self.update_button = gtk.Button('Update')
         self.update_button.connect("clicked", self.do_update)
+        self.update_button.set_sensitive(False)
         line2.pack_start(self.update_button, False, False, 0)
-        
-        # Disable update button if it's not supported
-        if not self.engine.mediainfo['has_progress']:
-            self.update_button.set_sensitive(False)
-            self.show_ep_num.set_sensitive(False)
         
         self.play_button = gtk.Button('Play')
         self.play_button.connect("clicked", self.do_play)
+        self.play_button.set_sensitive(False)
         line2.pack_start(self.play_button, False, False, 0)
         
         top_right_box.pack_start(line2, True, False, 0)
@@ -152,6 +150,7 @@ class wmal_gtk(object):
         line3.pack_start(line3_t, False, False, 0)
         self.show_score = gtk.SpinButton()
         self.show_score.set_adjustment(gtk.Adjustment(upper=10, step_incr=1))
+        self.show_score.set_sensitive(False)
         line3.pack_start(self.show_score, False, False, 0)
         
         top_right_box.pack_start(line3, True, False, 0)
@@ -171,7 +170,8 @@ class wmal_gtk(object):
         cell = gtk.CellRendererText()
         self.statusbox.pack_start(cell, True)
         self.statusbox.add_attribute(cell, 'text', 1)
-        self.statusbox_handler = self.statusbox.connect("changed", self.do_status);
+        self.statusbox_handler = self.statusbox.connect("changed", self.do_status)
+        self.statusbox.set_sensitive(False)
         
         alignment = gtk.Alignment(xalign=0, yalign=0.5)
         alignment.add(self.statusbox)
@@ -210,6 +210,8 @@ class wmal_gtk(object):
         self.statusbar.push(0, 'wMAL-gtk v0.1')
         vbox.pack_start(self.statusbar, False, False, 0)
         self.engine.set_message_handler(self.message_handler)
+        
+        self.selected_show = 0
         
         self.main.show_all()
         self.main.show()
@@ -319,9 +321,12 @@ class wmal_gtk(object):
         (tree_model, tree_iter) = widget.get_selected()
         if not tree_iter:
             print "Unselected show"
+            self.allow_buttons_push(False, lists_too=False)
             return
         
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.allow_buttons_push(True, lists_too=False)
+        
         show = self.engine.get_show_info(self.selected_show)
         
         # Block handlers
@@ -411,23 +416,28 @@ class wmal_gtk(object):
         # Thread safe
         gobject.idle_add(self.allow_buttons_push, boolean)
         
-    def allow_buttons_push(self, boolean):
+    def allow_buttons_push(self, boolean, lists_too=True):
+        if lists_too:
+            for widget in self.show_lists.itervalues():
+                widget.set_sensitive(boolean)
+                
+        if self.selected_show or not boolean:
+            if self.engine.mediainfo['can_play']:
+                self.play_button.set_sensitive(boolean)
+            
+            if self.engine.mediainfo['can_update']:
+                self.update_button.set_sensitive(boolean)
+                self.show_ep_num.set_sensitive(boolean)
+            
+            self.show_score.set_sensitive(boolean)
+            self.statusbox.set_sensitive(boolean)
+        
         if boolean == True:
             self.spinner.stop()
             self.spinner.set_visible(False)
         else:
             self.spinner.set_visible(True)
             self.spinner.start()
-        
-        for widget in self.show_lists.itervalues():
-            widget.set_sensitive(boolean)
-        
-        if self.engine.mediainfo['can_play']:
-            self.play_button.set_sensitive(boolean)
-        
-        if self.engine.mediainfo['has_progress']:
-            self.update_button.set_sensitive(boolean)
-            self.show_ep_num.set_sensitive(boolean)
 
 class ImageTask(threading.Thread):
     cancelled = False

@@ -64,7 +64,9 @@ class wmal_cmd(cmd.Cmd):
         self.engine = engine.Engine(self.messagehandler)
         self.engine.start()
         
-        self.prompt = "{0} Watching> ".format(self.engine.api_info['name'])
+        # Start with default filter selected
+        self.filter_num = self.engine.mediainfo['statuses'][0]
+        self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
     
     def do_filter(self, arg):
         """

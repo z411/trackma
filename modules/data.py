@@ -69,7 +69,7 @@ class Data(object):
         # Instance API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libclass = getattr(apimodule, libname)
-        self.api = libclass(self.msg, self.config[libbase]['username'], self.config[libbase]['password'], mediatype)
+        self.api = libclass(self.msg, self.config[libbase])
     
     def set_message_handler(self, message_handler):
         self.msg = message_handler
@@ -87,7 +87,7 @@ class Data(object):
             self._load_cache()
         else:
             try:
-                self.api.check_credentials()
+                #self.api.check_credentials()
                 self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
@@ -150,11 +150,11 @@ class Data(object):
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
             
-            # Check log-in
-            try:
-                self.api.check_credentials()
-            except utils.APIError, e:
-                raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
+            # Check log-in TODO
+            #try:
+            #    self.api.check_credentials()
+            #except utils.APIError, e:
+            #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
             
             # Run through queue
             for i in xrange(len(self.queue)):

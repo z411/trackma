@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, re
+import os, re, shutil
 from ConfigParser import SafeConfigParser
 
 COMMENT_CHAR = '#'
@@ -63,6 +63,12 @@ def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
     if not os.path.isdir(path):
         os.mkdir(path)
+
+def file_exists(filename):
+    return os.path.isfile(filename)
+
+def copy_file(src, dest):
+    shutil.copy(src, dest)
     
 def get_filename(subdir, filename):
     return os.path.expanduser(os.path.join('~', '.wmal', subdir, filename))
