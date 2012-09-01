@@ -135,7 +135,7 @@ class libmal(lib.lib):
         values = {'data': ET.tostring(root)}
         data = urllib.urlencode(values)
         try:
-            response = self.opener.open("http://myanimelist.net/api/animelist/update/"+str(item['id'])+".xml", data)
+            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/update/"+str(item['id'])+".xml", data)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
