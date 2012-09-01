@@ -33,7 +33,7 @@ class libmal(lib.lib):
     handler = None
     opener = None
     
-    api_info =  { 'name': 'MAL', 'version': 'v0.1' }
+    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.1' }
     
     mediatypes = dict()
     mediatypes['anime'] = {

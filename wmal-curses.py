@@ -58,12 +58,14 @@ class wMAL_urwid(object):
         ]
         
         self.header_title = urwid.Text('wMAL-curses v0.1')
+        self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:watching')
         self.header_sort = urwid.Text('Sort:title')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
             ('fixed', 23, self.header_filter),
-            ('fixed', 20, self.header_sort)]), 'status')
+            ('fixed', 17, self.header_sort),
+            ('fixed', 16, self.header_api)]), 'status')
         
         self.top_pile = urwid.Pile([self.header,
             urwid.AttrMap(urwid.Text('F2:Filter  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F10:Sync  F12:Quit'), 'status')
@@ -86,8 +88,7 @@ class wMAL_urwid(object):
         self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
-        self.mainloop.set_alarm_in(0, self.start)                       # See dev note [1]
-        #self.idlehandle = self.mainloop.event_loop.enter_idle(self.start) # See dev note [1]
+        self.mainloop.set_alarm_in(0, self.start)
         self.mainloop.run()
     
     def start(self, loop, data):
@@ -95,6 +96,7 @@ class wMAL_urwid(object):
         self.engine = engine.Engine(self.message_handler)
         self.engine.start()
         
+        self.header_api.set_text('API:%s' % self.engine.api_info['name'])
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
         self.filters_iter = cycle(self.engine.mediainfo['statuses'])
@@ -389,4 +391,7 @@ class Asker(urwid.Edit):
 
 
 if __name__ == '__main__':
-    wMAL_urwid()
+    try:
+        wMAL_urwid()
+    except utils.wmalFatal, e:
+        print e.message

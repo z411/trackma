@@ -57,7 +57,6 @@ class wmal_gtk(object):
         # Menus
         mb_show = gtk.Menu()
         mb_play = gtk.MenuItem("Play")
-        #mb_exit = gtk.MenuItem("Exit")
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
         mb_exit.connect("activate", self.on_destroy)
         mb_show.append(mb_play)
@@ -99,7 +98,7 @@ class wmal_gtk(object):
         
         # Line 1: Title
         line1 = gtk.HBox(False, 5)
-        self.show_title = gtk.Label('<span size="14000"><b>Show title</b></span>')
+        self.show_title = gtk.Label('<span size="14000"><b>-</b></span>')
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
         line1.pack_start(self.show_title, True, True, 0)
@@ -268,17 +267,46 @@ class wmal_gtk(object):
             self.show_lists[status].select(show)
         except utils.wmalError, e:
             self.error(e.message)
-        
+    
+    def do_update_next(self, show, played_ep):
+        # Thread safe
+        gobject.idle_add(self.task_update_next, show, played_ep)
+    
+    def task_update_next(self, show, played_ep):
+        dialog = gtk.MessageDialog(self.main,
+                    gtk.DIALOG_MODAL,
+                    gtk.MESSAGE_QUESTION,
+                    gtk.BUTTONS_YES_NO,
+                    "Should I update %s to episode %d?" % (show['title'], played_ep))
+        dialog.show_all()
+        dialog.connect("response", self.task_update_next_response, show, played_ep)
+    
+    def task_update_next_response(self, widget, response, show, played_ep):
+        widget.destroy()
+        # Update show to the played episode
+        if response == gtk.RESPONSE_YES:
+            try:
+                show = self.engine.set_episode(show['id'], played_ep)
+                status = show['my_status']
+                self.show_lists[status].update(show)
+            except utils.wmalError, e:
+                self.error(e.message)
+    
     def task_play(self):
         self.allow_buttons(False)
         
         show = self.engine.get_show_info(self.selected_show)
         ep = self.show_ep_num.get_value_as_int()
         try:
-            self.engine.play_episode(show, ep)
+            played_ep = self.engine.play_episode(show, ep)
+            
+            # Ask if we should update to the next episode
+            if played_ep == (show['my_progress'] + 1):
+                self.do_update_next(show, played_ep)
         except utils.wmalError, e:
             self.error(e.message)
             print e.message
+        
         self.status("Ready.")
         self.allow_buttons(True)
     
@@ -286,7 +314,10 @@ class wmal_gtk(object):
         self.allow_buttons(False)
         self.engine.unload()
         self.can_close = True
+        
+        gtk.threads_enter()
         self.main.destroy()
+        gtk.threads_leave()
         
     def do_sync(self, widget):
         threading.Thread(target=self.task_sync).start()
@@ -400,9 +431,9 @@ class wmal_gtk(object):
     def error_push(self, msg):
         dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
         dialog.show_all()
-        dialog.connect("response", self.error_close)
+        dialog.connect("response", self.modal_close)
     
-    def error_close(self, widget, response_id):
+    def modal_close(self, widget, response_id):
         widget.destroy()
         
     def status(self, msg):
@@ -545,7 +576,6 @@ class ShowView(gtk.TreeView):
     def append_finish(self):
         self.thaw_child_notify()
         self.store.set_sort_column_id(1, gtk.SORT_ASCENDING)
-        #self.set_model(self.store)
         
     def get_showid(self):
         selection = self.get_selection()
@@ -581,7 +611,15 @@ class ShowView(gtk.TreeView):
 
 if __name__ == '__main__':
     app = wmal_gtk()
-    gtk.gdk.threads_enter()
-    app.main()
-    gtk.gdk.threads_leave()
+    try:
+        gtk.gdk.threads_enter()
+        app.main()
+    except utils.wmalFatal, e:
+        md = gtk.MessageDialog(None, 
+            gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, 
+            gtk.BUTTONS_CLOSE, e.message)
+        md.run()
+        md.destroy()
+    finally:
+        gtk.gdk.threads_leave()
     

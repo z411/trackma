@@ -11,27 +11,16 @@ Aditionally it can search for a specified folder for the next episode
 you have to watch and it starts your media player of choice automatically.
 It also updates the episode automatically whenever the media player is closed.
 
-SETUP
-=====
-For now there isn't an installer so for the first run you must copy
-the file "wmal.conf.example" as "~/.wmal/wmal.conf" and edit it with
-your own options.
-
 USAGE
 =====
-Start the program by running it normally:
+Start the program by running any of the available interfaces:
 
 $ ./wmal.py
+$ ./wmal-curses.py (requires urwid)
+$ ./wmal-gtk.py (requires pygtk)
 
-You will then enter in an interactive command line where you can run your
-commands. You can type 'help' to see the available commands you can use,
-and as in Bash you can press 'tab' to perform autocompletion and
-up/down arrow keys for command history. To exit anytime type 'quit'
-or enter an EOL (Ctrl+D).
-
-You may also try the experimental curses and GTK interfaces.
-$ ./wmal-curses.py
-$ ./wmal-gtk.py
+This will create a configuration file in ~/.wmal folder. Please enter the
+relevant data in the configuration file and run the script again.
 
 PROPOSED MODEL
 ==============
@@ -57,4 +46,4 @@ TO DO LIST
 - Support for manga lists.
 - Show user information.
 - Win32 interface?
-- Melative and AniDB support.
+- Improve vndb, Melative and AniDB support.
