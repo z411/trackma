@@ -26,14 +26,47 @@ class libmelative(lib.lib):
     api_info =  { 'name': 'Melative', 'version': 'v0.1' }
     
     mediatypes = dict()
+    
+    # All mediatypes share the same statuses so we'll reuse them
+    statuses = [1, 2, 3, 4, 6]
+    statuses_dict = { 1: 'Current', 2: 'Complete', 3: 'Hold', 4: 'Dropped', 6: 'Wishlisted' }
+    #mediadict = 
+    
     mediatypes['anime'] = {
         'has_progress': True,
         'can_score': False,
         'can_status': False,
         'can_update': False,
         'can_play': False,
-        'statuses':  [1, 2, 3, 4, 6],
-        'statuses_dict': { 1: 'Current', 2: 'Complete', 3: 'Hold', 4: 'Dropped', 6: 'Wishlisted' },
+        'statuses':  statuses,
+        'statuses_dict': statuses_dict,
+    }
+    mediatypes['manga'] = {
+        'has_progress': True,
+        'can_score': False,
+        'can_status': False,
+        'can_update': False,
+        'can_play': False,
+        'statuses':  statuses,
+        'statuses_dict': statuses_dict,
+    }
+    mediatypes['vn'] = {
+        'has_progress': False,
+        'can_score': False,
+        'can_status': False,
+        'can_update': False,
+        'can_play': False,
+        'statuses':  statuses,
+        'statuses_dict': statuses_dict,
+    }
+    mediatypes['lightnovel'] = {
+        'has_progress': True,
+        'can_score': False,
+        'can_status': False,
+        'can_update': False,
+        'can_play': False,
+        'statuses':  statuses,
+        'statuses_dict': statuses_dict,
     }
     
     def __init__(self, messenger, config):

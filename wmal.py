@@ -98,6 +98,21 @@ class wmal_cmd(cmd.Cmd):
             self.sort = arg
         else:
             print "Invalid sort."
+    
+    def do_reload(self, arg):
+        """
+        reload - Reloads engine with specifid API and mediatype
+        
+        Usage: reload <api> <mediatype>
+        """
+        if arg:
+            args = self.parse_args(arg)
+            (api, mediatype) = (args[0], args[1])
+            self.engine.reload(api=api, mediatype=mediatype)
+            
+            # Start with default filter selected
+            self.filter_num = self.engine.mediainfo['statuses'][0]
+            self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
         
     def do_list(self, arg):
         """

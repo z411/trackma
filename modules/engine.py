@@ -58,6 +58,9 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
+        self._init_data_handler()
+    
+    def _init_data_handler(self):
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config)
         
@@ -97,6 +100,25 @@ class Engine:
         """
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
+    
+    def reload(self, api=None, mediatype=None):
+        """Changes the API and/or mediatype and reloads itself"""
+        to_api = self.config['main']['api']
+        to_mediatype = self.api_info['mediatype']
+        
+        if api:
+            if api in self.config.keys():
+                to_api = api
+            else:
+                raise wmal.EngineError('Unsupported API.')
+        if mediatype:
+            to_mediatype = mediatype
+        
+        self.unload()
+        self.config['main']['api'] = to_api
+        self.config[to_api]['mediatype'] = to_mediatype
+        self._init_data_handler()
+        self.start()
         
     def get_list(self):
         """Requests the full show list from the data handler."""
