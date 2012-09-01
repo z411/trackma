@@ -387,12 +387,16 @@ class wmal_gtk(object):
         
         for api in self.engine.config.keys():
             if api != 'main':
-                item = gtk.MenuItem(api)
+                item = gtk.CheckMenuItem(api)
+                if api == self.engine.config['main']['api']:
+                    item.set_active(True)   # This signals 'activate' so beware
                 item.connect("activate", self.do_reload, api, None)
                 self.mb_api_menu.append(item)
                 item.show()
         for mediatype in self.engine.api_info['supported_mediatypes']:
-            item = gtk.MenuItem(mediatype)
+            item = gtk.CheckMenuItem(mediatype)
+            if mediatype == self.engine.api_info['mediatype']:
+                item.set_active(True)
             item.connect("activate", self.do_reload, None, mediatype)
             self.mb_mediatype_menu.append(item)
             item.show()
