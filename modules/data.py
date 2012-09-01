@@ -51,7 +51,10 @@ class Data(object):
         # Import the API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libbase = self.config['main']['api']
-        mediatype = self.config[libbase]['mediatype']
+        try:
+            mediatype = self.config[libbase]['mediatype']
+        except KeyError:
+            raise utils.DataFatal("Missing or unsupported API: %s" % libbase)
         
         libname = "lib{0}".format(libbase)
         try:

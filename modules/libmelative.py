@@ -28,6 +28,8 @@ class libmelative(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
+        'can_score': False,
+        'can_status': False,
         'can_update': False,
         'can_play': False,
         'statuses':  [1, 2, 3, 4, 6],
@@ -37,6 +39,8 @@ class libmelative(lib.lib):
     def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
         super(libmelative, self).__init__(messenger, config)
+        
+        self.username = config['username']
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("Melative", "melative.com:80", config['username'], config['password']);
@@ -63,9 +67,8 @@ class libmelative(lib.lib):
             raise utils.APIError("Incorrect credentials.")
     
     def fetch_list(self):
+        self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
-        
-        #try:
         
         # Get an XML list from API
         response = self.opener.open("http://melative.com/api/library?user={0}&context_type={1}".format(self.username, self.mediatype))

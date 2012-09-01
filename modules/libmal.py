@@ -38,6 +38,8 @@ class libmal(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
+        'can_score': True,
+        'can_status': True,
         'can_update': True,
         'can_play': True,
         'statuses':  [1, 2, 3, 4, 6],
@@ -45,7 +47,9 @@ class libmal(lib.lib):
     }
     mediatypes['manga'] = {
         'has_progress': True,
-        'can_update': False,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
         'can_play': False,
         'statuses': [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },

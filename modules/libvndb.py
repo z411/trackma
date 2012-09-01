@@ -27,11 +27,13 @@ class libvndb(lib.lib):
     """
     name = 'libvndb'
     
-    api_info =  { 'name': 'vndb', 'version': 'v0.1' }
+    api_info =  { 'name': 'VNDB', 'version': 'v0.1' }
     
     mediatypes = dict()
     mediatypes['vn'] = {
         'has_progress': False,
+        'can_score': False,
+        'can_status': False,
         'can_update': False,
         'can_play': False,
         'statuses':  [1, 2, 3, 4, 6],

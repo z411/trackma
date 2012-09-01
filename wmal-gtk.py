@@ -341,6 +341,7 @@ class wmal_gtk(object):
         
         gtk.threads_enter()
         self.build_list()
+        self.main.set_title('wMAL-gtk v0.1 [%s]' % self.engine.api_info['name'])
         gtk.threads_leave()
         
         self.status("Ready.")

@@ -167,6 +167,10 @@ class Engine:
         newep: The progress number to update the show to
 
         """
+        # Check if operation is supported by the API
+        if not self.mediainfo['can_update']:
+            raise utils.EngineError('Operation not supported by API.')
+        
         # Check for the episode number
         try:
             newep = int(newep)
@@ -198,6 +202,10 @@ class Engine:
         newscore: The score number to update the show to
         
         """
+        # Check if operation is supported by the API
+        if not self.mediainfo['can_score']:
+            raise utils.EngineError('Operation not supported by API.')
+        
         # Check for the correctness of the score
         try:
             newscore = int(newscore)
@@ -229,6 +237,9 @@ class Engine:
         newstatus: The status number to update the show to
 
         """
+        # Check if operation is supported by the API
+        if not self.mediainfo['can_status']:
+            raise utils.EngineError('Operation not supported by API.')
         
         # Check for the correctness of the score
         try:
@@ -261,6 +272,10 @@ class Engine:
 
 
         """
+        # Check if operation is supported by the API
+        if not self.mediainfo['can_play']:
+            raise utils.EngineError('Operation not supported by API.')
+            
         if show:
             searchfile = show['title']
             searchfile = searchfile.replace(',', ',?')
