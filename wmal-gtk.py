@@ -45,8 +45,6 @@ class wmal_gtk(object):
     def main(self):
         # Create engine
         self.engine = engine.Engine()
-        statuses_nums = self.engine.mediainfo['statuses']
-        statuses_names = self.engine.mediainfo['statuses_dict']
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
@@ -66,9 +64,21 @@ class wmal_gtk(object):
         mb_options = gtk.Menu()
         mb_sync = gtk.MenuItem("Sync")
         mb_sync.connect("activate", self.do_sync)
+        
+        self.mb_api_menu = gtk.Menu()
+        mb_api = gtk.MenuItem("API")
+        mb_api.set_submenu(self.mb_api_menu)
+        
+        self.mb_mediatype_menu = gtk.Menu()
+        mb_mediatype = gtk.MenuItem("Mediatype")
+        mb_mediatype.set_submenu(self.mb_mediatype_menu)
+        
         mb_about = gtk.MenuItem("About")
         mb_about.connect("activate", self.on_about)
+        
         mb_options.append(mb_sync)
+        mb_options.append(mb_api)
+        mb_options.append(mb_mediatype)
         mb_options.append(mb_about)
         
         # Root menubar
@@ -162,8 +172,6 @@ class wmal_gtk(object):
         line4.pack_start(line4_t, False, False, 0)
         
         self.statusmodel = gtk.ListStore(int, str)
-        for status in statuses_nums:
-            self.statusmodel.append([status, statuses_names[status]])
             
         self.statusbox = gtk.ComboBox(self.statusmodel)
         cell = gtk.CellRendererText()
@@ -182,26 +190,17 @@ class wmal_gtk(object):
         top_hbox.pack_start(top_right_box, True, True, 0)
         vbox.pack_start(top_hbox, False, False, 0)
         
-        # Create lists
+        # Notebook for lists
         self.notebook = gtk.Notebook()
         self.notebook.set_tab_pos(gtk.POS_TOP)
         self.notebook.set_scrollable(True)
         self.notebook.set_border_width(3)
         
-        for status in statuses_nums:
-            name = statuses_names[status]
-            
-            sw = gtk.ScrolledWindow()
-            sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-            sw.set_size_request(550, 300)
-            sw.set_border_width(5)
-        
-            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
-            self.show_lists[status].get_selection().connect("changed", self.select_show);
-            self.show_lists[status].pagenumber = self.notebook.get_n_pages()
-            sw.add(self.show_lists[status])
-            
-            self.notebook.append_page(sw, gtk.Label(name))
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.set_size_request(550, 300)
+        sw.set_border_width(5)
+        self.notebook.append_page(sw, gtk.Label("Status"))
         
         vbox.pack_start(self.notebook, True, True, 0)
 
@@ -218,7 +217,39 @@ class wmal_gtk(object):
         self.start_engine()
         
         gtk.main()
+    
+    def _create_lists(self):
+        statuses_nums = self.engine.mediainfo['statuses']
+        statuses_names = self.engine.mediainfo['statuses_dict']
         
+        # Statusbox
+        self.statusmodel.clear()
+        for status in statuses_nums:
+            self.statusmodel.append([status, statuses_names[status]])
+        self.statusbox.set_model(self.statusmodel)
+        self.statusbox.show_all()
+        
+        # Clear notebook
+        for i in xrange(self.notebook.get_n_pages()):
+            self.notebook.remove_page(-1)
+        
+        # Insert pages
+        for status in statuses_nums:
+            name = statuses_names[status]
+            
+            sw = gtk.ScrolledWindow()
+            sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+            sw.set_size_request(550, 300)
+            sw.set_border_width(5)
+        
+            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
+            self.show_lists[status].get_selection().connect("changed", self.select_show);
+            self.show_lists[status].pagenumber = self.notebook.get_n_pages()
+            sw.add(self.show_lists[status])
+            
+            self.notebook.append_page(sw, gtk.Label(name))
+            self.notebook.show_all()
+    
     def on_destroy(self, widget):
         gtk.main_quit()
     
@@ -227,6 +258,9 @@ class wmal_gtk(object):
             self.close_thread = threading.Thread(target=self.task_unload).start()
         return True
     
+    def do_reload(self, widget, api, mediatype):
+        threading.Thread(target=self.task_reload, args=[api, mediatype]).start()
+        
     def do_play(self, widget):
         threading.Thread(target=self.task_play).start()
     
@@ -337,16 +371,45 @@ class wmal_gtk(object):
         threading.Thread(target=self.task_start_engine).start()
     
     def task_start_engine(self):
-        self.engine.start()
+        if not self.engine.loaded:
+            self.engine.start()
         
         gtk.threads_enter()
+        self._create_lists()
         self.build_list()
-        self.main.set_title('wMAL-gtk v0.1 [%s]' % self.engine.api_info['name'])
+        self.main.set_title('wMAL-gtk v0.1 [%s (%s)]' % (self.engine.api_info['name'], self.engine.api_info['mediatype']))
+        
+        # Clear and build API and mediatypes menus
+        for i in self.mb_api_menu.get_children():
+            self.mb_api_menu.remove(i)
+        for i in self.mb_mediatype_menu.get_children():
+            self.mb_mediatype_menu.remove(i)
+        
+        for api in self.engine.config.keys():
+            if api != 'main':
+                item = gtk.MenuItem(api)
+                item.connect("activate", self.do_reload, api, None)
+                self.mb_api_menu.append(item)
+                item.show()
+        for mediatype in self.engine.api_info['supported_mediatypes']:
+            item = gtk.MenuItem(mediatype)
+            item.connect("activate", self.do_reload, None, mediatype)
+            self.mb_mediatype_menu.append(item)
+            item.show()
         gtk.threads_leave()
         
         self.status("Ready.")
         self.allow_buttons(True)
     
+    def task_reload(self, api, mediatype):
+        try:
+            self.engine.reload(api=api, mediatype=mediatype)
+        except utils.wmalError, e:
+            self.error(e.message)
+        
+        # Refresh the GUI
+        self.task_start_engine()
+        
     def select_show(self, widget):
         print "select show"
         
@@ -391,7 +454,7 @@ class wmal_gtk(object):
         # Image
         if show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%d.jpg" % show['id'])
+            filename = utils.get_filename('cache', "%s_%d.jpg" % (self.engine.config['main']['api'], show['id']))
             
             if os.path.isfile(filename):
                 self.show_image.set_from_file(filename)

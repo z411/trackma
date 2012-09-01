@@ -36,6 +36,7 @@ class Engine:
     data_handler = None
     config = dict()
     msg = None
+    loaded = False
     
     name = 'Engine'
     
@@ -79,6 +80,9 @@ class Engine:
         This function should be called before doing anything with the engine,
         as it initializes the data handler.
         """
+        if self.loaded:
+            raise utils.wmalError("Already loaded.")
+        
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
@@ -87,6 +91,7 @@ class Engine:
         except utils.APIError, e:
             raise utils.APIFatal(e.message)
         
+        self.loaded = True
         return True
     
     def unload(self):
@@ -98,13 +103,19 @@ class Engine:
         procedures to close the data handler and then itself.
         
         """
+        #if not self.loaded:
+        #    raise utils.wmalError("Engine is not loaded.")
+        
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
+        self.loaded = False
     
     def reload(self, api=None, mediatype=None):
-        """Changes the API and/or mediatype and reloads itself"""
+        """Changes the API and/or mediatype and reloads itself."""
+        if not self.loaded:
+            raise utils.wmalError("Engine is not loaded.")
+        
         to_api = self.config['main']['api']
-        to_mediatype = self.api_info['mediatype']
         
         if api:
             if api in self.config.keys():
@@ -113,7 +124,9 @@ class Engine:
                 raise wmal.EngineError('Unsupported API.')
         if mediatype:
             to_mediatype = mediatype
-        
+        else:
+            to_mediatype = self.config[to_api]['mediatype']
+            
         self.unload()
         self.config['main']['api'] = to_api
         self.config[to_api]['mediatype'] = to_mediatype
