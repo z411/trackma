@@ -11,6 +11,12 @@ Aditionally it can search for a specified folder for the next episode
 you have to watch and it starts your media player of choice automatically.
 It also updates the episode automatically whenever the media player is closed.
 
+REQUIREMENTS
+============
+- Tested with Python 2.7, but it should work in 2.6 too.
+- (Optional) Urwid (python-urwid) for the curses/urwid interface.
+- (Optional) PyGTK (python-gtk2) for the GTK interface.
+
 USAGE
 =====
 Start the program by running any of the available interfaces:

@@ -18,7 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import urwid.curses_display
+try:
+    import urwid.curses_display
+except ImportError:
+    pass
+
 import urwid
 
 import modules.engine as engine
