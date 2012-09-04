@@ -95,11 +95,7 @@ class wMAL_urwid(object):
         self.mainloop.set_alarm_in(0, self.start)
         self.mainloop.run()
     
-    def start(self, loop, data):
-        """Starts the engine"""
-        self.engine = engine.Engine(self.message_handler)
-        self.engine.start()
-        
+    def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
@@ -108,10 +104,17 @@ class wMAL_urwid(object):
         self.cur_filter = self.filters_iter.next()
         print self.cur_filter
         
+        self.clear_list()
         self.build_list()
         
         self.status('Ready.')
-    
+        
+    def start(self, loop, data):
+        """Starts the engine"""
+        self.engine = engine.Engine(self.message_handler)
+        self.engine.start()
+        self._rebuild()
+        
     def clear_list(self):
         try:
             while self.listwalker.pop():
@@ -150,6 +153,8 @@ class wMAL_urwid(object):
             self.do_score()
         elif input == 'f10':
             self.do_sync()
+        elif input == 'f11':
+            self.do_reload()
         elif input == 'f12':
             self.do_quit()
 
@@ -224,6 +229,36 @@ class wMAL_urwid(object):
         self.dialog = Dialog(pile, self.mainloop, width=22)
         self.dialog.show()
         
+    def do_reload(self):
+        # Create a list of buttons to select the API
+        rb_apis = []
+        apis = []
+        for api in self.engine.config.keys():
+            if api != "main":
+                but = urwid.RadioButton(rb_apis, api)
+                # Make it selected if it's the current API
+                if self.engine.config['main']['api'] == api:
+                    but.set_state(True)
+                urwid.connect_signal(but, 'change', self.reload_request, [api, None])
+                apis.append(urwid.AttrWrap(but, 'button', 'button hilight'))
+        api = urwid.Columns([urwid.Text('API:'), urwid.Pile(apis)])
+        
+        # Create a list of buttons to select the mediatype
+        rb_mt = []
+        mediatypes = []
+        for mediatype in self.engine.api_info['supported_mediatypes']:
+            but = urwid.RadioButton(rb_mt, mediatype)
+            # Make it selected if it's the current mediatype
+            if self.engine.api_info['mediatype'] == mediatype:
+                but.set_state(True)
+            urwid.connect_signal(but, 'change', self.reload_request, [None, mediatype])
+            mediatypes.append(urwid.AttrWrap(but, 'button', 'button hilight'))
+        mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
+        
+        main_pile = urwid.Pile([mediatype, api])
+        self.dialog = Dialog(main_pile, self.mainloop, width=30)
+        self.dialog.show()
+        
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
@@ -245,7 +280,13 @@ class wMAL_urwid(object):
             self.header_filter.set_text("Filter:%s" % self.filters[self.cur_filter])
             self.clear_list()
             self.build_list()
-            
+    
+    def reload_request(self, widget, selected, data):
+        if selected:
+            self.dialog.close()
+            self.engine.reload(data[0], data[1])
+            self._rebuild()
+        
     def update_request(self, data):
         self.ask_finish(self.update_request)
         if data:

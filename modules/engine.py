@@ -121,7 +121,7 @@ class Engine:
             if api in self.config.keys():
                 to_api = api
             else:
-                raise wmal.EngineError('Unsupported API.')
+                raise utils.EngineError('Unsupported API: %s' % api)
         if mediatype:
             to_mediatype = mediatype
         else:
