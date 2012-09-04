@@ -580,8 +580,8 @@ class ShowView(gtk.TreeView):
         self.has_progress = has_progress
         self.status_filter = status
         
-        self.enable_search = True
-        self.search_column = 2
+        self.set_enable_search(True)
+        self.set_search_column(1)
         
         self.cols = dict()
         i = 0
