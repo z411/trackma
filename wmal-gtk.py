@@ -56,7 +56,7 @@ class wmal_gtk(object):
         mb_show = gtk.Menu()
         mb_play = gtk.MenuItem("Play")
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        mb_exit.connect("activate", self.on_destroy)
+        mb_exit.connect("activate", self.delete_event, None)
         mb_show.append(mb_play)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(mb_exit)
@@ -387,14 +387,14 @@ class wmal_gtk(object):
         
         for api in self.engine.config.keys():
             if api != 'main':
-                item = gtk.CheckMenuItem(api)
+                item = gtk.RadioMenuItem(None, api)
                 if api == self.engine.config['main']['api']:
                     item.set_active(True)   # This signals 'activate' so beware
                 item.connect("activate", self.do_reload, api, None)
                 self.mb_api_menu.append(item)
                 item.show()
         for mediatype in self.engine.api_info['supported_mediatypes']:
-            item = gtk.CheckMenuItem(mediatype)
+            item = gtk.RadioMenuItem(None, mediatype)
             if mediatype == self.engine.api_info['mediatype']:
                 item.set_active(True)
             item.connect("activate", self.do_reload, None, mediatype)
