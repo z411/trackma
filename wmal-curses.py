@@ -85,7 +85,7 @@ class wMAL_urwid(object):
                 ('fixed', 7, urwid.Text('Score')),
             ]), 'header')
         
-        self.listwalker = urwid.SimpleListWalker([])
+        self.listwalker = ShowWalker([])
         self.listbox = urwid.ListBox(self.listwalker)
         self.listframe = urwid.Frame(self.listbox, header=self.listheader)
             
@@ -111,7 +111,12 @@ class wMAL_urwid(object):
         
     def start(self, loop, data):
         """Starts the engine"""
+        # Engine configuration
         self.engine = engine.Engine(self.message_handler)
+        self.engine.connect_signal('episode_changed', self.changed_show)
+        self.engine.connect_signal('score_changed', self.changed_show)
+        self.engine.connect_signal('status_changed', self.changed_show_status)
+        # Engine start and list rebuild
         self.engine.start()
         self._rebuild()
         
@@ -273,13 +278,6 @@ class wMAL_urwid(object):
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
-            
-            item.update(show)
-            
-            self.cur_filter = show['my_status']
-            self.header_filter.set_text("Filter:%s" % self.filters[self.cur_filter])
-            self.clear_list()
-            self.build_list()
     
     def reload_request(self, widget, selected, data):
         if selected:
@@ -297,8 +295,6 @@ class wMAL_urwid(object):
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
-            
-            item.update(show)
     
     def score_request(self, data):
         self.ask_finish(self.score_request)
@@ -310,8 +306,6 @@ class wMAL_urwid(object):
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
-            
-            item.update(show)
     
     def play_request(self, data):
         self.ask_finish(self.play_request)
@@ -342,10 +336,21 @@ class wMAL_urwid(object):
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
-            
-            item.update(show)
         else:
             self.status('Ready.')
+    
+    def changed_show(self, show):
+        self.listwalker.update_show(show)
+    
+    def changed_show_status(self, show):
+        self.listwalker.update_show(show)
+        
+        self.cur_filter = show['my_status']
+        self.header_filter.set_text("Filter:%s" % self.filters[self.cur_filter])
+        self.clear_list()
+        self.build_list()
+        
+        self.listwalker.select_show(show)
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
@@ -381,9 +386,23 @@ class Dialog(urwid.Overlay):
         elif key == 'esc':
             self.close()
         
+class ShowWalker(urwid.SimpleListWalker):
+    def _get_showitem(self, showid):
+        for i, item in enumerate(self):
+            if showid == item.showid:
+                return (i, item)
+        raise Exception('Show not found in ShowWalker.')
+    
+    def update_show(self, show):
+        (position, showitem) = self._get_showitem(show['id'])
+        showitem.update(show)
+    
+    def select_show(self, show):
+        (position, showitem) = self._get_showitem(show['id'])
+        self.set_focus(position)
     
 class ShowItem(urwid.WidgetWrap):
-    def __init__ (self, show, has_progress=True):
+    def __init__(self, show, has_progress=True):
         if has_progress:
             self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         else:

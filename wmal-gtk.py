@@ -207,7 +207,12 @@ class wmal_gtk(object):
         self.statusbar = gtk.Statusbar()
         self.statusbar.push(0, 'wMAL-gtk v0.1')
         vbox.pack_start(self.statusbar, False, False, 0)
+        
+        # Engine configuration
         self.engine.set_message_handler(self.message_handler)
+        self.engine.connect_signal('episode_changed', self.changed_show)
+        self.engine.connect_signal('score_changed', self.changed_show)
+        self.engine.connect_signal('status_changed', self.changed_show_status)
         
         self.selected_show = 0
         
@@ -268,8 +273,6 @@ class wmal_gtk(object):
         ep = self.show_ep_num.get_value_as_int()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
-            status = show['my_status']
-            self.show_lists[status].update(show)
         except utils.wmalError, e:
             self.error(e.message)
     
@@ -277,8 +280,6 @@ class wmal_gtk(object):
         score = self.show_score.get_value_as_int()
         try:
             show = self.engine.set_score(self.selected_show, score)
-            status = show['my_status']
-            self.show_lists[status].update(show)
         except utils.wmalError, e:
             self.error(e.message)
             
@@ -288,17 +289,6 @@ class wmal_gtk(object):
         
         try:
             show = self.engine.set_status(self.selected_show, status)
-            
-            # Rebuild lists
-            self.build_list()
-            
-            status = show['my_status']
-            self.show_lists[status].update(show)
-            
-            pagenumber = self.show_lists[status].pagenumber
-            self.notebook.set_current_page(pagenumber)
-            
-            self.show_lists[status].select(show)
         except utils.wmalError, e:
             self.error(e.message)
     
@@ -306,6 +296,22 @@ class wmal_gtk(object):
         # Thread safe
         gobject.idle_add(self.task_update_next, show, played_ep)
     
+    def changed_show(self, show):
+        status = show['my_status']
+        self.show_lists[status].update(show)
+    
+    def changed_show_status(self, show):
+        # Rebuild lists
+        self.build_list()
+        
+        status = show['my_status']
+        self.show_lists[status].update(show)
+        
+        pagenumber = self.show_lists[status].pagenumber
+        self.notebook.set_current_page(pagenumber)
+        
+        self.show_lists[status].select(show)
+            
     def task_update_next(self, show, played_ep):
         dialog = gtk.MessageDialog(self.main,
                     gtk.DIALOG_MODAL,

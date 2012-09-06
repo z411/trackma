@@ -40,6 +40,10 @@ class Engine:
     
     name = 'Engine'
     
+    signals = { 'episode_updated':  None,
+                'score_updated':    None,
+                'status_updated':   None, }
+    
     def __init__(self, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
@@ -68,6 +72,16 @@ class Engine:
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
+    def _emit_signal(self, signal, args=None):
+        if self.signals.get(signal):
+            self.signals[signal](args)
+    
+    def connect_signal(self, signal, callback):
+        try:
+            self.signals[signal] = callback
+        except KeyError:
+            raise utils.EngineFatal("Invalid signal.")
+        
     def set_message_handler(self, message_handler):
         """Changes the data handler even after the class initialization."""
         self.msg = messenger.Messenger(message_handler)
@@ -224,6 +238,9 @@ class Engine:
         self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
         self.data_handler.queue_update(show, 'my_progress', newep)
         
+        # Emit signal
+        self._emit_signal('episode_changed', show)
+        
         return show
     
     def set_score(self, show_pattern, newscore):
@@ -259,6 +276,9 @@ class Engine:
         self.msg.info(self.name, "Updating show %s to score %d..." % (show['title'], newscore))
         self.data_handler.queue_update(show, 'my_score', newscore)
         
+        # Emit signal
+        self._emit_signal('score_changed', show)
+        
         return show
     
     def set_status(self, show_pattern, newstatus):
@@ -292,6 +312,9 @@ class Engine:
         # Change score
         self.msg.info(self.name, "Updating show %s status to %s..." % (show['title'], _statuses[newstatus]))
         self.data_handler.queue_update(show, 'my_status', newstatus)
+        
+        # Emit signal
+        self._emit_signal('status_changed', show)
         
         return show
     
