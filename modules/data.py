@@ -150,7 +150,7 @@ class Data(object):
         
         # Add to the list
         if self.showlist.get(showid):
-            raise wmal.DataError("Show already in the list.")
+            raise utils.DataError("Show already in the list.")
         
         self.showlist[showid] = show
         
@@ -159,7 +159,7 @@ class Data(object):
         for q in self.queue:
             if q['id'] == showid and q['action'] == 'add':
                 # This shouldn't happen
-                raise wmal.DataError("Show already in the queue.")
+                raise utils.DataError("Show already in the queue.")
         
         if not exists:
             # Use the whole show as a queue item
@@ -169,7 +169,7 @@ class Data(object):
         
         self._save_queue()
         self._save_cache()
-        self.msg.info(self.name, "Queued update for %s" % show['title'])
+        self.msg.info(self.name, "Queued add for %s" % show['title'])
         
     def queue_update(self, show, key, value):
         """

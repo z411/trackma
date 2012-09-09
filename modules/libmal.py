@@ -157,6 +157,8 @@ class libmal(lib.lib):
             raise utils.APIError('Error updating: ' + str(e.code))
     
     def search(self, criteria):
+        self.msg.info(self.name, "Searching for %s..." % criteria)
+        
         # Send the urlencoded query to the search API
         query = urllib.urlencode({'q': criteria})
         response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
@@ -175,7 +177,7 @@ class libmal(lib.lib):
                 'my_score':     0,
                 'type':         child.find('type').text,
                 'status':       child.find('status').text, # TODO : This should return an int!
-                'total':        child.find('episodes').text,
+                'total':        int(child.find('episodes').text),
                 'image':        child.find('image').text,
             }
             entries.append(show)

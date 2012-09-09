@@ -35,6 +35,116 @@ import modules.messenger as messenger
 import modules.engine as engine
 import modules.utils as utils
 
+class ShowSearch(gtk.Window):
+    def __init__(self, engine):
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        
+        self.engine = engine
+        
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Search')
+        self.set_border_width(5)
+        
+        vbox = gtk.VBox(False, 5)
+        
+        searchbar = gtk.HBox(False, 5)
+        searchbar.pack_start(gtk.Label('Search'), False, False, 0)
+        self.searchtext = gtk.Entry(100)
+        searchbar.pack_start(self.searchtext, True, True, 0)
+        self.search_button = gtk.Button('Search')
+        self.search_button.connect("clicked", self.do_search)
+        searchbar.pack_start(self.search_button, False, False, 0)
+        
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.set_size_request(550, 300)
+        
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
+        self.add_button.connect("clicked", self.do_add)
+        self.add_button.set_sensitive(False)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        bottombar.pack_start(self.add_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        self.showlist = ShowSearchView()
+        self.showlist.get_selection().connect("changed", self.select_show);
+        
+        sw.add(self.showlist)
+        
+        vbox.pack_start(searchbar, False, False, 0)
+        vbox.pack_start(sw, True, True, 0)
+        vbox.pack_start(alignment, False, False, 0)
+        self.add(vbox)
+    
+    def do_add(self, widget):
+        # Get show dictionary
+        show = None
+        for item in self.entries:
+            if item['id'] == self.selected_show:
+                show = item
+                break
+        
+        if show is not None:
+            try:
+                self.engine.add_show(show)
+                self.do_close()
+            except utils.wmalError, e:
+                self.error_push(e.message)
+        
+    def do_search(self, widget):
+        threading.Thread(target=self.task_search).start()
+    
+    def do_close(self, widget=None):
+        self.destroy()
+    
+    def select_show(self, widget):
+        # Get selected show ID
+        (tree_model, tree_iter) = widget.get_selected()
+        if not tree_iter:
+            print "Unselected show"
+            self.allow_buttons_push(False, lists_too=False)
+            return
+        
+        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.add_button.set_sensitive(True)
+        
+    def task_search(self):
+        self.allow_buttons(False)
+        self.entries = self.engine.search(self.searchtext.get_text())
+        
+        gtk.threads_enter()
+        self.showlist.append_start()
+        for show in self.entries:
+            self.showlist.append(show)
+        self.showlist.append_finish()
+        gtk.threads_leave()
+        
+        self.allow_buttons(True)
+        self.add_button.set_sensitive(False)
+    
+    def allow_buttons_push(self, boolean):
+        self.search_button.set_sensitive(boolean)
+        
+    def allow_buttons(self, boolean):
+        # Thread safe
+        gobject.idle_add(self.allow_buttons_push, boolean)
+    
+    def error(self, msg):
+        # Thread safe
+        gobject.idle_add(self.error_push, msg)
+        
+    def error_push(self, msg):
+        dialog = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
+        dialog.show_all()
+        dialog.connect("response", self.modal_close)
+    
+    def modal_close(self, widget, response_id):
+        widget.destroy()
+    
 class wmal_gtk(object):
     engine = None
     show_lists = dict()
@@ -62,6 +172,8 @@ class wmal_gtk(object):
         mb_show.append(mb_exit)
         
         mb_options = gtk.Menu()
+        mb_addsearch = gtk.MenuItem("Add/Search Shows")
+        mb_addsearch.connect("activate", self.do_addsearch)
         mb_sync = gtk.MenuItem("Sync")
         mb_sync.connect("activate", self.do_sync)
         
@@ -76,6 +188,7 @@ class wmal_gtk(object):
         mb_about = gtk.MenuItem("About")
         mb_about.connect("activate", self.on_about)
         
+        mb_options.append(mb_addsearch)
         mb_options.append(mb_sync)
         mb_options.append(mb_api)
         mb_options.append(mb_mediatype)
@@ -213,6 +326,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
+        self.engine.connect_signal('show_added', self.changed_show_status)
         
         self.selected_show = 0
         
@@ -263,6 +377,10 @@ class wmal_gtk(object):
             self.close_thread = threading.Thread(target=self.task_unload).start()
         return True
     
+    def do_addsearch(self, widget):
+        win = ShowSearch(self.engine)
+        win.show_all()
+        
     def do_reload(self, widget, api, mediatype):
         threading.Thread(target=self.task_reload, args=[api, mediatype]).start()
         
@@ -683,6 +801,57 @@ class ShowView(gtk.TreeView):
                 selection.select_iter(row.iter)
                 break
 
+class ShowSearchView(gtk.TreeView):
+    def __init__(self):
+        gtk.TreeView.__init__(self)
+    
+        self.cols = dict()
+        i = 0
+        for name in ('ID', 'Title', 'Type', 'Total'):
+            self.cols[name] = gtk.TreeViewColumn(name)
+            self.cols[name].set_sort_column_id(i)
+            self.append_column(self.cols[name])
+            i += 1
+        
+        renderer_id = gtk.CellRendererText()
+        self.cols['ID'].pack_start(renderer_id, False)
+        self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        
+        renderer_title = gtk.CellRendererText()
+        self.cols['Title'].pack_start(renderer_title, False)
+        self.cols['Title'].set_resizable(True)
+        #self.cols['Title'].set_expand(True)
+        self.cols['Title'].add_attribute(renderer_title, 'text', 1)
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 4)
+        
+        renderer_type = gtk.CellRendererText()
+        self.cols['Type'].pack_start(renderer_type, False)
+        self.cols['Type'].add_attribute(renderer_type, 'text', 2)
+        
+        renderer_total = gtk.CellRendererText()
+        self.cols['Total'].pack_start(renderer_total, False)
+        self.cols['Total'].add_attribute(renderer_total, 'text', 3)
+        
+        self.store = gtk.ListStore(str, str, str, str, str)
+        self.set_model(self.store)
+    
+    def append_start(self):
+        self.freeze_child_notify()
+        self.store.clear()
+        
+    def append(self, show):
+        if show['status'] == 'Currently Airing':
+            color = 'blue'
+        else:
+            color = 'black'
+        
+        row = [show['id'], show['title'], show['type'], show['total'], color]
+        self.store.append(row)
+        
+    def append_finish(self):
+        self.thaw_child_notify()
+        self.store.set_sort_column_id(1, gtk.SORT_ASCENDING)
+    
 if __name__ == '__main__':
     app = wmal_gtk()
     try:
