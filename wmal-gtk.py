@@ -164,18 +164,21 @@ class wmal_gtk(object):
         
         # Menus
         mb_show = gtk.Menu()
-        mb_play = gtk.MenuItem("Play")
+        mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
         mb_exit.connect("activate", self.delete_event, None)
         mb_show.append(mb_play)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(mb_exit)
         
-        mb_options = gtk.Menu()
+        mb_list = gtk.Menu()
         mb_addsearch = gtk.MenuItem("Add/Search Shows")
         mb_addsearch.connect("activate", self.do_addsearch)
-        mb_sync = gtk.MenuItem("Sync")
+        gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
+        mb_sync = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
         mb_sync.connect("activate", self.do_sync)
+        
+        mb_options = gtk.Menu()
         
         self.mb_api_menu = gtk.Menu()
         mb_api = gtk.MenuItem("API")
@@ -185,11 +188,11 @@ class wmal_gtk(object):
         mb_mediatype = gtk.MenuItem("Mediatype")
         mb_mediatype.set_submenu(self.mb_mediatype_menu)
         
-        mb_about = gtk.MenuItem("About")
+        mb_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
         mb_about.connect("activate", self.on_about)
         
-        mb_options.append(mb_addsearch)
-        mb_options.append(mb_sync)
+        mb_list.append(mb_addsearch)
+        mb_list.append(mb_sync)
         mb_options.append(mb_api)
         mb_options.append(mb_mediatype)
         mb_options.append(mb_about)
@@ -197,11 +200,14 @@ class wmal_gtk(object):
         # Root menubar
         root_menu1 = gtk.MenuItem("Show")
         root_menu1.set_submenu(mb_show)
-        root_menu2 = gtk.MenuItem("Options")
-        root_menu2.set_submenu(mb_options)
+        root_menu2 = gtk.MenuItem("List")
+        root_menu2.set_submenu(mb_list)
+        root_menu3 = gtk.MenuItem("Options")
+        root_menu3.set_submenu(mb_options)
         mb = gtk.MenuBar()
         mb.append(root_menu1)
         mb.append(root_menu2)
+        mb.append(root_menu3)
         
         # Create vertical box
         vbox = gtk.VBox(False, 6)
