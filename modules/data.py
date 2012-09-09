@@ -132,6 +132,45 @@ class Data(object):
         """Get list from memory"""
         return self.showlist
     
+    def search(self, criteria):
+        # Tell API to search
+        return self.api.search(criteria)
+       
+    def queue_add(self, show):
+        """
+        Queues a show add
+        
+        Calls this to add a show to the list, and the remote add
+        will be queued.
+        
+        show: Show dictionary
+        
+        """
+        showid = show['id']
+        
+        # Add to the list
+        if self.showlist.get(showid):
+            raise wmal.DataError("Show already in the list.")
+        
+        self.showlist[showid] = show
+        
+        # Check if the show add is already in queue
+        exists = False
+        for q in self.queue:
+            if q['id'] == showid and q['action'] == 'add':
+                # This shouldn't happen
+                raise wmal.DataError("Show already in the queue.")
+        
+        if not exists:
+            # Use the whole show as a queue item
+            item = show
+            item['action'] = 'add'
+            self.queue.append(item)
+        
+        self._save_queue()
+        self._save_cache()
+        self.msg.info(self.name, "Queued update for %s" % show['title'])
+        
     def queue_update(self, show, key, value):
         """
         Queues a show update
@@ -149,10 +188,10 @@ class Data(object):
         # Do update on memory
         show[key] = value
         
-        # Check if the show is already in queue
+        # Check if the show update is already in queue
         exists = False
         for q in self.queue:
-            if q['id'] == show['id']:
+            if q['id'] == show['id'] and q['action'] == 'update':
                 # Add the changed value to the already existing queue item
                 q[key] = value
                 exists = True
@@ -160,13 +199,13 @@ class Data(object):
             
         if not exists:
             # Create queue item and append it
-            item = {'id': show['id'], 'title': show['title']}
+            item = {'id': show['id'], 'action': 'update', 'title': show['title']}
             item[key] = value
             self.queue.append(item)
         
-        self.msg.info(self.name, "Queued update for %s" % show['title'])
         self._save_queue()
         self._save_cache()
+        self.msg.info(self.name, "Queued update for %s" % show['title'])
     
     def queue_clear(self):
         """Clears the queue completely."""
@@ -199,7 +238,16 @@ class Data(object):
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
                 try:
-                    self.api.update_show(show)
+                    # Call the API to do the requested operation
+                    operation = show.get('action')
+                    if operation == 'add':
+                        self.api.add_show(show)
+                    elif operation == 'update':
+                        self.api.update_show(show)
+                    elif operation == 'delete':
+                        self.api.delete_show(show)
+                    else:
+                        self.msg.warn(self.name, "Unknown operation in queue, skipping...")
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)

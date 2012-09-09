@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # This file is part of wMAL.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,6 +19,7 @@
 import lib
 import urllib, urllib2
 import xml.etree.ElementTree as ET
+from cStringIO  import StringIO
 
 import utils
 
@@ -38,6 +41,7 @@ class libmal(lib.lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
+        'can_add': True,
         'can_score': True,
         'can_status': True,
         'can_update': True,
@@ -68,6 +72,19 @@ class libmal(lib.lib):
         self.opener = urllib2.build_opener(self.handler)
         
         urllib2.install_opener(self.opener)
+        
+    def _make_parser(self):
+        # For some reason MAL returns an XML file with HTML exclusive
+        # entities like &aacute;, so we have to create a custom XMLParser
+        # to convert these entities correctly.
+        parser = ET.XMLParser()
+        parser.parser.UseForeignDTD(True)
+        parser.entity['aacute'] = 'á'
+        parser.entity['eacute'] = 'é'
+        parser.entity['iacute'] = 'í'
+        parser.entity['oacute'] = 'ó'
+        parser.entity['uacute'] = 'ú'
+        return parser
     
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -91,10 +108,11 @@ class libmal(lib.lib):
         try:
             # Get an XML list from MyAnimeList API
             response = self.opener.open("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
-            data = response.read()
+            data = StringIO(response.read())
             
             # Load data from the XML into a parsed dictionary
-            root = ET.fromstring(data)
+            root = ET.ElementTree().parse(data, parser=self._make_parser())
+            
             if self.mediatype == 'anime':
                 self.msg.info(self.name, 'Parsing anime list...')
                 return self._parse_anime(root)
@@ -106,10 +124,104 @@ class libmal(lib.lib):
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
     
+    def add_show(self, item):
+        """Adds a show in the server"""
+        self.check_credentials()
+        self.msg.info(self.name, "Adding show %s..." % item['title'])
+        
+        xml = self._build_xml(item)
+        
+        # Send the XML as POST data to the MyAnimeList API
+        values = {'data': xml}
+        data = urllib.urlencode(values)
+        try:
+            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/add/"+str(item['id'])+".xml", data)
+            return True
+        except urllib2.HTTPError, e:
+            raise utils.APIError('Error adding: ' + str(e.code))
+        
     def update_show(self, item):
         """Sends a show update to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
+        
+        xml = self._build_xml(item)
+        
+        # Send the XML as POST data to the MyAnimeList API
+        values = {'data': xml}
+        data = urllib.urlencode(values)
+        try:
+            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/update/"+str(item['id'])+".xml", data)
+            return True
+        except urllib2.HTTPError, e:
+            raise utils.APIError('Error updating: ' + str(e.code))
+    
+    def search(self, criteria):
+        # Send the urlencoded query to the search API
+        query = urllib.urlencode({'q': criteria})
+        response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
+        data = StringIO(response.read())
+        
+        # Load the results into XML
+        root = ET.ElementTree().parse(data, parser=self._make_parser())
+        
+        entries = list()
+        for child in root.iter('entry'):
+            show = {
+                'id':           int(child.find('id').text),
+                'title':        child.find('title').text.encode('utf-8'),
+                'my_progress':  0,
+                'my_status':    1,
+                'my_score':     0,
+                'type':         child.find('type').text,
+                'status':       child.find('status').text, # TODO : This should return an int!
+                'total':        child.find('episodes').text,
+                'image':        child.find('image').text,
+            }
+            entries.append(show)
+        
+        return entries
+        
+    def _parse_anime(self, root):
+        showlist = dict()
+        for child in root.iter('anime'):
+            show_id = int(child.find('series_animedb_id').text)
+            
+            showlist[show_id] = {
+                'id':           show_id,
+                'title':        child.find('series_title').text.encode('utf-8'),
+                'my_progress':  int(child.find('my_watched_episodes').text),
+                'my_status':    int(child.find('my_status').text),
+                'my_score':     int(child.find('my_score').text),
+                'total':     int(child.find('series_episodes').text),
+                'status':       int(child.find('series_status').text),
+                'image':        child.find('series_image').text,
+            }
+        return showlist
+    
+    def _parse_manga(self, root):
+        mangalist = dict()
+        for child in root:
+            if child.tag == 'manga':
+                manga_id = int(child.find('series_mangadb_id').text)
+                
+                mangalist[manga_id] = {
+                    'id':           manga_id,
+                    'title':        child.find('series_title').text.encode('utf-8'),
+                    'my_progress':  int(child.find('my_read_chapters').text),
+                    'my_status':    int(child.find('my_status').text),
+                    'my_score':     int(child.find('my_score').text),
+                    'total':     int(child.find('series_chapters').text),
+                    'status':       int(child.find('series_status').text),
+                    'image':        child.find('series_image').text,
+                }
+        return mangalist
+    
+    def _build_xml(self, item):
+        # Creates an "anime|manga data" XML
+        # More information: 
+        #   http://myanimelist.net/modules.php?go=api#animevalues
+        #   http://myanimelist.net/modules.php?go=api#mangavalues
         
         # Start building XML
         root = ET.Element("entry")
@@ -130,48 +242,5 @@ class libmal(lib.lib):
         if 'my_score' in item.keys():
             status = ET.SubElement(root, "score")
             status.text = str(item['my_score'])
-        
-        # Send the XML as POST data to the MyAnimeList API
-        values = {'data': ET.tostring(root)}
-        data = urllib.urlencode(values)
-        try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/update/"+str(item['id'])+".xml", data)
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError('Error updating: ' + str(e.code))
-    
-    def _parse_anime(self, root):
-        showlist = dict()
-        for child in root:
-            if child.tag == 'anime':
-                show_id = int(child.find('series_animedb_id').text)
-                
-                showlist[show_id] = {
-                    'id':           show_id,
-                    'title':        child.find('series_title').text.encode('utf-8'),
-                    'my_progress':  int(child.find('my_watched_episodes').text),
-                    'my_status':    int(child.find('my_status').text),
-                    'my_score':     int(child.find('my_score').text),
-                    'total':     int(child.find('series_episodes').text),
-                    'status':       int(child.find('series_status').text),
-                    'image':        child.find('series_image').text,
-                }
-        return showlist
-    
-    def _parse_manga(self, root):
-        mangalist = dict()
-        for child in root:
-            if child.tag == 'manga':
-                manga_id = int(child.find('series_mangadb_id').text)
-                
-                mangalist[manga_id] = {
-                    'id':           manga_id,
-                    'title':        child.find('series_title').text.encode('utf-8'),
-                    'my_progress':  int(child.find('my_read_chapters').text),
-                    'my_status':    int(child.find('my_status').text),
-                    'my_score':     int(child.find('my_score').text),
-                    'total':     int(child.find('series_chapters').text),
-                    'status':       int(child.find('series_status').text),
-                    'image':        child.find('series_image').text,
-                }
-        return mangalist
+            
+        return ET.tostring(root)

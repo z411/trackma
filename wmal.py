@@ -129,6 +129,7 @@ class wmal_cmd(cmd.Cmd):
         search - Does a regex search on shows and lists the matches.
         
         Usage: search <pattern>
+        
         """
         if(arg):
             showlist = self.engine.regex_list(arg)
@@ -137,6 +138,40 @@ class wmal_cmd(cmd.Cmd):
         else:
             print "Missing arguments."
     
+    def do_add(self, arg):
+        """
+        add - Searches for a show and adds it
+        
+        Usage: add <pattern>
+        
+        """
+        if(arg):
+            entries = self.engine.search(arg)
+            for i, entry in enumerate(entries, start=1):
+                print "%d: (%s) %s" % (i, entry['type'], entry['title'])
+            do_update = raw_input("Choose show to add (blank to cancel): ")
+            if do_update != '':
+                try:
+                    show = entries[int(do_update)-1]
+                except ValueError:
+                    print "Choice must be numeric."
+                    return
+                except IndexError:
+                    print "Invalid show."
+                    return
+                
+                # Tell the engine to add the show
+                try:
+                    self.engine.add_show(show)
+                except utils.wmalError, e:
+                    self.display_error(e)
+    
+    def do_neweps(self, arg):
+        showlist = self.engine.filter_list(self.filter_num)
+        results = self.engine.get_new_episodes(showlist)
+        for show in results:
+            print show['title']
+        
     def do_play(self, arg):
         if arg:
             try:

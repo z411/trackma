@@ -75,6 +75,9 @@ class lib(object):
         """
         raise NotImplementedError
     
+    def add_show(self, item):
+        raise NotImplementedError
+    
     def update_show(self, item):
         """
         Send the updates of a show to the remote site
@@ -86,6 +89,13 @@ class lib(object):
         """
         raise NotImplementedError
     
+    def delete_show(self, item):
+        raise NotImplementedError
+        
+    def search(self, criteria):
+        # Search for shows
+        raise NotImplementedError
+        
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]

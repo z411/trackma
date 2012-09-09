@@ -40,7 +40,8 @@ class Engine:
     
     name = 'Engine'
     
-    signals = { 'episode_updated':  None,
+    signals = { 'show_added':       None,
+                'episode_updated':  None,
                 'score_updated':    None,
                 'status_updated':   None, }
     
@@ -205,6 +206,38 @@ class Engine:
                     
         return newlist
     
+    def search(self, criteria):
+        """
+        Calls the API to do a search in the remote list
+        
+        This will immediatly call the API and request a list of
+        shows matching the criteria. This is useful to add a show.
+        
+        citeria: Search keyword
+        
+        """
+        return self.data_handler.search(criteria)
+    
+    def add_show(self, show):
+        """
+        Adds a show to the list
+        
+        It adds a show to the list and queues the list update
+        for the next sync.
+        
+        show: Full show dictionary
+        
+        """
+        # Check if operation is supported by the API
+        if not self.mediainfo.get('can_add'):
+            raise utils.EngineError('Operation not supported by API.')
+        
+        # Add in data handler
+        self.data_handler.queue_add(show)
+        
+        # Emit signal
+        self._emit_signal('show_added', show)
+        
     def set_episode(self, show_pattern, newep):
         """
         Updates the progress for a show
@@ -217,7 +250,7 @@ class Engine:
 
         """
         # Check if operation is supported by the API
-        if not self.mediainfo['can_update']:
+        if not self.mediainfo.get('can_update'):
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the episode number
@@ -255,7 +288,7 @@ class Engine:
         
         """
         # Check if operation is supported by the API
-        if not self.mediainfo['can_score']:
+        if not self.mediainfo.get('can_score'):
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the correctness of the score
@@ -293,7 +326,7 @@ class Engine:
 
         """
         # Check if operation is supported by the API
-        if not self.mediainfo['can_status']:
+        if not self.mediainfo.get('can_status'):
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the correctness of the score
@@ -318,6 +351,27 @@ class Engine:
         
         return show
     
+    def _search_video(self, title, episode):
+        searchfile = title
+        searchfile = searchfile.replace(',', ',?')
+        searchfile = searchfile.replace('.', '.?')
+        searchfile = searchfile.replace(' ', '.')    
+        searchep = str(episode).zfill(2)
+        
+        # Do the file search
+        regex = searchfile + r".*\D" + searchep + r"\D.*(mkv|mp4|avi)"
+        return utils.regex_find_file(regex, self.config['main']['searchdir'])
+    
+    def get_new_episodes(self, showlist):
+        results = list()
+        total = len(showlist)
+        
+        for i, show in enumerate(showlist):
+            self.msg.info(self.name, "Searching %d/%d...\r" % (i+1, total))
+            if self._search_video(show['title'], show['my_progress']+1):
+                results.append(show)
+        return results
+        
     def play_episode(self, show, playep=0):
         """
         Searches the hard disk for an episode and plays the episode
@@ -331,27 +385,17 @@ class Engine:
 
         """
         # Check if operation is supported by the API
-        if not self.mediainfo['can_play']:
+        if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by API.')
             
         if show:
-            searchfile = show['title']
-            searchfile = searchfile.replace(',', ',?')
-            searchfile = searchfile.replace('.', '.?')
-            searchfile = searchfile.replace(' ', '.')
-            
             playing_next = False
             if not playep:
                 playep = show['my_progress'] + 1
                 playing_next = True
-                
-            searchep = str(playep).zfill(2)
             
-            # Do the file search
-            self.msg.info(self.name, "Searching for %s %s..." % (show['title'], searchep))
-            
-            regex = searchfile + r".*\D" + searchep + r"\D.*(mkv|mp4|avi)"
-            filename = utils.regex_find_file(regex, self.config['main']['searchdir'])
+            self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
+            filename = self._search_video(show['title'], playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 subprocess.call([self.config['main']['player'], filename])
