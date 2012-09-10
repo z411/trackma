@@ -24,6 +24,7 @@ except ImportError:
     pass
 
 import urwid
+import re
 
 import modules.engine as engine
 import modules.messenger as messenger
@@ -162,6 +163,8 @@ class wMAL_urwid(object):
             self.do_reload()
         elif input == 'f12':
             self.do_quit()
+        else:
+            self.do_search(input)
 
         #if input is 'enter':
         #    focus = self.listbox.get_focus()[0].showid
@@ -362,6 +365,19 @@ class wMAL_urwid(object):
         self.view.set_focus('body')
         urwid.disconnect_signal(self, self.asker, 'done', callback)
         self.view.set_footer(self.statusbar)
+    
+    def do_search(self, key):
+        self.ask('Search: ', self.search_request, key)
+        #urwid.connect_signal(self.asker, 'change', self.search_live)
+        
+    #def search_live(self, widget, data):
+    #    if data:
+    #        self.listwalker.select_match(data)
+        
+    def search_request(self, data):
+        if data:
+            self.ask_finish(self.search_request)
+            self.listwalker.select_match(data)
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30):
@@ -401,6 +417,12 @@ class ShowWalker(urwid.SimpleListWalker):
         (position, showitem) = self._get_showitem(show['id'])
         self.set_focus(position)
     
+    def select_match(self, searchstr):
+        for i, item in enumerate(self):
+            if re.match(searchstr, item.showtitle, re.I):
+                self.set_focus(i)
+                break
+    
 class ShowItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
         if has_progress:
@@ -412,6 +434,7 @@ class ShowItem(urwid.WidgetWrap):
         self.has_progress = has_progress
         
         self.showid = show['id']
+        self.showtitle = show['title']
         self.item = [
             ('fixed', 7, urwid.Text("%d" % self.showid)),
             ('weight', 1, urwid.Text(show['title'])),
