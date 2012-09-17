@@ -187,6 +187,9 @@ class libmal(lib.lib):
         else:
             episodes_str = 'episodes'
         
+        # Status to integer dictionary
+        status_translate = {'Currently Airing': 1, 'Aired': 2, 'Not Yet Aired': 3}
+        
         entries = list()
         for child in root.iter('entry'):
             show = {
@@ -196,7 +199,7 @@ class libmal(lib.lib):
                 'my_status':    1,
                 'my_score':     0,
                 'type':         child.find('type').text,
-                'status':       child.find('status').text, # TODO : This should return an int!
+                'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
             }

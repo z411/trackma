@@ -106,8 +106,6 @@ class Data(object):
                 self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
-            
-            self._save_cache()
         
         if self._queue_exists():
             self._load_queue()
@@ -313,6 +311,7 @@ class Data(object):
     def download_data(self):
         """Forces to overwrite the local list with the remote list"""
         self.showlist = self.api.fetch_list()
+        self._save_cache()
         
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)

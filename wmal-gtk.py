@@ -776,6 +776,8 @@ class ShowView(gtk.TreeView):
         
         if show['status'] == 1:
             color = 'blue'
+        elif show['status'] == 3:
+            color = 'yellow'
         else:
             color = 'black'
         

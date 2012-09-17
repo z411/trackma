@@ -60,6 +60,8 @@ class wMAL_urwid(object):
         ('window', 'yellow', 'dark blue'),
         ('button', 'black', 'light gray'),
         ('button hilight', 'white', 'dark red'),
+        ('item_airing', 'light blue', ''),
+        ('item_notaired', 'yellow', ''),
         ]
         
         self.header_title = urwid.Text('wMAL-curses v0.1')
@@ -158,7 +160,7 @@ class wMAL_urwid(object):
             self.do_status()
         elif input == 'f7':
             self.do_score()
-        elif input == 'f10':
+        elif input == 'S':
             self.do_sync()
         elif input == 'a':
             self.do_addsearch()
@@ -217,12 +219,13 @@ class wMAL_urwid(object):
         helptext = "wMAL-curses v0.1  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
+        helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  F10:Sync\n"
+        helptext += "  d:Delete\n  S:Sync\n"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
-        self.dialog = Dialog(pile, self.mainloop, width=('relative', 80))
+        self.dialog = Dialog(pile, self.mainloop, width=62)
         self.dialog.show()
     
     def help_close(self, widget):
@@ -503,6 +506,7 @@ class ShowItem(urwid.WidgetWrap):
             self.episodes_str = urwid.Text("-")
         
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
+        #self.score_str = urwid.Text(str(show['status']))
         self.has_progress = has_progress
         
         self.showid = show['id']
@@ -513,7 +517,16 @@ class ShowItem(urwid.WidgetWrap):
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
         ]
-        w = urwid.AttrWrap(urwid.Columns(self.item), 'body', 'focus')
+        
+        if show['status'] == 1:
+            _color = 'item_airing'
+        elif show['status'] == 3:
+            _color = 'item_notaired'
+        else:
+            _color = 'body'
+        
+        w = urwid.AttrWrap(urwid.Columns(self.item), _color, 'focus')
+        
         self.__super.__init__(w)
     
     def get_showid(self):
