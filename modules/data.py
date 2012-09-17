@@ -207,6 +207,40 @@ class Data(object):
         self._save_cache()
         self.msg.info(self.name, "Queued update for %s" % show['title'])
     
+    def queue_delete(self, show):
+        """
+        Queues a show delete
+        
+        Calls this to delete a show from the list, and the remote delete
+        will be queued.
+        
+        show: Show dictionary
+        
+        """
+        showid = show['id']
+        
+        # Delete from the list
+        if not self.showlist.get(showid):
+            raise utils.DataError("Show not in the list.")
+        
+        item = self.showlist.pop(showid)
+        
+        # Check if the show add is already in queue
+        exists = False
+        for q in self.queue:
+            if q['id'] == showid and q['action'] == 'delete':
+                # This shouldn't happen
+                raise utils.DataError("Show delete already in the queue.")
+        
+        if not exists:
+            # Use the whole show as a queue item
+            item['action'] = 'delete'
+            self.queue.append(item)
+        
+        self._save_queue()
+        self._save_cache()
+        self.msg.info(self.name, "Queued delete for %s" % item['title'])
+    
     def queue_clear(self):
         """Clears the queue completely."""
         if len(self.queue) == 0:
@@ -251,6 +285,9 @@ class Data(object):
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
+                    self.queue.append(show)
+                except NotImplementedError:
+                    self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
                     self.queue.append(show)
             
             self._save_queue()

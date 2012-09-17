@@ -41,9 +41,10 @@ class Engine:
     name = 'Engine'
     
     signals = { 'show_added':       None,
-                'episode_updated':  None,
-                'score_updated':    None,
-                'status_updated':   None, }
+                'show_deleted':     None,
+                'episode_changed':  None,
+                'score_changed':    None,
+                'status_changed':   None, }
     
     def __init__(self, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -74,8 +75,11 @@ class Engine:
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
     def _emit_signal(self, signal, args=None):
-        if self.signals.get(signal):
-            self.signals[signal](args)
+        try:
+            if self.signals[signal]:
+                self.signals[signal](args)
+        except KeyError:
+            raise Exception("Call to undefined signal.")
     
     def connect_signal(self, signal, callback):
         try:
@@ -351,6 +355,22 @@ class Engine:
         
         return show
     
+    def delete_show(self, show):
+        """
+        Deletes a show completely from the list
+        
+        show: Show dictionary
+        
+        """
+        if not self.mediainfo.get('can_delete'):
+            raise utils.EngineError('Operation not supported by API.')
+        
+        # Add in data handler
+        self.data_handler.queue_delete(show)
+        
+        # Emit signal
+        self._emit_signal('show_deleted', show)
+        
     def _search_video(self, title, episode):
         searchfile = title
         searchfile = searchfile.replace(',', ',?')

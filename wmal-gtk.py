@@ -165,9 +165,12 @@ class wmal_gtk(object):
         # Menus
         mb_show = gtk.Menu()
         mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        mb_delete.connect("activate", self.do_delete)
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
         mb_exit.connect("activate", self.delete_event, None)
         mb_show.append(mb_play)
+        mb_show.append(mb_delete)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(mb_exit)
         
@@ -333,6 +336,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
         self.engine.connect_signal('show_added', self.changed_show_status)
+        self.engine.connect_signal('show_deleted', self.changed_show_status)
         
         self.selected_show = 0
         
@@ -393,6 +397,13 @@ class wmal_gtk(object):
     def do_play(self, widget):
         threading.Thread(target=self.task_play).start()
     
+    def do_delete(self, widget):
+        try:
+            show = self.engine.get_show_info(self.selected_show)
+            self.engine.delete_show(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+        
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:

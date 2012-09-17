@@ -42,6 +42,7 @@ class libmal(lib.lib):
     mediatypes['anime'] = {
         'has_progress': True,
         'can_add': True,
+        'can_delete': True,
         'can_score': True,
         'can_status': True,
         'can_update': True,
@@ -51,6 +52,8 @@ class libmal(lib.lib):
     }
     mediatypes['manga'] = {
         'has_progress': True,
+        'can_add': True,
+        'can_delete': True,
         'can_score': True,
         'can_status': True,
         'can_update': True,
@@ -156,6 +159,17 @@ class libmal(lib.lib):
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
     
+    def delete_show(self, item):
+        """Sends a show delete to the server"""
+        self.check_credentials()
+        self.msg.info(self.name, "Deleting show %s..." % item['title'])
+        
+        try:
+            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/delete/"+str(item['id'])+".xml")
+            return True
+        except urllib2.HTTPError, e:
+            raise utils.APIError('Error deleting: ' + str(e.code))
+        
     def search(self, criteria):
         self.msg.info(self.name, "Searching for %s..." % criteria)
         
@@ -167,6 +181,12 @@ class libmal(lib.lib):
         # Load the results into XML
         root = ET.ElementTree().parse(data, parser=self._make_parser())
         
+        # Use the correct tag name for episodes
+        if self.mediatype == 'manga':
+            episodes_str = 'chapters'
+        else:
+            episodes_str = 'episodes'
+        
         entries = list()
         for child in root.iter('entry'):
             show = {
@@ -177,7 +197,7 @@ class libmal(lib.lib):
                 'my_score':     0,
                 'type':         child.find('type').text,
                 'status':       child.find('status').text, # TODO : This should return an int!
-                'total':        int(child.find('episodes').text),
+                'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
             }
             entries.append(show)

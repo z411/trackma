@@ -166,6 +166,25 @@ class wmal_cmd(cmd.Cmd):
                 except utils.wmalError, e:
                     self.display_error(e)
     
+    def do_delete(self, arg):
+        """
+        delete - Deltes a show from the list
+        
+        Usage: delete <show id or title>
+        
+        """
+        if(arg):
+            args = self.parse_args(arg)
+            
+            try:
+                show = self.engine.get_show_info(args[0])
+                
+                do_delete = raw_input("Delete %s? [y/N] " % show['title'])
+                if do_delete.lower() == 'y':
+                    self.engine.delete_show(show)
+            except utils.wmalError, e:
+                self.display_error(e)
+        
     def do_neweps(self, arg):
         showlist = self.engine.filter_list(self.filter_num)
         results = self.engine.get_new_episodes(showlist)
@@ -312,6 +331,10 @@ class wmal_cmd(cmd.Cmd):
             return self.engine.regex_list_titles(text)
     
     def complete_status(self, text, line, begidx, endidx):
+        if text:
+            return self.engine.regex_list_titles(text)
+    
+    def complete_delete(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
     

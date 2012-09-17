@@ -126,13 +126,18 @@ class libmelative(lib.lib):
                     _total = int(entity.find('length').text)
                 except TypeError:
                     _total = 0
+                    
+                if self.mediatypes[self.mediatype]['has_progress']:
+                    _progress = int(segment.find('name').text)
+                else:
+                    _progress = 0
                 
                 itemlist[itemid] = {
                     'id':           itemid,
                     'title':        entity.find('aliase').text.encode('utf-8'),
                     'my_status':    _status,
-                    'my_score':     int(record.find('rating').text),
-                    'my_progress':  int(segment.find('name').text),
+                    'my_score':     int(record.find('rating').text or 0),
+                    'my_progress':  _progress,
                     'total':        _total,
                     'image':        entity.find('image_url').text,
                     'status': 0, #placeholder

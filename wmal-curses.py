@@ -73,7 +73,7 @@ class wMAL_urwid(object):
             ('fixed', 16, self.header_api)]), 'status')
         
         self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text('F2:Filter  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F10:Sync  F12:Quit'), 'status')
+            urwid.AttrMap(urwid.Text('F1:Help  F2:Filter  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
         ])
         
         self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v0.1'), 'status')
@@ -117,6 +117,7 @@ class wMAL_urwid(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
+        self.engine.connect_signal('show_deleted', self.changed_list)
         # Engine start and list rebuild
         self.engine.start()
         self._rebuild()
@@ -159,17 +160,28 @@ class wMAL_urwid(object):
             self.do_score()
         elif input == 'f10':
             self.do_sync()
-        elif input == 'f11':
+        elif input == 'a':
+            self.do_addsearch()
+        elif input == 'c':
             self.do_reload()
+        elif input == 'd':
+            self.do_delete()
         elif input == 'f12':
             self.do_quit()
-        else:
-            self.do_search(input)
+        elif input == '/':
+            self.do_search('')
 
         #if input is 'enter':
         #    focus = self.listbox.get_focus()[0].showid
         #    # set anime
     
+    def do_addsearch(self):
+        self.dialog = AddDialog(self.mainloop, width=('relative', 80))
+        self.dialog.show()
+    
+    def do_delete(self):
+        self.question('Delete selected show? [y/N] ', self.delete_request)
+        
     def do_filter(self):
         _filter = self.filters_iter.next()
         self.cur_filter = _filter
@@ -205,9 +217,16 @@ class wMAL_urwid(object):
         helptext = "wMAL-curses v0.1  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
-        pile = urwid.Pile([urwid.Text(helptext), urwid.AttrWrap(urwid.Button('OK'), 'button', 'button hilight')])
+        helptext += "More controls:\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
+        helptext += "  d:Delete\n  F10:Sync\n"
+        ok_button = urwid.Button('OK', self.help_close)
+        ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
+        pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
         self.dialog = Dialog(pile, self.mainloop, width=('relative', 80))
         self.dialog.show()
+    
+    def help_close(self, widget):
+        self.dialog.close()
         
     def do_score(self):
         showid = self.listbox.get_focus()[0].showid
@@ -263,13 +282,24 @@ class wMAL_urwid(object):
             mediatypes.append(urwid.AttrWrap(but, 'button', 'button hilight'))
         mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
         
-        main_pile = urwid.Pile([mediatype, api])
+        main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
         self.dialog = Dialog(main_pile, self.mainloop, width=30)
         self.dialog.show()
         
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
+    
+    def delete_request(self, data):
+        self.ask_finish(self.delete_request)
+        if data == 'y':
+            showid = self.listbox.get_focus()[0].showid
+            show = self.engine.get_show_info(showid)
+            
+            try:
+                show = self.engine.delete_show(show)
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
         
     def status_request(self, widget, data):
         self.dialog.close()
@@ -354,9 +384,19 @@ class wMAL_urwid(object):
         self.build_list()
         
         self.listwalker.select_show(show)
+    
+    def changed_list(self, show):
+        self.clear_list()
+        self.build_list()
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
+        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
+        self.view.set_focus('footer')
+        urwid.connect_signal(self.asker, 'done', callback)
+    
+    def question(self, msg, callback, data=u''):
+        self.asker = QuestionAsker(msg, str(data))
         self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', callback)
@@ -366,7 +406,7 @@ class wMAL_urwid(object):
         urwid.disconnect_signal(self, self.asker, 'done', callback)
         self.view.set_footer(self.statusbar)
     
-    def do_search(self, key):
+    def do_search(self, key=''):
         self.ask('Search: ', self.search_request, key)
         #urwid.connect_signal(self.asker, 'change', self.search_live)
         
@@ -397,11 +437,43 @@ class Dialog(urwid.Overlay):
         self.loop.widget = self.oldwidget
         
     def keypress(self, size, key):
-        if key in ('up', 'down', 'enter'):
+        if key in ('up', 'down', 'left', 'right', 'enter'):
             self.widget.keypress(size, key)
         elif key == 'esc':
             self.close()
+
+class AddDialog(Dialog):
+    def __init__(self, loop, width=30):
+        self.topask = Asker('Search:')
+        urwid.connect_signal(self.topask, 'done', self.search)
+        listheader = urwid.Columns([
+                ('fixed', 7, urwid.Text('ID')),
+                ('weight', 1, urwid.Text('Title')),
+                ('fixed', 10, urwid.Text('Type')),
+                ('fixed', 7, urwid.Text('Total')),
+            ])
         
+        self.listwalker = urwid.SimpleListWalker([])
+        listbox = urwid.BoxAdapter(urwid.ListBox(self.listwalker), 10)
+        #self.listframe = urwid.BoxAdapter(urwid.Frame(listbox, header=listheader), 10)
+        
+        #self.frame = urwid.BoxAdapter(urwid.Frame(self.listframe, header=top), 10)
+        self.frame = urwid.Pile([self.topask, listheader, listbox])
+        
+        self.__super.__init__(self.frame, loop, width)
+    
+    def search(self, data):
+        if data:
+            self.listwalker.append(urwid.Text(data))
+    
+    def keypress(self, size, key):
+        if key in ('up', 'down', 'left', 'right', 'enter'):
+            self.widget.keypress(size, key)
+        elif key == 'esc':
+            self.close()
+        else:
+            self.topask.keypress(size, key)
+    
 class ShowWalker(urwid.SimpleListWalker):
     def _get_showitem(self, showid):
         for i, item in enumerate(self):
@@ -476,7 +548,10 @@ class Asker(urwid.Edit):
 
         urwid.Edit.keypress(self, size, key)
 
-
+class QuestionAsker(Asker):
+    def keypress(self, size, key):
+        urwid.emit_signal(self, 'done', key)
+    
 if __name__ == '__main__':
     try:
         wMAL_urwid()
