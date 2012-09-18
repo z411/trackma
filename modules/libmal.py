@@ -64,6 +64,8 @@ class libmal(lib.lib):
     
     def __init__(self, messenger, config):
         """Initializes the useragent through credentials."""
+        # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
+        # together with the urllib2 opener.
         super(libmal, self).__init__(messenger, config)
         
         self.username = config['username']
@@ -113,7 +115,8 @@ class libmal(lib.lib):
             response = self.opener.open("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
             data = StringIO(response.read())
             
-            # Load data from the XML into a parsed dictionary
+            # Parse the XML data and load it into a dictionary
+            # using the proper function (anime or manga)
             root = ET.ElementTree().parse(data, parser=self._make_parser())
             
             if self.mediatype == 'anime':
@@ -128,7 +131,7 @@ class libmal(lib.lib):
             raise utils.APIError("Error getting list.")
     
     def add_show(self, item):
-        """Adds a show in the server"""
+        """Adds a new show in the server"""
         self.check_credentials()
         self.msg.info(self.name, "Adding show %s..." % item['title'])
         
@@ -171,6 +174,7 @@ class libmal(lib.lib):
             raise utils.APIError('Error deleting: ' + str(e.code))
         
     def search(self, criteria):
+        """Searches MyAnimeList database for the queried show"""
         self.msg.info(self.name, "Searching for %s..." % criteria)
         
         # Send the urlencoded query to the search API
@@ -187,7 +191,8 @@ class libmal(lib.lib):
         else:
             episodes_str = 'episodes'
         
-        # Status to integer dictionary
+        # Since the MAL API returns the status as a string, and
+        # we handle statuses as integers, we need to convert them
         status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
         
         entries = list()
@@ -208,6 +213,7 @@ class libmal(lib.lib):
         return entries
         
     def _parse_anime(self, root):
+        """Converts an XML anime list to a dictionary"""
         showlist = dict()
         for child in root.iter('anime'):
             show_id = int(child.find('series_animedb_id').text)
@@ -225,6 +231,7 @@ class libmal(lib.lib):
         return showlist
     
     def _parse_manga(self, root):
+        """Converts an XML manga list to a dictionary"""
         mangalist = dict()
         for child in root:
             if child.tag == 'manga':
@@ -243,10 +250,15 @@ class libmal(lib.lib):
         return mangalist
     
     def _build_xml(self, item):
-        # Creates an "anime|manga data" XML
-        # More information: 
-        #   http://myanimelist.net/modules.php?go=api#animevalues
-        #   http://myanimelist.net/modules.php?go=api#mangavalues
+        """
+        Creates an "anime|manga data" XML to be used in the
+        add, update and delete methods.
+        
+        More information: 
+          http://myanimelist.net/modules.php?go=api#animevalues
+          http://myanimelist.net/modules.php?go=api#mangavalues
+        
+        """
         
         # Start building XML
         root = ET.Element("entry")

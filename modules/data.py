@@ -309,7 +309,7 @@ class Data(object):
         cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
         
     def download_data(self):
-        """Forces to overwrite the local list with the remote list"""
+        """Downloads the remote list and overwrites the cache"""
         self.showlist = self.api.fetch_list()
         self._save_cache()
         
@@ -320,6 +320,8 @@ class Data(object):
         return os.path.isfile(self.queue_file)
     
     def _lock(self):
+        """Creates the database lock, returns an exception if it
+        already exists"""
         if os.path.isfile(self.lock_file):
             raise utils.DataFatal("Database is locked by another process. "
                             "If you\'re sure there's no other process is using it, "
@@ -329,6 +331,7 @@ class Data(object):
         f.close()
     
     def _unlock(self):
+        """Removes the database lock"""
         os.unlink(self.lock_file)
     
     def get_api_info(self):
