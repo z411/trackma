@@ -188,7 +188,7 @@ class libmal(lib.lib):
             episodes_str = 'episodes'
         
         # Status to integer dictionary
-        status_translate = {'Currently Airing': 1, 'Aired': 2, 'Not Yet Aired': 3}
+        status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
         
         entries = list()
         for child in root.iter('entry'):

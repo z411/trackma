@@ -356,7 +356,7 @@ class wMAL_urwid(object):
                 return
             
             if played_episode == (show['my_progress'] + 1):
-                self.ask("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
+                self.question("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
             else:
                 self.status('Ready.')
     
