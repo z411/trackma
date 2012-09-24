@@ -121,9 +121,10 @@ class Data(object):
 
         """
         self.msg.debug(self.name, "Unloading...")
-        self.process_queue()
+        # We push changes if specified on config file
+        if self.config['main'].get('push_on_exit') == 'yes':
+            self.process_queue()
         
-        self.msg.debug(self.name, "Unlocking database...")
         self._unlock()
     
     def get(self):
@@ -168,6 +169,8 @@ class Data(object):
         self._save_queue()
         self._save_cache()
         self.msg.info(self.name, "Queued add for %s" % show['title'])
+        
+        
         
     def queue_update(self, show, key, value):
         """

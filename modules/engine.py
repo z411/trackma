@@ -15,7 +15,12 @@
 #
 
 import re
+import os
 import subprocess
+
+import difflib
+import threading
+import time
 
 import messenger
 import data
@@ -109,6 +114,16 @@ class Engine:
             raise utils.DataFatal(e.message)
         except utils.APIError, e:
             raise utils.APIFatal(e.message)
+        
+        # Start tracker
+        if self.mediainfo.get('can_play') and self.config['main']['tracker_enabled'] == 'yes':
+            tracker_args = (
+                            int(self.config['main']['tracker_interval']),
+                            int(self.config['main']['tracker_update_wait']),
+                           )
+            tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
+            tracker_t.daemon = True
+            tracker_t.start()
         
         self.loaded = True
         return True
@@ -442,6 +457,107 @@ class Engine:
         else:
             return showlist.values()
     
+    def tracker(self, interval, wait):
+        """
+        Tracker loop to be used in a thread
+        
+        """
+        last_show = None
+        last_time = 0
+        last_updated = False
+        wait_s = wait * 20
+        
+        while True:
+            # This runs the tracker and returns the playing show, if any
+            result = self.track_process()
+            
+            if result:
+                (show, episode) = result
+                
+                if not last_show or show['id'] != last_show['id']:
+                    # There's a new show detected, so
+                    # let's save the show information and
+                    # the time we detected it first
+                    last_show = show
+                    last_time = time.time()
+                    last_updated = False
+                
+                if not last_updated:
+                    # Check if we need to update the show yet
+                    if episode == (show['my_progress'] + 1):
+                        timedif = time.time() - last_time
+                        
+                        if timedif > wait_s:
+                            self.set_episode(show['id'], episode)
+                            last_updated = True
+                        else:
+                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (last_show['title'], episode, wait_s-timedif))
+                    else:
+                        # We shouldn't update to this episode!
+                        last_updated = True
+                else:
+                    # The episode was updated already. do nothing
+                    pass
+            else:
+                # There isn't any show playing right now
+                # Check if the player was closed
+                if last_show:
+                    if not last_updated:
+                        self.msg.info(self.name, 'Player was closed before update.')
+                    
+                    last_show = None
+                    last_updated = False
+                    last_time = 0
+            
+            # Wait for the interval before running check again
+            time.sleep(interval)
+    
+    def track_process(self):
+        filename = self._playing_file(self.config['main']['player'], self.config['main']['searchdir'])
+        
+        if filename:
+            # Do a regex to the filename to get
+            # the show title and episode number
+            reg = re.compile(r"(\[.+\])?([ \w\d,.!]+)-([ \d]+)")
+            show_raw = filename.replace("_"," ").strip()
+            show_match = reg.match(show_raw)
+            
+            show_title = show_match.group(2).strip()
+            show_ep = int(show_match.group(3).strip())
+            
+            # Use difflib to see if the show title is similar to
+            # one we have in the list
+            highest_ratio = (None, 0)
+            for show in self.get_list():
+                ratio = difflib.SequenceMatcher(None, show['title'], show_title)
+                ratio = ratio.ratio()
+                if ratio > highest_ratio[1]:
+                    highest_ratio = (show, ratio)
+            
+            playing_show = highest_ratio[0]
+            if highest_ratio[1] > 0.7:
+                return (playing_show, show_ep)
+            else:
+                self.msg.warn(self.name, 'Found player but show not in list.')
+        
+        return None
+    
+    def _playing_file(self, player, searchdir):
+        """
+        Returns the files a process is playing
+        
+        """
+        lsof = subprocess.Popen(['lsof', '-n', '-c', player, '-Fn'], stdout=subprocess.PIPE)
+        output = lsof.communicate()[0]
+        fileregex = re.compile(searchdir + ".*(.mkv|.mp4|.avi)")
+        
+        for line in output.splitlines():
+            filename = line[1:]
+            if fileregex.match(filename):
+                return os.path.basename(filename)
+        
+        return False
+    
     def list_download(self):
         """Asks the data handler to download the remote list."""
         self.data_handler.download_data()
@@ -454,4 +570,3 @@ class Engine:
         """Asks the data handler for the current queue."""
         return self.data_handler.queue
     
-

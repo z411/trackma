@@ -318,6 +318,9 @@ class wmal_cmd(cmd.Cmd):
         print
         self.do_quit(arg)
     
+    def do_track(self, arg):
+        self.engine.track_process()
+    
     def complete_update(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
