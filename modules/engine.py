@@ -42,6 +42,7 @@ class Engine:
     config = dict()
     msg = None
     loaded = False
+    playing = False
     
     name = 'Engine'
     
@@ -433,7 +434,9 @@ class Engine:
             filename = self._search_video(show['title'], playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
+                self.playing = True
                 subprocess.call([self.config['main']['player'], filename])
+                self.playing = False
                 return playep
             else:
                 raise utils.EngineError('Episode file not found.')
@@ -465,7 +468,7 @@ class Engine:
         last_show = None
         last_time = 0
         last_updated = False
-        wait_s = wait * 20
+        wait_s = wait * 60
         
         while True:
             # This runs the tracker and returns the playing show, if any
@@ -513,6 +516,10 @@ class Engine:
             time.sleep(interval)
     
     def track_process(self):
+        if self.playing:
+            # Don't do anything if the engine is busy playing a file
+            return None
+        
         filename = self._playing_file(self.config['main']['player'], self.config['main']['searchdir'])
         
         if filename:
