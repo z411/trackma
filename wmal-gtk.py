@@ -35,115 +35,6 @@ import modules.messenger as messenger
 import modules.engine as engine
 import modules.utils as utils
 
-class ShowSearch(gtk.Window):
-    def __init__(self, engine):
-        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        
-        self.engine = engine
-        
-        self.set_position(gtk.WIN_POS_CENTER)
-        self.set_title('Search')
-        self.set_border_width(5)
-        
-        vbox = gtk.VBox(False, 5)
-        
-        searchbar = gtk.HBox(False, 5)
-        searchbar.pack_start(gtk.Label('Search'), False, False, 0)
-        self.searchtext = gtk.Entry(100)
-        searchbar.pack_start(self.searchtext, True, True, 0)
-        self.search_button = gtk.Button('Search')
-        self.search_button.connect("clicked", self.do_search)
-        searchbar.pack_start(self.search_button, False, False, 0)
-        
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_size_request(550, 300)
-        
-        alignment = gtk.Alignment(xalign=1.0)
-        bottombar = gtk.HBox(False, 5)
-        self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
-        self.add_button.connect("clicked", self.do_add)
-        self.add_button.set_sensitive(False)
-        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
-        close_button.connect("clicked", self.do_close)
-        bottombar.pack_start(self.add_button, False, False, 0)
-        bottombar.pack_start(close_button, False, False, 0)
-        alignment.add(bottombar)
-        
-        self.showlist = ShowSearchView()
-        self.showlist.get_selection().connect("changed", self.select_show);
-        
-        sw.add(self.showlist)
-        
-        vbox.pack_start(searchbar, False, False, 0)
-        vbox.pack_start(sw, True, True, 0)
-        vbox.pack_start(alignment, False, False, 0)
-        self.add(vbox)
-    
-    def do_add(self, widget):
-        # Get show dictionary
-        show = None
-        for item in self.entries:
-            if item['id'] == self.selected_show:
-                show = item
-                break
-        
-        if show is not None:
-            try:
-                self.engine.add_show(show)
-                self.do_close()
-            except utils.wmalError, e:
-                self.error_push(e.message)
-        
-    def do_search(self, widget):
-        threading.Thread(target=self.task_search).start()
-    
-    def do_close(self, widget=None):
-        self.destroy()
-    
-    def select_show(self, widget):
-        # Get selected show ID
-        (tree_model, tree_iter) = widget.get_selected()
-        if not tree_iter:
-            print "Unselected show"
-            self.allow_buttons_push(False, lists_too=False)
-            return
-        
-        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
-        self.add_button.set_sensitive(True)
-        
-    def task_search(self):
-        self.allow_buttons(False)
-        self.entries = self.engine.search(self.searchtext.get_text())
-        
-        gtk.threads_enter()
-        self.showlist.append_start()
-        for show in self.entries:
-            self.showlist.append(show)
-        self.showlist.append_finish()
-        gtk.threads_leave()
-        
-        self.allow_buttons(True)
-        self.add_button.set_sensitive(False)
-    
-    def allow_buttons_push(self, boolean):
-        self.search_button.set_sensitive(boolean)
-        
-    def allow_buttons(self, boolean):
-        # Thread safe
-        gobject.idle_add(self.allow_buttons_push, boolean)
-    
-    def error(self, msg):
-        # Thread safe
-        gobject.idle_add(self.error_push, msg)
-        
-    def error_push(self, msg):
-        dialog = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
-        dialog.show_all()
-        dialog.connect("response", self.modal_close)
-    
-    def modal_close(self, widget, response_id):
-        widget.destroy()
     
 class wmal_gtk(object):
     engine = None
@@ -283,6 +174,11 @@ class wmal_gtk(object):
         self.show_score.set_adjustment(gtk.Adjustment(upper=10, step_incr=1))
         self.show_score.set_sensitive(False)
         line3.pack_start(self.show_score, False, False, 0)
+        
+        self.scoreset_button = gtk.Button('Set')
+        self.scoreset_button.connect("clicked", self.do_score)
+        self.scoreset_button.set_sensitive(False)
+        line3.pack_start(self.scoreset_button, False, False, 0)
         
         top_right_box.pack_start(line3, True, False, 0)
         
@@ -669,6 +565,7 @@ class wmal_gtk(object):
                 self.update_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
             
+            self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
         
@@ -819,6 +716,118 @@ class ShowView(gtk.TreeView):
                 selection = self.get_selection()
                 selection.select_iter(row.iter)
                 break
+
+
+class ShowSearch(gtk.Window):
+    def __init__(self, engine):
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        
+        self.engine = engine
+        
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Search')
+        self.set_border_width(5)
+        
+        vbox = gtk.VBox(False, 5)
+        
+        searchbar = gtk.HBox(False, 5)
+        searchbar.pack_start(gtk.Label('Search'), False, False, 0)
+        self.searchtext = gtk.Entry(100)
+        searchbar.pack_start(self.searchtext, True, True, 0)
+        self.search_button = gtk.Button('Search')
+        self.search_button.connect("clicked", self.do_search)
+        searchbar.pack_start(self.search_button, False, False, 0)
+        
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.set_size_request(550, 300)
+        
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
+        self.add_button.connect("clicked", self.do_add)
+        self.add_button.set_sensitive(False)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        bottombar.pack_start(self.add_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        self.showlist = ShowSearchView()
+        self.showlist.get_selection().connect("changed", self.select_show);
+        
+        sw.add(self.showlist)
+        
+        vbox.pack_start(searchbar, False, False, 0)
+        vbox.pack_start(sw, True, True, 0)
+        vbox.pack_start(alignment, False, False, 0)
+        self.add(vbox)
+    
+    def do_add(self, widget):
+        # Get show dictionary
+        show = None
+        for item in self.entries:
+            if item['id'] == self.selected_show:
+                show = item
+                break
+        
+        if show is not None:
+            try:
+                self.engine.add_show(show)
+                self.do_close()
+            except utils.wmalError, e:
+                self.error_push(e.message)
+        
+    def do_search(self, widget):
+        threading.Thread(target=self.task_search).start()
+    
+    def do_close(self, widget=None):
+        self.destroy()
+    
+    def select_show(self, widget):
+        # Get selected show ID
+        (tree_model, tree_iter) = widget.get_selected()
+        if not tree_iter:
+            print "Unselected show"
+            self.allow_buttons_push(False, lists_too=False)
+            return
+        
+        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.add_button.set_sensitive(True)
+        
+    def task_search(self):
+        self.allow_buttons(False)
+        self.entries = self.engine.search(self.searchtext.get_text())
+        
+        gtk.threads_enter()
+        self.showlist.append_start()
+        for show in self.entries:
+            self.showlist.append(show)
+        self.showlist.append_finish()
+        gtk.threads_leave()
+        
+        self.allow_buttons(True)
+        self.add_button.set_sensitive(False)
+    
+    def allow_buttons_push(self, boolean):
+        self.search_button.set_sensitive(boolean)
+        
+    def allow_buttons(self, boolean):
+        # Thread safe
+        gobject.idle_add(self.allow_buttons_push, boolean)
+    
+    def error(self, msg):
+        # Thread safe
+        gobject.idle_add(self.error_push, msg)
+        
+    def error_push(self, msg):
+        dialog = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
+        dialog.show_all()
+        dialog.connect("response", self.modal_close)
+    
+    def modal_close(self, widget, response_id):
+        widget.destroy()
+
 
 class ShowSearchView(gtk.TreeView):
     def __init__(self):

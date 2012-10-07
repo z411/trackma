@@ -528,6 +528,8 @@ class Engine:
             reg = re.compile(r"(\[.+\])?([ \w\d,.!]+)-([ \d]+)")
             show_raw = filename.replace("_"," ").strip()
             show_match = reg.match(show_raw)
+            if not show_match:
+                return None
             
             show_title = show_match.group(2).strip()
             show_ep = int(show_match.group(3).strip())
