@@ -22,7 +22,7 @@ tracker_enabled = no
 ; Time for the tracker to wait between each check (in seconds)
 tracker_interval = 120
 ; Time for the tracker to wait before updating the episode (in minutes)
-tracker_update_wait = 1
+tracker_update_wait = 5
 
 ; MyAnimeList
 ; ===========
