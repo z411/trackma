@@ -102,10 +102,10 @@ class wMAL_urwid(object):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
-        self.filters_iter = cycle(self.engine.mediainfo['statuses'])
+        #self.filters_iter = cycle(self.engine.mediainfo['statuses'])
         
-        self.cur_filter = self.filters_iter.next()
-        print self.cur_filter
+        #self.cur_filter = self.filters_iter.next()
+        self.cur_filter = 0
         
         self.clear_list()
         self.build_list()
@@ -132,7 +132,9 @@ class wMAL_urwid(object):
             pass
         
     def build_list(self):
-        showlist = self.engine.filter_list(self.cur_filter)
+        _filter = self.filters_nums[self.cur_filter]
+        self.header_filter.set_text("Filter:%s" % self.filters[_filter])
+        showlist = self.engine.filter_list(_filter)
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
         for show in sortedlist:
             self.listwalker.append(ShowItem(show, self.engine.mediainfo['has_progress']))
@@ -148,8 +150,10 @@ class wMAL_urwid(object):
     def keystroke(self, input):
         if input == 'f1':
             self.do_help()
-        elif input == 'f2':
-            self.do_filter()
+        elif input == 'left':
+            self.do_prev_filter()
+        elif input == 'right':
+            self.do_next_filter()
         elif input == 'f3':
             self.do_sort()
         elif input == 'f4':
@@ -173,24 +177,25 @@ class wMAL_urwid(object):
         elif input == '/':
             self.do_search('')
 
-        #if input is 'enter':
-        #    focus = self.listbox.get_focus()[0].showid
-        #    # set anime
     
     def do_addsearch(self):
-        self.dialog = AddDialog(self.mainloop, width=('relative', 80))
-        self.dialog.show()
+        self.ask('Search: ', self.addsearch_request)
     
     def do_delete(self):
         self.question('Delete selected show? [y/N] ', self.delete_request)
         
-    def do_filter(self):
-        _filter = self.filters_iter.next()
-        self.cur_filter = _filter
-        self.header_filter.set_text("Filter:%s" % self.filters[_filter])
+    def do_prev_filter(self):
+        if self.cur_filter > 0:
+            self.cur_filter -= 1
         self.clear_list()
         self.build_list()
-    
+
+    def do_next_filter(self):
+        if self.cur_filter < len(self.filters)-1:
+            self.cur_filter += 1
+        self.clear_list()
+        self.build_list()
+
     def do_sort(self):
         _sort = self.sorts_iter.next()
         self.cur_sort = _sort
@@ -225,7 +230,7 @@ class wMAL_urwid(object):
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
-        self.dialog = Dialog(pile, self.mainloop, width=62)
+        self.dialog = Dialog(pile, self.mainloop, width=62, title='About/Help')
         self.dialog.show()
     
     def help_close(self, widget):
@@ -286,13 +291,30 @@ class wMAL_urwid(object):
         mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
         
         main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
-        self.dialog = Dialog(main_pile, self.mainloop, width=30)
+        self.dialog = Dialog(main_pile, self.mainloop, width=30, title='Change media type')
         self.dialog.show()
         
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
     
+    def addsearch_request(self, data):
+        self.ask_finish(self.addsearch_request)
+        if data:
+            shows = self.engine.search(data)
+            if len(shows) > 0:
+                self.status("Ready.")
+                self.dialog = AddDialog(self.mainloop, showlist=shows, width=('relative', 80))
+                urwid.connect_signal(self.dialog, 'done', self.addsearch_do)
+                self.dialog.show()
+    
+    def addsearch_do(self, show):
+        self.dialog.close()
+        try:
+            self.engine.add_show(show)
+        except utils.wmalError, e:
+            self.status("Error: %s" % e.message)
+        
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
         if data == 'y':
@@ -381,8 +403,12 @@ class wMAL_urwid(object):
     def changed_show_status(self, show):
         self.listwalker.update_show(show)
         
-        self.cur_filter = show['my_status']
-        self.header_filter.set_text("Filter:%s" % self.filters[self.cur_filter])
+        self.cur_filter = 0
+        for _filter in self.filters_nums:
+            if _filter == show['my_status']:
+                break
+            self.cur_filter += 1
+
         self.clear_list()
         self.build_list()
         
@@ -423,15 +449,15 @@ class wMAL_urwid(object):
             self.listwalker.select_match(data)
 
 class Dialog(urwid.Overlay):
-    def __init__(self, widget, loop, width=30):
-        self.widget = urwid.AttrWrap(urwid.LineBox(widget), 'window')
+    def __init__(self, widget, loop, width=30, height=None, title=''):
+        self.widget = urwid.AttrWrap(urwid.LineBox(widget, title=title), 'window')
         self.oldwidget = loop.widget
         self.loop = loop
         self.__super.__init__(self.widget, loop.widget,
                 align="center",
                 width=width,
                 valign="middle",
-                height=None)
+                height=height)
     
     def show(self):
         self.loop.widget = self
@@ -446,9 +472,12 @@ class Dialog(urwid.Overlay):
             self.close()
 
 class AddDialog(Dialog):
-    def __init__(self, loop, width=30):
-        self.topask = Asker('Search:')
-        urwid.connect_signal(self.topask, 'done', self.search)
+    __metaclass__ = urwid.signals.MetaSignals
+    signals = ['done']
+    
+    def __init__(self, loop, showlist={}, width=30):
+        #self.topask = Asker('Search: ')
+        #urwid.connect_signal(self.topask, 'done', self.search)
         listheader = urwid.Columns([
                 ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
@@ -457,25 +486,41 @@ class AddDialog(Dialog):
             ])
         
         self.listwalker = urwid.SimpleListWalker([])
-        listbox = urwid.BoxAdapter(urwid.ListBox(self.listwalker), 10)
-        #self.listframe = urwid.BoxAdapter(urwid.Frame(listbox, header=listheader), 10)
+        listbox = urwid.ListBox(self.listwalker)
         
-        #self.frame = urwid.BoxAdapter(urwid.Frame(self.listframe, header=top), 10)
-        self.frame = urwid.Pile([self.topask, listheader, listbox])
+        # Add results to the list
+        for show in showlist:
+            self.listwalker.append(SearchItem(show))
         
-        self.__super.__init__(self.frame, loop, width)
-    
-    def search(self, data):
-        if data:
-            self.listwalker.append(urwid.Text(data))
+        self.frame = urwid.Frame(listbox, header=listheader)
+        self.__super.__init__(self.frame, loop, width=width, height=15, title='Search results')
     
     def keypress(self, size, key):
-        if key in ('up', 'down', 'left', 'right', 'enter'):
+        if key in ('up', 'down', 'left', 'right', 'tab'):
             self.widget.keypress(size, key)
+        elif key == 'enter':
+            show = self.listwalker.get_focus()[0].show
+            urwid.emit_signal(self, 'done', show)
         elif key == 'esc':
             self.close()
-        else:
-            self.topask.keypress(size, key)
+    
+class SearchItem(urwid.WidgetWrap):
+    def __init__(self, show, has_progress=True):
+        self.show = show
+        self.item = [
+            ('fixed', 7, urwid.Text("%d" % show['id'])),
+            ('weight', 1, urwid.Text(show['title'])),
+            ('fixed', 10, urwid.Text(show['type'])),
+            ('fixed', 7, urwid.Text("%d" % show['total'])),
+        ]
+        w = urwid.AttrWrap(urwid.Columns(self.item), 'window', 'focus')
+        self.__super.__init__(w)
+    
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
     
 class ShowWalker(urwid.SimpleListWalker):
     def _get_showitem(self, showid):
@@ -506,7 +551,6 @@ class ShowItem(urwid.WidgetWrap):
             self.episodes_str = urwid.Text("-")
         
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
-        #self.score_str = urwid.Text(str(show['status']))
         self.has_progress = has_progress
         
         self.showid = show['id']
@@ -540,7 +584,7 @@ class ShowItem(urwid.WidgetWrap):
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
         
-    def selectable (self):
+    def selectable(self):
         return True
 
     def keypress(self, size, key):

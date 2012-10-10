@@ -89,6 +89,11 @@ class libmal(lib.lib):
         parser.entity['iacute'] = 'í'
         parser.entity['oacute'] = 'ó'
         parser.entity['uacute'] = 'ú'
+        parser.entity['lsquo'] = '‘'
+        parser.entity['rsquo'] = '’'
+        parser.entity['ldquo'] = '“'
+        parser.entity['rdquo'] = '“'
+        
         return parser
     
     def check_credentials(self):
