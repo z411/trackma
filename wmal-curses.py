@@ -510,7 +510,7 @@ class SearchItem(urwid.WidgetWrap):
         self.item = [
             ('fixed', 7, urwid.Text("%d" % show['id'])),
             ('weight', 1, urwid.Text(show['title'])),
-            ('fixed', 10, urwid.Text(show['type'])),
+            ('fixed', 10, urwid.Text(str(show['type']))),
             ('fixed', 7, urwid.Text("%d" % show['total'])),
         ]
         w = urwid.AttrWrap(urwid.Columns(self.item), 'window', 'focus')

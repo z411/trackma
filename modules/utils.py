@@ -47,7 +47,7 @@ def parse_config(filename):
     return options
 
 def regex_find_file(regex, subdirectory=''):
-    __re = re.compile(regex)
+    __re = re.compile(regex, re.I)
     
     if subdirectory:
         path = subdirectory

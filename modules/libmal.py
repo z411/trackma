@@ -93,6 +93,9 @@ class libmal(lib.lib):
         parser.entity['rsquo'] = '’'
         parser.entity['ldquo'] = '“'
         parser.entity['rdquo'] = '“'
+        parser.entity['ndash'] = '-'
+        parser.entity['mdash'] = '—'
+        parser.entity['hellip'] = '…'
         
         return parser
     
