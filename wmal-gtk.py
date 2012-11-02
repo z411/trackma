@@ -412,6 +412,7 @@ class wmal_gtk(object):
             self.engine.start()
         
         gtk.threads_enter()
+        self.statusbox.handler_block(self.statusbox_handler)
         self._create_lists()
         self.build_list()
         self.main.set_title('wMAL-gtk v0.1 [%s (%s)]' % (self.engine.api_info['name'], self.engine.api_info['mediatype']))
@@ -437,6 +438,8 @@ class wmal_gtk(object):
             item.connect("activate", self.do_reload, None, mediatype)
             self.mb_mediatype_menu.append(item)
             item.show()
+            
+        self.statusbox.handler_unblock(self.statusbox_handler)
         gtk.threads_leave()
         
         self.status("Ready.")
