@@ -742,7 +742,8 @@ class ShowSearch(gtk.Window):
         
         alignment = gtk.Alignment(xalign=1.0)
         bottombar = gtk.HBox(False, 5)
-        self.add_button = gtk.Button(stock=gtk.STOCK_ADD)
+        gtk.stock_add([(gtk.STOCK_APPLY, "Add", 0, 0, "")])
+        self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         self.add_button.connect("clicked", self.do_add)
         self.add_button.set_sensitive(False)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
