@@ -207,6 +207,10 @@ class Data(object):
         self._save_queue()
         self._save_cache()
         self.msg.info(self.name, "Queued update for %s" % show['title'])
+        
+        # Immediately process the action if autopush is set
+        if self.config['main']['autopush'] == 'yes':
+            self.process_queue()
     
     def queue_delete(self, show):
         """
