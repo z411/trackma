@@ -332,7 +332,7 @@ class wMAL_urwid(object):
             item = self.listbox.get_focus()[0]
             
             try:
-                show = self.engine.set_status(item.showid, int(data))
+                show = self.engine.set_status(item.showid, data)
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
@@ -349,7 +349,7 @@ class wMAL_urwid(object):
             item = self.listbox.get_focus()[0]
             
             try:
-                show = self.engine.set_episode(item.showid, int(data))
+                show = self.engine.set_episode(item.showid, data)
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
@@ -360,7 +360,7 @@ class wMAL_urwid(object):
             item = self.listbox.get_focus()[0]
             
             try:
-                show = self.engine.set_score(item.showid, int(data))
+                show = self.engine.set_score(item.showid, data)
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return
@@ -372,7 +372,7 @@ class wMAL_urwid(object):
             show = self.engine.get_show_info(item.showid)
             
             try:
-                played_episode = self.engine.play_episode(show, int(data))
+                played_episode = self.engine.play_episode(show, data)
             except utils.wmalError, e:
                 self.status("Error: %s" % e.message)
                 return

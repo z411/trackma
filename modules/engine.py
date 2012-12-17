@@ -423,6 +423,11 @@ class Engine:
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by API.')
+
+        try:
+            playep = int(playep)
+        except ValueError:
+            raise utils.EngineError('Episode must be numeric.')
             
         if show:
             playing_next = False
