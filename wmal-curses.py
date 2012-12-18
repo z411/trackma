@@ -119,7 +119,9 @@ class wMAL_urwid(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
+        self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
+
         # Engine start and list rebuild
         self.engine.start()
         self._rebuild()
