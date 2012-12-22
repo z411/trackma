@@ -17,25 +17,7 @@
 import os, re, shutil
 from ConfigParser import SafeConfigParser
 
-COMMENT_CHAR = '#'
-OPTION_CHAR =  '='
-
 def parse_config(filename):
-    """options = {}
-    f = open(filename)
-    for line in f:
-        # Remove comments
-        if COMMENT_CHAR in line:
-            line, comment = line.split(COMMENT_CHAR, 1)
-        # Store options
-        if OPTION_CHAR in line:
-            option, value = line.split(OPTION_CHAR, 1)
-            option = option.strip()
-            value = value.strip()
-            options[option] = value
-    f.close()
-    return options"""
-    
     options = dict()
     config = SafeConfigParser()
     config.read(filename)
@@ -45,6 +27,16 @@ def parse_config(filename):
             options[section][k] = v
     
     return options
+
+def save_config(config_dict, filename):
+    config = SafeConfigParser()
+    for section_name, section in config_dict.iteritems():
+        config.add_section(section_name)
+        for (k, v) in section.iteritems():
+            config.set(section_name, k, v)
+
+    with open(filename, 'wb') as configfile:
+        config.write(configfile)
 
 def regex_find_file(regex, subdirectory=''):
     __re = re.compile(regex, re.I)

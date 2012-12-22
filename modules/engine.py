@@ -59,15 +59,15 @@ class Engine:
         
         # Create home directory
         utils.make_dir('')
-        configfile = utils.get_root_filename('wmal.conf')
+        self.configfile = utils.get_root_filename('wmal.conf')
         
         # Create config file if it doesn't exist
-        if not utils.file_exists(configfile):
-            utils.copy_file('wmal.conf.example', configfile)
+        if not utils.file_exists(self.configfile):
+            utils.copy_file('wmal.conf.example', self.configfile)
             
         self.msg.info(self.name, 'Reading config file...')
         try:
-            self.config = utils.parse_config(configfile)
+            self.config = utils.parse_config(self.configfile)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
@@ -143,6 +143,10 @@ class Engine:
         
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
+
+        # Save config file
+        utils.save_config(self.config, self.configfile)
+
         self.loaded = False
     
     def reload(self, api=None, mediatype=None):
