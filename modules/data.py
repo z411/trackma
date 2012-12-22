@@ -329,6 +329,9 @@ class Data(object):
     def _lock(self):
         """Creates the database lock, returns an exception if it
         already exists"""
+        if self.config['main']['debug_disable_lock'] == 'yes':
+            return
+
         if os.path.isfile(self.lock_file):
             raise utils.DataFatal("Database is locked by another process. "
                             "If you\'re sure there's no other process is using it, "
@@ -339,6 +342,9 @@ class Data(object):
     
     def _unlock(self):
         """Removes the database lock"""
+        if self.config['main']['debug_disable_lock'] == 'yes':
+            return
+
         os.unlink(self.lock_file)
     
     def get_api_info(self):

@@ -25,6 +25,7 @@ except ImportError:
 
 import urwid
 import re
+import sys
 
 import modules.engine as engine
 import modules.messenger as messenger
@@ -64,6 +65,7 @@ class wMAL_urwid(object):
         ('item_notaired', 'yellow', ''),
         ]
         
+        sys.stdout.write("\x1b]0;wMAL-curses v0.1\x07");
         self.header_title = urwid.Text('wMAL-curses v0.1')
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:watching')

@@ -52,6 +52,7 @@ class wmal_gtk(object):
         self.main.connect("delete_event", self.delete_event)
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('wMAL-gtk v0.1')
+        gtk.window_set_default_icon_from_file('data/wmal_icon.png')
         
         # Menus
         mb_show = gtk.Menu()

@@ -17,7 +17,7 @@
 import lib
 
 import urllib, urllib2
-import xml.etree.ElementTree as ET
+import json
 import utils
 
 class libmelative(lib.lib):
@@ -87,14 +87,15 @@ class libmelative(lib.lib):
         self.msg.info(self.name, 'Logging in...')
         
         try:
-            data = self.opener.open("http://melative.com/api/account/verify_credentials.xml").read()
+            response = self.opener.open("http://melative.com/api/account/verify_credentials.json")
             self.logged_in = True
             
             # Parse user information
-            userinfo = ET.fromstring(data)
-            self.username = userinfo.find('name').text
-            self.userid = int(userinfo.find('id').text)
+            data = json.load(response)
             
+            self.username = data['name']
+            self.userid = data['id']
+
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError("Incorrect credentials.")
@@ -103,45 +104,45 @@ class libmelative(lib.lib):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
         
-        # Get an XML list from API
-        response = self.opener.open("http://melative.com/api/library?user={0}&context_type={1}".format(self.username, self.mediatype))
-        data = response.read()
+        # Get a JSON list from API
+        response = self.opener.open("http://melative.com/api/library.json?user={0}&context_type={1}".format(self.username, self.mediatype))
+        data = json.load(response)
         
-        # Load data from the XML into a parsed dictionary
+        # Load data from the JSON stream into a parsed dictionary
         statuses = self.media_info()['statuses_dict']
-        library = ET.fromstring(data).find('library')
         itemlist = dict()
-        for record in library:
-            if record.tag == 'record':
-                entity = record.find('entity')
-                segment = record.find('segment')
-                itemid = int(entity.find('id').text)
-                
-                _status = 0
-                for k, v in statuses.items():
-                    if v.lower() == record.find('state').text:
-                        _status = k
-                
-                try:
-                    _total = int(entity.find('length').text)
-                except TypeError:
-                    _total = 0
+        for record in data['library']:
+            entity = record['entity']
+            segment = record['segment']
+            itemid = int(entity['id'])
+            
+            # use appropiate number for the show state
+            _status = 0
+            for k, v in statuses.items():
+                if v.lower() == record['state']:
+                    _status = k
+            
+            # use show length if available
+            try:
+                _total = int(entity['length'])
+            except TypeError:
+                _total = 0
                     
-                if self.mediatypes[self.mediatype]['has_progress']:
-                    _progress = int(segment.find('name').text)
-                else:
-                    _progress = 0
+            if self.mediatypes[self.mediatype]['has_progress']:
+                _progress = int(segment['name'])
+            else:
+                _progress = 0
                 
-                itemlist[itemid] = {
-                    'id':           itemid,
-                    'title':        entity.find('aliase').text.encode('utf-8'),
-                    'my_status':    _status,
-                    'my_score':     int(record.find('rating').text or 0),
-                    'my_progress':  _progress,
-                    'total':        _total,
-                    'image':        entity.find('image_url').text,
-                    'status': 0, #placeholder
-                }
+            itemlist[itemid] = {
+                'id':           itemid,
+                'title':        entity['aliases'][0].encode('utf-8'),
+                'my_status':    _status,
+                'my_score':     int(record['rating'] or 0),
+                'my_progress':  _progress,
+                'total':        _total,
+                'image':        entity['image_url'],
+                'status': 0, #placeholder
+            }
         
         return itemlist
             
