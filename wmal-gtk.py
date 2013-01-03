@@ -518,7 +518,7 @@ class wmal_gtk(object):
         about.set_version("0.1")
         about.set_comments("wMAL is an open source client for media tracking websites.")
         about.set_website("http://github.com/z411/wmal-python")
-        about.set_copyright("(c) z411")
+        about.set_copyright("(c) z411 - Icon by shuuichi")
         about.run()
         about.destroy()
         

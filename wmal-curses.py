@@ -77,7 +77,7 @@ class wMAL_urwid(object):
             ('fixed', 16, self.header_api)]), 'status')
         
         self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text('F1:Help  F2:Filter  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
+            urwid.AttrMap(urwid.Text('F1:Help  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
         ])
         
         self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v0.1'), 'status')
@@ -168,8 +168,10 @@ class wMAL_urwid(object):
             self.do_status()
         elif input == 'f7':
             self.do_score()
-        elif input == 'S':
-            self.do_sync()
+        elif input == 's':
+            self.do_send()
+        elif input == 'R':
+            self.do_retrieve()
         elif input == 'a':
             self.do_addsearch()
         elif input == 'c':
@@ -217,8 +219,11 @@ class wMAL_urwid(object):
         show = self.engine.get_show_info(showid)
         self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
     
-    def do_sync(self):
+    def do_send(self):
         self.engine.list_upload()
+        self.status("Ready.")
+
+    def do_retrieve(self):
         self.engine.list_download()
         self.clear_list()
         self.build_list()
@@ -229,8 +234,8 @@ class wMAL_urwid(object):
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
-        helptext += "More controls:\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  S:Sync\n"
+        helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
+        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])

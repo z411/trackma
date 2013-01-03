@@ -3,13 +3,15 @@ wMAL v0.1 Copyright (c) 2012 z411 (electrik.persona@gmail.com)
 Distributed under the GNU General Public License v3, see COPYING for details.
 -------------------------------------------------------------------------------
 wMAL aims to be a lightweight and simple but feature-rich terminal-based
-script for fetching, updating and using data from MyAnimeList anime lists.
+script for fetching, updating and using data from show lists from different
+tracking websites like MyAnimeList or Melative.
 
-The script logs into your MyAnimeList account, and lets you review your list,
-search for shows, and update your episodes all directly from the terminal.
+The script logs into your account, and lets you review your list,
+search for shows, and update your episodes all directly from the same client.
 Aditionally it can search for a specified folder for the next episode
 you have to watch and it starts your media player of choice automatically.
-It also updates the episode automatically whenever the media player is closed.
+It also updates the episode automatically whenever the media player is closed,
+or detect if there's a player running in your system.
 
 REQUIREMENTS
 ============

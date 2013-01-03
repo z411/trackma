@@ -280,8 +280,10 @@ class wmal_cmd(cmd.Cmd):
             except utils.wmalError, e:
                 self.display_error(e)
         
-    def do_sync(self, arg):
+    def do_send(self, arg):
         self.engine.list_upload()
+    
+    def do_retrieve(self, arg):
         self.engine.list_download()
     
     def do_undoall(self, arg):
