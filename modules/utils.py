@@ -87,6 +87,19 @@ def get_terminal_size(fd=1):
  
     return hw
 
+def show():
+    return {
+        'id':           0,
+        'title':        '',
+        'my_progress':  0,
+        'my_status':    0,
+        'my_score':     0,
+        'type':         0,
+        'status':       0,
+        'total':        0,
+        'image':        '',
+    }
+
 class wmalError(Exception):
     pass
 

@@ -15,8 +15,8 @@
 #
 
 import lib
-import urllib, urllib2
-from BeautifulSoup import BeautifulSoup
+import socket
+import json
 
 import utils
 
@@ -27,7 +27,11 @@ class libvndb(lib.lib):
     """
     name = 'libvndb'
     
-    api_info =  { 'name': 'VNDB', 'version': 'v0.1' }
+    api_info =  {
+                  'name': 'VNDB',
+                  'version': 'v0.1',
+                  'merge': True,
+                }
     
     mediatypes = dict()
     mediatypes['vn'] = {
@@ -36,8 +40,8 @@ class libvndb(lib.lib):
         'can_status': False,
         'can_update': False,
         'can_play': False,
-        'statuses':  [1, 2, 3, 4, 6],
-        'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 6: 'Wishlist' },
+        'statuses':  [1, 2, 3, 4, 6, 0],
+        'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 6: 'Wishlist', 0: 'Unknown' },
     }
     
     def __init__(self, messenger, config):
@@ -45,89 +49,170 @@ class libvndb(lib.lib):
         super(libvndb, self).__init__(messenger, config)
         
         self.username = config['username']
+        self.password = config['password']
+        self.logged_in = False
+        
+    def _connect(self):
+        """Create TCP socket and connect"""
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect(("beta.vndb.org", 19534))
     
+    def _disconnect(self):
+        """Shutdown and close the socket"""
+        self.s.shutdown(socket.SHUT_RDWR)
+        self.s.close()
+    
+    def _sendcmd(self, cmd, options=None):
+        """Send a VNDB compatible command and return the response data"""
+        msg = cmd
+        if options:
+            msg += " " + json.dumps(options, separators=(',',':'))
+        msg += "\x04" # EOT
+        
+        # Send message
+        self.s.sendall(msg)
+        
+        # Construct response
+        response = ""
+        while True:
+            response += self.s.recv(65536)
+            if response.endswith("\x04"):
+                response = response.strip("\x04")
+                break
+        
+        # Separate into response name and JSON data
+        _resp = response.split(' ', 1)
+        name = _resp[0]
+        try:
+            data = json.loads(_resp[1])
+        except IndexError:
+            data = None
+        
+        # Treat error as an exception
+        if name == 'error':
+            raise utils.APIError(data['msg'])
+        
+        return (name, data)
+        
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
-        return True
+        self.msg.info(self.name, 'Connecting...')
+        self._connect()
+        
+        self.msg.info(self.name, 'Logging in...')
+        (name, data) = self._sendcmd('login',
+            {'protocol': 1,
+             'client': 'wSync',
+             'clientver': 0.2,
+             'username': self.username,
+             'password': self.password,
+             })
+        
+        if name == 'ok':
+            self.logged_in = True
+            return True
+        else:
+            return False
     
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
-        self.msg.info(self.name, 'Downloading list...')
+        if not self.logged_in:
+            self.check_credentials()
         
-        data = urllib.urlopen('http://vndb.org/u'+self.username+'/list').read()
-        soup = BeautifulSoup(data)
-        
-        if soup.head.title.string == 'Page Not Found':
-            raise utils.APIFatal("Invalid user. Remember to use the user ID in the config file.")
-        
-        rows = soup.findAll('tr')
-        
-        vnlist = dict()
-        statuses = self.media_info()['statuses_dict']
-        
-        for row in rows:
-            vn = dict()
-            vnid = 0
-            for td in row.contents:
-                if td['class'] == "tc3_5": # title
-                    vnid = int(td.a['href'][2:])
-                    vn['id'] = vnid
-                    vn['title'] = td.a.string.encode('utf-8')
-                elif td['class'] == "tc6": # status
-                    if not vnid:
-                        continue
-                    
-                    _status = 0
-                    for k, v in statuses.items():
-                        if v == td.string:
-                            _status = k
-                    
-                    vn['my_status'] = _status
-                elif td['class'] == "tc8": # score
-                    if not vnid:
-                        continue
-                    
-                    if td.string == '-':
-                        vn['my_score'] = 0
-                    else:
-                        vn['my_score'] = int(td.string)
+        # Retrieve VNs per pages
+        page = 1
+        vns = dict()
+        while True:
+            self.msg.info(self.name, 'Downloading list... (%d)' % page)
             
-            # Dummy TODO
-            vn['status'] = 0
-            vn['my_progress'] = 0
-            vn['total'] = 0
-            
-            if vnid > 0:
-                vnlist[vnid] = vn
+            (name, data) = self._sendcmd('get vnlist basic (uid = 0)',
+                {'page': page,
+                'results': 25
+                })
         
-        # Wishlist
-        data = urllib.urlopen('http://vndb.org/u'+self.username+'/wish').read()
-        soup = BeautifulSoup(data)
-        rows = soup.findAll('tr')
-        for row in rows:
-            vn = dict()
-            vnid = 0
-            for td in row.contents:
-                if td['class'] == "tc1": # title
-                    a = td.contents[0]
-                    try:
-                        vnid = int(a['href'][2:])
-                    except TypeError:
-                        continue
-                    
-                    vn['id'] = vnid
-                    vn['title'] = a.string.encode('utf-8')
+            # Something is wrong if we don't get a results response.
+            if name != 'results':
+                raise utils.APIFatal("Invalid response (%s)" % name)
             
-            # Dummy TODO
-            vn['my_score'] = 0
-            vn['my_status'] = 6
-            vn['status'] = 0
-            vn['my_progress'] = 0
-            vn['total'] = 0
+            # Process list
+            for item in data['items']:
+                vnid = item['vn']
+                vns[vnid] = utils.show()
+                vns[vnid]['id']         = vnid
+                vns[vnid]['my_status']  = item['status']
             
-            if vnid > 0:
-                vnlist[vnid] = vn
+            if not data['more']:
+                # No more VNs, finish
+                break
+            page += 1
         
-        return vnlist
+        # Retrieve scores per pages
+        page = 1
+        while True:
+            self.msg.info(self.name, 'Downloading votes... (%d)' % page)
+            
+            (name, data) = self._sendcmd('get votelist basic (uid = 0)',
+                {'page': page,
+                'results': 25
+                })
+            
+            # Something is wrong if we don't get a results response.
+            if name != 'results':
+                raise utils.APIFatal("Invalid response (%s)" % name)
+            
+            for item in data['items']:
+                vnid = item['vn']
+                try:
+                    vns[vnid]['my_score'] = item['vote']
+                except KeyError:
+                    # Ghost vote; ignore it
+                    pass
+                
+            if not data['more']:
+                # No more VNs, finish
+                break
+            page += 1
+        
+        return vns
     
+    def request_info(self, itemlist):
+        if not self.logged_in:
+            self.check_credentials()
+            
+        start = 0
+        infos = list()
+        remaining = itemlist
+        while True:
+            self.msg.info(self.name, 'Requesting details...(%d)' % start)
+            end = start + 25
+            
+            (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(itemlist[start:end]),
+                {'page': 1,
+                 'results': 25,
+                })
+            
+            # Something is wrong if we don't get a results response.
+            if name != 'results':
+                raise utils.APIFatal("Invalid response (%s)" % name)
+            
+            # Process list
+            for item in data['items']:
+                info = {'id': item['id'],
+                        'title': item['title'],
+                        'image': item['image'],
+                       }
+                infos.append(info)
+            
+            start += 25
+            if start > len(itemlist):
+                # We're going beyond the list, finish
+                break
+        
+        self._emit_signal('show_info_changed', infos)
+        return infos
+    
+    def logout(self):
+        self.msg.info(self.name, 'Disconnecting...')
+        self._disconnect()
+        self.logged_in = False

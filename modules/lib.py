@@ -30,13 +30,16 @@ class lib(object):
     # api_info is a dictionary containing useful information about the API itself
     # name: API name
     # version: API version
-    api_info = { 'name': 'BaseAPI', 'version': 'undefined' }
+    api_info = { 'name': 'BaseAPI', 'version': 'undefined', 'merge': False }
     
     # mediatypes is a dictionary containing the possible mediatypes for the current API.
     # An example mediatype should look like this:
     #
     # 
     mediatypes = dict()
+
+    # Supported signals for the data handler
+    signals = { 'show_info_changed':    None, }
     
     def __init__(self, messenger, config):
         """Initializes the base for the API"""
@@ -50,6 +53,19 @@ class lib(object):
         
         self.api_info['mediatype'] = self.mediatype
         self.api_info['supported_mediatypes'] = self.mediatypes.keys()
+
+    def _emit_signal(self, signal, args=None):
+        try:
+            if self.signals[signal]:
+                self.signals[signal](args)
+        except KeyError:
+            raise Exception("Call to undefined signal.")
+
+    def connect_signal(self, signal, callback):
+        try:
+            self.signals[signal] = callback
+        except KeyError:
+            raise utils.EngineFatal("Invalid signal.")
         
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -95,6 +111,15 @@ class lib(object):
     def search(self, criteria):
         # Search for shows
         raise NotImplementedError
+    
+    def request_info(self, ids):
+        # Request detailed information for requested shows
+        raise NotImplementedError
+    
+    def logout(self):
+        # This is called whenever the API won't be required
+        # for a good while
+        pass
         
     def media_info(self):
         """Return information about the currently selected mediatype."""

@@ -36,7 +36,7 @@ class libmal(lib.lib):
     handler = None
     opener = None
     
-    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.1' }
+    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.1', 'merge': False }
     
     mediatypes = dict()
     mediatypes['anime'] = {
@@ -218,6 +218,7 @@ class libmal(lib.lib):
             }
             entries.append(show)
         
+        self._emit_signal('show_info_changed', entries)
         return entries
         
     def _parse_anime(self, root):

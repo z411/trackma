@@ -39,6 +39,7 @@ class Data(object):
     msg = None
     api = None
     showlist = None
+    infocache = dict()
     queue = list()
     config = dict()
     
@@ -72,13 +73,17 @@ class Data(object):
         # Get files
         utils.make_dir(libbase)
         self.queue_file = utils.get_filename(libbase, '%s.queue' % mediatype)
-        self.cache_file = utils.get_filename(libbase, '%s.db' % mediatype)
+        self.info_file = utils.get_filename(libbase, '%s.info' % mediatype)
+        self.cache_file = utils.get_filename(libbase, '%s.list' % mediatype)
         self.lock_file = utils.get_filename(libbase, 'lock')
         
         # Instance API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, self.config[libbase])
+
+        # Connect signals
+        self.api.connect_signal('show_info_changed', self.info_update)
     
     def set_message_handler(self, message_handler):
         self.msg = message_handler
@@ -102,10 +107,12 @@ class Data(object):
             self._load_cache()
         else:
             try:
-                #self.api.check_credentials()
                 self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
+
+        if self._info_exists():
+            self._load_info()
         
         if self._queue_exists():
             self._load_queue()
@@ -169,8 +176,6 @@ class Data(object):
         self._save_queue()
         self._save_cache()
         self.msg.info(self.name, "Queued add for %s" % show['title'])
-        
-        
         
     def queue_update(self, show, key, value):
         """
@@ -295,10 +300,21 @@ class Data(object):
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
                     self.queue.append(show)
             
+            self.api.logout()
             self._save_queue()
         else:
             self.msg.debug(self.name, 'No items in queue.')
+    
+    def info_get(self, showid):
+        return self.infocache[showid]
+
+    def info_update(self, shows):
+        for show in shows:
+            showid = show['id']
+            self.infocache[showid] = show
         
+        self._save_info()
+
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
         self.showlist = cPickle.load( open( self.cache_file , "rb" ) )
@@ -307,6 +323,14 @@ class Data(object):
         self.msg.debug(self.name, "Saving cache...")
         cPickle.dump(self.showlist, open( self.cache_file , "wb" ) )
     
+    def _load_info(self):
+        self.msg.debug(self.name, "Reading info DB...")
+        self.infocache = cPickle.load( open( self.info_file , "rb" ) )
+    
+    def _save_info(self):
+        self.msg.debug(self.name, "Saving info DB...")
+        cPickle.dump(self.infocache, open( self.info_file , "wb" ) )
+
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")
         self.queue = cPickle.load( open( self.queue_file , "rb" ) )
@@ -318,11 +342,45 @@ class Data(object):
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""
         self.showlist = self.api.fetch_list()
+        
+        if self.api.api_info['merge']:
+            # The API needs information to be merged from the
+            # info database
+            missing = []
+            for k, show in self.showlist.iteritems():
+                # Here we search the information in the local
+                # info database. If it isn't available, add it
+                # to the missing list for them to be requested
+                # to the API later.
+                showid = show['id']
+                
+                try:
+                    info = self.infocache[showid]
+                except KeyError:
+                    missing.append(showid)
+                    continue
+                    
+                show['title'] = info['title']
+                show['image'] = info['image']
+            
+            # Here we request the missing items and merge them
+            # immedately with the list.
+            if len(missing) > 0:
+                infos = self.api.request_info(missing)
+                for info in infos:
+                    showid = info['id']
+                    self.showlist[showid]['title'] = info['title']
+                    self.showlist[showid]['image'] = info['image']
+        
         self._save_cache()
+        self.api.logout()
         
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)
     
+    def _info_exists(self):
+        return os.path.isfile(self.info_file)
+
     def _queue_exists(self):
         return os.path.isfile(self.queue_file)
     

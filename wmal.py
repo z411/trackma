@@ -281,10 +281,16 @@ class wmal_cmd(cmd.Cmd):
                 self.display_error(e)
         
     def do_send(self, arg):
-        self.engine.list_upload()
+        try:
+            self.engine.list_upload()
+        except utils.wmalError, e:
+            self.display_error(e)
     
     def do_retrieve(self, arg):
-        self.engine.list_download()
+        try:
+            self.engine.list_download()
+        except utils.wmalError, e:
+            self.display_error(e)
     
     def do_undoall(self, arg):
         """
