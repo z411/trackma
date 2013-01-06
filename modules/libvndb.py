@@ -36,12 +36,14 @@ class libvndb(lib.lib):
     mediatypes = dict()
     mediatypes['vn'] = {
         'has_progress': False,
-        'can_score': False,
-        'can_status': False,
+        'can_score': True,
+        'can_status': True,
+        'can_add': True,
+        'can_delete': True,
         'can_update': False,
         'can_play': False,
-        'statuses':  [1, 2, 3, 4, 6, 0],
-        'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 6: 'Wishlist', 0: 'Unknown' },
+        'statuses':  [1, 2, 3, 4, 0],
+        'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
     }
     
     def __init__(self, messenger, config):
@@ -54,8 +56,11 @@ class libvndb(lib.lib):
         
     def _connect(self):
         """Create TCP socket and connect"""
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect(("beta.vndb.org", 19534))
+        try:
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s.connect(("api.vndb.org", 19534))
+        except socket.error:
+            raise utils.APIError("Connection error.")
     
     def _disconnect(self):
         """Shutdown and close the socket"""
@@ -96,6 +101,9 @@ class libvndb(lib.lib):
         
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
+        if self.logged_in:
+            return True
+        
         self.msg.info(self.name, 'Connecting...')
         self._connect()
         
@@ -117,8 +125,7 @@ class libvndb(lib.lib):
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
-        if not self.logged_in:
-            self.check_credentials()
+        self.check_credentials()
         
         # Retrieve VNs per pages
         page = 1
@@ -164,7 +171,7 @@ class libvndb(lib.lib):
             for item in data['items']:
                 vnid = item['vn']
                 try:
-                    vns[vnid]['my_score'] = item['vote']
+                    vns[vnid]['my_score'] = (item['vote'] / 10)
                 except KeyError:
                     # Ghost vote; ignore it
                     pass
@@ -177,8 +184,7 @@ class libvndb(lib.lib):
         return vns
     
     def request_info(self, itemlist):
-        if not self.logged_in:
-            self.check_credentials()
+        self.check_credentials()
             
         start = 0
         infos = list()
@@ -211,6 +217,75 @@ class libvndb(lib.lib):
         
         self._emit_signal('show_info_changed', infos)
         return infos
+    
+    def add_show(self, item):
+        # When we try to "update" a VN that isn't in the list, the
+        # VNDB API automatically inserts it, so we can use the same
+        # command.
+        self.update_show(item)
+        
+    def update_show(self, item):
+        self.check_credentials()
+        
+        # Update status with set vnlist
+        if 'my_status' in item.keys():
+            self.msg.info(self.name, 'Updating VN %s (status)...' % item['title'])
+            
+            values = {'status': item['my_status']}
+            (name, data) = self._sendcmd('set vnlist %d' % item['id'], values)
+        
+            if name != 'ok':
+                raise utils.APIError("Invalid response (%s)" % name)
+        
+        # Update vote with set votelist
+        if 'my_score' in item.keys():
+            self.msg.info(self.name, 'Updating VN %s (vote)...' % item['title'])
+            
+            if item['my_score'] > 0:
+                # Add or update vote
+                values = {'vote': item['my_score'] * 10}
+            else:
+                # Delete vote if it's 0
+                values = None
+            
+            (name, data) = self._sendcmd('set votelist %d' % item['id'], values)
+            
+            if name != 'ok':
+                raise utils.APIError("Invalid response (%s)" % name)
+    
+    def delete_show(self, item):
+        self.check_credentials()
+        
+        self.msg.info(self.name, 'Deleting VN %s...' % item['title'])
+            
+        (name, data) = self._sendcmd('set vnlist %d' % item['id'])
+        
+        if name != 'ok':
+            raise utils.APIError("Invalid response (%s)" % name)
+        
+    def search(self, criteria):
+        self.check_credentials()
+        
+        results = list()
+        self.msg.info(self.name, 'Searching for %s...' % criteria)
+        
+        (name, data) = self._sendcmd('get vn basic (title ~ "%s")' % criteria,
+            {'page': 1,
+             'results': 25,
+            })
+        
+        # Something is wrong if we don't get a results response.
+        if name != 'results':
+            raise utils.APIFatal("Invalid response (%s)" % name)
+        
+        # Process list
+        for item in data['items']:
+            result = utils.show()
+            result['id']    = item['id']
+            result['title'] = item['title']
+            results.append(result)
+        
+        return results
     
     def logout(self):
         self.msg.info(self.name, 'Disconnecting...')

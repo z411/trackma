@@ -23,7 +23,7 @@ import utils
 class libmelative(lib.lib):
     name = 'libmelative'
     
-    api_info =  { 'name': 'Melative', 'version': 'v0.1' }
+    api_info =  { 'name': 'Melative', 'version': 'v0.1', 'merge': False }
     
     mediatypes = dict()
     

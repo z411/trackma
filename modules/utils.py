@@ -92,7 +92,7 @@ def show():
         'id':           0,
         'title':        '',
         'my_progress':  0,
-        'my_status':    0,
+        'my_status':    1,
         'my_score':     0,
         'type':         0,
         'status':       0,

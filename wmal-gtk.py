@@ -622,7 +622,12 @@ class ShowView(gtk.TreeView):
         
         self.cols = dict()
         i = 0
-        for name in ('ID', 'Title', 'Progress', 'Score', 'Percent'):
+        if has_progress:
+            columns = ('ID', 'Title', 'Progress', 'Score', 'Percent')
+        else:
+            columns = ('ID', 'Title', 'Score')
+
+        for name in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(i)
             self.append_column(self.cols[name])
@@ -635,22 +640,23 @@ class ShowView(gtk.TreeView):
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
         self.cols['Title'].set_resizable(True)
-        #self.cols['Title'].set_expand(True)
+        self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
         self.cols['Title'].add_attribute(renderer_title, 'foreground', 5)
         
-        renderer_progress = gtk.CellRendererText()
-        self.cols['Progress'].pack_start(renderer_progress, False)
-        self.cols['Progress'].add_attribute(renderer_progress, 'text', 2)
+        if has_progress:
+            renderer_progress = gtk.CellRendererText()
+            self.cols['Progress'].pack_start(renderer_progress, False)
+            self.cols['Progress'].add_attribute(renderer_progress, 'text', 2)
+                
+            renderer_percent = gtk.CellRendererProgress()
+            self.cols['Percent'].pack_start(renderer_percent, False)
+            self.cols['Percent'].add_attribute(renderer_percent, 'value', 4)
+            renderer_percent.set_fixed_size(100, -1)
         
         renderer_score = gtk.CellRendererText()
         self.cols['Score'].pack_start(renderer_score, False)
         self.cols['Score'].add_attribute(renderer_score, 'text', 3)
-        
-        renderer_percent = gtk.CellRendererProgress()
-        self.cols['Percent'].pack_start(renderer_percent, False)
-        self.cols['Percent'].add_attribute(renderer_percent, 'value', 4)
-        renderer_percent.set_fixed_size(100, -1)
         
         self.store = gtk.ListStore(str, str, str, str, int, str)
         self.set_model(self.store)

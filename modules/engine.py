@@ -174,7 +174,7 @@ class Engine:
         
     def get_list(self):
         """Requests the full show list from the data handler."""
-        return self.data_handler.get().values()
+        return self.data_handler.get().itervalues()
     
     def get_show_info(self, pattern):
         """
@@ -464,10 +464,7 @@ class Engine:
 
         """
         showlist = self.data_handler.get()
-        if filter_num:
-            return list(v for k, v in showlist.iteritems() if v['my_status'] == filter_num)
-        else:
-            return showlist.values()
+        return list(v for k, v in showlist.iteritems() if v['my_status'] == filter_num)
     
     def tracker(self, interval, wait):
         """
