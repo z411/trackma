@@ -140,7 +140,9 @@ class Data(object):
     
     def search(self, criteria):
         # Tell API to search
-        return self.api.search(criteria)
+        results = self.api.search(criteria)
+        self.api.logout()
+        return results
        
     def queue_add(self, show):
         """
