@@ -319,6 +319,8 @@ class wMAL_urwid(object):
     
     def addsearch_do(self, show):
         self.dialog.close()
+        # Add show as current status
+        show['my_status'] = self.filters_nums[self.cur_filter]
         try:
             self.engine.add_show(show)
         except utils.wmalError, e:

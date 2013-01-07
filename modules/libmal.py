@@ -27,6 +27,9 @@ class libmal(lib.lib):
     """
     API class to communicate with MyAnimeList
     Should inherit a base library interface.
+
+    http://www.myanimelist.net
+
     """
     name = 'libmal'
     

@@ -22,8 +22,11 @@ import utils
 
 class libvndb(lib.lib):
     """
-    API class to communicate with MyAnimeList
+    API class to communicate with VNDB
     Should inherit a base library interface.
+
+    http://www.vndb.org
+
     """
     name = 'libvndb'
     

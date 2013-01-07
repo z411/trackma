@@ -21,6 +21,12 @@ import json
 import utils
 
 class libmelative(lib.lib):
+    """
+    API class to communiate with Melative.
+
+    http://www.melative.com
+    
+    """
     name = 'libmelative'
     
     api_info =  { 'name': 'Melative', 'version': 'v0.1', 'merge': False }
