@@ -23,6 +23,8 @@ tracker_enabled = no
 tracker_interval = 120
 ; Time for the tracker to wait before updating the episode (in minutes)
 tracker_update_wait = 5
+; Change status automatically depending on the episode
+auto_status_change = yes
 ; Disable locking (only debugging!)
 debug_disable_lock = yes
 

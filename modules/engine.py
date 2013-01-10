@@ -117,7 +117,7 @@ class Engine:
             raise utils.APIFatal(e.message)
         
         # Start tracker
-        if self.mediainfo.get('can_play') and self.config['main']['tracker_enabled'] == 'yes':
+        if self.mediainfo.get('can_play') and self.config['main'].get('tracker_enabled') == 'yes':
             tracker_args = (
                             int(self.config['main']['tracker_interval']),
                             int(self.config['main']['tracker_update_wait']),
@@ -283,7 +283,7 @@ class Engine:
         except ValueError:
             raise utils.EngineError('Episode must be numeric.')
         
-        # Get the show and update it
+        # Get the show info
         show = self.get_show_info(show_pattern)
         # More checks
         if show['total'] and newep > show['total']:
@@ -294,7 +294,16 @@ class Engine:
         # Change episode
         self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
         self.data_handler.queue_update(show, 'my_progress', newep)
-        
+
+        # Change status if required
+        if self.config['main'].get('auto_status_change') == 'yes':
+            if newep == 1 and self.mediainfo.get('status_start'):
+                self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_start'])
+                self._emit_signal('status_changed', show)
+            elif newep == show['total'] and self.mediainfo.get('status_finish'):
+                self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_finish'])
+                self._emit_signal('status_changed', show)
+
         # Emit signal
         self._emit_signal('episode_changed', show)
         
@@ -503,6 +512,7 @@ class Engine:
                             self.msg.info(self.name, 'Will update %s %d in %d seconds' % (last_show['title'], episode, wait_s-timedif))
                     else:
                         # We shouldn't update to this episode!
+                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % last_show['title'])
                         last_updated = True
                 else:
                     # The episode was updated already. do nothing

@@ -50,6 +50,8 @@ class libmal(lib.lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'status_start': 1,
+        'status_finish': 2,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
     }
