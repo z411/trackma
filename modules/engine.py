@@ -402,6 +402,8 @@ class Engine:
         searchfile = title
         searchfile = searchfile.replace(',', ',?')
         searchfile = searchfile.replace('.', '.?')
+        searchfile = searchfile.replace('!', '[!]?')
+        searchfile = searchfile.replace('?', '[?]?')
         searchfile = searchfile.replace(' ', '.')    
         searchep = str(episode).zfill(2)
         
