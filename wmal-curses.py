@@ -618,7 +618,8 @@ class Asker(urwid.Edit):
 
 class QuestionAsker(Asker):
     def keypress(self, size, key):
-        urwid.emit_signal(self, 'done', key)
+        if key.lower() in 'yn':
+            urwid.emit_signal(self, 'done', key)
     
 if __name__ == '__main__':
     try:
