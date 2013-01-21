@@ -41,6 +41,7 @@ class libmal(lib.lib):
     
     api_info =  { 'name': 'MyAnimeList', 'version': 'v0.1', 'merge': False }
     
+    default_mediatype = 'anime'
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -67,16 +68,16 @@ class libmal(lib.lib):
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
-    def __init__(self, messenger, config):
+    def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
         # together with the urllib2 opener.
-        super(libmal, self).__init__(messenger, config)
+        super(libmal, self).__init__(messenger, account, userconfig)
         
-        self.username = config['username']
+        self.username = account['username']
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", config['username'], config['password']);
+        self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", account['username'], account['password']);
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)

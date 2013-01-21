@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+VERSION = 'v0.2'
+
 import re
 import os
 import subprocess
@@ -52,22 +54,25 @@ class Engine:
                 'score_changed':    None,
                 'status_changed':   None, }
     
-    def __init__(self, message_handler=None):
+    def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
-        self.msg.info(self.name, 'Version v0.1')
+        self.account = account
+        self.msg.info(self.name, 'Version '+VERSION)
         
         # Create home directory
         utils.make_dir('')
-        self.configfile = utils.get_root_filename('wmal.conf')
+        self.configfile = utils.get_root_filename('config.json')
         
-        # Create config file if it doesn't exist
-        if not utils.file_exists(self.configfile):
-            utils.copy_file('wmal.conf.example', self.configfile)
-            
-        self.msg.info(self.name, 'Reading config file...')
+        # Create user directory
+        userfolder = "%s.%s" % (account['username'], account['api'])
+        utils.make_dir(userfolder)
+        self.userconfigfile = utils.get_filename(userfolder, 'user.json')
+        
+        self.msg.info(self.name, 'Reading config files...')
         try:
-            self.config = utils.parse_config(self.configfile)
+            self.config = utils.parse_config(self.configfile, utils.config_defaults)
+            self.userconfig = utils.parse_config(self.userconfigfile, utils.userconfig_defaults)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
@@ -75,7 +80,7 @@ class Engine:
     
     def _init_data_handler(self):
         # Create data handler
-        self.data_handler = data.Data(self.msg, self.config)
+        self.data_handler = data.Data(self.msg, self.config, self.account, self.userconfig)
         
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
@@ -117,10 +122,10 @@ class Engine:
             raise utils.APIFatal(e.message)
         
         # Start tracker
-        if self.mediainfo.get('can_play') and self.config['main'].get('tracker_enabled') == 'yes':
+        if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
             tracker_args = (
-                            int(self.config['main']['tracker_interval']),
-                            int(self.config['main']['tracker_update_wait']),
+                            int(self.config['tracker_interval']),
+                            int(self.config['tracker_update_wait']),
                            )
             tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
             tracker_t.daemon = True
@@ -146,29 +151,22 @@ class Engine:
 
         # Save config file
         utils.save_config(self.config, self.configfile)
+        utils.save_config(self.userconfig, self.userconfigfile)
 
         self.loaded = False
     
-    def reload(self, api=None, mediatype=None):
+    def reload(self, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
         if not self.loaded:
             raise utils.wmalError("Engine is not loaded.")
         
-        to_api = self.config['main']['api']
-        
-        if api:
-            if api in self.config.keys():
-                to_api = api
-            else:
-                raise utils.EngineError('Unsupported API: %s' % api)
         if mediatype:
             to_mediatype = mediatype
         else:
-            to_mediatype = self.config[to_api]['mediatype']
+            to_mediatype = self.userconfig['mediatype']
             
         self.unload()
-        self.config['main']['api'] = to_api
-        self.config[to_api]['mediatype'] = to_mediatype
+        self.config['mediatype'] = to_mediatype
         self._init_data_handler()
         self.start()
         
@@ -296,7 +294,7 @@ class Engine:
         self.data_handler.queue_update(show, 'my_progress', newep)
 
         # Change status if required
-        if self.config['main'].get('auto_status_change') == 'yes':
+        if self.config['auto_status_change']:
             if newep == 1 and self.mediainfo.get('status_start'):
                 self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_start'])
                 self._emit_signal('status_changed', show)
@@ -409,7 +407,7 @@ class Engine:
         
         # Do the file search
         regex = searchfile + r".*\D" + searchep + r"\D.*(mkv|mp4|avi)"
-        return utils.regex_find_file(regex, self.config['main']['searchdir'])
+        return utils.regex_find_file(regex, self.config['searchdir'])
     
     def get_new_episodes(self, showlist):
         results = list()
@@ -453,7 +451,7 @@ class Engine:
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 self.playing = True
-                subprocess.call([self.config['main']['player'], filename])
+                subprocess.call([self.config['player'], filename])
                 self.playing = False
                 return playep
             else:
@@ -536,7 +534,7 @@ class Engine:
             # Don't do anything if the engine is busy playing a file
             return None
         
-        filename = self._playing_file(self.config['main']['player'], self.config['main']['searchdir'])
+        filename = self._playing_file(self.config['player'], self.config['searchdir'])
         
         if filename:
             # Do a regex to the filename to get

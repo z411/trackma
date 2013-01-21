@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# wMAL v0.1
+# wMAL v0.2
 # Lightweight terminal-based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
 #
@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+VERSION = 'v0.2'
+
 import sys
 import readline
 import cmd
@@ -27,6 +29,7 @@ from operator import itemgetter # Used for sorting list
 import modules.messenger as messenger
 import modules.engine as engine
 import modules.utils as utils
+import modules.accounts as accountman
 
 _DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
@@ -46,22 +49,29 @@ class wmal_cmd(cmd.Cmd):
     engine = None
     filter_num = 1
     sort = 'title'
+    completekey = '\t'
+    cmdqueue = []
+    stdout = sys.stdout
     
     __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
+    def __init__(self):
+        self.accountman = wmal_accounts()
+        self.account = self.accountman.select_account()
+
     def start(self):
         """
         Initializes the engine
         
         Creates an Engine object and starts it.
         """
-        print 'wMAL v0.1  Copyright (C) 2012  z411'
+        print 'wMAL '+VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
         print 'This is free software, and you are welcome to redistribute it'
         print 'under certain conditions; see the file COPYING for details.'
         print
         print 'Initializing engine...'
-        self.engine = engine.Engine(self.messagehandler)
+        self.engine = engine.Engine(self.account, self.messagehandler)
         self.engine.start()
         
         # Start with default filter selected
@@ -444,7 +454,42 @@ class wmal_cmd(cmd.Cmd):
         # Print result count
         print '%d results' % len(showlist)
         print
+
+class wmal_accounts(accountman.AccountManager):
+    def select_account(self):
+        print "Account Manager"
+        while True:
+            print '--- Accounts ---'
+            self.list_accounts()
+            key = raw_input("Input account number ([A]dd, [L]ist, [C]ancel, [D]elete): ")
+
+            if key.lower() == 'a':
+                print "--- Add account ---"
+                username = raw_input('Enter username: ')
+                password = raw_input('Enter password: ')
+                api = raw_input('Enter API: ')
+
+                self.add_account(username, password, api)
+                print 'Done.'
+            else:
+                num = int(key)
+                accounts = self.get_accounts()
+                num -= 1
+                return accounts[num]
     
+    def list_accounts(self):
+        accounts = self.get_accounts()
+
+        print "Available accounts:"
+        i = 0
+        for account in accounts:
+            print "%d: %s (%s)" % (i+1, account['username'], account['api'])
+            i += 1
+
+        if i == 0:
+            print "No accounts."
+
+
 if __name__ == '__main__':
     main_cmd = wmal_cmd()
     try:

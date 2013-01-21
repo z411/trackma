@@ -36,18 +36,22 @@ class lib(object):
     # An example mediatype should look like this:
     #
     # 
+    default_mediatype = None
     mediatypes = dict()
 
     # Supported signals for the data handler
     signals = { 'show_info_changed':    None, }
     
-    def __init__(self, messenger, config):
+    def __init__(self, messenger, account, userconfig):
         """Initializes the base for the API"""
         self.msg = messenger
         self.msg.info(self.name, 'Version %s' % self.api_info['version'])
         
-        if config['mediatype'] in self.mediatypes:
-            self.mediatype = config['mediatype']
+        if not userconfig.get('mediatype'):
+            userconfig['mediatype'] = self.default_mediatype
+        
+        if userconfig['mediatype'] in self.mediatypes:
+            self.mediatype = userconfig['mediatype']
         else:
             raise utils.APIFatal('Unsupported mediatype.')
         

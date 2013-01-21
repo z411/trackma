@@ -15,28 +15,25 @@
 #
 
 import os, re, shutil
-from ConfigParser import SafeConfigParser
+import json
 
-def parse_config(filename):
-    options = dict()
-    config = SafeConfigParser()
-    config.read(filename)
-    for section in config.sections():
-        options[section] = dict()
-        for (k, v) in config.items(section):
-            options[section][k] = v
-    
-    return options
+# Put the available APIs here
+available_libs = [
+    ('mal',     'MyAnimeList',  'mal.jpg'),
+    ('vndb',    'VNDB',         'vndb.jpg'),
+]
+
+def parse_config(filename, default):
+    try:
+        with open(filename) as configfile:
+            return json.load(configfile)
+    except IOError:
+        return default
 
 def save_config(config_dict, filename):
-    config = SafeConfigParser()
-    for section_name, section in config_dict.iteritems():
-        config.add_section(section_name)
-        for (k, v) in section.iteritems():
-            config.set(section_name, k, v)
-
     with open(filename, 'wb') as configfile:
-        config.write(configfile)
+        json.dump(config_dict, configfile, sort_keys=True,
+                  indent=4, separators=(',', ': '))
 
 def regex_find_file(regex, subdirectory=''):
     __re = re.compile(regex, re.I)
@@ -55,13 +52,13 @@ def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
     if not os.path.isdir(path):
         os.mkdir(path)
-
+    
 def file_exists(filename):
     return os.path.isfile(filename)
 
 def copy_file(src, dest):
     shutil.copy(src, dest)
-    
+
 def get_filename(subdir, filename):
     return os.path.expanduser(os.path.join('~', '.wmal', subdir, filename))
     
@@ -123,3 +120,19 @@ class DataFatal(wmalFatal):
 
 class APIFatal(wmalFatal):
     pass
+    
+# Configuration defaults
+config_defaults = {
+    'player': 'mpv',
+    'searchdir': '/home/user/Videos',
+    'autopush': False,
+    'tracker_enabled': True,
+    'tracker_update_wait': 5,
+    'tracker_interval': 120,
+    'debug_disable_lock': True,
+    'auto_status_change': True,
+    'push_on_exit': True,
+}
+userconfig_defaults = {
+    'mediatype': '',
+}

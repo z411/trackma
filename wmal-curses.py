@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# wMAL-curses v0.1
+# wMAL-curses v0.2
 # Lightweight urwid+curses based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
 #
@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
+VERSION = 'v0.2'
 
 try:
     import urwid.curses_display
@@ -65,8 +67,8 @@ class wMAL_urwid(object):
         ('item_notaired', 'yellow', ''),
         ]
         
-        sys.stdout.write("\x1b]0;wMAL-curses v0.1\x07");
-        self.header_title = urwid.Text('wMAL-curses v0.1')
+        sys.stdout.write("\x1b]0;wMAL-curses v"+VERSION+"\x07");
+        self.header_title = urwid.Text('wMAL-curses v' + VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:watching')
         self.header_sort = urwid.Text('Sort:title')
@@ -80,7 +82,7 @@ class wMAL_urwid(object):
             urwid.AttrMap(urwid.Text('F1:Help  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
         ])
         
-        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v0.1'), 'status')
+        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v'+VERSION), 'status')
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -230,7 +232,7 @@ class wMAL_urwid(object):
         self.status("Ready.")
     
     def do_help(self):
-        helptext = "wMAL-curses v0.1  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext = "wMAL-curses v"+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"

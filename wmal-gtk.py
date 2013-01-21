@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# wMAL-gtk v0.1
+# wMAL-gtk v0.2
 # Lightweight GTK based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
 #
@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+VERSION = 'v0.2'
+
 import gobject
 import pygtk
 pygtk.require('2.0')
@@ -34,7 +36,7 @@ from cStringIO import StringIO
 import modules.messenger as messenger
 import modules.engine as engine
 import modules.utils as utils
-
+import modules.accounts as accountman
     
 class wmal_gtk(object):
     engine = None
@@ -44,14 +46,20 @@ class wmal_gtk(object):
     can_close = False
     
     def main(self):
+        accountsel = AccountSelect()
+        accountsel.show_all()
+        
+        gtk.main() 
+        
+    def start(self, account):
         # Create engine
-        self.engine = engine.Engine()
+        self.engine = engine.Engine(account)
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
         self.main.connect("delete_event", self.delete_event)
         self.main.connect('destroy', self.on_destroy)
-        self.main.set_title('wMAL-gtk v0.1')
+        self.main.set_title('wMAL-gtk ' + VERSION)
         gtk.window_set_default_icon_from_file('data/wmal_icon.png')
         
         # Menus
@@ -219,7 +227,7 @@ class wmal_gtk(object):
         vbox.pack_start(self.notebook, True, True, 0)
 
         self.statusbar = gtk.Statusbar()
-        self.statusbar.push(0, 'wMAL-gtk v0.1')
+        self.statusbar.push(0, 'wMAL-gtk ' + VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
         
         # Engine configuration
@@ -236,8 +244,6 @@ class wmal_gtk(object):
         self.main.show()
         self.allow_buttons(False)
         self.start_engine()
-        
-        gtk.main()
     
     def _create_lists(self):
         statuses_nums = self.engine.mediainfo['statuses']
@@ -411,7 +417,7 @@ class wmal_gtk(object):
         self.statusbox.handler_block(self.statusbox_handler)
         self._create_lists()
         self.build_list()
-        self.main.set_title('wMAL-gtk v0.1 [%s (%s)]' % (self.engine.api_info['name'], self.engine.api_info['mediatype']))
+        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
         for i in self.mb_api_menu.get_children():
@@ -515,7 +521,7 @@ class wmal_gtk(object):
     def on_about(self, widget):
         about = gtk.AboutDialog()
         about.set_program_name("wMAL-gtk")
-        about.set_version("0.1")
+        about.set_version(VERSION)
         about.set_comments("wMAL is an open source client for media tracking websites.")
         about.set_website("http://github.com/z411/wmal-python")
         about.set_copyright("(c) z411 - Icon by shuuichi")
@@ -722,7 +728,41 @@ class ShowView(gtk.TreeView):
                 selection.select_iter(row.iter)
                 break
 
-
+class AccountSelect(gtk.Window):
+    def __init__(self):
+        print "start"
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        
+        self.manager = accountman.AccountManager()
+        
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Select Account')
+        self.set_border_width(5)
+        
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.set_size_request(450, 300)
+        
+        self.accountlist = gtk.TreeView()
+        
+        col_user = gtk.TreeViewColumn('Username')
+        self.accountlist.append_column(col_user)
+        col_site = gtk.TreeViewColumn('Site')
+        self.accountlist.append_column(col_site)
+        
+        renderer_user = gtk.CellRendererText()
+        col_user.pack_start(renderer_user, False)
+        col_user.add_attribute(renderer_user, 'text', 0)
+        renderer_site = gtk.CellRendererText()
+        col_site.pack_start(renderer_site, False)
+        col_site.add_attribute(renderer_site, 'text', 1)
+        
+        sw.add(self.accountlist)
+        
+        self.add(sw)
+        self.show_all()
+        
+        
 class ShowSearch(gtk.Window):
     def __init__(self, engine):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)

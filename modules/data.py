@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+VERSION = 'v0.2'
+
 import cPickle
 import os.path
 
@@ -43,45 +45,40 @@ class Data(object):
     queue = list()
     config = dict()
     
-    def __init__(self, messenger, config):
+    def __init__(self, messenger, config, account, userconfig):
         """Checks if the config is correct and creates an API object."""
         self.msg = messenger
         self.config = config
-        self.msg.info(self.name, "Version v0.1")
+        self.userconfig = userconfig
+        self.msg.info(self.name, "Version "+VERSION)
         
         # Import the API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
-        libbase = self.config['main']['api']
-        try:
-            mediatype = self.config[libbase]['mediatype']
-        except KeyError:
-            raise utils.DataFatal("Missing or unsupported API: %s" % libbase)
-        
+        libbase = account['api']
         libname = "lib{0}".format(libbase)
         try:
             modulename = "modules.{0}".format(libname)
-            self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError, e:
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
         
-        # Check if there's a username
-        if self.config[libbase]['username'] == 'CHANGEME':
-            raise utils.EngineFatal("Please set your username and password in the config file.")
-        
-        # Get files
-        utils.make_dir(libbase)
-        self.queue_file = utils.get_filename(libbase, '%s.queue' % mediatype)
-        self.info_file = utils.get_filename(libbase, '%s.info' % mediatype)
-        self.cache_file = utils.get_filename(libbase, '%s.list' % mediatype)
-        self.lock_file = utils.get_filename(libbase, 'lock')
-        
         # Instance API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libclass = getattr(apimodule, libname)
-        self.api = libclass(self.msg, self.config[libbase])
-
+        self.api = libclass(self.msg, account, self.userconfig)
+        
+        # Set mediatype
+        mediatype = self.userconfig.get('mediatype')
+        self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
+        
+        # Get files
+        userfolder = "%s.%s" % (account['username'], account['api'])
+        self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
+        self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
+        self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
+        self.lock_file = utils.get_filename(userfolder,  'lock')
+        
         # Connect signals
         self.api.connect_signal('show_info_changed', self.info_update)
     
@@ -129,7 +126,7 @@ class Data(object):
         """
         self.msg.debug(self.name, "Unloading...")
         # We push changes if specified on config file
-        if self.config['main'].get('push_on_exit') == 'yes':
+        if self.config['push_on_exit']:
             self.process_queue()
         
         self._unlock()
@@ -216,7 +213,7 @@ class Data(object):
         self.msg.info(self.name, "Queued update for %s" % show['title'])
         
         # Immediately process the action if autopush is set
-        if self.config['main']['autopush'] == 'yes':
+        if self.config['autopush']:
             self.process_queue()
     
     def queue_delete(self, show):
@@ -389,7 +386,7 @@ class Data(object):
     def _lock(self):
         """Creates the database lock, returns an exception if it
         already exists"""
-        if self.config['main']['debug_disable_lock'] == 'yes':
+        if self.config['debug_disable_lock']:
             return
 
         if os.path.isfile(self.lock_file):
@@ -402,7 +399,7 @@ class Data(object):
     
     def _unlock(self):
         """Removes the database lock"""
-        if self.config['main']['debug_disable_lock'] == 'yes':
+        if self.config['debug_disable_lock']:
             return
 
         os.unlink(self.lock_file)

@@ -36,6 +36,7 @@ class libvndb(lib.lib):
                   'merge': True,
                 }
     
+    default_mediatype = 'vn'
     mediatypes = dict()
     mediatypes['vn'] = {
         'has_progress': False,
@@ -49,12 +50,12 @@ class libvndb(lib.lib):
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
     }
     
-    def __init__(self, messenger, config):
+    def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
-        super(libvndb, self).__init__(messenger, config)
+        super(libvndb, self).__init__(messenger, account, userconfig)
         
-        self.username = config['username']
-        self.password = config['password']
+        self.username = account['username']
+        self.password = account['password']
         self.logged_in = False
         
     def _connect(self):
@@ -214,7 +215,7 @@ class libvndb(lib.lib):
                 infos.append(info)
             
             start += 25
-            if start > len(itemlist):
+            if start >= len(itemlist):
                 # We're going beyond the list, finish
                 break
         
