@@ -46,12 +46,31 @@ class wmal_gtk(object):
     can_close = False
     
     def main(self):
-        accountsel = AccountSelect()
-        accountsel.show_all()
+        """Start the Account Selector"""
+        self.accountsel = AccountSelect()
+        self.accountsel.use_button.connect("clicked", self.use_account)
         
-        gtk.main() 
+        gtk.main()
+    
+    def do_switch_account(self, widget):
+        self.accountsel = AccountSelect()
+        self.accountsel.use_button.connect("clicked", self.use_account)
+        
+    def use_account(self, widget):
+        """Start the main application with the following account"""
+        account = self.accountsel.get_selected_account()
+        
+        self.accountsel.destroy()
+        
+        # Reload the engine if already started,
+        # start it otherwise
+        if self.engine:
+            self.do_reload(None, account, None)
+        else:
+            self.start(account)
         
     def start(self, account):
+        """Create the main window"""
         # Create engine
         self.engine = engine.Engine(account)
         
@@ -75,17 +94,17 @@ class wmal_gtk(object):
         gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
         mb_sync = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
         mb_sync.connect("activate", self.do_sync)
+        mb_switch_account = gtk.MenuItem('Switch Account...')
+        mb_switch_account.connect("activate", self.do_switch_account)
+        
         mb_show.append(mb_play)
         mb_show.append(mb_delete)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(mb_addsearch)
         mb_show.append(mb_sync)
+        mb_show.append(mb_switch_account)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(mb_exit)
-        
-        self.mb_api_menu = gtk.Menu()
-        mb_api = gtk.MenuItem("API")
-        mb_api.set_submenu(self.mb_api_menu)
         
         self.mb_mediatype_menu = gtk.Menu()
         mb_mediatype = gtk.MenuItem("Mediatype")
@@ -103,7 +122,6 @@ class wmal_gtk(object):
         root_menu2.set_submenu(mb_options)
         mb = gtk.MenuBar()
         mb.append(root_menu1)
-        mb.append(mb_api)
         mb.append(mb_mediatype)
         mb.append(root_menu2)
         
@@ -125,7 +143,7 @@ class wmal_gtk(object):
         
         # Line 1: Title
         line1 = gtk.HBox(False, 5)
-        self.show_title = gtk.Label('<span size="14000"><b>-</b></span>')
+        self.show_title = gtk.Label('<span size="14000"><b>wMAL</b></span>')
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
         line1.pack_start(self.show_title, True, True, 0)
@@ -420,19 +438,9 @@ class wmal_gtk(object):
         self.main.set_title('wMAL-gtk %s [%s (%s)]' % (VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
-        for i in self.mb_api_menu.get_children():
-            self.mb_api_menu.remove(i)
         for i in self.mb_mediatype_menu.get_children():
             self.mb_mediatype_menu.remove(i)
         
-        for api in self.engine.config.keys():
-            if api != 'main':
-                item = gtk.RadioMenuItem(None, api)
-                if api == self.engine.config['main']['api']:
-                    item.set_active(True)   # This signals 'activate' so beware
-                item.connect("activate", self.do_reload, api, None)
-                self.mb_api_menu.append(item)
-                item.show()
         for mediatype in self.engine.api_info['supported_mediatypes']:
             item = gtk.RadioMenuItem(None, mediatype)
             if mediatype == self.engine.api_info['mediatype']:
@@ -447,9 +455,9 @@ class wmal_gtk(object):
         self.status("Ready.")
         self.allow_buttons(True)
     
-    def task_reload(self, api, mediatype):
+    def task_reload(self, account, mediatype):
         try:
-            self.engine.reload(api=api, mediatype=mediatype)
+            self.engine.reload(account, mediatype)
         except utils.wmalError, e:
             self.error(e.message)
         
@@ -500,7 +508,7 @@ class wmal_gtk(object):
         # Image
         if show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s_%d.jpg" % (self.engine.config['main']['api'], show['id']))
+            filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
             
             if os.path.isfile(filename):
                 self.show_image.set_from_file(filename)
@@ -734,35 +742,208 @@ class AccountSelect(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         
         self.manager = accountman.AccountManager()
+        self.pixbufs = {}
+        for (libname, lib) in utils.available_libs.iteritems():
+            self.pixbufs[libname] = gtk.gdk.pixbuf_new_from_file(lib[1])
         
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Select Account')
         self.set_border_width(5)
         
+        vbox = gtk.VBox(False, 5)
+        
+        # Treeview
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_size_request(450, 300)
+        sw.set_size_request(300, 200)
         
         self.accountlist = gtk.TreeView()
         
         col_user = gtk.TreeViewColumn('Username')
+        col_user.set_expand(True)
         self.accountlist.append_column(col_user)
         col_site = gtk.TreeViewColumn('Site')
         self.accountlist.append_column(col_site)
         
         renderer_user = gtk.CellRendererText()
         col_user.pack_start(renderer_user, False)
-        col_user.add_attribute(renderer_user, 'text', 0)
+        col_user.add_attribute(renderer_user, 'text', 1)
+        renderer_icon = gtk.CellRendererPixbuf()
+        col_site.pack_start(renderer_icon, False)
+        col_site.add_attribute(renderer_icon, 'pixbuf', 3)
         renderer_site = gtk.CellRendererText()
         col_site.pack_start(renderer_site, False)
-        col_site.add_attribute(renderer_site, 'text', 1)
+        col_site.add_attribute(renderer_site, 'text', 2)
+        
+        self.store = gtk.ListStore(int, str, str, gtk.gdk.Pixbuf)
+        self.accountlist.set_model(self.store)
+        
+        # Bottom buttons
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        gtk.stock_add([(gtk.STOCK_APPLY, "Add", 0, 0, "")])
+        self.use_button = gtk.Button('Use')
+        add_button = gtk.Button(stock=gtk.STOCK_APPLY)
+        add_button.connect("clicked", self.do_add)
+        delete_button = gtk.Button(stock=gtk.STOCK_DELETE)
+        delete_button.connect("clicked", self.do_delete)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        bottombar.pack_start(self.use_button, False, False, 0)
+        bottombar.pack_start(add_button, False, False, 0)
+        bottombar.pack_start(delete_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
         
         sw.add(self.accountlist)
         
-        self.add(sw)
+        vbox.pack_start(sw, True, True, 0)
+        vbox.pack_start(alignment, False, False, 0)
+        self.add(vbox)
+        
+        self._refresh_list()
         self.show_all()
+    
+    def _refresh_list(self):
+        self.store.clear()
+        i = 0
+        for account in self.manager.get_accounts():
+            libname = account['api']
+            api = utils.available_libs[libname]
+            
+            self.store.append([i, account['username'], api[0], self.pixbufs[libname]])
+            i += 1
+    
+    def _get_selected_id(self):
+        selection = self.accountlist.get_selection()
+        selection.set_mode(gtk.SELECTION_SINGLE)
+        tree_model, tree_iter = selection.get_selected()
+        return tree_model.get_value(tree_iter, 0)
+    
+    def get_selected_account(self):
+        accounts = self.manager.get_accounts()
+        selectedid = self._get_selected_id()
+        return accounts[selectedid]
         
+    def do_add(self, widget):
+        """Create Add Account window"""
+        self.add_win = AccountSelectAdd(self.pixbufs)
+        self.add_win.add_button.connect("clicked", self.add_account)
+        self.add_win.show_all()
         
+    def add_account(self, widget):
+        """Closes Add Account window and tells the manager to add
+        the account to the database"""
+        username =  self.add_win.txt_user.get_text().strip()
+        password = self.add_win.txt_passwd.get_text()
+        apiiter = self.add_win.cmb_api.get_active_iter()
+        
+        if not username:
+            self.error('Please enter a username.')
+            return
+        if not password:
+            self.error('Please enter a password.')
+            return
+        if not apiiter:
+            self.error('Please select a website.')
+            return
+            
+        api = self.add_win.model_api.get(apiiter, 0)[0]
+        self.add_win.destroy()
+        
+        self.manager.add_account(username, password, api)
+        self._refresh_list()
+    
+    def do_delete(self, widget):
+        selectedid = self._get_selected_id()
+        dele = self.manager.delete_account(selectedid)
+        
+        self._refresh_list()
+    
+    def error(self, msg):
+        md = gtk.MessageDialog(None, 
+            gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, 
+            gtk.BUTTONS_CLOSE, msg)
+        md.run()
+        md.destroy()
+    
+    def modal_close(self, widget, response_id):
+        widget.destroy()
+        
+    def do_close(self, widget):
+        self.destroy()
+        gtk.main_quit()
+
+class AccountSelectAdd(gtk.Window):
+    def __init__(self, pixbufs):
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Create Account')
+        self.set_border_width(5)
+        
+        # Labels
+        lbl_user = gtk.Label('Username')
+        lbl_user.set_size_request(70, -1)
+        lbl_passwd = gtk.Label('Password')
+        lbl_passwd.set_size_request(70, -1)
+        lbl_api = gtk.Label('Website')
+        lbl_api.set_size_request(70, -1)
+        
+        # Entries
+        self.txt_user = gtk.Entry(32)
+        self.txt_passwd = gtk.Entry(32)
+        self.txt_passwd.set_visibility(False)
+        
+        # Combobox
+        self.model_api = gtk.ListStore(str, str, gtk.gdk.Pixbuf)
+        
+        for (libname, lib) in sorted(utils.available_libs.iteritems()):
+            self.model_api.append([libname, lib[0], pixbufs[libname]])
+        
+        self.cmb_api = gtk.ComboBox(self.model_api)
+        cell_icon = gtk.CellRendererPixbuf()
+        cell_name = gtk.CellRendererText()
+        self.cmb_api.pack_start(cell_icon, False)
+        self.cmb_api.pack_start(cell_name, True)
+        self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
+        self.cmb_api.add_attribute(cell_name, 'text', 1)
+        
+        # Buttons
+        alignment = gtk.Alignment(xalign=0.5)
+        bottombar = gtk.HBox(False, 5)
+        self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        bottombar.pack_start(self.add_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        # HBoxes
+        line1 = gtk.HBox(False, 5)
+        line1.pack_start(lbl_user, False, False, 0)
+        line1.pack_start(self.txt_user, True, True, 0)
+        
+        line2 = gtk.HBox(False, 5)
+        line2.pack_start(lbl_passwd, False, False, 0)
+        line2.pack_start(self.txt_passwd, True, True, 0)
+        
+        line3 = gtk.HBox(False, 5)
+        line3.pack_start(lbl_api, False, False, 0)
+        line3.pack_start(self.cmb_api, True, True, 0)
+        
+        # Join HBoxes
+        vbox = gtk.VBox(False, 5)
+        vbox.pack_start(line1, False, False, 0)
+        vbox.pack_start(line2, False, False, 0)
+        vbox.pack_start(line3, False, False, 0)
+        vbox.pack_start(alignment, False, False, 0)
+        
+        self.add(vbox)
+    
+    def do_close(self, widget):
+        self.destroy()
+
 class ShowSearch(gtk.Window):
     def __init__(self, engine):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)

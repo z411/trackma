@@ -155,7 +155,7 @@ class Engine:
 
         self.loaded = False
     
-    def reload(self, mediatype=None):
+    def reload(self, account=None, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
         if not self.loaded:
             raise utils.wmalError("Engine is not loaded.")
@@ -164,9 +164,12 @@ class Engine:
             to_mediatype = mediatype
         else:
             to_mediatype = self.userconfig['mediatype']
+        
+        if account:
+            self.__init__(account)
             
-        self.unload()
         self.config['mediatype'] = to_mediatype
+        self.unload()
         self._init_data_handler()
         self.start()
         

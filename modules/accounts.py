@@ -29,7 +29,11 @@ class AccountManager(object):
                   }
         self.accounts['accounts'].append(account)
         self._save()
-
+    
+    def delete_account(self, num):
+        self.accounts['accounts'].pop(num)
+        self._save()
+        
     def get_accounts(self):
         return self.accounts['accounts']
 

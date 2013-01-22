@@ -18,10 +18,12 @@ import os, re, shutil
 import json
 
 # Put the available APIs here
-available_libs = [
-    ('mal',     'MyAnimeList',  'mal.jpg'),
-    ('vndb',    'VNDB',         'vndb.jpg'),
-]
+available_libs = {
+    'mal':      ('MyAnimeList',  'data/mal.jpg'),
+    'malu':     ('MAL Unoffic.', 'data/malu.jpg'),
+    'melative': ('Melative',     'data/melative.jpg'),
+    'vndb':     ('VNDB',         'data/vndb.jpg'),
+}
 
 def parse_config(filename, default):
     try:
