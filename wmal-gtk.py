@@ -49,16 +49,22 @@ class wmal_gtk(object):
         """Start the Account Selector"""
         self.accountsel = AccountSelect()
         self.accountsel.use_button.connect("clicked", self.use_account)
+        self.accountsel.create()
+        print "connected"
         
         gtk.main()
     
     def do_switch_account(self, widget):
-        self.accountsel = AccountSelect()
+        self.accountsel = AccountSelect(force=True)
         self.accountsel.use_button.connect("clicked", self.use_account)
+        self.accountsel.create()
         
     def use_account(self, widget):
         """Start the main application with the following account"""
-        account = self.accountsel.get_selected_account()
+        accountid = self.accountsel.get_selected_id()
+        account = self.accountsel.manager.get_account(accountid)
+        # TODO : Do this only if login was successful
+        #self.accountsel.manager.set_default(accountid)
         
         self.accountsel.destroy()
         
@@ -72,6 +78,7 @@ class wmal_gtk(object):
     def start(self, account):
         """Create the main window"""
         # Create engine
+        self.account = account
         self.engine = engine.Engine(account)
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -143,15 +150,20 @@ class wmal_gtk(object):
         
         # Line 1: Title
         line1 = gtk.HBox(False, 5)
-        self.show_title = gtk.Label('<span size="14000"><b>wMAL</b></span>')
+        self.show_title = gtk.Label()
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
         line1.pack_start(self.show_title, True, True, 0)
         
-        # Spinner
-        self.spinner = gtk.Spinner()
+        # API info
+        api_hbox = gtk.HBox(False, 5)
+        self.api_icon = gtk.Image()
+        self.api_user = gtk.Label()
+        api_hbox.pack_start(self.api_icon)
+        api_hbox.pack_start(self.api_user)
+        
         alignment1 = gtk.Alignment(xalign=1, yalign=0)
-        alignment1.add(self.spinner)
+        alignment1.add(api_hbox)
         line1.pack_start(alignment1, False, False, 0)
         
         top_right_box.pack_start(line1, True, True, 0)
@@ -258,11 +270,21 @@ class wmal_gtk(object):
         
         self.selected_show = 0
         
-        self.main.show_all()
-        self.main.show()
         self.allow_buttons(False)
+        self.main.show_all()
         self.start_engine()
     
+    def _clear_gui(self):
+        print "clearing gui"
+        self.show_title.set_text('<span size="14000"><b>wMAL</b></span>')
+        self.show_title.set_use_markup(True)
+        
+        current_api = utils.available_libs[self.account['api']]
+        api_iconfile = current_api[1]
+        
+        self.api_icon.set_from_file(api_iconfile)
+        self.api_user.set_text(self.account['username'])
+        
     def _create_lists(self):
         statuses_nums = self.engine.mediainfo['statuses']
         statuses_names = self.engine.mediainfo['statuses_dict']
@@ -307,8 +329,8 @@ class wmal_gtk(object):
         win = ShowSearch(self.engine)
         win.show_all()
         
-    def do_reload(self, widget, api, mediatype):
-        threading.Thread(target=self.task_reload, args=[api, mediatype]).start()
+    def do_reload(self, widget, account, mediatype):
+        threading.Thread(target=self.task_reload, args=[account, mediatype]).start()
         
     def do_play(self, widget):
         threading.Thread(target=self.task_play).start()
@@ -433,6 +455,7 @@ class wmal_gtk(object):
         
         gtk.threads_enter()
         self.statusbox.handler_block(self.statusbox_handler)
+        self._clear_gui()
         self._create_lists()
         self.build_list()
         self.main.set_title('wMAL-gtk %s [%s (%s)]' % (VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
@@ -457,6 +480,7 @@ class wmal_gtk(object):
     
     def task_reload(self, account, mediatype):
         try:
+            self.account = account
             self.engine.reload(account, mediatype)
         except utils.wmalError, e:
             self.error(e.message)
@@ -582,12 +606,6 @@ class wmal_gtk(object):
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
         
-        if boolean == True:
-            self.spinner.stop()
-            self.spinner.set_visible(False)
-        else:
-            self.spinner.set_visible(True)
-            self.spinner.start()
 
 class ImageTask(threading.Thread):
     cancelled = False
@@ -737,11 +755,23 @@ class ShowView(gtk.TreeView):
                 break
 
 class AccountSelect(gtk.Window):
-    def __init__(self):
-        print "start"
+    default = None
+    
+    def __init__(self, force=False):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        self.use_button = gtk.Button('Use')
         
         self.manager = accountman.AccountManager()
+        self.force = force
+        
+    def create(self):
+        # If there's a default account, use it
+        # instead of creating the window
+        if not self.force and self.manager.get_default() is not None:
+            self.default = self.manager.get_default()
+            self.use_button.emit("clicked")
+            return
+            
         self.pixbufs = {}
         for (libname, lib) in utils.available_libs.iteritems():
             self.pixbufs[libname] = gtk.gdk.pixbuf_new_from_file(lib[1])
@@ -782,7 +812,6 @@ class AccountSelect(gtk.Window):
         alignment = gtk.Alignment(xalign=1.0)
         bottombar = gtk.HBox(False, 5)
         gtk.stock_add([(gtk.STOCK_APPLY, "Add", 0, 0, "")])
-        self.use_button = gtk.Button('Use')
         add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         add_button.connect("clicked", self.do_add)
         delete_button = gtk.Button(stock=gtk.STOCK_DELETE)
@@ -814,16 +843,14 @@ class AccountSelect(gtk.Window):
             self.store.append([i, account['username'], api[0], self.pixbufs[libname]])
             i += 1
     
-    def _get_selected_id(self):
-        selection = self.accountlist.get_selection()
-        selection.set_mode(gtk.SELECTION_SINGLE)
-        tree_model, tree_iter = selection.get_selected()
-        return tree_model.get_value(tree_iter, 0)
-    
-    def get_selected_account(self):
-        accounts = self.manager.get_accounts()
-        selectedid = self._get_selected_id()
-        return accounts[selectedid]
+    def get_selected_id(self):
+        if self.default is not None:
+            return self.default
+        else:
+            selection = self.accountlist.get_selection()
+            selection.set_mode(gtk.SELECTION_SINGLE)
+            tree_model, tree_iter = selection.get_selected()
+            return tree_model.get_value(tree_iter, 0)
         
     def do_add(self, widget):
         """Create Add Account window"""
@@ -855,7 +882,7 @@ class AccountSelect(gtk.Window):
         self._refresh_list()
     
     def do_delete(self, widget):
-        selectedid = self._get_selected_id()
+        selectedid = self.get_selected_id()
         dele = self.manager.delete_account(selectedid)
         
         self._refresh_list()

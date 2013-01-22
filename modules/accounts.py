@@ -17,7 +17,6 @@ class AccountManager(object):
                 self.accounts = cPickle.load(f)
 
     def _save(self):
-        print self.filename
         with open(self.filename, 'wb') as f:
             cPickle.dump(self.accounts, f)
             f.write('ok')
@@ -33,7 +32,10 @@ class AccountManager(object):
     def delete_account(self, num):
         self.accounts['accounts'].pop(num)
         self._save()
-        
+    
+    def get_account(self, num):
+        return self.accounts['accounts'][num]
+    
     def get_accounts(self):
         return self.accounts['accounts']
 
@@ -42,6 +44,7 @@ class AccountManager(object):
 
     def set_default(self, val):
         self.accounts['default'] = val
+        self._save()
 
     def unset_default(self):
         self.accounts['default'] = None
