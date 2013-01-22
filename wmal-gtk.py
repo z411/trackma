@@ -480,10 +480,12 @@ class wmal_gtk(object):
     
     def task_reload(self, account, mediatype):
         try:
-            self.account = account
             self.engine.reload(account, mediatype)
         except utils.wmalError, e:
             self.error(e.message)
+        
+        if account:
+            self.account = account
         
         # Refresh the GUI
         self.task_start_engine()
