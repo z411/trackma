@@ -57,8 +57,13 @@ class Engine:
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
-        self.account = account
         self.msg.info(self.name, 'Version '+VERSION)
+        
+        self.load(account)
+        self._init_data_handler()
+    
+    def load(self, account):
+        self.account = account
         
         # Create home directory
         utils.make_dir('')
@@ -76,8 +81,6 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
-        self._init_data_handler()
-    
     def _init_data_handler(self):
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config, self.account, self.userconfig)
@@ -160,16 +163,13 @@ class Engine:
         if not self.loaded:
             raise utils.wmalError("Engine is not loaded.")
         
-        if mediatype:
-            to_mediatype = mediatype
-        else:
-            to_mediatype = self.userconfig['mediatype']
+        self.unload()
         
         if account:
-            self.__init__(account)
+            self.load(account)
+        if mediatype:
+            self.userconfig['mediatype'] = to_mediatype
         
-        self.userconfig['mediatype'] = to_mediatype
-        self.unload()
         self._init_data_handler()
         self.start()
         
