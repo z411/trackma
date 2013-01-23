@@ -288,19 +288,6 @@ class wMAL_urwid(object):
         self.dialog.show()
         
     def do_reload(self):
-        # Create a list of buttons to select the API
-        rb_apis = []
-        apis = []
-        for api in self.engine.config.keys():
-            if api != "main":
-                but = urwid.RadioButton(rb_apis, api)
-                # Make it selected if it's the current API
-                if self.engine.config['main']['api'] == api:
-                    but.set_state(True)
-                urwid.connect_signal(but, 'change', self.reload_request, [api, None])
-                apis.append(urwid.AttrWrap(but, 'button', 'button hilight'))
-        api = urwid.Columns([urwid.Text('API:'), urwid.Pile(apis)])
-        
         # Create a list of buttons to select the mediatype
         rb_mt = []
         mediatypes = []
@@ -313,8 +300,8 @@ class wMAL_urwid(object):
             mediatypes.append(urwid.AttrWrap(but, 'button', 'button hilight'))
         mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
         
-        main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
-        self.dialog = Dialog(main_pile, self.mainloop, width=30, title='Change media type')
+        #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
+        self.dialog = Dialog(mediatype, self.mainloop, width=30, title='Change media type')
         self.dialog.show()
     
     def do_reload_engine(self, account=None, mediatype=None):
