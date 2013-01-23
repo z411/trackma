@@ -820,13 +820,14 @@ class AccountSelect(gtk.Window):
         gtk.stock_add([(gtk.STOCK_APPLY, "Add", 0, 0, "")])
         add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         add_button.connect("clicked", self.do_add)
-        delete_button = gtk.Button(stock=gtk.STOCK_DELETE)
-        delete_button.connect("clicked", self.do_delete)
+        self.delete_button = gtk.Button(stock=gtk.STOCK_DELETE)
+        self.delete_button.set_sensitive(False)
+        self.delete_button.connect("clicked", self.do_delete)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.do_close)
         bottombar.pack_start(self.use_button, False, False, 0)
         bottombar.pack_start(add_button, False, False, 0)
-        bottombar.pack_start(delete_button, False, False, 0)
+        bottombar.pack_start(self.delete_button, False, False, 0)
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
         
@@ -860,6 +861,7 @@ class AccountSelect(gtk.Window):
     
     def on_account_changed(self, widget):
         self.use_button.set_sensitive(True)
+        self.delete_button.set_sensitive(True)
     
     def on_row_activated(self, treeview, iter, path):
         self.use_button.emit("clicked")
