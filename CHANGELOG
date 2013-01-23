@@ -1,0 +1,8 @@
+0.2
+===
+- Uses separate account manager to handle multiple accounts
+- Now config files are stored in JSON
+
+0.1
+===
+- Initial release

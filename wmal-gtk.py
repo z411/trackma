@@ -132,7 +132,7 @@ class wmal_gtk(object):
         mb.append(root_menu2)
         
         # Create vertical box
-        vbox = gtk.VBox(False, 6)
+        vbox = gtk.VBox(False, 0)
         self.main.add(vbox)
         
         vbox.pack_start(mb, False, False, 0)
@@ -145,7 +145,7 @@ class wmal_gtk(object):
         top_hbox.pack_start(self.show_image, False, False, 0)
         
         # Right box
-        top_right_box = gtk.VBox(False, 5)
+        top_right_box = gtk.VBox(False, 0)
         
         # Line 1: Title
         line1 = gtk.HBox(False, 5)
@@ -710,9 +710,9 @@ class ShowView(gtk.TreeView):
             progress = 0
         
         if show['status'] == 1:
-            color = 'blue'
+            color = '#0099cc'
         elif show['status'] == 3:
-            color = 'yellow'
+            color = '#999900'
         else:
             color = 'black'
         
@@ -781,6 +781,7 @@ class AccountSelect(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Select Account')
         self.set_border_width(10)
+        self.connect('delete-event', self.on_delete)
         
         vbox = gtk.VBox(False, 10)
         
@@ -910,7 +911,12 @@ class AccountSelect(gtk.Window):
         
     def do_close(self, widget):
         self.destroy()
-        gtk.main_quit()
+        if not self.switch:
+            gtk.main_quit()
+        
+    def on_delete(self, widget, data):
+        self.do_close(None)
+        return False
 
 class AccountSelectAdd(gtk.Window):
     def __init__(self, pixbufs):
@@ -918,7 +924,7 @@ class AccountSelectAdd(gtk.Window):
         
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Create Account')
-        self.set_border_width(5)
+        self.set_border_width(10)
         
         # Labels
         lbl_user = gtk.Label('Username')
@@ -971,7 +977,7 @@ class AccountSelectAdd(gtk.Window):
         line3.pack_start(self.cmb_api, True, True, 0)
         
         # Join HBoxes
-        vbox = gtk.VBox(False, 5)
+        vbox = gtk.VBox(False, 10)
         vbox.pack_start(line1, False, False, 0)
         vbox.pack_start(line2, False, False, 0)
         vbox.pack_start(line3, False, False, 0)

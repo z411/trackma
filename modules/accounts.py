@@ -7,6 +7,7 @@ class AccountManager(object):
     filename = 'accounts'
 
     def __init__(self):
+        utils.make_dir('')
         self.filename = utils.get_root_filename('accounts')
         self._load()
 
