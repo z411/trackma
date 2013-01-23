@@ -32,6 +32,8 @@ import sys
 import modules.engine as engine
 import modules.messenger as messenger
 import modules.utils as utils
+import modules.accounts as accountman
+
 from operator import itemgetter
 from itertools import cycle
 
@@ -99,7 +101,7 @@ class wMAL_urwid(object):
         self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
-        #self.mainloop.set_alarm_in(0, self.start)
+        self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
     
     def _rebuild(self):
@@ -116,10 +118,10 @@ class wMAL_urwid(object):
         
         self.status('Ready.')
         
-    def start(self, loop, data):
+    def start(self, account):
         """Starts the engine"""
         # Engine configuration
-        self.engine = engine.Engine(self.message_handler)
+        self.engine = engine.Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -178,6 +180,8 @@ class wMAL_urwid(object):
             self.do_addsearch()
         elif input == 'c':
             self.do_reload()
+        elif input == 'f9':
+            self.do_switch_account()
         elif input == 'd':
             self.do_delete()
         elif input == 'f12':
@@ -185,7 +189,14 @@ class wMAL_urwid(object):
         elif input == '/':
             self.do_search('')
 
-    
+    def do_switch_account(self, loop=None, data=None):
+        self.dialog = AccountDialog(self.mainloop)
+        if self.engine is None:
+            urwid.connect_signal(self.dialog, 'done', self.start)
+        else:
+            urwid.connect_signal(self.dialog, 'done', self.do_reload_engine)
+        self.dialog.show()
+        
     def do_addsearch(self):
         self.ask('Search: ', self.addsearch_request)
     
@@ -304,7 +315,11 @@ class wMAL_urwid(object):
         main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
         self.dialog = Dialog(main_pile, self.mainloop, width=30, title='Change media type')
         self.dialog.show()
-        
+    
+    def do_reload_engine(self, account=None, mediatype=None):
+        self.engine.reload(account, mediatype)
+        self._rebuild()
+    
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
@@ -353,9 +368,8 @@ class wMAL_urwid(object):
     def reload_request(self, widget, selected, data):
         if selected:
             self.dialog.close()
-            self.engine.reload(data[0], data[1])
-            self._rebuild()
-        
+            self.do_reload_engine(data[0], data[1])
+    
     def update_request(self, data):
         self.ask_finish(self.update_request)
         if data:
@@ -489,8 +503,6 @@ class AddDialog(Dialog):
     signals = ['done']
     
     def __init__(self, loop, showlist={}, width=30):
-        #self.topask = Asker('Search: ')
-        #urwid.connect_signal(self.topask, 'done', self.search)
         listheader = urwid.Columns([
                 ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
@@ -516,6 +528,56 @@ class AddDialog(Dialog):
             urwid.emit_signal(self, 'done', show)
         elif key == 'esc':
             self.close()
+
+class AccountDialog(Dialog):
+    __metaclass__ = urwid.signals.MetaSignals
+    signals = ['done']
+    
+    def __init__(self, loop, switch=False, width=50):
+        self.switch = switch
+        self.manager = accountman.AccountManager()
+        
+        listheader = urwid.Columns([
+                ('weight', 1, urwid.Text('Username')),
+                ('fixed', 15, urwid.Text('Site')),
+            ])
+        
+        self.listwalker = urwid.SimpleListWalker([])
+        listbox = urwid.ListBox(self.listwalker)
+        
+        for account in self.manager.get_accounts():
+            self.listwalker.append(AccountItem(account))
+        
+        self.frame = urwid.Frame(listbox, header=listheader)
+        self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
+    
+    def keypress(self, size, key):
+        if key in ('up', 'down', 'left', 'right', 'tab'):
+            self.widget.keypress(size, key)
+        elif key == 'enter':
+            account = self.listwalker.get_focus()[0].account
+            urwid.emit_signal(self, 'done', account)
+            self.close()
+        elif key == 'esc':
+            self.close()
+            if not self.switch:
+                raise urwid.ExitMainLoop()
+
+class AccountItem(urwid.WidgetWrap):
+    def __init__(self, account):
+        self.account = account
+        self.item = [
+            ('weight', 1, urwid.Text(account['username'])),
+            ('fixed', 15, urwid.Text(account['api'])),
+        ]
+        w = urwid.AttrWrap(urwid.Columns(self.item), 'window', 'focus')
+        self.__super.__init__(w)
+    
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
     
 class SearchItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
