@@ -168,7 +168,7 @@ class Engine:
         if account:
             self.load(account)
         if mediatype:
-            self.userconfig['mediatype'] = to_mediatype
+            self.userconfig['mediatype'] = mediatype
         
         self._init_data_handler()
         self.start()

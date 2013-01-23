@@ -50,7 +50,6 @@ class wmal_gtk(object):
         self.accountsel = AccountSelect()
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
-        print "connected"
         
         gtk.main()
     
@@ -759,17 +758,18 @@ class ShowView(gtk.TreeView):
 class AccountSelect(gtk.Window):
     default = None
     
-    def __init__(self, force=False):
+    def __init__(self, switch=False):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.use_button = gtk.Button('Use')
+        self.use_button = gtk.Button('Switch')
+        self.use_button.set_sensitive(False)
         
         self.manager = accountman.AccountManager()
-        self.force = force
+        self.switch = switch
         
     def create(self):
         # If there's a default account, use it
         # instead of creating the window
-        if not self.force and self.manager.get_default() is not None:
+        if not self.switch and self.manager.get_default() is not None:
             self.default = self.manager.get_default()
             self.use_button.emit("clicked")
             return
@@ -809,6 +809,8 @@ class AccountSelect(gtk.Window):
         
         self.store = gtk.ListStore(int, str, str, gtk.gdk.Pixbuf)
         self.accountlist.set_model(self.store)
+        
+        self.accountlist.get_selection().connect("changed", self.on_account_changed);
         
         # Bottom buttons
         alignment = gtk.Alignment(xalign=1.0)
@@ -853,6 +855,9 @@ class AccountSelect(gtk.Window):
             selection.set_mode(gtk.SELECTION_SINGLE)
             tree_model, tree_iter = selection.get_selected()
             return tree_model.get_value(tree_iter, 0)
+    
+    def on_account_changed(self, widget):
+        self.use_button.set_sensitive(True)
         
     def do_add(self, widget):
         """Create Add Account window"""

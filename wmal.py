@@ -461,7 +461,7 @@ class wmal_accounts(accountman.AccountManager):
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([A]dd, [L]ist, [C]ancel, [D]elete): ")
+            key = raw_input("Input account number ([A]dd, [C]ancel, [D]elete): ")
 
             if key.lower() == 'a':
                 print "--- Add account ---"
@@ -471,6 +471,11 @@ class wmal_accounts(accountman.AccountManager):
 
                 self.add_account(username, password, api)
                 print 'Done.'
+            elif key.lower() == 'd':
+                print "--- Delete account ---"
+                num = raw_input('Account number to delete: ')
+                num = int(num)
+                self.delete_account(num)
             else:
                 num = int(key)
                 accounts = self.get_accounts()
