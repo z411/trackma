@@ -780,9 +780,9 @@ class AccountSelect(gtk.Window):
         
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Select Account')
-        self.set_border_width(5)
+        self.set_border_width(10)
         
-        vbox = gtk.VBox(False, 5)
+        vbox = gtk.VBox(False, 10)
         
         # Treeview
         sw = gtk.ScrolledWindow()

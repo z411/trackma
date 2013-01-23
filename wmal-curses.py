@@ -67,8 +67,8 @@ class wMAL_urwid(object):
         ('item_notaired', 'yellow', ''),
         ]
         
-        sys.stdout.write("\x1b]0;wMAL-curses v"+VERSION+"\x07");
-        self.header_title = urwid.Text('wMAL-curses v' + VERSION)
+        sys.stdout.write("\x1b]0;wMAL-curses "+VERSION+"\x07");
+        self.header_title = urwid.Text('wMAL-curses ' + VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:watching')
         self.header_sort = urwid.Text('Sort:title')
@@ -82,7 +82,7 @@ class wMAL_urwid(object):
             urwid.AttrMap(urwid.Text('F1:Help  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
         ])
         
-        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-urwid v'+VERSION), 'status')
+        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+VERSION), 'status')
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -99,7 +99,7 @@ class wMAL_urwid(object):
         self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
-        self.mainloop.set_alarm_in(0, self.start)
+        #self.mainloop.set_alarm_in(0, self.start)
         self.mainloop.run()
     
     def _rebuild(self):
@@ -232,7 +232,7 @@ class wMAL_urwid(object):
         self.status("Ready.")
     
     def do_help(self):
-        helptext = "wMAL-curses v"+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext = "wMAL-curses "+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
