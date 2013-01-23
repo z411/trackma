@@ -54,7 +54,7 @@ class wmal_gtk(object):
         gtk.main()
     
     def do_switch_account(self, widget):
-        self.accountsel = AccountSelect(force=True)
+        self.accountsel = AccountSelect(switch=True)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
         
@@ -810,7 +810,8 @@ class AccountSelect(gtk.Window):
         self.store = gtk.ListStore(int, str, str, gtk.gdk.Pixbuf)
         self.accountlist.set_model(self.store)
         
-        self.accountlist.get_selection().connect("changed", self.on_account_changed);
+        self.accountlist.get_selection().connect("changed", self.on_account_changed)
+        self.accountlist.connect("row-activated", self.on_row_activated)
         
         # Bottom buttons
         alignment = gtk.Alignment(xalign=1.0)
@@ -858,6 +859,9 @@ class AccountSelect(gtk.Window):
     
     def on_account_changed(self, widget):
         self.use_button.set_sensitive(True)
+    
+    def on_row_activated(self, treeview, iter, path):
+        self.use_button.emit("clicked")
         
     def do_add(self, widget):
         """Create Add Account window"""
@@ -986,9 +990,9 @@ class ShowSearch(gtk.Window):
         
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Search')
-        self.set_border_width(5)
+        self.set_border_width(10)
         
-        vbox = gtk.VBox(False, 5)
+        vbox = gtk.VBox(False, 10)
         
         searchbar = gtk.HBox(False, 5)
         searchbar.pack_start(gtk.Label('Search'), False, False, 0)
