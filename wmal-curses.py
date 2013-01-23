@@ -190,10 +190,11 @@ class wMAL_urwid(object):
             self.do_search('')
 
     def do_switch_account(self, loop=None, data=None):
-        self.dialog = AccountDialog(self.mainloop)
         if self.engine is None:
+            self.dialog = AccountDialog(self.mainloop, False)
             urwid.connect_signal(self.dialog, 'done', self.start)
         else:
+            self.dialog = AccountDialog(self.mainloop, True)
             urwid.connect_signal(self.dialog, 'done', self.do_reload_engine)
         self.dialog.show()
         
