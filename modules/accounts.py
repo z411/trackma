@@ -41,7 +41,11 @@ class AccountManager(object):
         return self.accounts['accounts']
 
     def get_default(self):
-        return self.accounts['default']
+        num = self.accounts['default']
+        if num is not None:
+            return self.accounts['accounts'][num]
+        else:
+            return None
 
     def set_default(self, val):
         self.accounts['default'] = val

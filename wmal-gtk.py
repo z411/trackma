@@ -47,14 +47,21 @@ class wmal_gtk(object):
     
     def main(self):
         """Start the Account Selector"""
-        self.accountsel = AccountSelect()
-        self.accountsel.use_button.connect("clicked", self.use_account)
-        self.accountsel.create()
+        manager = accountman.AccountManager()
+        
+        # Use the remembered account if there's one
+        if manager.get_default():
+            self.start(manager.get_default())
+        else:
+            self.accountsel = AccountSelect(manager)
+            self.accountsel.use_button.connect("clicked", self.use_account)
+            self.accountsel.create()
         
         gtk.main()
     
     def do_switch_account(self, widget):
-        self.accountsel = AccountSelect(switch=True)
+        manager = accountman.AccountManager()
+        self.accountsel = AccountSelect(manager = accountman.AccountManager(), switch=True)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
         
@@ -62,8 +69,11 @@ class wmal_gtk(object):
         """Start the main application with the following account"""
         accountid = self.accountsel.get_selected_id()
         account = self.accountsel.manager.get_account(accountid)
-        # TODO : Do this only if login was successful
-        #self.accountsel.manager.set_default(accountid)
+        # If remember box is checked, set as default account
+        if self.accountsel.is_remember():
+            self.accountsel.manager.set_default(accountid)
+        else:
+            self.accountsel.manager.set_default(None)
         
         self.accountsel.destroy()
         
@@ -758,22 +768,15 @@ class ShowView(gtk.TreeView):
 class AccountSelect(gtk.Window):
     default = None
     
-    def __init__(self, switch=False):
+    def __init__(self, manager, switch=False):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         self.use_button = gtk.Button('Switch')
         self.use_button.set_sensitive(False)
         
-        self.manager = accountman.AccountManager()
+        self.manager = manager
         self.switch = switch
         
     def create(self):
-        # If there's a default account, use it
-        # instead of creating the window
-        if not self.switch and self.manager.get_default() is not None:
-            self.default = self.manager.get_default()
-            self.use_button.emit("clicked")
-            return
-            
         self.pixbufs = {}
         for (libname, lib) in utils.available_libs.iteritems():
             self.pixbufs[libname] = gtk.gdk.pixbuf_new_from_file(lib[1])
@@ -788,7 +791,7 @@ class AccountSelect(gtk.Window):
         # Treeview
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_size_request(300, 200)
+        sw.set_size_request(400, 200)
         
         self.accountlist = gtk.TreeView()
         
@@ -817,6 +820,10 @@ class AccountSelect(gtk.Window):
         # Bottom buttons
         alignment = gtk.Alignment(xalign=1.0)
         bottombar = gtk.HBox(False, 5)
+        
+        self.remember = gtk.CheckButton('Remember')
+        if self.manager.get_default() is not None:
+            self.remember.set_active(True)
         gtk.stock_add([(gtk.STOCK_APPLY, "Add", 0, 0, "")])
         add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         add_button.connect("clicked", self.do_add)
@@ -825,6 +832,8 @@ class AccountSelect(gtk.Window):
         self.delete_button.connect("clicked", self.do_delete)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.do_close)
+        
+        bottombar.pack_start(self.remember, False, False, 0)
         bottombar.pack_start(self.use_button, False, False, 0)
         bottombar.pack_start(add_button, False, False, 0)
         bottombar.pack_start(self.delete_button, False, False, 0)
@@ -850,6 +859,13 @@ class AccountSelect(gtk.Window):
             self.store.append([i, account['username'], api[0], self.pixbufs[libname]])
             i += 1
     
+    def is_remember(self):
+        # Return the state of the checkbutton if there's no default account
+        if self.default is None:
+            return self.remember.get_active()
+        else:
+            return True
+        
     def get_selected_id(self):
         if self.default is not None:
             return self.default

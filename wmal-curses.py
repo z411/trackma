@@ -190,13 +190,17 @@ class wMAL_urwid(object):
             self.do_search('')
 
     def do_switch_account(self, loop=None, data=None):
+        manager = accountman.AccountManager()
+        
         if self.engine is None:
-            self.dialog = AccountDialog(self.mainloop, False)
-            urwid.connect_signal(self.dialog, 'done', self.start)
+            if manager.get_default():
+                self.start(manager.get_default())
+            else:
+                self.dialog = AccountDialog(self.mainloop, manager, False)
+                urwid.connect_signal(self.dialog, 'done', self.start)
         else:
-            self.dialog = AccountDialog(self.mainloop, True)
+            self.dialog = AccountDialog(self.mainloop, manager, True)
             urwid.connect_signal(self.dialog, 'done', self.do_reload_engine)
-        self.dialog.show()
         
     def do_addsearch(self):
         self.ask('Search: ', self.addsearch_request)
@@ -521,9 +525,9 @@ class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
     
-    def __init__(self, loop, switch=False, width=50):
+    def __init__(self, loop, manager, switch=False, width=50):
         self.switch = switch
-        self.manager = accountman.AccountManager()
+        self.manager = manager
         
         listheader = urwid.Columns([
                 ('weight', 1, urwid.Text('Username')),
@@ -538,6 +542,8 @@ class AccountDialog(Dialog):
         
         self.frame = urwid.Frame(listbox, header=listheader)
         self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
+        
+        self.show()
     
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
