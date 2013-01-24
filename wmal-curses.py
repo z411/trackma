@@ -537,10 +537,13 @@ class AccountDialog(Dialog):
         self.listwalker = urwid.SimpleListWalker([])
         listbox = urwid.ListBox(self.listwalker)
         
+        i = 0
         for account in self.manager.get_accounts():
-            self.listwalker.append(AccountItem(account))
+            self.listwalker.append(AccountItem(i, account))
+            i += 1
         
-        self.frame = urwid.Frame(listbox, header=listheader)
+        helptext = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
+        self.frame = urwid.Frame(listbox, header=listheader, footer=helptext)
         self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
         
         self.show()
@@ -549,16 +552,31 @@ class AccountDialog(Dialog):
         if key in ('up', 'down', 'left', 'right', 'tab'):
             self.widget.keypress(size, key)
         elif key == 'enter':
-            account = self.listwalker.get_focus()[0].account
-            urwid.emit_signal(self, 'done', account)
+            self.do_select(False)
+            accountitem = self.listwalker.get_focus()[0]
+            self.manager.set_default(None)
+            urwid.emit_signal(self, 'done', accountitem.account)
             self.close()
+        elif key == 'r':
+            self.do_select(True)
+            
         elif key == 'esc':
             self.close()
             if not self.switch:
                 raise urwid.ExitMainLoop()
+    
+    def do_select(self, remember):
+        accountitem = self.listwalker.get_focus()[0]
+        if remember:
+            self.manager.set_default(accountitem.num)
+        else:
+            self.manager.set_default(None)
+        urwid.emit_signal(self, 'done', accountitem.account)
+        self.close()
 
 class AccountItem(urwid.WidgetWrap):
-    def __init__(self, account):
+    def __init__(self, num, account):
+        self.num = num
         self.account = account
         self.item = [
             ('weight', 1, urwid.Text(account['username'])),
