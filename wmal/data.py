@@ -57,7 +57,7 @@ class Data(object):
         libbase = account['api']
         libname = "lib{0}".format(libbase)
         try:
-            modulename = "modules.{0}".format(libname)
+            modulename = "wmal.lib.{0}".format(libname)
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError, e:

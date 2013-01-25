@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # wMAL v0.2
 # Lightweight terminal-based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
@@ -26,10 +24,11 @@ import cmd
 import re
 from operator import itemgetter # Used for sorting list
 
-import modules.messenger as messenger
-import modules.engine as engine
-import modules.utils as utils
-import modules.accounts as accountman
+from wmal.engine import Engine
+from wmal.accounts import AccountManager
+
+import wmal.messenger as messenger
+import wmal.utils as utils
 
 _DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
@@ -71,7 +70,7 @@ class wmal_cmd(cmd.Cmd):
         print 'under certain conditions; see the file COPYING for details.'
         print
         print 'Initializing engine...'
-        self.engine = engine.Engine(self.account, self.messagehandler)
+        self.engine = Engine(self.account, self.messagehandler)
         self.engine.start()
         
         # Start with default filter selected
@@ -455,7 +454,7 @@ class wmal_cmd(cmd.Cmd):
         print '%d results' % len(showlist)
         print
 
-class wmal_accounts(accountman.AccountManager):
+class wmal_accounts(AccountManager):
     def select_account(self):
         print "Account Manager"
         while True:
@@ -495,7 +494,7 @@ class wmal_accounts(accountman.AccountManager):
             print "No accounts."
 
 
-if __name__ == '__main__':
+def main():
     main_cmd = wmal_cmd()
     try:
         main_cmd.start()

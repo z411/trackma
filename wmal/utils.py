@@ -17,12 +17,14 @@
 import os, re, shutil
 import json
 
+datadir = os.path.dirname(__file__)
+
 # Put the available APIs here
 available_libs = {
-    'mal':      ('MyAnimeList',  'data/mal.jpg'),
-    'malu':     ('MAL Unoffic.', 'data/malu.jpg'),
-    'melative': ('Melative',     'data/melative.jpg'),
-    'vndb':     ('VNDB',         'data/vndb.jpg'),
+    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg'),
+    'malu':     ('MAL Unoffic.', datadir + '/data/malu.jpg'),
+    'melative': ('Melative',     datadir + '/data/melative.jpg'),
+    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
 }
 
 def parse_config(filename, default):

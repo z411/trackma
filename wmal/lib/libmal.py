@@ -16,14 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import lib
+from wmal.lib.lib import lib
+import wmal.utils as utils
+
 import urllib, urllib2
 import xml.etree.ElementTree as ET
 from cStringIO  import StringIO
 
-import utils
 
-class libmal(lib.lib):
+class libmal(lib):
     """
     API class to communicate with MyAnimeList
     Should inherit a base library interface.

@@ -14,11 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import lib
+import wmal.lib as lib
+import wmal.utils as utils
+
 import socket
 import json
 
-import utils
 
 class libvndb(lib.lib):
     """

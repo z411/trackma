@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # wMAL-gtk v0.2
 # Lightweight GTK based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
@@ -33,10 +31,11 @@ import Image
 import urllib2 as urllib
 from cStringIO import StringIO
 
-import modules.messenger as messenger
-import modules.engine as engine
-import modules.utils as utils
-import modules.accounts as accountman
+import wmal.messenger as messenger
+import wmal.utils as utils
+
+from wmal.engine import Engine
+from wmal.accounts import AccountManager
     
 class wmal_gtk(object):
     engine = None
@@ -47,7 +46,7 @@ class wmal_gtk(object):
     
     def main(self):
         """Start the Account Selector"""
-        manager = accountman.AccountManager()
+        manager = AccountManager()
         
         # Use the remembered account if there's one
         if manager.get_default():
@@ -60,7 +59,7 @@ class wmal_gtk(object):
         gtk.main()
     
     def do_switch_account(self, widget):
-        manager = accountman.AccountManager()
+        manager = AccountManager()
         self.accountsel = AccountSelect(manager = accountman.AccountManager(), switch=True)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
@@ -88,7 +87,7 @@ class wmal_gtk(object):
         """Create the main window"""
         # Create engine
         self.account = account
-        self.engine = engine.Engine(account)
+        self.engine = Engine(account)
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
@@ -1169,7 +1168,7 @@ class ShowSearchView(gtk.TreeView):
         self.thaw_child_notify()
         self.store.set_sort_column_id(1, gtk.SORT_ASCENDING)
     
-if __name__ == '__main__':
+def main():
     app = wmal_gtk()
     try:
         gtk.gdk.threads_enter()

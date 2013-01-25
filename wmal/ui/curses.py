@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # wMAL-curses v0.2
 # Lightweight urwid+curses based script for using data from MyAnimeList.
 # Copyright (C) 2012  z411
@@ -29,10 +27,11 @@ import urwid
 import re
 import sys
 
-import modules.engine as engine
-import modules.messenger as messenger
-import modules.utils as utils
-import modules.accounts as accountman
+from wmal.engine import Engine
+from wmal.accounts import AccountManager
+
+import wmal.messenger as messenger
+import wmal.utils as utils
 
 from operator import itemgetter
 from itertools import cycle
@@ -121,7 +120,7 @@ class wMAL_urwid(object):
     def start(self, account):
         """Starts the engine"""
         # Engine configuration
-        self.engine = engine.Engine(account, self.message_handler)
+        self.engine = Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -190,7 +189,7 @@ class wMAL_urwid(object):
             self.do_search('')
 
     def do_switch_account(self, loop=None, data=None):
-        manager = accountman.AccountManager()
+        manager = AccountManager()
         
         if self.engine is None:
             if manager.get_default():
@@ -697,7 +696,7 @@ class QuestionAsker(Asker):
         if key.lower() in 'yn':
             urwid.emit_signal(self, 'done', key)
     
-if __name__ == '__main__':
+def main():
     try:
         wMAL_urwid()
     except utils.wmalFatal, e:
