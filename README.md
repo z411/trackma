@@ -56,20 +56,6 @@ hesitate to submit an issue in the github issue tracker:
 
 http://github.com/z411/wmal-python/issues
 
-Development Model
------------------
-
-The project aims to be scalable as to support different clients and anime
-databases in the future. Here's the expected design method (may change):
-
-<pre>
-Client (CLI)    <-->                          <--> libmelative <-->
-Client (curses) <--> Engine <--> Data Handler <--> libmal      <--> Internet (API)
-Client (GTK)    <-->                  |       <--> libvndb     <-->
-                                      v              etc...
-                                   Local DB
-</pre>
-
 License
 -------
 wMAL is licensed under the GPLv3 license, please see LICENSE for details.
