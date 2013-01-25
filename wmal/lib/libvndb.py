@@ -14,14 +14,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import wmal.lib as lib
+from wmal.lib.lib import lib
 import wmal.utils as utils
 
 import socket
 import json
 
 
-class libvndb(lib.lib):
+class libvndb(lib):
     """
     API class to communicate with VNDB
     Should inherit a base library interface.
