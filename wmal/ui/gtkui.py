@@ -60,7 +60,7 @@ class wmal_gtk(object):
     
     def do_switch_account(self, widget):
         manager = AccountManager()
-        self.accountsel = AccountSelect(manager = accountman.AccountManager(), switch=True)
+        self.accountsel = AccountSelect(manager = AccountManager(), switch=True)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
         
@@ -94,7 +94,7 @@ class wmal_gtk(object):
         self.main.connect("delete_event", self.delete_event)
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('wMAL-gtk ' + VERSION)
-        gtk.window_set_default_icon_from_file('data/wmal_icon.png')
+        gtk.window_set_default_icon_from_file(utils.datadir + '/data/wmal_icon.png')
         
         # Menus
         mb_show = gtk.Menu()
