@@ -18,7 +18,14 @@ Features
 Screenshots
 -----------
 
-Not yet...
+GTK interface
+![GTK](http://z411.github.com/wmal-python/images/screen_gtk.png)
+
+Curses interface
+![Curses](http://z411.github.com/wmal-python/images/screen_curses.png)
+
+CLI
+![CLI](http://z411.github.com/wmal-python/images/screen_cli.png)
 
 Requirements
 ------------
