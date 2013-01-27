@@ -97,7 +97,7 @@ class wmal_gtk(object):
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/wmal_icon.png')
         
         # Menus
-        mb_show = gtk.Menu()
+        mb_list = gtk.Menu()
         mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         mb_delete.connect("activate", self.do_delete)
@@ -106,24 +106,28 @@ class wmal_gtk(object):
         gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
         mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
         mb_addsearch.connect("activate", self.do_addsearch)
-        gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
-        mb_sync = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
-        mb_sync.connect("activate", self.do_sync)
+        gtk.stock_add([(gtk.STOCK_REFRESH, "Retrieve list", 0, 0, "")])
+        mb_send = gtk.MenuItem('Send changes')
+        mb_send.connect("activate", self.do_send)
+        
+        mb_list.append(mb_play)
+        mb_list.append(mb_delete)
+        mb_list.append(gtk.SeparatorMenuItem())
+        mb_list.append(mb_addsearch)
+        mb_list.append(mb_send)
+        mb_list.append(gtk.SeparatorMenuItem())
+        mb_list.append(mb_exit)
+        
+        mb_account = gtk.Menu()
+        mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
+        mb_retrieve.connect("activate", self.do_retrieve)
         mb_switch_account = gtk.MenuItem('Switch Account...')
         mb_switch_account.connect("activate", self.do_switch_account)
         
-        mb_show.append(mb_play)
-        mb_show.append(mb_delete)
-        mb_show.append(gtk.SeparatorMenuItem())
-        mb_show.append(mb_addsearch)
-        mb_show.append(mb_sync)
-        mb_show.append(mb_switch_account)
-        mb_show.append(gtk.SeparatorMenuItem())
-        mb_show.append(mb_exit)
+        mb_account.append(mb_switch_account)
+        mb_account.append(mb_retrieve)
         
         self.mb_mediatype_menu = gtk.Menu()
-        mb_mediatype = gtk.MenuItem("Mediatype")
-        mb_mediatype.set_submenu(self.mb_mediatype_menu)
         
         mb_options = gtk.Menu()
         mb_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
@@ -132,11 +136,17 @@ class wmal_gtk(object):
         
         # Root menubar
         root_menu1 = gtk.MenuItem("Show")
-        root_menu1.set_submenu(mb_show)
+        root_menu1.set_submenu(mb_list)
+        root_account = gtk.MenuItem("Account")
+        root_account.set_submenu(mb_account)
+        mb_mediatype = gtk.MenuItem("Mediatype")
+        mb_mediatype.set_submenu(self.mb_mediatype_menu)
         root_menu2 = gtk.MenuItem("Help")
         root_menu2.set_submenu(mb_options)
+        
         mb = gtk.MenuBar()
         mb.append(root_menu1)
+        mb.append(root_account)
         mb.append(mb_mediatype)
         mb.append(root_menu2)
         
@@ -440,18 +450,26 @@ class wmal_gtk(object):
         self.main.destroy()
         gtk.threads_leave()
         
-    def do_sync(self, widget):
-        threading.Thread(target=self.task_sync).start()
+    def do_retrieve(self, widget):
+        threading.Thread(target=self.task_sync, args=(False,)).start()
     
-    def task_sync(self):
+    def do_send(self, widget):
+        threading.Thread(target=self.task_sync, args=(True,)).start()
+    
+    def task_sync(self, send):
         self.allow_buttons(False)
-        self.engine.list_upload()
-        self.engine.list_download()
-        gtk.threads_enter()
-        self.build_list()
-        gtk.threads_leave()
+        
+        if send:
+            self.engine.list_upload()
+        else:
+            self.engine.list_download()
+            gtk.threads_enter()
+            self.build_list()
+            gtk.threads_leave()
+        
         self.status("Ready.")
         self.allow_buttons(True)
+    
         
     def start_engine(self):
         print "Starting engine..."
