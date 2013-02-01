@@ -462,6 +462,9 @@ class Engine:
                 playep = show['my_progress'] + 1
                 playing_next = True
             
+            if show['total'] and playep > show['total']:
+                raise utils.EngineError('Episode beyond limits.')
+            
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
             filename = self._search_video(show['title'], playep)
             if filename:

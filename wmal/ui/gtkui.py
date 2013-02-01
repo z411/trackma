@@ -210,15 +210,21 @@ class wmal_gtk(object):
         line2.pack_start(self.update_button, False, False, 0)
         
         self.play_button = gtk.Button('Play')
-        self.play_button.connect("clicked", self.do_play)
+        self.play_button.connect("clicked", self.do_play, False)
         self.play_button.set_sensitive(False)
         line2.pack_start(self.play_button, False, False, 0)
+        
+        self.play_next_button = gtk.Button('Play Next')
+        self.play_next_button.connect("clicked", self.do_play, True)
+        self.play_next_button.set_sensitive(False)
+        line2.pack_start(self.play_next_button, False, False, 0)
         
         top_right_box.pack_start(line2, True, False, 0)
         
         # Disable play button if it's not supported by the mediatype
         if not self.engine.mediainfo['can_play']:
             self.play_button.set_sensitive(False)
+            self.play_next_button.set_sensitive(False)
         
         # Line 3: Score
         line3 = gtk.HBox(False, 5)
@@ -358,8 +364,8 @@ class wmal_gtk(object):
     def do_reload(self, widget, account, mediatype):
         threading.Thread(target=self.task_reload, args=[account, mediatype]).start()
         
-    def do_play(self, widget):
-        threading.Thread(target=self.task_play).start()
+    def do_play(self, widget, playnext):
+        threading.Thread(target=self.task_play, args=(playnext,)).start()
     
     def do_delete(self, widget):
         try:
@@ -431,13 +437,16 @@ class wmal_gtk(object):
             except utils.wmalError, e:
                 self.error(e.message)
     
-    def task_play(self):
+    def task_play(self, playnext):
         self.allow_buttons(False)
         
         show = self.engine.get_show_info(self.selected_show)
-        ep = self.show_ep_num.get_value_as_int()
+        
         try:
-            played_ep = self.engine.play_episode(show, ep)
+            if playnext:
+                played_ep = self.engine.play_episode(show)
+            else:
+                played_ep = self.engine.play_episode(show, ep)
             
             # Ask if we should update to the next episode
             if played_ep == (show['my_progress'] + 1):
@@ -633,6 +642,7 @@ class wmal_gtk(object):
         if self.selected_show or not boolean:
             if self.engine.mediainfo['can_play']:
                 self.play_button.set_sensitive(boolean)
+                self.play_next_button.set_sensitive(boolean)
             
             if self.engine.mediainfo['can_update']:
                 self.update_button.set_sensitive(boolean)
