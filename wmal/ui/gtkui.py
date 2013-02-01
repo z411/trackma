@@ -935,6 +935,62 @@ class AccountSelect(gtk.Window):
         self.do_close(None)
         return False
 
+class Settings(gtk.Window):
+    def __init__(self, engine):
+        self.engine = engine
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Global Settings')
+        self.set_border_width(10)
+        
+        # Labels
+        lbl_player = gtk.Label('Player')
+        lbl_player.set_size_request(70, -1)
+        lbl_searchdir = gtk.Label('Search Directory')
+        lbl_searchdir.set_size_request(70, -1)
+        lbl_tracker_enabled = gtk.Label('Enable Tracker')
+        lbl_tracker_enabled.set_size_request(70, -1)
+        
+        # Entries
+        self.txt_player = gtk.Entry(32)
+        self.txt_searchdir = gtk.Entry(32)
+        
+        # Buttons
+        alignment = gtk.Alignment(xalign=0.5)
+        bottombar = gtk.HBox(False, 5)
+        self.apply_button = gtk.Button(stock=gtk.STOCK_APPLY)
+        close_button = gtk.Button(stock=gtk.STOCK_CANCEL)
+        close_button.connect("clicked", self.do_close)
+        bottombar.pack_start(self.apply_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        # HBoxes
+        line1 = gtk.HBox(False, 5)
+        line1.pack_start(lbl_player, False, False, 0)
+        line1.pack_start(self.txt_player, True, True, 0)
+        
+        line2 = gtk.HBox(False, 5)
+        line2.pack_start(lbl_searchdir, False, False, 0)
+        line2.pack_start(self.txt_searchdir, True, True, 0)
+        
+        line3 = gtk.HBox(False, 5)
+        line3.pack_start(lbl_tracker_enabled, False, False, 0)
+        line3.pack_start(self.chk_tracker_enabled, True, True, 0)
+        
+        # Join HBoxes
+        vbox = gtk.VBox(False, 10)
+        vbox.pack_start(line3, False, False, 0)
+        vbox.pack_start(line1, False, False, 0)
+        vbox.pack_start(line2, False, False, 0)
+        vbox.pack_start(alignment, False, False, 0)
+        
+        self.add(vbox)
+    
+    def do_close(self, widget):
+        self.destroy()
+
 class AccountSelectAdd(gtk.Window):
     def __init__(self, pixbufs):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -1004,6 +1060,7 @@ class AccountSelectAdd(gtk.Window):
     
     def do_close(self, widget):
         self.destroy()
+    
 
 class ShowSearch(gtk.Window):
     def __init__(self, engine):

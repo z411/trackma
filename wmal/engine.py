@@ -172,6 +172,14 @@ class Engine:
         
         self._init_data_handler()
         self.start()
+    
+    def get_config(self, key):
+        """Returns the specified key from the configuration"""
+        return self.config[key]
+    
+    def set_config(config, key, value):
+        """Writes the defined key to the configuration"""
+        self.config[key] = value
         
     def get_list(self):
         """Requests the full show list from the data handler."""
