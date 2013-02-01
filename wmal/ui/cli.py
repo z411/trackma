@@ -133,6 +133,16 @@ class wmal_cmd(cmd.Cmd):
         sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
         self._make_list(sortedlist)
     
+    def do_info(self, arg):
+        if(arg):
+            show = self.engine.get_show_info(arg)
+            details = self.engine.get_show_details(show)
+            print "Title: %s" % details['title']
+            for line in details['extra']:
+                print "%s: %s" % line
+        else:
+            print "Missing arguments."
+    
     def do_search(self, arg):
         """
         search - Does a regex search on shows and lists the matches.
@@ -476,10 +486,15 @@ class wmal_accounts(AccountManager):
                 num = int(num)
                 self.delete_account(num)
             else:
-                num = int(key)
-                accounts = self.get_accounts()
-                num -= 1
-                return accounts[num]
+                try:
+                    num = int(key)
+                    accounts = self.get_accounts()
+                    num -= 1
+                    return accounts[num]
+                except ValueError:
+                    print "Invalid value."
+                except IndexError:
+                    print "Account doesn't exist."
     
     def list_accounts(self):
         accounts = self.get_accounts()

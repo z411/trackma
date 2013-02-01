@@ -225,11 +225,7 @@ class libvndb(lib):
             
             # Process list
             for item in data['items']:
-                info = {'id': item['id'],
-                        'title': item['title'],
-                        'image': item['image'],
-                       }
-                infos.append(info)
+                infos.append(self._parse_info(item))
             
             start += 25
             if start >= len(itemlist):
@@ -294,7 +290,7 @@ class libvndb(lib):
         results = list()
         self.msg.info(self.name, 'Searching for %s...' % criteria)
         
-        (name, data) = self._sendcmd('get vn basic (title ~ "%s")' % criteria,
+        (name, data) = self._sendcmd('get vn basic,details (title ~ "%s")' % criteria,
             {'page': 1,
              'results': 25,
             })
@@ -305,10 +301,7 @@ class libvndb(lib):
         
         # Process list
         for item in data['items']:
-            result = utils.show()
-            result['id']    = item['id']
-            result['title'] = item['title']
-            results.append(result)
+            results.append(self._parse_info(item))
         
         return results
     
@@ -316,3 +309,21 @@ class libvndb(lib):
         self.msg.info(self.name, 'Disconnecting...')
         self._disconnect()
         self.logged_in = False
+    
+    def _parse_info(self, item):
+        info = {'id': item['id'],
+                'title': item['title'],
+                'image': item['image'],
+                'extra': [
+                    ('Original Name', item['original']),
+                    ('Released',      item['released']),
+                    ('Languages',     ','.join(item['languages'])),
+                    ('Original Language', ','.join(item['orig_lang'])),
+                    ('Platforms',     ','.join(item['platforms'])),
+                    ('Aliases',       item['aliases']),
+                    ('Length',        item['length']),
+                    ('Description',   item['description']),
+                    ('Links',         item['links']),
+                ]
+               }
+        return info
