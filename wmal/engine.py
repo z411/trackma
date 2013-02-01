@@ -213,6 +213,9 @@ class Engine:
                     return show
             raise utils.EngineError("Show not found.")
     
+    def get_show_details(self, show):
+        return self.data_handler.info_get(show['id'])
+        
     def regex_list(self, regex):
         """
         Searches for a show and returns a list with the matches

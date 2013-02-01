@@ -37,9 +37,9 @@ class libvndb(lib):
                   'merge': True,
                 }
     
-    default_mediatype = 'vn'
+    default_mediatype = 'vnlist'
     mediatypes = dict()
-    mediatypes['vn'] = {
+    mediatypes['vnlist'] = {
         'has_progress': False,
         'can_score': True,
         'can_status': True,
@@ -49,6 +49,17 @@ class libvndb(lib):
         'can_play': False,
         'statuses':  [1, 2, 3, 4, 0],
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
+    }
+    mediatypes['wishlist'] = {
+        'has_progress': False,
+        'can_score': True,
+        'can_status': False,
+        'can_add': True,
+        'can_delete': True,
+        'can_update': False,
+        'can_play': False,
+        'statuses':  [0, 1, 2, 3],
+        'statuses_dict': { 0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist' },
     }
     
     def __init__(self, messenger, account, userconfig):
@@ -83,13 +94,18 @@ class libvndb(lib):
         self.s.sendall(msg)
         
         # Construct response
-        response = ""
+        lines = []
         while True:
-            response += self.s.recv(65536)
-            if response.endswith("\x04"):
-                response = response.strip("\x04")
+            line = self.s.recv(65536)
+            if line.endswith("\x04"):
+                line = line.strip("\x04")
+                lines.append(line)
+                response = "".join(lines)
                 break
+            else:
+                lines.append(line)
         
+        print response
         # Separate into response name and JSON data
         _resp = response.split(' ', 1)
         name = _resp[0]
@@ -138,7 +154,7 @@ class libvndb(lib):
         while True:
             self.msg.info(self.name, 'Downloading list... (%d)' % page)
             
-            (name, data) = self._sendcmd('get vnlist basic (uid = 0)',
+            (name, data) = self._sendcmd('get %s basic (uid = 0)' % self.mediatype,
                 {'page': page,
                 'results': 25
                 })
@@ -152,7 +168,7 @@ class libvndb(lib):
                 vnid = item['vn']
                 vns[vnid] = utils.show()
                 vns[vnid]['id']         = vnid
-                vns[vnid]['my_status']  = item['status']
+                vns[vnid]['my_status']  = item.get('status') or item.get('priority')
             
             if not data['more']:
                 # No more VNs, finish
@@ -209,11 +225,7 @@ class libvndb(lib):
             
             # Process list
             for item in data['items']:
-                info = {'id': item['id'],
-                        'title': item['title'],
-                        'image': item['image'],
-                       }
-                infos.append(info)
+                infos.append(self._parse_info(item))
             
             start += 25
             if start >= len(itemlist):
@@ -236,8 +248,12 @@ class libvndb(lib):
         if 'my_status' in item.keys():
             self.msg.info(self.name, 'Updating VN %s (status)...' % item['title'])
             
-            values = {'status': item['my_status']}
-            (name, data) = self._sendcmd('set vnlist %d' % item['id'], values)
+            if self.mediatype == 'wishlist':
+                values = {'priority': item['my_status']}
+            else:
+                values = {'status': item['my_status']}
+            
+            (name, data) = self._sendcmd('set %s %d' % (self.mediatype, item['id']), values)
         
             if name != 'ok':
                 raise utils.APIError("Invalid response (%s)" % name)
@@ -263,7 +279,7 @@ class libvndb(lib):
         
         self.msg.info(self.name, 'Deleting VN %s...' % item['title'])
             
-        (name, data) = self._sendcmd('set vnlist %d' % item['id'])
+        (name, data) = self._sendcmd('set %s %d' % (self.mediatype, item['id']))
         
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
@@ -274,7 +290,7 @@ class libvndb(lib):
         results = list()
         self.msg.info(self.name, 'Searching for %s...' % criteria)
         
-        (name, data) = self._sendcmd('get vn basic (title ~ "%s")' % criteria,
+        (name, data) = self._sendcmd('get vn basic,details (title ~ "%s")' % criteria,
             {'page': 1,
              'results': 25,
             })
@@ -285,10 +301,7 @@ class libvndb(lib):
         
         # Process list
         for item in data['items']:
-            result = utils.show()
-            result['id']    = item['id']
-            result['title'] = item['title']
-            results.append(result)
+            results.append(self._parse_info(item))
         
         return results
     
@@ -296,3 +309,21 @@ class libvndb(lib):
         self.msg.info(self.name, 'Disconnecting...')
         self._disconnect()
         self.logged_in = False
+    
+    def _parse_info(self, item):
+        info = {'id': item['id'],
+                'title': item['title'],
+                'image': item['image'],
+                'extra': [
+                    ('Original Name', item['original']),
+                    ('Released',      item['released']),
+                    ('Languages',     ','.join(item['languages'])),
+                    ('Original Language', ','.join(item['orig_lang'])),
+                    ('Platforms',     ','.join(item['platforms'])),
+                    ('Aliases',       item['aliases']),
+                    ('Length',        item['length']),
+                    ('Description',   item['description']),
+                    ('Links',         item['links']),
+                ]
+               }
+        return info
