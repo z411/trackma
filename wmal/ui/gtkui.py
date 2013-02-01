@@ -123,9 +123,13 @@ class wmal_gtk(object):
         mb_retrieve.connect("activate", self.do_retrieve)
         mb_switch_account = gtk.MenuItem('Switch Account...')
         mb_switch_account.connect("activate", self.do_switch_account)
+        mb_settings = gtk.MenuItem('Global Settings...')
+        mb_settings.connect("activate", self.do_settings)
         
         mb_account.append(mb_switch_account)
         mb_account.append(mb_retrieve)
+        mb_account.append(gtk.SeparatorMenuItem())
+        mb_account.append(mb_settings)
         
         self.mb_mediatype_menu = gtk.Menu()
         
@@ -137,7 +141,7 @@ class wmal_gtk(object):
         # Root menubar
         root_menu1 = gtk.MenuItem("Show")
         root_menu1.set_submenu(mb_list)
-        root_account = gtk.MenuItem("Account")
+        root_account = gtk.MenuItem("Options")
         root_account.set_submenu(mb_account)
         mb_mediatype = gtk.MenuItem("Mediatype")
         mb_mediatype.set_submenu(self.mb_mediatype_menu)
@@ -345,6 +349,10 @@ class wmal_gtk(object):
     
     def do_addsearch(self, widget):
         win = ShowSearch(self.engine)
+        win.show_all()
+    
+    def do_settings(self, widget):
+        win = Settings(self.engine)
         win.show_all()
         
     def do_reload(self, widget, account, mediatype):
@@ -964,20 +972,24 @@ class Settings(gtk.Window):
         
         # Labels
         lbl_player = gtk.Label('Player')
-        lbl_player.set_size_request(70, -1)
+        lbl_player.set_size_request(120, -1)
         lbl_searchdir = gtk.Label('Search Directory')
-        lbl_searchdir.set_size_request(70, -1)
+        lbl_searchdir.set_size_request(120, -1)
         lbl_tracker_enabled = gtk.Label('Enable Tracker')
-        lbl_tracker_enabled.set_size_request(70, -1)
+        lbl_tracker_enabled.set_size_request(120, -1)
         
         # Entries
         self.txt_player = gtk.Entry(32)
         self.txt_searchdir = gtk.Entry(32)
+        browse_button = gtk.Button('Browse...')
+        browse_button.connect("clicked", self.do_browse)
+        self.chk_tracker_enabled = gtk.CheckButton()
         
         # Buttons
         alignment = gtk.Alignment(xalign=0.5)
         bottombar = gtk.HBox(False, 5)
         self.apply_button = gtk.Button(stock=gtk.STOCK_APPLY)
+        self.apply_button.connect("clicked", self.do_apply)
         close_button = gtk.Button(stock=gtk.STOCK_CANCEL)
         close_button.connect("clicked", self.do_close)
         bottombar.pack_start(self.apply_button, False, False, 0)
@@ -992,10 +1004,11 @@ class Settings(gtk.Window):
         line2 = gtk.HBox(False, 5)
         line2.pack_start(lbl_searchdir, False, False, 0)
         line2.pack_start(self.txt_searchdir, True, True, 0)
+        line2.pack_start(browse_button, False, False, 0)
         
         line3 = gtk.HBox(False, 5)
         line3.pack_start(lbl_tracker_enabled, False, False, 0)
-        line3.pack_start(self.chk_tracker_enabled, True, True, 0)
+        line3.pack_start(self.chk_tracker_enabled, False, False, 0)
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
@@ -1005,7 +1018,36 @@ class Settings(gtk.Window):
         vbox.pack_start(alignment, False, False, 0)
         
         self.add(vbox)
+        self.load_config()
+        
+    def load_config(self):
+        self.txt_player.set_text(self.engine.get_config('player'))
+        self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
+        self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
     
+    def save_config(self):
+        self.engine.set_config('player', self.txt_player.get_text())
+        self.engine.set_config('searchdir', self.txt_searchdir.get_text())
+        self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
+    
+    def do_browse(self, widget):
+        browsew = gtk.FileChooserDialog("Choose Search Directory",
+                                        None,
+                                        gtk.FILE_CHOOSER_ACTION_OPEN,
+                                        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                                        gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+        browsew.set_default_response(gtk.RESPONSE_OK)
+        browsew.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        
+        response = browsew.run()
+        if response == gtk.RESPONSE_OK:
+            self.txt_searchdir.set_text(browsew.get_filename())
+        browsew.destroy()
+        
+    def do_apply(self, widget):
+        self.save_config()
+        self.destroy()
+        
     def do_close(self, widget):
         self.destroy()
 

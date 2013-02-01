@@ -177,7 +177,7 @@ class Engine:
         """Returns the specified key from the configuration"""
         return self.config[key]
     
-    def set_config(config, key, value):
+    def set_config(self, key, value):
         """Writes the defined key to the configuration"""
         self.config[key] = value
         
