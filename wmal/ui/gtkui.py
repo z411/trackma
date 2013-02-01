@@ -446,6 +446,7 @@ class wmal_gtk(object):
             if playnext:
                 played_ep = self.engine.play_episode(show)
             else:
+                ep = self.show_ep_num.get_value_as_int()
                 played_ep = self.engine.play_episode(show, ep)
             
             # Ask if we should update to the next episode
