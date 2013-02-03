@@ -412,17 +412,17 @@ class Engine:
         # Emit signal
         self._emit_signal('show_deleted', show)
         
-    def _search_video(self, title, episode):
-        searchfile = title
+    def _search_video(self, titles, episode):
+        searchfile = '|'.join(titles)
         searchfile = searchfile.replace(',', ',?')
         searchfile = searchfile.replace('.', '.?')
         searchfile = searchfile.replace('!', '[!]?')
         searchfile = searchfile.replace('?', '[?]?')
-        searchfile = searchfile.replace(' ', '.')    
+        searchfile = searchfile.replace(' ', '.?')    
         searchep = str(episode).zfill(2)
         
         # Do the file search
-        regex = searchfile + r".*\D" + searchep + r"\D.*(mkv|mp4|avi)"
+        regex = "(%s).*\D%s\D.*(mkv|mp4|avi)" % (searchfile, searchep)
         return utils.regex_find_file(regex, self.config['searchdir'])
     
     def get_new_episodes(self, showlist):
@@ -466,7 +466,11 @@ class Engine:
                 raise utils.EngineError('Episode beyond limits.')
             
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
-            filename = self._search_video(show['title'], playep)
+            
+            titles = [show['title']]
+            titles.extend(show['aliases'])
+            
+            filename = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 self.playing = True

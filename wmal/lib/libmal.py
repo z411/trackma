@@ -233,10 +233,15 @@ class libmal(lib):
         showlist = dict()
         for child in root.iter('anime'):
             show_id = int(child.find('series_animedb_id').text)
+            if child.find('series_synonyms').text:
+                aliases = child.find('series_synonyms').text.encode('utf-8').lstrip('; ').split('; ')
+            else:
+                aliases = []
             
             showlist[show_id] = {
                 'id':           show_id,
                 'title':        child.find('series_title').text.encode('utf-8'),
+                'aliases':      aliases,
                 'my_progress':  int(child.find('my_watched_episodes').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
@@ -249,20 +254,24 @@ class libmal(lib):
     def _parse_manga(self, root):
         """Converts an XML manga list to a dictionary"""
         mangalist = dict()
-        for child in root:
-            if child.tag == 'manga':
-                manga_id = int(child.find('series_mangadb_id').text)
-                
-                mangalist[manga_id] = {
-                    'id':           manga_id,
-                    'title':        child.find('series_title').text.encode('utf-8'),
-                    'my_progress':  int(child.find('my_read_chapters').text),
-                    'my_status':    int(child.find('my_status').text),
-                    'my_score':     int(child.find('my_score').text),
-                    'total':     int(child.find('series_chapters').text),
-                    'status':       int(child.find('series_status').text),
-                    'image':        child.find('series_image').text,
-                }
+        for child in root.iter('manga'):
+            manga_id = int(child.find('series_mangadb_id').text)
+            if child.find('series_synonyms').text:
+                aliases = child.find('series_synonyms').text.encode('utf-8').lstrip('; ').split('; ')
+            else:
+                aliases = []
+            
+            mangalist[manga_id] = {
+                'id':           manga_id,
+                'title':        child.find('series_title').text.encode('utf-8'),
+                'aliases':      aliases,
+                'my_progress':  int(child.find('my_read_chapters').text),
+                'my_status':    int(child.find('my_status').text),
+                'my_score':     int(child.find('my_score').text),
+                'total':     int(child.find('series_chapters').text),
+                'status':       int(child.find('series_status').text),
+                'image':        child.find('series_image').text,
+            }
         return mangalist
     
     def _build_xml(self, item):
