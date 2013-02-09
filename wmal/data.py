@@ -114,8 +114,8 @@ class Data(object):
                 raise utils.APIFatal(e.message)
         else:
             # Still get the cache if any autoretrieve condition is met
-            if (self.config['autoretrieve_always'] or
-               (self.config['autoretrieve_days'] and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600)):
+            if (self.config['autoretrieve'] == 'always' or
+               (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600)):
                 try:
                     self.download_data()
                 except utils.APIError, e:
@@ -143,7 +143,7 @@ class Data(object):
         """
         self.msg.debug(self.name, "Unloading...")
         # We push changes if specified on config file
-        if self.config['autosend_at_exit']:
+        if self.config['autosend'] == 'at_exit':
             self.process_queue()
         
         self._unlock()
@@ -230,9 +230,9 @@ class Data(object):
         self.msg.info(self.name, "Queued update for %s" % show['title'])
         
         # Immediately process the action if necessary
-        if (self.config['autosend_always'] or
-           (self.config['autosend_hours'] and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
-           (self.config['autosend_size'] and len(self.queue) >= self.config['autosend_size'])):
+        if (self.config['autosend'] == 'always' or
+           (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
+           (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size'])):
             self.process_queue()
     
     def queue_delete(self, show):

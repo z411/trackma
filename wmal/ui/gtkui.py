@@ -303,7 +303,6 @@ class wmal_gtk(object):
         self.start_engine()
     
     def _clear_gui(self):
-        print "clearing gui"
         self.show_title.set_text('<span size="14000"><b>wMAL</b></span>')
         self.show_title.set_use_markup(True)
         
@@ -490,7 +489,6 @@ class wmal_gtk(object):
     
         
     def start_engine(self):
-        print "Starting engine..."
         threading.Thread(target=self.task_start_engine).start()
     
     def task_start_engine(self):
@@ -535,11 +533,8 @@ class wmal_gtk(object):
         self.task_start_engine()
         
     def select_show(self, widget):
-        print "select show"
-        
         (tree_model, tree_iter) = widget.get_selected()
         if not tree_iter:
-            print "Unselected show"
             self.allow_buttons_push(False, lists_too=False)
             return
         
@@ -608,7 +603,7 @@ class wmal_gtk(object):
         
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
-        print msg
+        print "%s: %s" % (classname, msg)
         if msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
@@ -981,6 +976,8 @@ class Settings(gtk.Window):
         self.set_title('Global Settings')
         self.set_border_width(10)
         
+        ### Tracker ###
+        
         # Labels
         lbl_player = gtk.Label('Player')
         lbl_player.set_size_request(120, -1)
@@ -1008,6 +1005,10 @@ class Settings(gtk.Window):
         alignment.add(bottombar)
         
         # HBoxes
+        header1 = gtk.Label()
+        header1.set_text('<span size="10000"><b>Tracker Options</b></span>')
+        header1.set_use_markup(True)
+        
         line1 = gtk.HBox(False, 5)
         line1.pack_start(lbl_player, False, False, 0)
         line1.pack_start(self.txt_player, True, True, 0)
@@ -1021,11 +1022,77 @@ class Settings(gtk.Window):
         line3.pack_start(lbl_tracker_enabled, False, False, 0)
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
         
+        ### Auto-retrieve ###
+        header2 = gtk.Label()
+        header2.set_text('<span size="10000"><b>Auto-retrieve</b></span>')
+        header2.set_use_markup(True)
+        
+        # Radio buttons
+        self.rbtn_autoret_off = gtk.RadioButton(None, 'Disabled')
+        self.rbtn_autoret_always = gtk.RadioButton(self.rbtn_autoret_off, 'Always at start')
+        
+        self.rbtn_autoret_days = gtk.RadioButton(self.rbtn_autoret_off, 'After')
+        self.spin_autoret_days = gtk.SpinButton(gtk.Adjustment(value=3, lower=1, upper=100, step_incr=1, page_incr=10))
+        self.spin_autoret_days.set_sensitive(False)
+        self.rbtn_autoret_days.connect("toggled", self.radio_toggled, self.spin_autoret_days)
+        lbl_autoret_days = gtk.Label('days')
+        line_autoret_days = gtk.HBox(False, 5)
+        line_autoret_days.pack_start(self.rbtn_autoret_days, False, False, 0)
+        line_autoret_days.pack_start(self.spin_autoret_days, False, False, 0)
+        line_autoret_days.pack_start(lbl_autoret_days, False, False, 0)
+        
+        line4 = gtk.VBox(False, 5)
+        line4.pack_start(self.rbtn_autoret_off, False, False, 0)
+        line4.pack_start(self.rbtn_autoret_always, False, False, 0)
+        line4.pack_start(line_autoret_days, False, False, 0)
+        
+        ### Auto-send ###
+        header3 = gtk.Label()
+        header3.set_text('<span size="10000"><b>Auto-send</b></span>')
+        header3.set_use_markup(True)
+        
+        # Radio buttons
+        self.rbtn_autosend_off = gtk.RadioButton(None, 'Disabled')
+        self.rbtn_autosend_always = gtk.RadioButton(self.rbtn_autosend_off, 'After every change')
+        self.rbtn_autosend_at_exit = gtk.RadioButton(self.rbtn_autosend_off, 'At exit')
+        
+        self.rbtn_autosend_hours = gtk.RadioButton(self.rbtn_autosend_off, 'After')
+        self.spin_autosend_hours = gtk.SpinButton(gtk.Adjustment(value=5, lower=1, upper=1000, step_incr=1, page_incr=10))
+        self.spin_autosend_hours.set_sensitive(False)
+        self.rbtn_autosend_hours.connect("toggled", self.radio_toggled, self.spin_autosend_hours)
+        lbl_autosend_hours = gtk.Label('hours')
+        line_autosend_hours = gtk.HBox(False, 5)
+        line_autosend_hours.pack_start(self.rbtn_autosend_hours, False, False, 0)
+        line_autosend_hours.pack_start(self.spin_autosend_hours, False, False, 0)
+        line_autosend_hours.pack_start(lbl_autosend_hours, False, False, 0)
+        
+        self.rbtn_autosend_size = gtk.RadioButton(self.rbtn_autosend_off, 'After the queue is larger than')
+        self.spin_autosend_size = gtk.SpinButton(gtk.Adjustment(value=5, lower=1, upper=1000, step_incr=1, page_incr=10))
+        self.spin_autosend_size.set_sensitive(False)
+        self.rbtn_autosend_size.connect("toggled", self.radio_toggled, self.spin_autosend_size)
+        lbl_autosend_size = gtk.Label('entries')
+        line_autosend_size = gtk.HBox(False, 5)
+        line_autosend_size.pack_start(self.rbtn_autosend_size, False, False, 0)
+        line_autosend_size.pack_start(self.spin_autosend_size, False, False, 0)
+        line_autosend_size.pack_start(lbl_autosend_size, False, False, 0)
+        
+        line5 = gtk.VBox(False, 5)
+        line5.pack_start(self.rbtn_autosend_off, False, False, 0)
+        line5.pack_start(self.rbtn_autosend_always, False, False, 0)
+        line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
+        line5.pack_start(line_autosend_hours, False, False, 0)
+        line5.pack_start(line_autosend_size, False, False, 0)
+        
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
+        vbox.pack_start(header1, False, False, 0)
         vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(line1, False, False, 0)
         vbox.pack_start(line2, False, False, 0)
+        vbox.pack_start(header2, False, False, 0)
+        vbox.pack_start(line4, False, False, 0)
+        vbox.pack_start(header3, False, False, 0)
+        vbox.pack_start(line5, False, False, 0)
         vbox.pack_start(alignment, False, False, 0)
         
         self.add(vbox)
@@ -1035,12 +1102,57 @@ class Settings(gtk.Window):
         self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
+        
+        if self.engine.get_config('autoretrieve') == 'always':
+            self.rbtn_autoret_always.set_active(True)
+        elif self.engine.get_config('autoretrieve') == 'days':
+            self.rbtn_autoret_days.set_active(True)
+        
+        if self.engine.get_config('autosend') == 'always':
+            self.rbtn_autosend_always.set_active(True)
+        elif self.engine.get_config('autosend') == 'at_exit':
+            self.rbtn_autosend_at_exit.set_active(True)
+        elif self.engine.get_config('autosend') == 'hours':
+            self.rbtn_autosend_hours.set_active(True)
+        elif self.engine.get_config('autosend') == 'size':
+            self.rbtn_autosend_size.set_active(True)
+        
+        self.spin_autoret_days.set_value(self.engine.get_config('autoretrieve_days'))
+        self.spin_autosend_hours.set_value(self.engine.get_config('autosend_hours'))
+        self.spin_autosend_size.set_value(self.engine.get_config('autosend_size'))
     
     def save_config(self):
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
+        
+        # Auto-retrieve
+        if self.rbtn_autoret_always.get_active():
+            self.engine.set_config('autoretrieve', 'always')
+        elif self.rbtn_autoret_days.get_active():
+            self.engine.set_config('autoretrieve', 'days')
+        else:
+            self.engine.set_config('autoretrieve', 'off')
+        
+        # Auto-send
+        if self.rbtn_autosend_always.get_active():
+            self.engine.set_config('autosend', 'always')
+        elif self.rbtn_autosend_at_exit.get_active():
+            self.engine.set_config('autosend', 'at_exit')
+        elif self.rbtn_autosend_hours.get_active():
+            self.engine.set_config('autosend', 'hours')
+        elif self.rbtn_autosend_size.get_active():
+            self.engine.set_config('autosend', 'size')
+        else:
+            self.engine.set_config('autosend', 'off')
+        
+        self.engine.set_config('autoretrieve_days', self.spin_autoret_days.get_value_as_int())
+        self.engine.set_config('autosend_hours', self.spin_autosend_hours.get_value_as_int())
+        self.engine.set_config('autosend_size', self.spin_autosend_size.get_value_as_int())
     
+    def radio_toggled(self, widget, spin):
+        spin.set_sensitive(widget.get_active())
+        
     def do_browse(self, widget):
         browsew = gtk.FileChooserDialog("Choose Search Directory",
                                         None,
@@ -1204,7 +1316,6 @@ class ShowSearch(gtk.Window):
         # Get selected show ID
         (tree_model, tree_iter) = widget.get_selected()
         if not tree_iter:
-            print "Unselected show"
             self.allow_buttons_push(False, lists_too=False)
             return
         
