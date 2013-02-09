@@ -562,7 +562,7 @@ class Engine:
         if filename:
             # Do a regex to the filename to get
             # the show title and episode number
-            reg = re.compile(r"(\[.+\])?([ \w\d\-,@.!\?]+) - ([ \d]+) ")
+            reg = re.compile(r"(\[.+\])?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
             show_raw = filename.replace("_"," ").strip()
             show_match = reg.match(show_raw)
             if not show_match:
