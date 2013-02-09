@@ -28,11 +28,15 @@ available_libs = {
 }
 
 def parse_config(filename, default):
+    config = default
     try:
         with open(filename) as configfile:
-            return json.load(configfile)
+            config.update(json.load(configfile))
     except IOError:
-        return default
+        # Will just use the default config
+        pass
+    
+    return config
 
 def save_config(config_dict, filename):
     with open(filename, 'wb') as configfile:
@@ -129,13 +133,17 @@ class APIFatal(wmalFatal):
 config_defaults = {
     'player': 'mpv',
     'searchdir': '/home/user/Videos',
-    'autopush': False,
     'tracker_enabled': True,
     'tracker_update_wait': 5,
     'tracker_interval': 120,
+    'autoretrieve_always': False,
+    'autoretrieve_days': 3,
+    'autosend_always': False,
+    'autosend_at_exit': False,
+    'autosend_hours': False,
+    'autosend_size': False,
     'debug_disable_lock': True,
     'auto_status_change': True,
-    'push_on_exit': True,
 }
 userconfig_defaults = {
     'mediatype': '',

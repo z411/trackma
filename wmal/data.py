@@ -21,7 +21,9 @@ import os.path
 
 import messenger
 import utils
+
 import sys
+import time
 
 class Data(object):
     """
@@ -44,6 +46,7 @@ class Data(object):
     infocache = dict()
     queue = list()
     config = dict()
+    meta = {'lastget': 0, 'lastretrieve': 0}
     
     def __init__(self, messenger, config, account, userconfig):
         """Checks if the config is correct and creates an API object."""
@@ -77,6 +80,7 @@ class Data(object):
         self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
         self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
         self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
+        self.meta_file = utils.get_filename(userfolder, '%s.meta' % mediatype)
         self.lock_file = utils.get_filename(userfolder,  'lock')
         
         # Connect signals
@@ -98,16 +102,29 @@ class Data(object):
         self.msg.debug(self.name, "Locking database...")
         self._lock()
         
+        if self._meta_exists():
+            self._load_meta()
+        
         # If cache exists, load from it
         # otherwise query the API for a remote list
-        if self._cache_exists():
-            self._load_cache()
-        else:
+        if not self._cache_exists():
             try:
                 self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
-
+        else:
+            # Still get the cache if any autoretrieve condition is met
+            if (self.config['autoretrieve_always'] or
+               (self.config['autoretrieve_days'] and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600)):
+                try:
+                    self.download_data()
+                except utils.APIError, e:
+                    self.msg.warn(self.name, "Couldn't download list! Using cache.")
+                    self._load_cache()
+            else:
+                # No need to get the list again so just use the cache
+                self._load_cache()
+        
         if self._info_exists():
             self._load_info()
         
@@ -126,7 +143,7 @@ class Data(object):
         """
         self.msg.debug(self.name, "Unloading...")
         # We push changes if specified on config file
-        if self.config['push_on_exit']:
+        if self.config['autosend_at_exit']:
             self.process_queue()
         
         self._unlock()
@@ -212,8 +229,10 @@ class Data(object):
         self._save_cache()
         self.msg.info(self.name, "Queued update for %s" % show['title'])
         
-        # Immediately process the action if autopush is set
-        if self.config['autopush']:
+        # Immediately process the action if necessary
+        if (self.config['autosend_always'] or
+           (self.config['autosend_hours'] and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
+           (self.config['autosend_size'] and len(self.queue) >= self.config['autosend_size'])):
             self.process_queue()
     
     def queue_delete(self, show):
@@ -301,6 +320,9 @@ class Data(object):
             
             self.api.logout()
             self._save_queue()
+            
+            self.meta['lastsend'] = time.time()
+            self._save_meta()
         else:
             self.msg.debug(self.name, 'No items in queue.')
     
@@ -337,6 +359,14 @@ class Data(object):
     def _save_queue(self):
         self.msg.debug(self.name, "Saving queue...")
         cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
+
+    def _load_meta(self):
+        self.msg.debug(self.name, "Reading metadata...")
+        self.meta = cPickle.load( open( self.meta_file , "rb" ) )
+    
+    def _save_meta(self):
+        self.msg.debug(self.name, "Saving metadata...")
+        cPickle.dump(self.meta, open( self.meta_file , "wb" ) )
         
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""
@@ -374,6 +404,10 @@ class Data(object):
         self._save_cache()
         self.api.logout()
         
+        # Update last retrieved time
+        self.meta['lastget'] = time.time()
+        self._save_meta()
+        
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)
     
@@ -382,6 +416,9 @@ class Data(object):
 
     def _queue_exists(self):
         return os.path.isfile(self.queue_file)
+
+    def _meta_exists(self):
+        return os.path.isfile(self.meta_file)
     
     def _lock(self):
         """Creates the database lock, returns an exception if it
