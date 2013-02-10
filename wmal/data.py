@@ -46,7 +46,7 @@ class Data(object):
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastretrieve': 0}
+    meta = {'lastget': 0, 'lastretrieve': 0, 'version': ''}
     
     def __init__(self, messenger, config, account, userconfig):
         """Checks if the config is correct and creates an API object."""
@@ -115,7 +115,8 @@ class Data(object):
         else:
             # Still get the cache if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
-               (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600)):
+               (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
+                self.meta.get('version') != VERSION):
                 try:
                     self.download_data()
                 except utils.APIError, e:
@@ -406,6 +407,7 @@ class Data(object):
         
         # Update last retrieved time
         self.meta['lastget'] = time.time()
+        self.meta['version'] = VERSION
         self._save_meta()
         
     def _cache_exists(self):
