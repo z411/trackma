@@ -46,6 +46,7 @@ class wMAL_urwid(object):
     mainloop = None
     cur_sort = 'title'
     sorts_iter = cycle(('id', 'title', 'my_progress', 'total', 'my_score'))
+    keymapping = dict()
     
     """Widgets"""
     header = None
@@ -68,6 +69,10 @@ class wMAL_urwid(object):
         ('item_notaired', 'yellow', ''),
         ]
         
+        # create file
+        keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
+        self.keymapping = self.map_key_to_func(keymap)
+        
         sys.stdout.write("\x1b]0;wMAL-curses "+VERSION+"\x07");
         self.header_title = urwid.Text('wMAL-curses ' + VERSION)
         self.header_api = urwid.Text('API:')
@@ -79,8 +84,13 @@ class wMAL_urwid(object):
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
         
+        
+        top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
+                   keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
+                   keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
+                   keymap['quit'] + ':Quit'
         self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text('F1:Help  F3:Sort  F4:Update  F5:Play  F6:Status  F7:Score  F12:Quit'), 'status')
+            urwid.AttrMap(urwid.Text(top_text), 'status')
         ])
         
         self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+VERSION), 'status')
@@ -102,6 +112,29 @@ class wMAL_urwid(object):
         
         self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
+        
+    def map_key_to_func(self, keymap):
+        keymapping = dict()
+        funcmap = { 'help': self.do_help, 
+                    'prev_filter': self.do_prev_filter,
+                    'next_filter': self.do_next_filter,
+                    'sort': self.do_sort,
+                    'update': self.do_update,
+                    'play': self.do_play,
+                    'status': self.do_status,
+                    'score': self.do_score,
+                    'send': self.do_send,
+                    'retrieve': self.do_retrieve,
+                    'addsearch': self.do_addsearch,
+                    'reload': self.do_reload,
+                    'switch_account': self.do_switch_account,
+                    'delete': self.do_delete,
+                    'quit': self.do_quit,
+                    'search': self.do_search }
+        
+        for key, value in keymap.items():
+            keymapping.update({value: funcmap[key]})
+        return keymapping
     
     def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
@@ -155,38 +188,7 @@ class wMAL_urwid(object):
             self.mainloop.draw_screen()
         
     def keystroke(self, input):
-        if input == 'f1':
-            self.do_help()
-        elif input == 'left':
-            self.do_prev_filter()
-        elif input == 'right':
-            self.do_next_filter()
-        elif input == 'f3':
-            self.do_sort()
-        elif input == 'f4':
-            self.do_update()
-        elif input == 'f5':
-            self.do_play()
-        elif input == 'f6':
-            self.do_status()
-        elif input == 'f7':
-            self.do_score()
-        elif input == 's':
-            self.do_send()
-        elif input == 'R':
-            self.do_retrieve()
-        elif input == 'a':
-            self.do_addsearch()
-        elif input == 'c':
-            self.do_reload()
-        elif input == 'f9':
-            self.do_switch_account()
-        elif input == 'd':
-            self.do_delete()
-        elif input == 'f12':
-            self.do_quit()
-        elif input == '/':
-            self.do_search('')
+        self.keymapping[input]()
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
