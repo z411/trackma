@@ -187,7 +187,11 @@ class wMAL_urwid(object):
             self.mainloop.draw_screen()
         
     def keystroke(self, input):
-        self.keymapping[input]()
+        try:
+            self.keymapping[input]()
+        except KeyError:
+            # Unbinded key pressed; do nothing
+            pass
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
