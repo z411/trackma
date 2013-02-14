@@ -147,3 +147,21 @@ config_defaults = {
 userconfig_defaults = {
     'mediatype': '',
 }
+keymap_defaults = {
+    'help': 'f1',
+    'prev_filter': 'left',
+    'next_filter': 'right',
+    'sort': 'f3',
+    'update': 'f4',
+    'play': 'f5',
+    'status': 'f6',
+    'score': 'f7',
+    'send': 's',
+    'retrieve': 'R',
+    'addsearch': 'a',
+    'reload': 'c',
+    'switch_account': 'f9',
+    'delete': 'd',
+    'quit': 'f12',
+    'search': '/',
+}
