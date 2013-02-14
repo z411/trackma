@@ -987,8 +987,8 @@ class Settings(gtk.Window):
         lbl_tracker_enabled.set_size_request(120, -1)
         
         # Entries
-        self.txt_player = gtk.Entry(32)
-        self.txt_searchdir = gtk.Entry(32)
+        self.txt_player = gtk.Entry(4096)
+        self.txt_searchdir = gtk.Entry(4096)
         browse_button = gtk.Button('Browse...')
         browse_button.connect("clicked", self.do_browse)
         self.chk_tracker_enabled = gtk.CheckButton()
@@ -1191,8 +1191,8 @@ class AccountSelectAdd(gtk.Window):
         lbl_api.set_size_request(70, -1)
         
         # Entries
-        self.txt_user = gtk.Entry(32)
-        self.txt_passwd = gtk.Entry(32)
+        self.txt_user = gtk.Entry(128)
+        self.txt_passwd = gtk.Entry(128)
         self.txt_passwd.set_visibility(False)
         
         # Combobox
