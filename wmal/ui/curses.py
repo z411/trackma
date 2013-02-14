@@ -69,7 +69,6 @@ class wMAL_urwid(object):
         ('item_notaired', 'yellow', ''),
         ]
         
-        # create file
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
         self.keymapping = self.map_key_to_func(keymap)
         
