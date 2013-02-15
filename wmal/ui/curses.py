@@ -132,7 +132,11 @@ class wMAL_urwid(object):
                     'search': self.do_search }
         
         for key, value in keymap.items():
-            keymapping.update({value: funcmap[key]})
+            try:
+                keymapping.update({value: funcmap[key]})
+            except KeyError:
+                # keymap.json requested an action not available in funcmap
+                pass
         return keymapping
     
     def _rebuild(self):
