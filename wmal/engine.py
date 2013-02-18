@@ -557,7 +557,7 @@ class Engine:
             # Don't do anything if the engine is busy playing a file
             return None
         
-        filename = self._playing_file(self.config['player'], self.config['searchdir'])
+        filename = self._playing_file(self.config['tracker_process'], self.config['searchdir'])
         
         if filename:
             # Do a regex to the filename to get
@@ -589,14 +589,14 @@ class Engine:
         
         return None
     
-    def _playing_file(self, player, searchdir):
+    def _playing_file(self, players, searchdir):
         """
         Returns the files a process is playing
         
         """
-        lsof = subprocess.Popen(['lsof', '-n', '-c', player, '-Fn'], stdout=subprocess.PIPE)
+        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn', searchdir], stdout=subprocess.PIPE)
         output = lsof.communicate()[0]
-        fileregex = re.compile(searchdir + ".*(.mkv|.mp4|.avi)")
+        fileregex = re.compile(".*(.mkv|.mp4|.avi)")
         
         for line in output.splitlines():
             filename = line[1:]

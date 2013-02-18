@@ -976,21 +976,37 @@ class Settings(gtk.Window):
         self.set_title('Global Settings')
         self.set_border_width(10)
         
-        ### Tracker ###
-        
-        # Labels
-        lbl_player = gtk.Label('Player')
+        ### Play Next ###
+        lbl_player = gtk.Label('Media Player')
         lbl_player.set_size_request(120, -1)
+        self.txt_player = gtk.Entry(4096)
+        playerbrowse_button = gtk.Button('Browse...')
+        playerbrowse_button.connect("clicked", self.do_browse, 'Select player', self.txt_player)
+
+        header0 = gtk.Label()
+        header0.set_text('<span size="10000"><b>Play Next</b></span>')
+        header0.set_use_markup(True)
+
+        line0 = gtk.HBox(False, 5)
+        line0.pack_start(lbl_player, False, False, 0)
+        line0.pack_start(self.txt_player, False, False, 0)
+        line0.pack_start(playerbrowse_button, False, False, 0)
+        
+        ### Tracker ###
+
+        # Labels
+        lbl_process = gtk.Label('Process Name')
+        lbl_process.set_size_request(120, -1)
         lbl_searchdir = gtk.Label('Search Directory')
         lbl_searchdir.set_size_request(120, -1)
         lbl_tracker_enabled = gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         
         # Entries
-        self.txt_player = gtk.Entry(4096)
+        self.txt_process = gtk.Entry(4096)
         self.txt_searchdir = gtk.Entry(4096)
         browse_button = gtk.Button('Browse...')
-        browse_button.connect("clicked", self.do_browse)
+        browse_button.connect("clicked", self.do_browse, 'Select search directory', self.txt_searchdir, True)
         self.chk_tracker_enabled = gtk.CheckButton()
         
         # Buttons
@@ -1010,8 +1026,8 @@ class Settings(gtk.Window):
         header1.set_use_markup(True)
         
         line1 = gtk.HBox(False, 5)
-        line1.pack_start(lbl_player, False, False, 0)
-        line1.pack_start(self.txt_player, True, True, 0)
+        line1.pack_start(lbl_process, False, False, 0)
+        line1.pack_start(self.txt_process, True, True, 0)
         
         line2 = gtk.HBox(False, 5)
         line2.pack_start(lbl_searchdir, False, False, 0)
@@ -1085,6 +1101,8 @@ class Settings(gtk.Window):
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
+        vbox.pack_start(header0, False, False, 0)
+        vbox.pack_start(line0, False, False, 0)
         vbox.pack_start(header1, False, False, 0)
         vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(line1, False, False, 0)
@@ -1100,6 +1118,7 @@ class Settings(gtk.Window):
         
     def load_config(self):
         self.txt_player.set_text(self.engine.get_config('player'))
+        self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         
@@ -1123,6 +1142,7 @@ class Settings(gtk.Window):
     
     def save_config(self):
         self.engine.set_config('player', self.txt_player.get_text())
+        self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         
@@ -1153,18 +1173,20 @@ class Settings(gtk.Window):
     def radio_toggled(self, widget, spin):
         spin.set_sensitive(widget.get_active())
         
-    def do_browse(self, widget):
-        browsew = gtk.FileChooserDialog("Choose Search Directory",
+    def do_browse(self, widget, title, entry, dironly=False):
+        browsew = gtk.FileChooserDialog(title,
                                         None,
                                         gtk.FILE_CHOOSER_ACTION_OPEN,
                                         (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                                         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
         browsew.set_default_response(gtk.RESPONSE_OK)
-        browsew.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        
+        if dironly:
+            browsew.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
         
         response = browsew.run()
         if response == gtk.RESPONSE_OK:
-            self.txt_searchdir.set_text(browsew.get_filename())
+            entry.set_text(browsew.get_filename())
         browsew.destroy()
         
     def do_apply(self, widget):
