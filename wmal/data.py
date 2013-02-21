@@ -23,6 +23,7 @@ import messenger
 import utils
 
 import sys
+import threading
 import time
 
 class Data(object):
@@ -47,6 +48,8 @@ class Data(object):
     queue = list()
     config = dict()
     meta = {'lastget': 0, 'lastretrieve': 0, 'version': ''}
+
+    autosend_timer = None
     
     def __init__(self, messenger, config, account, userconfig):
         """Checks if the config is correct and creates an API object."""
@@ -137,7 +140,10 @@ class Data(object):
         if self._info_exists():
             self._load_info()
         
-           
+        # Create autosend thread if needed
+        if self.config['autosend'] == 'hours':
+            self.autosend()
+
         return (self.api.api_info, self.api.media_info())
     
     def unload(self):
@@ -148,11 +154,17 @@ class Data(object):
         as it does necessary operations to close the API and the data handler itself.
 
         """
-        self.msg.debug(self.name, "Unloading...")
+        self.msg.debug(self.name, "Unloading...") 
+
+        # Cancel autosend thread
+        if self.autosend_timer:
+            self.autosend_timer.cancel()
+
         # We push changes if specified on config file
         if self.config['autosend_at_exit']:
             self.process_queue()
         
+        self._save_meta()
         self._unlock()
     
     def get(self):
@@ -328,10 +340,10 @@ class Data(object):
             self.api.logout()
             self._save_queue()
             
-            self.meta['lastsend'] = time.time()
-            self._save_meta()
         else:
             self.msg.debug(self.name, 'No items in queue.')
+
+        self.meta['lastsend'] = time.time()
     
     def info_get(self, showid):
         return self.infocache[showid]
@@ -342,6 +354,16 @@ class Data(object):
             self.infocache[showid] = show
         
         self._save_info()
+
+    def autosend(self):
+        # Check if we should autosend now
+        if time.time() - self.meta['lastsend'] >= self.config['autosend_hours'] * 3600:
+            self.process_queue()
+        
+        # Repeat check only if the settings are still on 'hours'
+        if self.config['autosend'] == 'hours':
+            self.autosend_timer = threading.Timer(3600, self.autosend)
+            self.autosend_timer.start()
 
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
