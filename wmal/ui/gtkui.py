@@ -1070,7 +1070,7 @@ class Settings(gtk.Window):
         # Radio buttons
         self.rbtn_autosend_off = gtk.RadioButton(None, 'Disabled')
         self.rbtn_autosend_always = gtk.RadioButton(self.rbtn_autosend_off, 'After every change')
-        self.rbtn_autosend_at_exit = gtk.RadioButton(self.rbtn_autosend_off, 'At exit')
+        self.rbtn_autosend_at_exit = gtk.CheckButton('Auto-send at exit')
         
         self.rbtn_autosend_hours = gtk.RadioButton(self.rbtn_autosend_off, 'After')
         self.spin_autosend_hours = gtk.SpinButton(gtk.Adjustment(value=5, lower=1, upper=1000, step_incr=1, page_incr=10))
@@ -1095,9 +1095,9 @@ class Settings(gtk.Window):
         line5 = gtk.VBox(False, 5)
         line5.pack_start(self.rbtn_autosend_off, False, False, 0)
         line5.pack_start(self.rbtn_autosend_always, False, False, 0)
-        line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
         line5.pack_start(line_autosend_hours, False, False, 0)
         line5.pack_start(line_autosend_size, False, False, 0)
+        line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
@@ -1121,6 +1121,7 @@ class Settings(gtk.Window):
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
+        self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
         
         if self.engine.get_config('autoretrieve') == 'always':
             self.rbtn_autoret_always.set_active(True)
@@ -1129,8 +1130,6 @@ class Settings(gtk.Window):
         
         if self.engine.get_config('autosend') == 'always':
             self.rbtn_autosend_always.set_active(True)
-        elif self.engine.get_config('autosend') == 'at_exit':
-            self.rbtn_autosend_at_exit.set_active(True)
         elif self.engine.get_config('autosend') == 'hours':
             self.rbtn_autosend_hours.set_active(True)
         elif self.engine.get_config('autosend') == 'size':
@@ -1145,6 +1144,7 @@ class Settings(gtk.Window):
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
+        self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
         
         # Auto-retrieve
         if self.rbtn_autoret_always.get_active():
@@ -1157,8 +1157,6 @@ class Settings(gtk.Window):
         # Auto-send
         if self.rbtn_autosend_always.get_active():
             self.engine.set_config('autosend', 'always')
-        elif self.rbtn_autosend_at_exit.get_active():
-            self.engine.set_config('autosend', 'at_exit')
         elif self.rbtn_autosend_hours.get_active():
             self.engine.set_config('autosend', 'hours')
         elif self.rbtn_autosend_size.get_active():

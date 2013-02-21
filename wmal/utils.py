@@ -139,9 +139,10 @@ config_defaults = {
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',
     'autoretrieve_days': 3,
-    'autosend': 'at_exit',
+    'autosend': 'hours',
     'autosend_hours': 5,
     'autosend_size': 5,
+    'autosend_at_exit': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
 }

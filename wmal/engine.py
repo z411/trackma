@@ -431,7 +431,13 @@ class Engine:
         
         for i, show in enumerate(showlist):
             self.msg.info(self.name, "Searching %d/%d...\r" % (i+1, total))
-            if self._search_video(show['title'], show['my_progress']+1):
+
+            titles = [show['title']]
+            titles.extend(show['aliases'])
+            
+            filename = self._search_video(titles, show['my_progress']+1)
+            if filename:
+                print filename
                 results.append(show)
         return results
         

@@ -105,6 +105,14 @@ class Data(object):
         if self._meta_exists():
             self._load_meta()
         
+        if self._queue_exists():
+            self._load_queue()
+        
+        # Process the queue if we're going to retrieve the list or if we're beyond the time limit for some reason
+        if (self.config['autoretrieve'] == 'always' or
+            (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
+            self.process_queue()
+
         # If cache exists, load from it
         # otherwise query the API for a remote list
         if not self._cache_exists():
@@ -129,9 +137,7 @@ class Data(object):
         if self._info_exists():
             self._load_info()
         
-        if self._queue_exists():
-            self._load_queue()
-            
+           
         return (self.api.api_info, self.api.media_info())
     
     def unload(self):
@@ -144,7 +150,7 @@ class Data(object):
         """
         self.msg.debug(self.name, "Unloading...")
         # We push changes if specified on config file
-        if self.config['autosend'] == 'at_exit':
+        if self.config['autosend_at_exit']:
             self.process_queue()
         
         self._unlock()
