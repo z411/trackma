@@ -16,6 +16,7 @@
 
 import os, re, shutil
 import json
+import betterwalk
 
 datadir = os.path.dirname(__file__)
 
@@ -50,7 +51,7 @@ def regex_find_file(regex, subdirectory=''):
         path = subdirectory
     else:
         path = os.getcwd()
-    for root, dirs, names in os.walk(path):
+    for root, dirs, names in betterwalk.walk(path):
         for filename in names:
             if __re.search(filename):
                 return os.path.join(root, filename)
