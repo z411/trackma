@@ -47,7 +47,7 @@ class Data(object):
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastretrieve': 0, 'version': ''}
+    meta = {'lastget': 0, 'lastsend': 0, 'version': ''}
 
     autosend_timer = None
     
