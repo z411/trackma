@@ -166,5 +166,6 @@ keymap_defaults = {
     'switch_account': 'f9',
     'delete': 'd',
     'quit': 'f12',
+    'altname': 'A',
     'search': '/',
 }

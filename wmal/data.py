@@ -47,7 +47,7 @@ class Data(object):
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastsend': 0, 'version': ''}
+    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': dict() }
 
     autosend_timer = None
     
@@ -354,6 +354,12 @@ class Data(object):
             self.infocache[showid] = show
         
         self._save_info()
+    
+    def altname_get(self, showid):
+        return self.meta['altnames'].get(showid, '')
+
+    def altname_set(self, showid, altname):
+        self.meta['altnames'][showid] = altname
 
     def autosend(self):
         # Check if we should autosend now
@@ -391,7 +397,8 @@ class Data(object):
 
     def _load_meta(self):
         self.msg.debug(self.name, "Reading metadata...")
-        self.meta = cPickle.load( open( self.meta_file , "rb" ) )
+        loadedmeta = cPickle.load( open( self.meta_file , "rb" ) )
+        self.meta.update(loadedmeta)
     
     def _save_meta(self):
         self.msg.debug(self.name, "Saving metadata...")

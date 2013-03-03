@@ -129,6 +129,7 @@ class wMAL_urwid(object):
                     'switch_account': self.do_switch_account,
                     'delete': self.do_delete,
                     'quit': self.do_quit,
+                    'altname': self.do_altname,
                     'search': self.do_search }
         
         for key, value in keymap.items():
@@ -180,7 +181,7 @@ class wMAL_urwid(object):
         showlist = self.engine.filter_list(_filter)
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
         for show in sortedlist:
-            self.listwalker.append(ShowItem(show, self.engine.mediainfo['has_progress']))
+            self.listwalker.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
         
     def status(self, msg):
         self.statusbar.base_widget.set_text(msg)
@@ -191,11 +192,11 @@ class wMAL_urwid(object):
             self.mainloop.draw_screen()
         
     def keystroke(self, input):
-        try:
-            self.keymapping[input]()
-        except KeyError:
-            # Unbinded key pressed; do nothing
-            pass
+        #try:
+        self.keymapping[input]()
+        #except KeyError:
+        #    # Unbinded key pressed; do nothing
+        #    pass
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
@@ -270,7 +271,13 @@ class wMAL_urwid(object):
     
     def help_close(self, widget):
         self.dialog.close()
-        
+    
+    def do_altname(self):
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+        self.status(show['title'])
+        self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
+
     def do_score(self):
         showid = self.listbox.get_focus()[0].showid
         show = self.engine.get_show_info(showid)
@@ -392,6 +399,17 @@ class wMAL_urwid(object):
                 self.status("Error: %s" % e.message)
                 return
     
+    def altname_request(self, data):
+        self.ask_finish(self.altname_request)
+        if data:
+            item = self.listbox.get_focus()[0]
+
+            try:
+                show = self.engine.altname(item.showid, data)
+            except utils.wmalError, e:
+                self.status("Error: %s" % e.message)
+                return
+
     def play_request(self, data):
         self.ask_finish(self.play_request)
         if data:
@@ -639,7 +657,7 @@ class ShowWalker(urwid.SimpleListWalker):
                 break
     
 class ShowItem(urwid.WidgetWrap):
-    def __init__(self, show, has_progress=True):
+    def __init__(self, show, has_progress=True, altname=None):
         if has_progress:
             self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         else:
@@ -650,9 +668,13 @@ class ShowItem(urwid.WidgetWrap):
         
         self.showid = show['id']
         self.showtitle = show['title']
+
+        if altname:
+            self.showtitle += " (%s)" % altname
+
         self.item = [
             ('fixed', 7, urwid.Text("%d" % self.showid)),
-            ('weight', 1, urwid.Text(show['title'])),
+            ('weight', 1, urwid.Text(self.showtitle)),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
         ]

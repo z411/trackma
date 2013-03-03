@@ -473,8 +473,11 @@ class Engine:
             
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
             
-            titles = [show['title']]
-            titles.extend(show['aliases'])
+            if self.data_handler.altname_get(show['id']):
+                titles = [ self.data_handler.altname_get(show['id']) ]
+            else:
+                titles = [show['title']]
+                titles.extend(show['aliases'])
             
             filename = self._search_video(titles, playep)
             if filename:
@@ -489,7 +492,13 @@ class Engine:
     def undoall(self):
         """Clears the data handler queue."""
         return self.data_handler.queue_clear()
-        
+       
+    def altname(self, showid, newname=None):
+        if newname:
+            self.data_handler.altname_set(showid, newname)
+        else:
+            return self.data_handler.altname_get(showid)
+
     def filter_list(self, filter_num):
         """
         Returns a list filtered by status
