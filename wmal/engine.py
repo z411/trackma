@@ -623,8 +623,6 @@ class Engine:
     def list_download(self):
         """Asks the data handler to download the remote list."""
         self.data_handler.download_data()
-        #import cProfile
-        #cProfile.runctx('self.data_handler.download_data()', globals(),locals(), 'prof')
     
     def list_upload(self):
         """Asks the data handler to upload the remote list."""

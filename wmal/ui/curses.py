@@ -262,7 +262,7 @@ class wMAL_urwid(object):
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list"
+        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  A:Set alternative title"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
