@@ -340,6 +340,8 @@ class wMAL_urwid(object):
                 self.dialog = AddDialog(self.mainloop, showlist=shows, width=('relative', 80))
                 urwid.connect_signal(self.dialog, 'done', self.addsearch_do)
                 self.dialog.show()
+            else:
+                self.status("No results.")
     
     def addsearch_do(self, show):
         self.dialog.close()

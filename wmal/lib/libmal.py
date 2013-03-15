@@ -198,7 +198,10 @@ class libmal(lib):
         data = StringIO(response.read())
         
         # Load the results into XML
-        root = ET.ElementTree().parse(data, parser=self._make_parser())
+        try:
+            root = ET.ElementTree().parse(data, parser=self._make_parser())
+        except ET.ParseError:
+            return []
         
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':
