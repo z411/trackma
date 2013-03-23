@@ -67,6 +67,7 @@ class wMAL_urwid(object):
         ('button hilight', 'white', 'dark red'),
         ('item_airing', 'light blue', ''),
         ('item_notaired', 'yellow', ''),
+        ('item_neweps', '', 'brown'),
         ]
         
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
@@ -106,7 +107,7 @@ class wMAL_urwid(object):
         self.listbox = urwid.ListBox(self.listwalker)
         self.listframe = urwid.Frame(self.listbox, header=self.listheader)
             
-        self.view = urwid.Frame(urwid.AttrWrap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
+        self.view = urwid.Frame(urwid.AttrMap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
         self.mainloop.set_alarm_in(0, self.do_switch_account)
@@ -130,7 +131,9 @@ class wMAL_urwid(object):
                     'delete': self.do_delete,
                     'quit': self.do_quit,
                     'altname': self.do_altname,
-                    'search': self.do_search }
+                    'search': self.do_search,
+                    'neweps': self.do_neweps,
+                    }
         
         for key, value in keymap.items():
             try:
@@ -264,7 +267,7 @@ class wMAL_urwid(object):
         helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
         helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  A:Set alternative title"
         ok_button = urwid.Button('OK', self.help_close)
-        ok_button_wrap = urwid.Padding(urwid.AttrWrap(ok_button, 'button', 'button hilight'), 'center', 6)
+        ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
         self.dialog = Dialog(pile, self.mainloop, width=62, title='About/Help')
         self.dialog.show()
@@ -297,7 +300,7 @@ class wMAL_urwid(object):
             name = self.filters[status]
             button = urwid.Button(name, self.status_request, status)
             button._label.align = 'center'
-            buttons.append(urwid.AttrWrap(button, 'button', 'button hilight'))
+            buttons.append(urwid.AttrMap(button, 'button', 'button hilight'))
             if status == show['my_status']:
                 selected = num
             num += 1
@@ -316,7 +319,7 @@ class wMAL_urwid(object):
             if self.engine.api_info['mediatype'] == mediatype:
                 but.set_state(True)
             urwid.connect_signal(but, 'change', self.reload_request, [None, mediatype])
-            mediatypes.append(urwid.AttrWrap(but, 'button', 'button hilight'))
+            mediatypes.append(urwid.AttrMap(but, 'button', 'button hilight'))
         mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
         
         #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
@@ -327,6 +330,20 @@ class wMAL_urwid(object):
         self.engine.reload(account, mediatype)
         self._rebuild()
     
+    def do_neweps(self):
+        try:
+            _filter = self.filters_nums[self.cur_filter]
+            filtered = self.engine.filter_list(_filter)
+
+            result = self.engine.get_new_episodes(filtered)
+
+            for show in result:
+                self.listwalker.highlight_show(show, 'item_neweps')
+
+            self.status("Ready.")
+        except utils.wmalError, e:
+            self.status("Error: %s" % e.message)
+
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
@@ -467,13 +484,13 @@ class wMAL_urwid(object):
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
-        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
+        self.view.set_footer(urwid.AttrMap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', callback)
     
     def question(self, msg, callback, data=u''):
         self.asker = QuestionAsker(msg, str(data))
-        self.view.set_footer(urwid.AttrWrap(self.asker, 'status'))
+        self.view.set_footer(urwid.AttrMap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', callback)
     
@@ -497,7 +514,7 @@ class wMAL_urwid(object):
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
-        self.widget = urwid.AttrWrap(urwid.LineBox(widget, title=title), 'window')
+        self.widget = urwid.AttrMap(urwid.LineBox(widget, title=title), 'window')
         self.oldwidget = loop.widget
         self.loop = loop
         self.__super.__init__(self.widget, loop.widget,
@@ -610,7 +627,7 @@ class AccountItem(urwid.WidgetWrap):
             ('weight', 1, urwid.Text(account['username'])),
             ('fixed', 15, urwid.Text(account['api'])),
         ]
-        w = urwid.AttrWrap(urwid.Columns(self.item), 'window', 'focus')
+        w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
         self.__super.__init__(w)
     
     def selectable(self):
@@ -628,7 +645,7 @@ class SearchItem(urwid.WidgetWrap):
             ('fixed', 10, urwid.Text(str(show['type']))),
             ('fixed', 7, urwid.Text("%d" % show['total'])),
         ]
-        w = urwid.AttrWrap(urwid.Columns(self.item), 'window', 'focus')
+        w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
         self.__super.__init__(w)
     
     def selectable(self):
@@ -644,6 +661,10 @@ class ShowWalker(urwid.SimpleListWalker):
                 return (i, item)
         raise Exception('Show not found in ShowWalker.')
     
+    def highlight_show(self, show, tocolor):
+        (position, showitem) = self._get_showitem(show['id'])
+        showitem.highlight(tocolor)
+
     def update_show(self, show):
         (position, showitem) = self._get_showitem(show['id'])
         showitem.update(show)
@@ -682,15 +703,15 @@ class ShowItem(urwid.WidgetWrap):
         ]
         
         if show['status'] == 1:
-            _color = 'item_airing'
+            self.color = 'item_airing'
         elif show['status'] == 3:
-            _color = 'item_notaired'
+            self.color = 'item_notaired'
         else:
-            _color = 'body'
+            self.color = 'body'
         
-        w = urwid.AttrWrap(urwid.Columns(self.item), _color, 'focus')
+        self.m = urwid.AttrMap(urwid.Columns(self.item), self.color, 'focus')
         
-        self.__super.__init__(w)
+        self.__super.__init__(self.m)
     
     def get_showid(self):
         return self.showid
@@ -702,7 +723,13 @@ class ShowItem(urwid.WidgetWrap):
             self.score_str.set_text("{0:^5}".format(show['my_score']))
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
-        
+    
+    def highlight(self, tocolor=None):
+        if tocolor:
+            self.m.set_attr_map({None: tocolor})
+        else:
+            self.m.set_attr_map({None: self.color})
+
     def selectable(self):
         return True
 

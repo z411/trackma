@@ -168,4 +168,5 @@ keymap_defaults = {
     'quit': 'f12',
     'altname': 'A',
     'search': '/',
+    'neweps': 'N',
 }

@@ -430,14 +430,13 @@ class Engine:
         total = len(showlist)
         
         for i, show in enumerate(showlist):
-            self.msg.info(self.name, "Searching %d/%d...\r" % (i+1, total))
+            self.msg.info(self.name, "Searching %d/%d..." % (i+1, total))
 
             titles = [show['title']]
             titles.extend(show['aliases'])
             
             filename = self._search_video(titles, show['my_progress']+1)
             if filename:
-                print filename
                 results.append(show)
         return results
         
