@@ -105,6 +105,9 @@ def show():
         'status':       0,
         'total':        0,
         'image':        '',
+        'queued':       False,
+        'playing':      False,
+        'neweps':       False,
     }
 
 class wmalError(Exception):

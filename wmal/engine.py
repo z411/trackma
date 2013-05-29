@@ -52,7 +52,8 @@ class Engine:
                 'show_deleted':     None,
                 'episode_changed':  None,
                 'score_changed':    None,
-                'status_changed':   None, }
+                'status_changed':   None,
+                'playing':          None, }
     
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -437,6 +438,7 @@ class Engine:
             
             filename = self._search_video(titles, show['my_progress']+1)
             if filename:
+                self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
         return results
         
@@ -541,10 +543,16 @@ class Engine:
                         timedif = time.time() - last_time
                         
                         if timedif > wait_s:
+                            # Time has passed, let's update
                             self.set_episode(show['id'], episode)
+                            
+                            self.data_handler.set_show_attr(last_show, 'playing', False)
+                            self._emit_signal('playing', last_show)
                             last_updated = True
                         else:
                             self.msg.info(self.name, 'Will update %s %d in %d seconds' % (last_show['title'], episode, wait_s-timedif))
+                            self.data_handler.set_show_attr(last_show, 'playing', True)
+                            self._emit_signal('playing', last_show)
                     else:
                         # We shouldn't update to this episode!
                         self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % last_show['title'])
@@ -558,6 +566,8 @@ class Engine:
                 if last_show:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
+                        self.data_handler.set_show_attr(last_show, 'playing', False)
+                        self._emit_signal('playing', last_show)
                     
                     last_show = None
                     last_updated = False
@@ -618,7 +628,7 @@ class Engine:
                 return os.path.basename(filename)
         
         return False
-    
+        
     def list_download(self):
         """Asks the data handler to download the remote list."""
         self.data_handler.download_data()

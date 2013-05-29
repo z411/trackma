@@ -68,6 +68,8 @@ class wMAL_urwid(object):
         ('item_airing', 'light blue', ''),
         ('item_notaired', 'yellow', ''),
         ('item_neweps', '', 'brown'),
+        ('item_updated', '', 'dark green'),
+        ('item_playing', '', 'dark blue'),
         ]
         
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
@@ -164,6 +166,7 @@ class wMAL_urwid(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
+        self.engine.connect_signal('playing', self.changed_show)
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
 
@@ -251,6 +254,7 @@ class wMAL_urwid(object):
     
     def do_send(self):
         self.engine.list_upload()
+        self._rebuild();
         self.status("Ready.")
 
     def do_retrieve(self):
@@ -335,10 +339,8 @@ class wMAL_urwid(object):
             _filter = self.filters_nums[self.cur_filter]
             filtered = self.engine.filter_list(_filter)
 
-            result = self.engine.get_new_episodes(filtered)
-
-            for show in result:
-                self.listwalker.highlight_show(show, 'item_neweps')
+            shows = self.engine.get_new_episodes(filtered)
+            self._rebuild()
 
             self.status("Ready.")
         except utils.wmalError, e:
@@ -702,7 +704,15 @@ class ShowItem(urwid.WidgetWrap):
             ('fixed', 7, self.score_str),
         ]
         
-        if show['status'] == 1:
+        # If the show should be highlighted, do it
+        # otherwise color it according to its status
+        if show.get('playing'):
+            self.color = 'item_playing'
+        elif show.get('queued'):
+            self.color = 'item_updated'
+        elif show.get('neweps'):
+            self.color = 'item_neweps'
+        elif show['status'] == 1:
             self.color = 'item_airing'
         elif show['status'] == 3:
             self.color = 'item_notaired'
@@ -721,14 +731,26 @@ class ShowItem(urwid.WidgetWrap):
             if self.has_progress:
                 self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
+            
+            self.highlight(show)
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
     
-    def highlight(self, tocolor=None):
-        if tocolor:
-            self.m.set_attr_map({None: tocolor})
+    def highlight(self, show):
+        if show.get('playing'):
+            self.color = 'item_playing'
+        elif show.get('queued'):
+            self.color = 'item_updated'
+        elif show.get('neweps'):
+            self.color = 'item_neweps'
+        elif show['status'] == 1:
+            self.color = 'item_airing'
+        elif show['status'] == 3:
+            self.color = 'item_notaired'
         else:
-            self.m.set_attr_map({None: self.color})
+            self.color = 'body'
+        
+        self.m.set_attr_map({None: self.color})
 
     def selectable(self):
         return True

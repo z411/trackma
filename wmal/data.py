@@ -208,6 +208,8 @@ class Data(object):
             item['action'] = 'add'
             self.queue.append(item)
         
+        show['queued'] = True
+        
         self._save_queue()
         self._save_cache()
         self.msg.info(self.name, "Queued add for %s" % show['title'])
@@ -243,6 +245,8 @@ class Data(object):
             item = {'id': show['id'], 'action': 'update', 'title': show['title']}
             item[key] = value
             self.queue.append(item)
+        
+        show['queued'] = True
         
         self._save_queue()
         self._save_cache()
@@ -284,6 +288,8 @@ class Data(object):
             item['action'] = 'delete'
             self.queue.append(item)
         
+        show['queued'] = True
+        
         self._save_queue()
         self._save_cache()
         self.msg.info(self.name, "Queued delete for %s" % item['title'])
@@ -318,6 +324,9 @@ class Data(object):
             # Run through queue
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
+                showid = show['id']
+                self.showlist[showid]['queued'] = False
+                
                 try:
                     # Call the API to do the requested operation
                     operation = show.get('action')
@@ -338,6 +347,7 @@ class Data(object):
                     self.queue.append(show)
             
             self.api.logout()
+            self._save_cache()
             self._save_queue()
             
         else:
@@ -360,7 +370,10 @@ class Data(object):
 
     def altname_set(self, showid, altname):
         self.meta['altnames'][showid] = altname
-
+    
+    def set_show_attr(self, show, key, value):
+        show[key] = value
+        
     def autosend(self):
         # Check if we should autosend now
         if time.time() - self.meta['lastsend'] >= self.config['autosend_hours'] * 3600:
