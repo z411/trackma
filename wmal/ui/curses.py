@@ -465,6 +465,7 @@ class wMAL_urwid(object):
     
     def changed_show(self, show):
         self.listwalker.update_show(show)
+        self.mainloop.draw_screen()
     
     def changed_show_status(self, show):
         self.listwalker.update_show(show)
