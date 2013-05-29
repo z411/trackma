@@ -215,7 +215,8 @@ class libmal(lib):
         
         entries = list()
         for child in root.iter('entry'):
-            show = {
+            show = utils.show()
+            show.update({
                 'id':           int(child.find('id').text),
                 'title':        child.find('title').text.encode('utf-8'),
                 'my_progress':  0,
@@ -225,7 +226,7 @@ class libmal(lib):
                 'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
-            }
+            })
             entries.append(show)
         
         self._emit_signal('show_info_changed', entries)

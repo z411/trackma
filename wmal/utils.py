@@ -97,6 +97,7 @@ def show():
     return {
         'id':           0,
         'title':        '',
+        'aliases':      [],
         'my_progress':  0,
         'my_status':    1,
         'my_score':     0,
