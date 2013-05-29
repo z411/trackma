@@ -174,3 +174,8 @@ keymap_defaults = {
     'search': '/',
     'neweps': 'N',
 }
+
+gtk_defaults = {
+    'show_tray': True,
+    'close_to_tray': True,
+}

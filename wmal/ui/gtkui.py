@@ -39,13 +39,18 @@ from wmal.accounts import AccountManager
     
 class wmal_gtk(object):
     engine = None
+    config = None
     show_lists = dict()
     image_thread = None
     close_thread = None
     can_close = False
+    hidden = False
     
     def main(self):
         """Start the Account Selector"""
+        self.configfile = utils.get_root_filename('wmal-gtk.json')
+        self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
+        
         manager = AccountManager()
         
         # Use the remembered account if there's one
@@ -91,7 +96,7 @@ class wmal_gtk(object):
         
         self.main = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.main.set_position(gtk.WIN_POS_CENTER)
-        self.main.connect("delete_event", self.delete_event)
+        self.main.connect('delete_event', self.delete_event)
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('wMAL-gtk ' + VERSION)
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/wmal_icon.png')
@@ -102,7 +107,7 @@ class wmal_gtk(object):
         mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         mb_delete.connect("activate", self.do_delete)
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        mb_exit.connect("activate", self.delete_event, None)
+        mb_exit.connect("activate", self.do_quit, None)
         gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
         mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
         mb_addsearch.connect("activate", self.do_addsearch)
@@ -288,6 +293,17 @@ class wmal_gtk(object):
         self.statusbar.push(0, 'wMAL-gtk ' + VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
         
+        # Status icon
+        self.statusicon = gtk.StatusIcon()
+        self.statusicon.set_from_file(utils.datadir + '/data/wmal_icon.png')
+        self.statusicon.set_tooltip('wMAL-gtk ' + VERSION)
+        self.statusicon.connect('activate', self.status_event)
+        self.statusicon.connect('popup-menu', self.status_menu_event)
+        if self.config['show_tray']:
+            self.statusicon.set_visible(True)
+        else:
+            self.statusicon.set_visible(False)
+        
         # Engine configuration
         self.engine.set_message_handler(self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
@@ -347,17 +363,52 @@ class wmal_gtk(object):
     def on_destroy(self, widget):
         gtk.main_quit()
     
+    def status_event(self, widget):
+        # Called when the tray icon is left-clicked
+        if self.hidden:
+            self.main.show()
+            self.hidden = False
+        else:
+            self.main.hide()
+            self.hidden = True
+    
+    def status_menu_event(self, icon, button, time):
+        # Called when the tray icon is right-clicked
+        menu = gtk.Menu()
+        mb_show = gtk.MenuItem("Show/Hide")
+        mb_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
+        mb_quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        
+        mb_show.connect("activate", self.status_event)
+        mb_about.connect("activate", self.on_about)
+        mb_quit.connect("activate", self.do_quit)
+        
+        menu.append(mb_show)
+        menu.append(mb_about)
+        menu.append(gtk.SeparatorMenuItem())
+        menu.append(mb_quit)
+        menu.show_all()
+        
+        menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
+        
     def delete_event(self, widget, event, data=None):
-        if self.close_thread is None:
-            self.close_thread = threading.Thread(target=self.task_unload).start()
+        if self.statusicon.get_visible() and self.config['close_to_tray']:
+            self.hidden = True
+            self.main.hide()
+        else:
+            self.do_quit()
         return True
     
+    def do_quit(self, widget=None, event=None, data=None):
+        if self.close_thread is None:
+            self.close_thread = threading.Thread(target=self.task_unload).start()
+        
     def do_addsearch(self, widget):
         win = ShowSearch(self.engine)
         win.show_all()
     
     def do_settings(self, widget):
-        win = Settings(self.engine)
+        win = Settings(self.engine, self.config, self.configfile)
         win.show_all()
         
     def do_reload(self, widget, account, mediatype):
@@ -968,8 +1019,12 @@ class AccountSelect(gtk.Window):
         return False
 
 class Settings(gtk.Window):
-    def __init__(self, engine):
+    def __init__(self, engine, config, configfile):
         self.engine = engine
+        
+        self.config = config
+        self.configfile = configfile
+        
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         
         self.set_position(gtk.WIN_POS_CENTER)
@@ -1099,6 +1154,20 @@ class Settings(gtk.Window):
         line5.pack_start(line_autosend_size, False, False, 0)
         line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
         
+        
+        ### GTK Interface ###
+        header4 = gtk.Label()
+        header4.set_text('<span size="10000"><b>GTK Interface</b></span>')
+        header4.set_use_markup(True)
+        
+        self.chk_show_tray = gtk.CheckButton('Show Tray Icon')
+        self.chk_close_to_tray = gtk.CheckButton('Close to Tray')
+        self.chk_close_to_tray.set_sensitive(False)
+        self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
+        line6 = gtk.VBox(False, 5)
+        line6.pack_start(self.chk_show_tray, False, False, 0)
+        line6.pack_start(self.chk_close_to_tray, False, False, 0)
+        
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
         vbox.pack_start(header0, False, False, 0)
@@ -1111,12 +1180,15 @@ class Settings(gtk.Window):
         vbox.pack_start(line4, False, False, 0)
         vbox.pack_start(header3, False, False, 0)
         vbox.pack_start(line5, False, False, 0)
+        vbox.pack_start(header4, False, False, 0)
+        vbox.pack_start(line6, False, False, 0)
         vbox.pack_start(alignment, False, False, 0)
         
         self.add(vbox)
         self.load_config()
         
     def load_config(self):
+        """Engine Configuration"""
         self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
@@ -1138,8 +1210,13 @@ class Settings(gtk.Window):
         self.spin_autoret_days.set_value(self.engine.get_config('autoretrieve_days'))
         self.spin_autosend_hours.set_value(self.engine.get_config('autosend_hours'))
         self.spin_autosend_size.set_value(self.engine.get_config('autosend_size'))
+        
+        """GTK Interface Configuration"""
+        self.chk_show_tray.set_active(self.config['show_tray'])
+        self.chk_close_to_tray.set_active(self.config['close_to_tray'])
     
     def save_config(self):
+        """Engine Configuration"""
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
@@ -1167,6 +1244,18 @@ class Settings(gtk.Window):
         self.engine.set_config('autoretrieve_days', self.spin_autoret_days.get_value_as_int())
         self.engine.set_config('autosend_hours', self.spin_autosend_hours.get_value_as_int())
         self.engine.set_config('autosend_size', self.spin_autosend_size.get_value_as_int())
+        
+        self.engine.save_config()
+        
+        """GTK Interface configuration"""
+        self.config['show_tray'] = self.chk_show_tray.get_active()
+        
+        if self.chk_show_tray.get_active():
+            self.config['close_to_tray'] = self.chk_close_to_tray.get_active()
+        else:
+            self.config['close_to_tray'] = False
+        
+        utils.save_config(self.config, self.configfile)
     
     def radio_toggled(self, widget, spin):
         spin.set_sensitive(widget.get_active())

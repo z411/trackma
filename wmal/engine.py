@@ -154,8 +154,8 @@ class Engine:
         self.data_handler.unload()
 
         # Save config file
-        utils.save_config(self.config, self.configfile)
-        utils.save_config(self.userconfig, self.userconfigfile)
+        #utils.save_config(self.config, self.configfile)
+        #utils.save_config(self.userconfig, self.userconfigfile)
 
         self.loaded = False
     
@@ -181,6 +181,13 @@ class Engine:
     def set_config(self, key, value):
         """Writes the defined key to the configuration"""
         self.config[key] = value
+        
+    def save_config(self):
+        """Writes configuration files"""
+        
+        # Save config file
+        utils.save_config(self.config, self.configfile)
+        utils.save_config(self.userconfig, self.userconfigfile)
         
     def get_list(self):
         """Requests the full show list from the data handler."""
