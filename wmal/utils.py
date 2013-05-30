@@ -44,6 +44,10 @@ def save_config(config_dict, filename):
         json.dump(config_dict, configfile, sort_keys=True,
                   indent=4, separators=(',', ': '))
 
+def log_error(msg):
+    with open(get_root_filename('error.log'), 'a') as logfile:
+        logfile.write(msg)
+    
 def regex_find_file(regex, subdirectory=''):
     __re = re.compile(regex, re.I)
     

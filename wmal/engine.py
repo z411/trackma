@@ -598,6 +598,7 @@ class Engine:
             show_match = reg.match(show_raw)
             if not show_match:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
+                utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], show_raw))
                 return None
             
             show_title = show_match.group(2).strip()
