@@ -628,12 +628,12 @@ class Engine:
         """
         lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn', searchdir], stdout=subprocess.PIPE)
         output = lsof.communicate()[0]
-        fileregex = re.compile(".*(.mkv|.mp4|.avi)")
+        fileregex = re.compile("n(.*(.mkv|.mp4|.avi))")
         
         for line in output.splitlines():
-            filename = line[1:]
-            if fileregex.match(filename):
-                return os.path.basename(filename)
+            match = fileregex.match(line)
+            if match is not None:
+                return os.path.basename(match.group(1))
         
         return False
         
