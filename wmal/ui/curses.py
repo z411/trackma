@@ -47,6 +47,7 @@ class wMAL_urwid(object):
     cur_sort = 'title'
     sorts_iter = cycle(('id', 'title', 'my_progress', 'total', 'my_score'))
     keymapping = dict()
+    positions = list()
     
     """Widgets"""
     header = None
@@ -154,10 +155,13 @@ class wMAL_urwid(object):
         #self.cur_filter = self.filters_iter.next()
         self.cur_filter = 0
         
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
         
         self.status('Ready.')
+    
+    def _rebuild_list(self):
+        self.clear_list()
+        self.build_list()
         
     def start(self, account):
         """Starts the engine"""
@@ -226,21 +230,18 @@ class wMAL_urwid(object):
     def do_prev_filter(self):
         if self.cur_filter > 0:
             self.cur_filter -= 1
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
 
     def do_next_filter(self):
         if self.cur_filter < len(self.filters)-1:
             self.cur_filter += 1
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
 
     def do_sort(self):
         _sort = self.sorts_iter.next()
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
     
     def do_update(self):
         showid = self.listbox.get_focus()[0].showid
@@ -259,8 +260,7 @@ class wMAL_urwid(object):
 
     def do_retrieve(self):
         self.engine.list_download()
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
         self.status("Ready.")
     
     def do_help(self):
@@ -476,14 +476,12 @@ class wMAL_urwid(object):
                 break
             self.cur_filter += 1
 
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
         
         self.listwalker.select_show(show)
     
     def changed_list(self, show):
-        self.clear_list()
-        self.build_list()
+        self._rebuild_list()
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
