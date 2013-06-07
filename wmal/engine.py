@@ -155,7 +155,7 @@ class Engine:
 
         # Save config file
         #utils.save_config(self.config, self.configfile)
-        #utils.save_config(self.userconfig, self.userconfigfile)
+        utils.save_config(self.userconfig, self.userconfigfile)
 
         self.loaded = False
     
