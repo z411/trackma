@@ -599,13 +599,8 @@ class AccountDialog(Dialog):
             self.widget.keypress(size, key)
         elif key == 'enter':
             self.do_select(False)
-            accountitem = self.listwalker.get_focus()[0]
-            self.manager.set_default(None)
-            urwid.emit_signal(self, 'done', accountitem.account)
-            self.close()
         elif key == 'r':
             self.do_select(True)
-            
         elif key == 'esc':
             self.close()
             if not self.switch:
