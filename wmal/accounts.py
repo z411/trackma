@@ -13,7 +13,6 @@ class AccountManager(object):
 
     def _load(self):
         if utils.file_exists(self.filename):
-            print self.filename
             with open(self.filename, 'rb') as f:
                 self.accounts = cPickle.load(f)
 

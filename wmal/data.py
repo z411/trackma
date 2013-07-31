@@ -325,7 +325,6 @@ class Data(object):
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
                 showid = show['id']
-                self.showlist[showid]['queued'] = False
                 
                 try:
                     # Call the API to do the requested operation
@@ -338,6 +337,8 @@ class Data(object):
                         self.api.delete_show(show)
                     else:
                         self.msg.warn(self.name, "Unknown operation in queue, skipping...")
+                    
+                    self.showlist[showid]['queued'] = False
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
@@ -345,6 +346,8 @@ class Data(object):
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
                     self.queue.append(show)
+                except TypeError:
+                    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
             
             self.api.logout()
             self._save_cache()

@@ -105,7 +105,6 @@ class libvndb(lib):
             else:
                 lines.append(line)
         
-        print response
         # Separate into response name and JSON data
         _resp = response.split(' ', 1)
         name = _resp[0]
@@ -311,7 +310,8 @@ class libvndb(lib):
         self.logged_in = False
     
     def _parse_info(self, item):
-        info = {'id': item['id'],
+        info = utils.show()
+        info.update({'id': item['id'],
                 'title': item['title'],
                 'image': item['image'],
                 'extra': [
@@ -325,5 +325,5 @@ class libvndb(lib):
                     ('Description',   item['description']),
                     ('Links',         item['links']),
                 ]
-               }
+               })
         return info

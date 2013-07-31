@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, re, shutil
+import os, re, shutil, copy
 import json
 import betterwalk
 
@@ -29,7 +29,8 @@ available_libs = {
 }
 
 def parse_config(filename, default):
-    config = default
+    config = copy.copy(default)
+
     try:
         with open(filename) as configfile:
             config.update(json.load(configfile))
