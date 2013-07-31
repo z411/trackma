@@ -678,7 +678,7 @@ class ShowWalker(urwid.SimpleListWalker):
     
     def select_match(self, searchstr):
         for i, item in enumerate(self):
-            if re.match(searchstr, item.showtitle, re.I):
+            if re.search(searchstr, item.showtitle, re.I):
                 self.set_focus(i)
                 break
     
