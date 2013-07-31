@@ -33,9 +33,11 @@ CLI
 Requirements
 ------------
 
-- Tested with Python 2.7, but it should work in 2.6 too.
-- (Optional) Urwid (python-urwid) for the curses/urwid interface.
-- (Optional) PyGTK (python-gtk2) for the GTK interface.
+- Python 2.6/2.7
+- lsof - for the media player detection tracker.
+- (Optional) Urwid (python-urwid) - for the curses/urwid interface.
+- (Optional) PyGTK (python-gtk2) - for the GTK interface.
+- (Optional/Recommended) PIL (python-imaging) - for showing preview images in the GTK interface.
 
 Installation
 ------------

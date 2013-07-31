@@ -27,9 +27,15 @@ gtk.gdk.threads_init() # We'll use threads
 import os
 import time
 import threading
-import Image
 import urllib2 as urllib
 from cStringIO import StringIO
+
+try:
+    import image
+    imaging_available = True
+except ImportError:
+    print "Warning: PIL library isn't available. Preview images will be disabled."
+    imaging_available = False
 
 import wmal.messenger as messenger
 import wmal.utils as utils
@@ -629,8 +635,9 @@ class wmal_gtk(object):
             if os.path.isfile(filename):
                 self.show_image.set_from_file(filename)
             else:
-                self.image_thread = ImageTask(self.show_image, show['image'], filename)
-                self.image_thread.start()
+                if imaging_available:
+                    self.image_thread = ImageTask(self.show_image, show['image'], filename)
+                    self.image_thread.start()
         
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
