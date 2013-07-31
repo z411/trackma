@@ -36,7 +36,8 @@ def parse_config(filename, default):
             config.update(json.load(configfile))
     except IOError:
         # Will just use the default config
-        pass
+        # and create the file for manual editing
+        save_config(config, filename)
     
     return config
 
