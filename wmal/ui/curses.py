@@ -225,7 +225,7 @@ class wMAL_urwid(object):
         self.ask('Search: ', self.addsearch_request)
     
     def do_delete(self):
-        self.question('Delete selected show? [y/N] ', self.delete_request)
+        self.question('Delete selected show? [y/n] ', self.delete_request)
         
     def do_prev_filter(self):
         if self.cur_filter > 0:
@@ -269,7 +269,7 @@ class wMAL_urwid(object):
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  A:Set alternative title\n  N:Search for new episodes\n  F7: Change account"
+        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
@@ -570,6 +570,7 @@ class AddDialog(Dialog):
 class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
+    adding_data = dict()
     
     def __init__(self, loop, manager, switch=False, width=50):
         self.switch = switch
@@ -583,28 +584,95 @@ class AccountDialog(Dialog):
         self.listwalker = urwid.SimpleListWalker([])
         listbox = urwid.ListBox(self.listwalker)
         
+        self.build_list()
+              
+        self.foot = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
+        self.frame = urwid.Frame(listbox, header=listheader, footer=self.foot)
+        self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
+        
+        self.adding = False
+
+        self.show()
+    
+    def build_list(self):
+        self.listwalker[:] = []
+
         i = 0
         for account in self.manager.get_accounts():
             self.listwalker.append(AccountItem(i, account))
             i += 1
-        
-        helptext = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
-        self.frame = urwid.Frame(listbox, header=listheader, footer=helptext)
-        self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
-        
-        self.show()
-    
+
     def keypress(self, size, key):
-        if key in ('up', 'down', 'left', 'right', 'tab'):
-            self.widget.keypress(size, key)
-        elif key == 'enter':
-            self.do_select(False)
-        elif key == 'r':
-            self.do_select(True)
-        elif key == 'esc':
-            self.close()
-            if not self.switch:
-                raise urwid.ExitMainLoop()
+        #if key in ('up', 'down', 'left', 'right', 'tab'):
+        #    self.widget.keypress(size, key)
+        if self.adding:
+            if key == 'esc':
+                self.foot_clear()
+            else:
+                self.widget.keypress(size, key)
+        else:
+            if key == 'enter':
+                self.do_select(False)
+            elif key == 'a':
+                self.do_add_username()
+            elif key == 'r':
+                self.do_select(True)
+            elif key == 'd':
+                self.do_delete_ask()
+            elif key == 'esc':
+                self.close()
+                if not self.switch:
+                    raise urwid.ExitMainLoop()
+            else:
+                self.widget.keypress(size, key)
+    
+    def do_add_username(self):
+        self.adding = True
+        ask = Asker("Username: ")
+        self.frame.footer = ask
+        self.frame.set_focus('footer')
+        urwid.connect_signal(ask, 'done', self.do_add_password)
+
+    def do_add_password(self, data):
+        self.adding_data['username'] = data
+        ask = Asker("Password: ")
+        self.frame.footer = ask
+        urwid.connect_signal(ask, 'done', self.do_add_api)
+
+    def do_add_api(self, data):
+        self.adding_data['password'] = data
+        ask = Asker("API: ")
+        self.frame.footer = ask
+        urwid.connect_signal(ask, 'done', self.do_add)
+    
+    def do_delete_ask(self):
+        self.adding = True
+        ask = QuestionAsker("Do you want to delete this account? [y/n] ")
+        self.frame.footer = ask
+        self.frame.set_focus('footer')
+        urwid.connect_signal(ask, 'done', self.do_delete)
+
+    def do_delete(self, data):
+        if data == 'y':
+            accountitem = self.listwalker.get_focus()[0]
+            self.manager.delete_account(accountitem.num)
+
+        self.build_list()
+        self.foot_clear()
+
+    def do_add(self, data):
+        username = self.adding_data['username']
+        password = self.adding_data['password']
+        api = data
+
+        self.manager.add_account(username, password, api)
+        self.build_list()
+        self.foot_clear()
+
+    def foot_clear(self):
+        self.adding = False
+        self.frame.footer = self.foot
+        self.frame.set_focus('body')
     
     def do_select(self, remember):
         accountitem = self.listwalker.get_focus()[0]
@@ -770,7 +838,7 @@ class Asker(urwid.Edit):
 class QuestionAsker(Asker):
     def keypress(self, size, key):
         if key.lower() in 'yn':
-            urwid.emit_signal(self, 'done', key)
+            urwid.emit_signal(self, 'done', key.lower())
     
 def main():
     try:
