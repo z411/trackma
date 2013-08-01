@@ -446,7 +446,7 @@ class wmal_cmd(cmd.Cmd):
                 episodes_str = "-"
             
             # Truncate title if needed
-            title_str = show['title']
+            title_str = show['title'].encode('utf-8')
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
             
             # Color title according to status
@@ -456,9 +456,12 @@ class wmal_cmd(cmd.Cmd):
                 colored_title = title_str
             
             print "| {0:<{1}} {2}{3} {4:{5}}|".format(
-                show['id'],     col_id_length,
-                colored_title,  '.' * (col_title_length-len(show['title'].decode('utf-8'))),
-                episodes_str,   col_episodes_length)
+                show['id'],
+                col_id_length,
+                colored_title,
+                '.' * (col_title_length-len(show['title'])),
+                episodes_str,
+                col_episodes_length)
         
         # Print result count
         print '%d results' % len(showlist)
