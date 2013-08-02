@@ -68,11 +68,13 @@ class wMAL_urwid(object):
         ('window', 'yellow', 'dark blue'),
         ('button', 'black', 'light gray'),
         ('button hilight', 'white', 'dark red'),
-        ('item_airing', 'light blue', ''),
+        ('item_airing', 'dark blue', ''),
         ('item_notaired', 'yellow', ''),
         ('item_neweps', '', 'brown'),
         ('item_updated', '', 'dark green'),
         ('item_playing', '', 'dark blue'),
+        ('info_title', 'light red', ''),
+        ('info_section', 'dark blue', ''),
         ]
         
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
@@ -348,11 +350,8 @@ class wMAL_urwid(object):
     def do_open_web(self):
         showid = self.listbox.get_focus()[0].showid
         show = self.engine.get_show_info(showid)
-        
-        try:
-            self.engine.open_web(show)
-        except utils.wmalError, e:
-            self.error(e.message)
+        if show['url']:
+            webbrowser.open(show['url'], 2, True)
  
     def do_info(self):
         if self.viewing_info:
@@ -610,6 +609,9 @@ class AddDialog(Dialog):
         elif key == 'enter':
             show = self.listwalker.get_focus()[0].show
             urwid.emit_signal(self, 'done', show)
+        elif key == 'O':
+            show = self.listwalker.get_focus()[0].show
+            webbrowser.open(show['url'], 2, True)
         elif key == 'esc':
             self.close()
 

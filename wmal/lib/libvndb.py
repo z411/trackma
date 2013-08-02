@@ -167,7 +167,7 @@ class libvndb(lib):
                 vnid = item['vn']
                 vns[vnid] = utils.show()
                 vns[vnid]['id']         = vnid
-                vns[vnid]['url'] = "http://vndb.org/v%d" % vnid
+                vns[vnid]['url'] = self._get_url(vnid)
                 vns[vnid]['my_status']  = item.get('status') or item.get('priority')
             
             if not data['more']:
@@ -315,6 +315,7 @@ class libvndb(lib):
         info.update({'id': item['id'],
                 'title': item['title'],
                 'image': item['image'],
+                'url': self._get_url(item['id']),
                 'extra': [
                     ('Original Name', item['original']),
                     ('Released',      item['released']),
@@ -328,3 +329,7 @@ class libvndb(lib):
                 ]
                })
         return info
+
+    def _get_url(self, vnid):
+        return "http://vndb.org/v%d" % vnid
+        

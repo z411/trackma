@@ -646,12 +646,6 @@ class Engine:
         """Asks the data handler to upload the remote list."""
         self.data_handler.process_queue()
 
-    def open_web(self, show):
-        if show['url']:
-            webbrowser.open(show['url'])
-        else:
-            raise utils.wmalError('No URL available to open.')
-    
     def get_queue(self):
         """Asks the data handler for the current queue."""
         return self.data_handler.queue

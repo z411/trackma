@@ -359,7 +359,10 @@ class Data(object):
         self.meta['lastsend'] = time.time()
     
     def info_get(self, showid):
-        return self.infocache[showid]
+        try:
+            return self.infocache[showid]
+        except KeyError:
+            return self.api.request_info(showid)
 
     def info_update(self, shows):
         for show in shows:
