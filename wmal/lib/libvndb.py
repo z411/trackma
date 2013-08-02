@@ -209,12 +209,12 @@ class libvndb(lib):
             
         start = 0
         infos = list()
-        remaining = itemlist
+        remaining = [ show['id'] for show in itemlist ]
         while True:
             self.msg.info(self.name, 'Requesting details...(%d)' % start)
             end = start + 25
             
-            (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(itemlist[start:end]),
+            (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(remaining[start:end]),
                 {'page': 1,
                  'results': 25,
                 })

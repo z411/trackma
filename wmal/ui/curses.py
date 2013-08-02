@@ -372,12 +372,13 @@ class wMAL_urwid(object):
         
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
-        self.status("Ready.")
+        self.status("Detail View | ESC:Return  Up/Down:Scroll  O:View website")
     
     def do_info_exit(self):
         if self.viewing_info:
             self.view.body = self.listframe
             self.viewing_info = False
+            self.status("Ready.")
 
     def do_neweps(self):
         try:

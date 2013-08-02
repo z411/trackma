@@ -223,7 +223,7 @@ class Engine:
             raise utils.EngineError("Show not found.")
     
     def get_show_details(self, show):
-        return self.data_handler.info_get(show['id'])
+        return self.data_handler.info_get(show)
         
     def regex_list(self, regex):
         """

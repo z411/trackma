@@ -69,6 +69,7 @@ class libmal(lib):
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
+   
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
@@ -208,7 +209,7 @@ class libmal(lib):
             episodes_str = 'chapters'
         else:
             episodes_str = 'episodes'
-        
+                
         # Since the MAL API returns the status as a string, and
         # we handle statuses as integers, we need to convert them
         status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
@@ -216,22 +217,50 @@ class libmal(lib):
         entries = list()
         for child in root.iter('entry'):
             show = utils.show()
+            showid = int(child.find('id').text)
             show.update({
-                'id':           int(child.find('id').text),
+                'id':           showid,
                 'title':        child.find('title').text.encode('utf-8'),
-                'my_progress':  0,
-                'my_status':    1,
-                'my_score':     0,
                 'type':         child.find('type').text,
                 'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
+                'url':          "http://myanimelist.net/anime/%d" % showid,
+                'extra': [
+                    ('English',  child.find('english').text),
+                    ('Synonyms', child.find('synonyms').text),
+                    ('Synopsis', self._translate_synopsis(child.find('synopsis').text)),
+                    (episodes_str.title(), child.find(episodes_str).text),
+                    ('Type',     child.find('type').text),
+                    ('Score',    child.find('score').text),
+                    ('Status',   child.find('status').text),
+                    ('Start date', child.find('start_date').text),
+                    ('End date', child.find('end_date').text),
+                    ]
             })
             entries.append(show)
         
         self._emit_signal('show_info_changed', entries)
         return entries
-        
+    
+    def _translate_synopsis(self, string):
+        return unicode(string, errors='ignore').replace('<br />', '')
+
+    def request_info(self, itemlist):
+        resultdict = dict()
+        for item in itemlist:
+            # Search for it only if it hasn't been found earlier
+            if item['id'] not in resultdict:
+                infos = self.search(item['title'])
+                for info in infos:
+                    showid = info['id']
+                    resultdict[showid] = info
+
+        itemids = [ show['id'] for show in itemlist ]
+
+        reslist = [ resultdict[itemid] for itemid in itemids ]
+        return reslist
+
     def _parse_anime(self, root):
         """Converts an XML anime list to a dictionary"""
         showlist = dict()
