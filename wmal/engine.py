@@ -23,6 +23,7 @@ import subprocess
 import difflib
 import threading
 import time
+import webbrowser
 
 import messenger
 import data
@@ -644,6 +645,12 @@ class Engine:
     def list_upload(self):
         """Asks the data handler to upload the remote list."""
         self.data_handler.process_queue()
+
+    def open_web(self, show):
+        if show['url']:
+            webbrowser.open(show['url'])
+        else:
+            raise utils.wmalError('No URL available to open.')
     
     def get_queue(self):
         """Asks the data handler for the current queue."""

@@ -167,6 +167,7 @@ class libvndb(lib):
                 vnid = item['vn']
                 vns[vnid] = utils.show()
                 vns[vnid]['id']         = vnid
+                vns[vnid]['url'] = "http://vndb.org/v%d" % vnid
                 vns[vnid]['my_status']  = item.get('status') or item.get('priority')
             
             if not data['more']:

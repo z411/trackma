@@ -103,6 +103,7 @@ def show():
     return {
         'id':           0,
         'title':        '',
+        'url':          '',
         'aliases':      [],
         'my_progress':  0,
         'my_status':    1,
@@ -179,6 +180,9 @@ keymap_defaults = {
     'altname': 'A',
     'search': '/',
     'neweps': 'N',
+    'details': 'enter',
+    'details_exit': 'esc',
+    'open_web': 'O',
 }
 
 gtk_defaults = {

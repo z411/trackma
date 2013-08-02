@@ -26,6 +26,7 @@ except ImportError:
 import urwid
 import re
 import sys
+import webbrowser
 
 from wmal.engine import Engine
 from wmal.accounts import AccountManager
@@ -63,6 +64,7 @@ class wMAL_urwid(object):
         ('head','light red', 'black'),
         ('header','bold', ''),
         ('status', 'yellow', 'dark blue'),
+        ('error', 'light red', 'dark blue'),
         ('window', 'yellow', 'dark blue'),
         ('button', 'black', 'light gray'),
         ('button hilight', 'white', 'dark red'),
@@ -109,8 +111,10 @@ class wMAL_urwid(object):
         self.listwalker = ShowWalker([])
         self.listbox = urwid.ListBox(self.listwalker)
         self.listframe = urwid.Frame(self.listbox, header=self.listheader)
+
+        self.viewing_info = False
             
-        self.view = urwid.Frame(urwid.AttrMap(self.listframe, 'body'), header=self.top_pile, footer=self.statusbar)
+        self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
         
         self.mainloop.set_alarm_in(0, self.do_switch_account)
@@ -136,6 +140,9 @@ class wMAL_urwid(object):
                     'altname': self.do_altname,
                     'search': self.do_search,
                     'neweps': self.do_neweps,
+                    'details': self.do_info,
+                    'details_exit': self.do_info_exit,
+                    'open_web': self.do_open_web,
                     }
         
         for key, value in keymap.items():
@@ -179,11 +186,12 @@ class wMAL_urwid(object):
         self._rebuild()
         
     def clear_list(self):
-        try:
-            while self.listwalker.pop():
-                pass
-        except IndexError:
-            pass
+        #try:
+        #    while self.listwalker.pop():
+        #        pass
+        #except IndexError:
+        #    pass
+        self.listwalker[:] = []
         
     def build_list(self):
         _filter = self.filters_nums[self.cur_filter]
@@ -195,6 +203,9 @@ class wMAL_urwid(object):
         
     def status(self, msg):
         self.statusbar.base_widget.set_text(msg)
+
+    def error(self, msg):
+        self.statusbar.base_widget.set_text([('error', "Error: %s" % msg)])
         
     def message_handler(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
@@ -269,7 +280,7 @@ class wMAL_urwid(object):
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
+        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
@@ -334,6 +345,41 @@ class wMAL_urwid(object):
         self.engine.reload(account, mediatype)
         self._rebuild()
     
+    def do_open_web(self):
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+        
+        try:
+            self.engine.open_web(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+ 
+    def do_info(self):
+        if self.viewing_info:
+            return
+
+        showid = self.listbox.get_focus()[0].showid
+        show = self.engine.get_show_info(showid)
+
+        self.status("Getting show details...")
+        details = self.engine.get_show_details(show)
+
+        title = urwid.Text( ('info_title', show['title']), 'center', 'any')
+        widgets = []
+        for line in details['extra']:
+            if line[0] and line[1]:
+                widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
+                widgets.append( urwid.Padding(urwid.Text( unicode(line[1]) + "\n" ), left=3) )
+        
+        self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
+        self.viewing_info = True
+        self.status("Ready.")
+    
+    def do_info_exit(self):
+        if self.viewing_info:
+            self.view.body = self.listframe
+            self.viewing_info = False
+
     def do_neweps(self):
         try:
             _filter = self.filters_nums[self.cur_filter]
@@ -344,7 +390,7 @@ class wMAL_urwid(object):
 
             self.status("Ready.")
         except utils.wmalError, e:
-            self.status("Error: %s" % e.message)
+            self.error(e.message)
 
     def do_quit(self):
         self.engine.unload()
@@ -369,7 +415,7 @@ class wMAL_urwid(object):
         try:
             self.engine.add_show(show)
         except utils.wmalError, e:
-            self.status("Error: %s" % e.message)
+            self.error(e.message)
         
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
@@ -380,7 +426,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.delete_show(show)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
         
     def status_request(self, widget, data):
         self.dialog.close()
@@ -390,7 +436,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.set_status(item.showid, data)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
     
     def reload_request(self, widget, selected, data):
@@ -406,7 +452,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.set_episode(item.showid, data)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
     
     def score_request(self, data):
@@ -417,7 +463,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.set_score(item.showid, data)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
     
     def altname_request(self, data):
@@ -428,7 +474,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.altname(item.showid, data)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
 
     def play_request(self, data):
@@ -440,7 +486,7 @@ class wMAL_urwid(object):
             try:
                 played_episode = self.engine.play_episode(show, data)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
             
             if played_episode == (show['my_progress'] + 1):
@@ -458,7 +504,7 @@ class wMAL_urwid(object):
             try:
                 show = self.engine.set_episode(item.showid, next_episode)
             except utils.wmalError, e:
-                self.status("Error: %s" % e.message)
+                self.error(e.message)
                 return
         else:
             self.status('Ready.')

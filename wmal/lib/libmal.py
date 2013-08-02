@@ -252,6 +252,7 @@ class libmal(lib):
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
+                'url':          "http://myanimelist.net/anime/%d" % show_id,
             }
         return showlist
     
@@ -275,6 +276,7 @@ class libmal(lib):
                 'total':     int(child.find('series_chapters').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
+                'url':          "http://myanimelist.net/manga/%d" % manga_id,
             }
         return mangalist
     
