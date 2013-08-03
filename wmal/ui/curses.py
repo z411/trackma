@@ -49,6 +49,7 @@ class wMAL_urwid(object):
     sorts_iter = cycle(('id', 'title', 'my_progress', 'total', 'my_score'))
     keymapping = dict()
     positions = list()
+    last_search = None
     
     """Widgets"""
     header = None
@@ -235,7 +236,7 @@ class wMAL_urwid(object):
             urwid.connect_signal(self.dialog, 'done', self.do_reload_engine)
         
     def do_addsearch(self):
-        self.ask('Search: ', self.addsearch_request)
+        self.ask('Search on remote: ', self.addsearch_request)
     
     def do_delete(self):
         self.question('Delete selected show? [y/n] ', self.delete_request)
@@ -547,7 +548,12 @@ class wMAL_urwid(object):
         self.view.set_footer(self.statusbar)
     
     def do_search(self, key=''):
-        self.ask('Search: ', self.search_request, key)
+        if self.last_search:
+            text = "Search forward [%s]: " % self.last_search
+        else:
+            text = "Search forward: "
+
+        self.ask(text, self.search_request, key)
         #urwid.connect_signal(self.asker, 'change', self.search_live)
         
     #def search_live(self, widget, data):
@@ -555,9 +561,12 @@ class wMAL_urwid(object):
     #        self.listwalker.select_match(data)
         
     def search_request(self, data):
+        self.ask_finish(self.search_request)
         if data:
-            self.ask_finish(self.search_request)
+            self.last_search = data
             self.listwalker.select_match(data)
+        elif self.last_search:
+            self.listwalker.select_match(self.last_search) 
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
@@ -787,7 +796,10 @@ class ShowWalker(urwid.SimpleListWalker):
         self.set_focus(position)
     
     def select_match(self, searchstr):
+        pos = self.get_focus()[1]
         for i, item in enumerate(self):
+            if i <= pos:
+                continue
             if re.search(searchstr, item.showtitle, re.I):
                 self.set_focus(i)
                 break
