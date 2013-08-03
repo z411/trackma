@@ -31,7 +31,7 @@ import urllib2 as urllib
 from cStringIO import StringIO
 
 try:
-    import image
+    import Image
     imaging_available = True
 except ImportError:
     print "Warning: PIL library isn't available. Preview images will be disabled."
