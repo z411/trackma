@@ -346,8 +346,8 @@ class Data(object):
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
                     self.queue.append(show)
-                except TypeError:
-                    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
+                #except TypeError:
+                #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
             
             self.api.logout()
             self._save_cache()

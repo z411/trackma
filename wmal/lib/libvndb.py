@@ -24,9 +24,11 @@ import json
 class libvndb(lib):
     """
     API class to communicate with VNDB
-    Should inherit a base library interface.
+    Implements protocol version 1.
 
-    http://www.vndb.org
+    Website: http://www.vndb.org
+    API documentation: http://vndb.org/d11
+    Designed by: Yorhel <contact@vndb.org> (http://vndb.org/u2)
 
     """
     name = 'libvndb'

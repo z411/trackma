@@ -486,7 +486,7 @@ class wmal_accounts(AccountManager):
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')
-                num = int(num)
+                num = int(num) - 1
                 self.delete_account(num)
             else:
                 try:
