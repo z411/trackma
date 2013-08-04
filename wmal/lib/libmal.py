@@ -20,9 +20,9 @@ from wmal.lib.lib import lib
 import wmal.utils as utils
 
 import urllib, urllib2
+import gzip
 import xml.etree.ElementTree as ET
-from cStringIO  import StringIO
-
+from cStringIO import StringIO
 
 class libmal(lib):
     """
@@ -83,9 +83,23 @@ class libmal(lib):
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)
-        
+
         urllib2.install_opener(self.opener)
-        
+    
+    def _request_gzip(self, url):
+        """
+        Requests the page as gzip and uncompresses it
+
+        Returns a stream object
+
+        """
+        request = urllib2.Request(url)
+        request.add_header('Accept-encoding', 'gzip')
+        compressed_data = self.opener.open(request).read()
+
+        compressed_stream = StringIO(compressed_data)
+        return gzip.GzipFile(fileobj=compressed_stream)
+
     def _make_parser(self):
         # For some reason MAL returns an XML file with HTML exclusive
         # entities like &aacute;, so we have to create a custom XMLParser
@@ -128,8 +142,7 @@ class libmal(lib):
         
         try:
             # Get an XML list from MyAnimeList API
-            response = self.opener.open("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
-            data = StringIO(response.read())
+            data = self._request_gzip("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
             
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
@@ -195,8 +208,7 @@ class libmal(lib):
         
         # Send the urlencoded query to the search API
         query = urllib.urlencode({'q': criteria})
-        response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
-        data = StringIO(response.read())
+        data = self._request_gzip("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
         
         # Load the results into XML
         try:
