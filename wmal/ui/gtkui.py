@@ -315,6 +315,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
+        self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_show_status)
         self.engine.connect_signal('show_deleted', self.changed_show_status)
         
@@ -460,7 +461,11 @@ class wmal_gtk(object):
     def changed_show(self, show):
         status = show['my_status']
         self.show_lists[status].update(show)
-    
+   
+    def playing_show(self, show):
+        for widget in self.show_lists.itervalues():
+            widget.update(show)
+ 
     def changed_show_status(self, show):
         # Rebuild lists
         self.build_list()
@@ -537,9 +542,10 @@ class wmal_gtk(object):
             self.engine.list_upload()
         else:
             self.engine.list_download()
-            gtk.threads_enter()
-            self.build_list()
-            gtk.threads_leave()
+        
+        gtk.threads_enter()
+        self.build_list()
+        gtk.threads_leave()
         
         self.status("Ready.")
         self.allow_buttons(True)
@@ -767,11 +773,14 @@ class ShowView(gtk.TreeView):
         
         renderer_id = gtk.CellRendererText()
         self.cols['ID'].pack_start(renderer_id, False)
+        self.cols['ID'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        self.cols['ID'].set_expand(False)
         self.cols['ID'].add_attribute(renderer_id, 'text', 0)
         
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
         self.cols['Title'].set_resizable(True)
+        self.cols['Title'].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
         self.cols['Title'].add_attribute(renderer_title, 'foreground', 5)
@@ -780,6 +789,8 @@ class ShowView(gtk.TreeView):
             renderer_progress = gtk.CellRendererText()
             self.cols['Progress'].pack_start(renderer_progress, False)
             self.cols['Progress'].add_attribute(renderer_progress, 'text', 2)
+            self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+            self.cols['Progress'].set_expand(False)
                 
             renderer_percent = gtk.CellRendererProgress()
             self.cols['Percent'].pack_start(renderer_percent, False)
@@ -789,10 +800,27 @@ class ShowView(gtk.TreeView):
         renderer_score = gtk.CellRendererText()
         self.cols['Score'].pack_start(renderer_score, False)
         self.cols['Score'].add_attribute(renderer_score, 'text', 3)
-        
+        self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        self.cols['Score'].set_expand(False)
+ 
+        # ID, Title, Episodes, Score, Progress, Color
         self.store = gtk.ListStore(str, str, str, str, int, str)
         self.set_model(self.store)
-            
+    
+    def _get_color(self, show):
+        if show.get('playing'):
+            return '#6C2DC7'
+        elif show.get('queued'):
+            return '#54C571'
+        elif show.get('neweps'):
+            return '#FBB917'
+        elif show['status'] == 1:
+            return '#0099cc'
+        elif show['status'] == 3:
+            return '#999900'
+        else:
+            return 'black'
+
     def append_start(self):
         self.freeze_child_notify()
         self.store.clear()
@@ -807,15 +835,8 @@ class ShowView(gtk.TreeView):
         else:
             episodes_str = ''
             progress = 0
-        
-        if show['status'] == 1:
-            color = '#0099cc'
-        elif show['status'] == 3:
-            color = '#999900'
-        else:
-            color = 'black'
-        
-        row = [show['id'], show['title'], episodes_str, show['my_score'], progress, color]
+                
+        row = [show['id'], show['title'], episodes_str, show['my_score'], progress, self._get_color(show)]
         self.store.append(row)
         
     def append_finish(self):
@@ -842,9 +863,10 @@ class ShowView(gtk.TreeView):
                     row[4] = progress
                 
                 row[3] = show['my_score']
+                row[5] = self._get_color(show)
                 return
         
-        print "Warning: Show ID not found in ShowView (%d)" % show['id']
+        #print "Warning: Show ID not found in ShowView (%d)" % show['id']
     
     def select(self, show):
         """Select specified row"""

@@ -644,7 +644,9 @@ class Engine:
     
     def list_upload(self):
         """Asks the data handler to upload the remote list."""
-        self.data_handler.process_queue()
+        result = self.data_handler.process_queue()
+        #for show in result:
+        #    self._emit_signal('episode_changed', show)
 
     def get_queue(self):
         """Asks the data handler for the current queue."""
