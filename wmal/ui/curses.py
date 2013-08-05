@@ -185,7 +185,7 @@ class wMAL_urwid(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.playing_show)
+        self.engine.connect_signal('playing', self.changed_show)
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
 
@@ -526,17 +526,12 @@ class wMAL_urwid(object):
             self.status('Ready.')
     
     def changed_show(self, show):
-        self._get_cur_list().update_show(show)
+        status = show['my_status']
+        self.lists[status].body.update_show(show)
         self.mainloop.draw_screen()
-    
-    def playing_show(self, show):
-        for status in self.statuses_nums:
-            if self.lists[status].body.update_show(show):
-                break
 
     def changed_show_status(self, show):
         self._rebuild_all_lists()
-        self._get_cur_list().update_show(show)
         
         go_filter = 0
         for _filter in self.filters_nums:

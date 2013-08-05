@@ -315,7 +315,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.playing_show)
+        self.engine.connect_signal('playing', self.changed_show)
         self.engine.connect_signal('show_added', self.changed_show_status)
         self.engine.connect_signal('show_deleted', self.changed_show_status)
         
@@ -462,11 +462,7 @@ class wmal_gtk(object):
         status = show['my_status']
         self.show_lists[status].update(show)
    
-    def playing_show(self, show):
-        for widget in self.show_lists.itervalues():
-            widget.update(show)
- 
-    def changed_show_status(self, show):
+   def changed_show_status(self, show):
         # Rebuild lists
         self.build_list()
         
