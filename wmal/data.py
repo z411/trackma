@@ -338,7 +338,8 @@ class Data(object):
                     else:
                         self.msg.warn(self.name, "Unknown operation in queue, skipping...")
                     
-                    self.showlist[showid]['queued'] = False
+                    if self.showlist.get(showid):
+                        self.showlist[showid]['queued'] = False
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)

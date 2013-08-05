@@ -174,7 +174,6 @@ class wMAL_urwid(object):
     
     def _rebuild_all_lists(self):
         for status in self.lists.keys():
-            self._clear_list(status)
             self._rebuild_list(status)
         
     def start(self, account):
@@ -201,15 +200,14 @@ class wMAL_urwid(object):
 
         self.listframe.body = self.lists[_filter]
 
-    def _clear_list(self, filter_num):
-        self.lists[filter_num].body[:] = []
-    
     def _get_cur_list(self):
         _filter = self.filters_nums[self.cur_filter]
         return self.lists[_filter].body
 
     def _rebuild_list(self, filter_num):
         w = self.lists[filter_num].body
+
+        self.lists[filter_num].body[:] = []
         
         showlist = self.engine.filter_list(filter_num)
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
