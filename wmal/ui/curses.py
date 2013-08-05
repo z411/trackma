@@ -727,7 +727,7 @@ class AccountDialog(Dialog):
 
     def do_delete(self, data):
         if data == 'y':
-            accountitem = self._get_selected_item()
+            accountitem = self.listwalker.get_focus()[0]
             self.manager.delete_account(accountitem.num)
 
         self.build_list()
@@ -748,7 +748,7 @@ class AccountDialog(Dialog):
         self.frame.set_focus('body')
     
     def do_select(self, remember):
-        accountitem = self._get_selected_item()
+        accountitem = self.listwalker.get_focus()[0]
         if remember:
             self.manager.set_default(accountitem.num)
         else:
