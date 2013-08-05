@@ -462,7 +462,7 @@ class wmal_gtk(object):
         status = show['my_status']
         self.show_lists[status].update(show)
    
-   def changed_show_status(self, show):
+    def changed_show_status(self, show):
         # Rebuild lists
         self.build_list()
         
