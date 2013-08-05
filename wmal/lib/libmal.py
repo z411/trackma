@@ -29,7 +29,9 @@ class libmal(lib):
     API class to communicate with MyAnimeList
     Should inherit a base library interface.
 
-    http://www.myanimelist.net
+    Website: http://www.myanimelist.net
+    API documentation: http://myanimelist.net/modules.php?go=api
+    Designed by: Garrett Gyssler (http://myanimelist.net/profile/Xinil)
 
     """
     name = 'libmal'
@@ -40,7 +42,7 @@ class libmal(lib):
     handler = None
     opener = None
     
-    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.1', 'merge': False }
+    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.2', 'merge': False }
     
     default_mediatype = 'anime'
     mediatypes = dict()
@@ -283,7 +285,8 @@ class libmal(lib):
             else:
                 aliases = []
             
-            showlist[show_id] = {
+            show = utils.show()
+            show.update({
                 'id':           show_id,
                 'title':        child.find('series_title').text.encode('utf-8'),
                 'aliases':      aliases,
@@ -294,7 +297,8 @@ class libmal(lib):
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
                 'url':          "http://myanimelist.net/anime/%d" % show_id,
-            }
+            })
+            showlist[show_id] = show
         return showlist
     
     def _parse_manga(self, root):
@@ -307,7 +311,8 @@ class libmal(lib):
             else:
                 aliases = []
             
-            mangalist[manga_id] = {
+            show = utils.show()
+            show.update = ({
                 'id':           manga_id,
                 'title':        child.find('series_title').text.encode('utf-8'),
                 'aliases':      aliases,
@@ -318,7 +323,8 @@ class libmal(lib):
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
                 'url':          "http://myanimelist.net/manga/%d" % manga_id,
-            }
+            })
+            mangalist[manga_id] = show
         return mangalist
     
     def _build_xml(self, item):
