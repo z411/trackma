@@ -31,7 +31,7 @@ import urllib2 as urllib
 from cStringIO import StringIO
 
 try:
-    import Image
+    import image
     imaging_available = True
 except ImportError:
     print "Warning: PIL library isn't available. Preview images will be disabled."
@@ -174,17 +174,9 @@ class wmal_gtk(object):
         self.top_hbox = gtk.HBox(False, 10)
         self.top_hbox.set_border_width(5)
 
-        self.showing_pholder = False
+        self.show_image = ImageView()
 
-        self.show_image = gtk.Image()
-        self.show_image.set_size_request(100, 149)
         self.top_hbox.pack_start(self.show_image, False, False, 0)
-        
-        self.show_pholder = gtk.Label()
-        self.show_pholder.set_size_request(100, 149)
-
-        #self.top_hbox.remove(self.show_image)
-        #self.top_hbox.pack_start(self.show_pholder, False, False, 0)
         
         # Right box
         top_right_box = gtk.VBox(False, 0)
@@ -330,6 +322,9 @@ class wmal_gtk(object):
         
         self.selected_show = 0
         
+        if not imaging_available:
+            self.show_image.pholder_show("PIL library\nnot available")
+
         self.allow_buttons(False)
         self.main.show_all()
         self.start_engine()
@@ -644,35 +639,18 @@ class wmal_gtk(object):
             filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
             
             if os.path.isfile(filename):
-                self.image_show(filename)
+                self.show_image.image_show(filename)
             else:
                 if imaging_available:
-                    self.pholder_show('Loading...')
+                    self.show_image.pholder_show('Loading...')
                     self.image_thread = ImageTask(self.show_image, show['image'], filename)
                     self.image_thread.start()
+                else:
+                    self.show_image.pholder_show("PIL library\nnot available")
         
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
-    
-    def image_show(self, filename):
-        if self.showing_pholder:
-            self.top_hbox.remove(self.show_pholder)
-            self.top_hbox.pack_start(self.show_image, False, False, 0)
-            self.showing_pholder = False
-
-        self.show_image.set_from_file(filename)
-        self.show_image.set_size_request(100, 149)
-
-    def pholder_show(self, msg):
-        if not self.showing_pholder:
-            self.top_hbox.pack_end(self.show_pholder, False, False, 0)
-            self.top_hbox.remove(self.show_image)
-            self.top_hbox.reorder_child(self.show_pholder, 0)
-            self.show_pholder.show()
-            self.showing_pholder = True
-
-        self.show_pholder.set_text(msg)
-        
+           
     def build_list(self):
         for widget in self.show_lists.itervalues():
             widget.append_start()
@@ -766,14 +744,45 @@ class ImageTask(threading.Thread):
             return
         
         gtk.threads_enter()
-        self.show_image.set_from_file(self.local)
-        #self.image_show(self.local)
+        self.show_image.image_show(self.local)
         gtk.threads_leave()
         print "done"
         
     def cancel(self):
         self.cancelled = True
-        
+    
+class ImageView(gtk.HBox):
+    def __init__(self):
+        gtk.HBox.__init__(self)
+
+        self.showing_pholder = False
+
+        self.w_image = gtk.Image()
+        self.w_image.set_size_request(100, 149)
+
+        self.w_pholder = gtk.Label()
+        self.w_pholder.set_size_request(100, 140)
+
+        self.pack_start(self.w_image, False, False, 0)
+
+    def image_show(self, filename):
+        if self.showing_pholder:
+            self.remove(self.w_pholder)
+            self.pack_start(self.w_image, False, False, 0)
+            self.w_image.show()
+            self.showing_pholder = False
+
+        self.w_image.set_from_file(filename)
+
+    def pholder_show(self, msg):
+        if not self.showing_pholder:
+            self.pack_end(self.w_pholder, False, False, 0)
+            self.remove(self.w_image)
+            self.w_pholder.show()
+            self.showing_pholder = True
+
+        self.w_pholder.set_text(msg)
+
 class ShowView(gtk.TreeView):
     def __init__(self, status, has_progress=True):
         gtk.TreeView.__init__(self)
