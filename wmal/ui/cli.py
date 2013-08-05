@@ -48,7 +48,7 @@ class wmal_cmd(cmd.Cmd):
     engine = None
     filter_num = 1
     sort = 'title'
-    completekey = '\t'
+    completekey = 'Tab'
     cmdqueue = []
     stdout = sys.stdout
     
