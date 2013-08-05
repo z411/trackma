@@ -171,12 +171,20 @@ class wmal_gtk(object):
         
         vbox.pack_start(mb, False, False, 0)
         
-        top_hbox = gtk.HBox(False, 10)
-        top_hbox.set_border_width(5)
+        self.top_hbox = gtk.HBox(False, 10)
+        self.top_hbox.set_border_width(5)
+
+        self.showing_pholder = False
 
         self.show_image = gtk.Image()
         self.show_image.set_size_request(100, 149)
-        top_hbox.pack_start(self.show_image, False, False, 0)
+        self.top_hbox.pack_start(self.show_image, False, False, 0)
+        
+        self.show_pholder = gtk.Label()
+        self.show_pholder.set_size_request(100, 149)
+
+        #self.top_hbox.remove(self.show_image)
+        #self.top_hbox.pack_start(self.show_pholder, False, False, 0)
         
         # Right box
         top_right_box = gtk.VBox(False, 0)
@@ -186,6 +194,7 @@ class wmal_gtk(object):
         self.show_title = gtk.Label()
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
+
         line1.pack_start(self.show_title, True, True, 0)
         
         # API info
@@ -278,8 +287,8 @@ class wmal_gtk(object):
         
         top_right_box.pack_start(line4, True, False, 0)
 
-        top_hbox.pack_start(top_right_box, True, True, 0)
-        vbox.pack_start(top_hbox, False, False, 0)
+        self.top_hbox.pack_start(top_right_box, True, True, 0)
+        vbox.pack_start(self.top_hbox, False, False, 0)
         
         # Notebook for lists
         self.notebook = gtk.Notebook()
@@ -462,7 +471,7 @@ class wmal_gtk(object):
         status = show['my_status']
         self.show_lists[status].update(show)
    
-   def changed_show_status(self, show):
+    def changed_show_status(self, show):
         # Rebuild lists
         self.build_list()
         
@@ -635,15 +644,35 @@ class wmal_gtk(object):
             filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
             
             if os.path.isfile(filename):
-                self.show_image.set_from_file(filename)
+                self.image_show(filename)
             else:
                 if imaging_available:
+                    self.pholder_show('Loading...')
                     self.image_thread = ImageTask(self.show_image, show['image'], filename)
                     self.image_thread.start()
         
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
     
+    def image_show(self, filename):
+        if self.showing_pholder:
+            self.top_hbox.remove(self.show_pholder)
+            self.top_hbox.pack_start(self.show_image, False, False, 0)
+            self.showing_pholder = False
+
+        self.show_image.set_from_file(filename)
+        self.show_image.set_size_request(100, 149)
+
+    def pholder_show(self, msg):
+        if not self.showing_pholder:
+            self.top_hbox.pack_end(self.show_pholder, False, False, 0)
+            self.top_hbox.remove(self.show_image)
+            self.top_hbox.reorder_child(self.show_pholder, 0)
+            self.show_pholder.show()
+            self.showing_pholder = True
+
+        self.show_pholder.set_text(msg)
+        
     def build_list(self):
         for widget in self.show_lists.itervalues():
             widget.append_start()
@@ -738,6 +767,7 @@ class ImageTask(threading.Thread):
         
         gtk.threads_enter()
         self.show_image.set_from_file(self.local)
+        #self.image_show(self.local)
         gtk.threads_leave()
         print "done"
         
