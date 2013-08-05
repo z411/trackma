@@ -158,52 +158,67 @@ class wMAL_urwid(object):
     
     def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
+        self.lists = dict()
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
-        #self.filters_iter = cycle(self.engine.mediainfo['statuses'])
         
-        #self.cur_filter = self.filters_iter.next()
-        self.cur_filter = 0
-        
-        self._rebuild_list()
-        
+        for status in self.filters_nums:
+            #self.lists = ShowWalker([])
+            #self.listbox = urwid.ListBox(self.listwalker)
+            self.lists[status] = urwid.ListBox(ShowWalker([]))
+            self._rebuild_list(status)
+
+        self.set_filter(0)
+
         self.status('Ready.')
     
-    def _rebuild_list(self):
-        self.clear_list()
-        self.build_list()
+    def _rebuild_all_lists(self):
+        for status in self.lists.keys():
+            self._clear_list(status)
+            self._rebuild_list(status)
         
     def start(self, account):
         """Starts the engine"""
         # Engine configuration
+        self.status("Starting engine...")
         self.engine = Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.changed_show)
+        self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
 
-        # Engine start and list rebuild
+        # Engine start and list rebuildi
+        self.status("Building lists...")
         self.engine.start()
         self._rebuild()
-        
-    def clear_list(self):
-        #try:
-        #    while self.listwalker.pop():
-        #        pass
-        #except IndexError:
-        #    pass
-        self.listwalker[:] = []
-        
-    def build_list(self):
+    
+    def set_filter(self, filter_num):
+        self.cur_filter = filter_num
         _filter = self.filters_nums[self.cur_filter]
         self.header_filter.set_text("Filter:%s" % self.filters[_filter])
-        showlist = self.engine.filter_list(_filter)
+
+        self.listframe.body = self.lists[_filter]
+
+    def _clear_list(self, filter_num):
+        self.lists[filter_num].body[:] = []
+    
+    def _get_cur_list(self):
+        _filter = self.filters_nums[self.cur_filter]
+        return self.lists[_filter].body
+
+    def _rebuild_list(self, filter_num):
+        w = self.lists[filter_num].body
+        
+        showlist = self.engine.filter_list(filter_num)
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
         for show in sortedlist:
-            self.listwalker.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
-        
+            w.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
+    
+    def _get_selected_item(self):
+        return self._get_cur_list().get_focus()[0]
+
     def status(self, msg):
         self.statusbar.base_widget.set_text(msg)
 
@@ -243,38 +258,38 @@ class wMAL_urwid(object):
         
     def do_prev_filter(self):
         if self.cur_filter > 0:
-            self.cur_filter -= 1
-        self._rebuild_list()
+            self.set_filter(self.cur_filter - 1)
 
     def do_next_filter(self):
         if self.cur_filter < len(self.filters)-1:
-            self.cur_filter += 1
-        self._rebuild_list()
+            self.set_filter(self.cur_filter + 1)
 
     def do_sort(self):
+        self.status("Sorting...")
         _sort = self.sorts_iter.next()
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
-        self._rebuild_list()
+        self._rebuild_all_lists()
+        self.status("Ready.")
     
     def do_update(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
         
     def do_play(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
     
     def do_send(self):
         self.engine.list_upload()
-        self._rebuild();
+        self._rebuild_all_lists();
         self.status("Ready.")
 
     def do_retrieve(self):
         self.engine.list_download()
-        self._rebuild_list()
+        self._rebuild_all_lists()
         self.status("Ready.")
     
     def do_help(self):
@@ -294,18 +309,18 @@ class wMAL_urwid(object):
         self.dialog.close()
     
     def do_altname(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.status(show['title'])
         self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
 
     def do_score(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
         
     def do_status(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         
         buttons = list()
@@ -349,7 +364,7 @@ class wMAL_urwid(object):
         self._rebuild()
     
     def do_open_web(self):
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         if show['url']:
             webbrowser.open(show['url'], 2, True)
@@ -358,7 +373,7 @@ class wMAL_urwid(object):
         if self.viewing_info:
             return
 
-        showid = self.listbox.get_focus()[0].showid
+        showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
 
         self.status("Getting show details...")
@@ -421,7 +436,7 @@ class wMAL_urwid(object):
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
         if data == 'y':
-            showid = self.listbox.get_focus()[0].showid
+            showid = self._get_selected_item().showid
             show = self.engine.get_show_info(showid)
             
             try:
@@ -432,7 +447,7 @@ class wMAL_urwid(object):
     def status_request(self, widget, data):
         self.dialog.close()
         if data:
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
             
             try:
                 show = self.engine.set_status(item.showid, data)
@@ -448,7 +463,7 @@ class wMAL_urwid(object):
     def update_request(self, data):
         self.ask_finish(self.update_request)
         if data:
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
             
             try:
                 show = self.engine.set_episode(item.showid, data)
@@ -459,7 +474,7 @@ class wMAL_urwid(object):
     def score_request(self, data):
         self.ask_finish(self.score_request)
         if data:
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
             
             try:
                 show = self.engine.set_score(item.showid, data)
@@ -470,7 +485,7 @@ class wMAL_urwid(object):
     def altname_request(self, data):
         self.ask_finish(self.altname_request)
         if data:
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
 
             try:
                 show = self.engine.altname(item.showid, data)
@@ -481,7 +496,7 @@ class wMAL_urwid(object):
     def play_request(self, data):
         self.ask_finish(self.play_request)
         if data:
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
             show = self.engine.get_show_info(item.showid)
             
             try:
@@ -498,7 +513,7 @@ class wMAL_urwid(object):
     def update_next_request(self, data):
         self.ask_finish(self.update_next_request)
         if data == 'y':
-            item = self.listbox.get_focus()[0]
+            item = self._get_selected_item()
             show = self.engine.get_show_info(item.showid)
             next_episode = show['my_progress'] + 1
             
@@ -511,24 +526,29 @@ class wMAL_urwid(object):
             self.status('Ready.')
     
     def changed_show(self, show):
-        self.listwalker.update_show(show)
+        self._get_cur_list().update_show(show)
         self.mainloop.draw_screen()
     
+    def playing_show(self, show):
+        for status in self.statuses_nums:
+            if self.lists[status].body.update_show(show):
+                break
+
     def changed_show_status(self, show):
-        self.listwalker.update_show(show)
+        self._rebuild_all_lists()
+        self._get_cur_list().update_show(show)
         
-        self.cur_filter = 0
+        go_filter = 0
         for _filter in self.filters_nums:
             if _filter == show['my_status']:
                 break
-            self.cur_filter += 1
+            go_filter += 1
 
-        self._rebuild_list()
-        
-        self.listwalker.select_show(show)
+        self.set_filter(go_filter)
+        self._get_cur_list().select_show(show)
     
     def changed_list(self, show):
-        self._rebuild_list()
+        self._rebuild_list(show['my_status'])
         
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
@@ -617,10 +637,10 @@ class AddDialog(Dialog):
         if key in ('up', 'down', 'left', 'right', 'tab'):
             self.widget.keypress(size, key)
         elif key == 'enter':
-            show = self.listwalker.get_focus()[0].show
+            show = self._get_selected_item().show
             urwid.emit_signal(self, 'done', show)
         elif key == 'O':
-            show = self.listwalker.get_focus()[0].show
+            show = self._get_selected_item().show
             webbrowser.open(show['url'], 2, True)
         elif key == 'esc':
             self.close()
@@ -712,7 +732,7 @@ class AccountDialog(Dialog):
 
     def do_delete(self, data):
         if data == 'y':
-            accountitem = self.listwalker.get_focus()[0]
+            accountitem = self._get_selected_item()
             self.manager.delete_account(accountitem.num)
 
         self.build_list()
@@ -733,7 +753,7 @@ class AccountDialog(Dialog):
         self.frame.set_focus('body')
     
     def do_select(self, remember):
-        accountitem = self.listwalker.get_focus()[0]
+        accountitem = self._get_selected_item()
         if remember:
             self.manager.set_default(accountitem.num)
         else:
@@ -781,7 +801,8 @@ class ShowWalker(urwid.SimpleListWalker):
         for i, item in enumerate(self):
             if showid == item.showid:
                 return (i, item)
-        raise Exception('Show not found in ShowWalker.')
+        #raise Exception('Show not found in ShowWalker.')
+        return (None, None)
     
     def highlight_show(self, show, tocolor):
         (position, showitem) = self._get_showitem(show['id'])
@@ -789,11 +810,16 @@ class ShowWalker(urwid.SimpleListWalker):
 
     def update_show(self, show):
         (position, showitem) = self._get_showitem(show['id'])
-        showitem.update(show)
+        if showitem:
+            showitem.update(show)
+            return True
+        else:
+            return False
     
     def select_show(self, show):
         (position, showitem) = self._get_showitem(show['id'])
-        self.set_focus(position)
+        if showitem:
+            self.set_focus(position)
     
     def select_match(self, searchstr):
         pos = self.get_focus()[1]
