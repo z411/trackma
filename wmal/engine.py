@@ -537,11 +537,12 @@ class Engine:
             if result:
                 (show, episode) = result
                 
-                if not last_show or show['id'] != last_show['id']:
+                if not last_show or show['id'] != last_show['id'] or episode != last_episode:
                     # There's a new show detected, so
                     # let's save the show information and
                     # the time we detected it first
                     last_show = show
+                    last_episode = episode
                     last_time = time.time()
                     last_updated = False
                 
