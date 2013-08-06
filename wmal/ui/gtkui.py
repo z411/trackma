@@ -27,6 +27,7 @@ gtk.gdk.threads_init() # We'll use threads
 import os
 import time
 import threading
+import webbrowser
 import urllib2 as urllib
 from cStringIO import StringIO
 
@@ -110,6 +111,8 @@ class wmal_gtk(object):
         # Menus
         mb_list = gtk.Menu()
         mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        mb_info = gtk.MenuItem('Show details...')
+        mb_info.connect("activate", self.do_info)
         mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         mb_delete.connect("activate", self.do_delete)
         mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -122,6 +125,8 @@ class wmal_gtk(object):
         mb_send.connect("activate", self.do_send)
         
         mb_list.append(mb_play)
+        mb_list.append(mb_info)
+        mb_list.append(gtk.SeparatorMenuItem())
         mb_list.append(mb_delete)
         mb_list.append(gtk.SeparatorMenuItem())
         mb_list.append(mb_addsearch)
@@ -174,7 +179,7 @@ class wmal_gtk(object):
         self.top_hbox = gtk.HBox(False, 10)
         self.top_hbox.set_border_width(5)
 
-        self.show_image = ImageView()
+        self.show_image = ImageView(100, 149)
 
         self.top_hbox.pack_start(self.show_image, False, False, 0)
         
@@ -364,7 +369,8 @@ class wmal_gtk(object):
             sw.set_border_width(5)
         
             self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
-            self.show_lists[status].get_selection().connect("changed", self.select_show);
+            self.show_lists[status].get_selection().connect("changed", self.select_show)
+            self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].pagenumber = self.notebook.get_n_pages()
             sw.add(self.show_lists[status])
             
@@ -434,7 +440,11 @@ class wmal_gtk(object):
             self.engine.delete_show(show)
         except utils.wmalError, e:
             self.error(e.message)
-        
+    
+    def do_info(self, widget, d1=None, d2=None):
+        show = self.engine.get_show_info(self.selected_show)
+        win = InfoDialog(self.engine, show)
+
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:
@@ -643,7 +653,7 @@ class wmal_gtk(object):
             else:
                 if imaging_available:
                     self.show_image.pholder_show('Loading...')
-                    self.image_thread = ImageTask(self.show_image, show['image'], filename)
+                    self.image_thread = ImageTask(self.show_image, show['image'], filename, (100, 149))
                     self.image_thread.start()
                 else:
                     self.show_image.pholder_show("PIL library\nnot available")
@@ -719,10 +729,11 @@ class wmal_gtk(object):
 class ImageTask(threading.Thread):
     cancelled = False
     
-    def __init__(self, show_image, remote, local):
+    def __init__(self, show_image, remote, local, size=None):
         self.show_image = show_image
         self.remote = remote
         self.local = local
+        self.size = size
         threading.Thread.__init__(self)
     
     def run(self):
@@ -735,10 +746,17 @@ class ImageTask(threading.Thread):
             return
         
         # If there's a better solution for this please tell me/implement it.
+
+        # If there's a size specified, thumbnail with PIL library
+        # otherwise download and save it as it is
         img_file = StringIO(urllib.urlopen(self.remote).read())
-        im = Image.open(img_file)
-        im.thumbnail((100, 149), Image.ANTIALIAS)
-        im.save(self.local)
+        if self.size:
+            im = Image.open(img_file)
+            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+            im.save(self.local)
+        else:
+            with open(self.local, 'wb') as f:
+                f.write(img_file.read())
         
         if self.cancelled:
             return
@@ -752,16 +770,16 @@ class ImageTask(threading.Thread):
         self.cancelled = True
     
 class ImageView(gtk.HBox):
-    def __init__(self):
+    def __init__(self, w, h):
         gtk.HBox.__init__(self)
 
         self.showing_pholder = False
 
         self.w_image = gtk.Image()
-        self.w_image.set_size_request(100, 149)
+        self.w_image.set_size_request(w, h)
 
         self.w_pholder = gtk.Label()
-        self.w_pholder.set_size_request(100, 140)
+        self.w_pholder.set_size_request(w, h)
 
         self.pack_start(self.w_image, False, False, 0)
 
@@ -1081,6 +1099,108 @@ class AccountSelect(gtk.Window):
     def on_delete(self, widget, data):
         self.do_close(None)
         return False
+
+class InfoDialog(gtk.Window):
+    def __init__(self, engine, show):
+        self.engine = engine
+        self.show = show
+
+        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_title('Show Details')
+        self.set_border_width(10)
+        
+        fullbox = gtk.VBox()
+
+        # Title line
+        self.w_title = gtk.Label('Loading...')
+        
+        # Middle line (sidebox)
+        sidebox = gtk.HBox()
+
+        alignment_image = gtk.Alignment(yalign=0.0)
+        self.w_image = ImageView(225, 350)
+        alignment_image.add(self.w_image)
+
+        self.w_content = gtk.Label()
+        
+        sidebox.pack_start(alignment_image, padding=5)
+        sidebox.pack_start(self.w_content, padding=5)
+       
+        # Bottom line (buttons)
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        
+        web_button = gtk.Button('Open web')
+        web_button.connect("clicked", self.do_web)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        
+        bottombar.pack_start(web_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+
+        fullbox.pack_start(self.w_title, False, False)
+        fullbox.pack_start(sidebox, padding=5)
+        fullbox.pack_start(alignment)
+        
+        self.add(fullbox)
+        self.show_all()
+
+        # Load image
+        imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
+
+        if os.path.isfile(imagefile):
+            self.w_image.image_show(imagefile)
+        else:
+            self.w_image.pholder_show('Loading...')
+            self.image_thread = ImageTask(self.w_image, show['image'], imagefile)
+            self.image_thread.start()
+            
+        # Start info loading thread
+        threading.Thread(target=self.task_load).start()
+    
+    def task_load(self):
+        # Thread to ask the engine for show details
+        
+        details = self.engine.get_show_details(self.show)
+ 
+        gobject.idle_add(self._done, details)
+    
+    def _done(self, details):
+        # Put the returned details into the lines VBox
+        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(details['title']))
+        self.w_title.set_use_markup(True)
+
+        detail = list()
+        for line in details['extra']:
+            if line[0] and line[1]:
+                detail.append("<b>%s</b>\n%s" % (line[0], line[1]))
+
+                #h = gtk.Label()
+                #h.set_alignment(0, 0.5)
+                #h.set_text("<b>%s</b>" % line[0])
+                #h.set_use_markup(True)
+                #c = gtk.Label("%s\n" % line[1])
+                #c.set_alignment(0, 0.5)
+                #c.set_line_wrap(True)
+                #self.lines.pack_start(h, False, False, 0)
+                #self.lines.pack_start(c, False, False, 0)
+
+        self.w_content.set_alignment(0, 0)
+        self.w_content.set_text("\n\n".join(detail))
+        self.w_content.set_line_wrap(True)
+        self.w_content.set_use_markup(True)
+
+        self.show_all()
+        self.set_position(gtk.WIN_POS_CENTER)
+
+    def do_close(self, widget):
+        self.destroy()
+
+    def do_web(self, widget):
+        if self.show['url']:
+            webbrowser.open(self.show['url'], 2, True)
 
 class Settings(gtk.Window):
     def __init__(self, engine, config, configfile):

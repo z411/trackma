@@ -55,6 +55,12 @@ class wmal_cmd(cmd.Cmd):
     __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
     def __init__(self):
+        print 'wMAL '+VERSION+'  Copyright (C) 2012  z411'
+        print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
+        print 'This is free software, and you are welcome to redistribute it'
+        print 'under certain conditions; see the file COPYING for details.'
+        print
+
         self.accountman = wmal_accounts()
         self.account = self.accountman.select_account()
 
@@ -64,11 +70,6 @@ class wmal_cmd(cmd.Cmd):
         
         Creates an Engine object and starts it.
         """
-        print 'wMAL '+VERSION+'  Copyright (C) 2012  z411'
-        print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
-        print 'This is free software, and you are welcome to redistribute it'
-        print 'under certain conditions; see the file COPYING for details.'
-        print
         print 'Initializing engine...'
         self.engine = Engine(self.account, self.messagehandler)
         self.engine.start()
@@ -469,7 +470,6 @@ class wmal_cmd(cmd.Cmd):
 
 class wmal_accounts(AccountManager):
     def select_account(self):
-        print "Account Manager"
         while True:
             print '--- Accounts ---'
             self.list_accounts()
