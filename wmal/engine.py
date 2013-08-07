@@ -150,13 +150,17 @@ class Engine:
         """
         #if not self.loaded:
         #    raise utils.wmalError("Engine is not loaded.")
-        
+                
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
 
         # Save config file
         #utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
+        
+        if self.last_show:
+            self.data_handler.set_show_attr(self.last_show, 'playing', False)
+            self._emit_signal('playing', self.last_show)
 
         self.loaded = False
     
@@ -525,7 +529,7 @@ class Engine:
         Tracker loop to be used in a thread
         
         """
-        last_show = None
+        self.last_show = None
         last_time = 0
         last_updated = False
         wait_s = wait * 60
@@ -537,11 +541,11 @@ class Engine:
             if result:
                 (show, episode) = result
                 
-                if not last_show or show['id'] != last_show['id'] or episode != last_episode:
+                if not self.last_show or show['id'] != self.last_show['id'] or episode != last_episode:
                     # There's a new show detected, so
                     # let's save the show information and
                     # the time we detected it first
-                    last_show = show
+                    self.last_show = show
                     last_episode = episode
                     last_time = time.time()
                     last_updated = False
@@ -555,16 +559,16 @@ class Engine:
                             # Time has passed, let's update
                             self.set_episode(show['id'], episode)
                             
-                            self.data_handler.set_show_attr(last_show, 'playing', False)
-                            self._emit_signal('playing', last_show)
+                            self.data_handler.set_show_attr(self.last_show, 'playing', False)
+                            self._emit_signal('playing', self.last_show)
                             last_updated = True
                         else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (last_show['title'], episode, wait_s-timedif))
-                            self.data_handler.set_show_attr(last_show, 'playing', True)
-                            self._emit_signal('playing', last_show)
+                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (self.last_show['title'], episode, wait_s-timedif))
+                            self.data_handler.set_show_attr(self.last_show, 'playing', True)
+                            self._emit_signal('playing', self.last_show)
                     else:
                         # We shouldn't update to this episode!
-                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % last_show['title'])
+                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % self.last_show['title'])
                         last_updated = True
                 else:
                     # The episode was updated already. do nothing
@@ -572,13 +576,13 @@ class Engine:
             else:
                 # There isn't any show playing right now
                 # Check if the player was closed
-                if last_show:
+                if self.last_show:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
-                        self.data_handler.set_show_attr(last_show, 'playing', False)
-                        self._emit_signal('playing', last_show)
+                        self.data_handler.set_show_attr(self.last_show, 'playing', False)
+                        self._emit_signal('playing', self.last_show)
                     
-                    last_show = None
+                    self.last_show = None
                     last_updated = False
                     last_time = 0
             
