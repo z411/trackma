@@ -312,7 +312,7 @@ class libmal(lib):
                 aliases = []
             
             show = utils.show()
-            show.update = ({
+            show.update({
                 'id':           manga_id,
                 'title':        child.find('series_title').text,
                 'aliases':      aliases,
