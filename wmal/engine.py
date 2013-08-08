@@ -46,6 +46,7 @@ class Engine:
     msg = None
     loaded = False
     playing = False
+    last_show = None
     
     name = 'Engine'
     
