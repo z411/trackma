@@ -382,7 +382,7 @@ class wMAL_urwid(object):
         for line in details['extra']:
             if line[0] and line[1]:
                 widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
-                widgets.append( urwid.Padding(urwid.Text( unicode(line[1]) + "\n" ), left=3) )
+                widgets.append( urwid.Padding(urwid.Text( line[1] + "\n" ), left=3) )
         
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
