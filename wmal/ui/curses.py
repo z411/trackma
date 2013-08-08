@@ -630,10 +630,10 @@ class AddDialog(Dialog):
         if key in ('up', 'down', 'left', 'right', 'tab'):
             self.widget.keypress(size, key)
         elif key == 'enter':
-            show = self._get_selected_item().show
+            show = self.listwalker.get_focus()[0].show
             urwid.emit_signal(self, 'done', show)
         elif key == 'O':
-            show = self._get_selected_item().show
+            show = self.listwalker.get_focus()[0].show
             webbrowser.open(show['url'], 2, True)
         elif key == 'esc':
             self.close()

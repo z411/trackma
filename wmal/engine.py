@@ -151,7 +151,11 @@ class Engine:
         """
         #if not self.loaded:
         #    raise utils.wmalError("Engine is not loaded.")
-                
+        
+        if self.last_show:
+            self.data_handler.set_show_attr(self.last_show, 'playing', False)
+            self._emit_signal('playing', self.last_show)
+         
         self.msg.debug(self.name, "Unloading...")
         self.data_handler.unload()
 
@@ -159,10 +163,6 @@ class Engine:
         #utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
         
-        if self.last_show:
-            self.data_handler.set_show_attr(self.last_show, 'playing', False)
-            self._emit_signal('playing', self.last_show)
-
         self.loaded = False
     
     def reload(self, account=None, mediatype=None):
