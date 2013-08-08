@@ -391,6 +391,7 @@ class Data(object):
         # Repeat check only if the settings are still on 'hours'
         if self.config['autosend'] == 'hours':
             self.autosend_timer = threading.Timer(3600, self.autosend)
+            self.autosend_timer.daemon = True
             self.autosend_timer.start()
 
     def _load_cache(self):

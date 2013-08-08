@@ -234,7 +234,7 @@ class libmal(lib):
             showid = int(child.find('id').text)
             show.update({
                 'id':           showid,
-                'title':        child.find('title').text.encode('utf-8'),
+                'title':        child.find('title').text,
                 'type':         child.find('type').text,
                 'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
@@ -281,14 +281,14 @@ class libmal(lib):
         for child in root.iter('anime'):
             show_id = int(child.find('series_animedb_id').text)
             if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.encode('utf-8').lstrip('; ').split('; ')
+                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
             
             show = utils.show()
             show.update({
                 'id':           show_id,
-                'title':        child.find('series_title').text.encode('utf-8'),
+                'title':        child.find('series_title').text,
                 'aliases':      aliases,
                 'my_progress':  int(child.find('my_watched_episodes').text),
                 'my_status':    int(child.find('my_status').text),
@@ -307,14 +307,14 @@ class libmal(lib):
         for child in root.iter('manga'):
             manga_id = int(child.find('series_mangadb_id').text)
             if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.encode('utf-8').lstrip('; ').split('; ')
+                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
             
             show = utils.show()
             show.update = ({
                 'id':           manga_id,
-                'title':        child.find('series_title').text.encode('utf-8'),
+                'title':        child.find('series_title').text,
                 'aliases':      aliases,
                 'my_progress':  int(child.find('my_read_chapters').text),
                 'my_status':    int(child.find('my_status').text),
