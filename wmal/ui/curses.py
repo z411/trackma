@@ -71,9 +71,9 @@ class wMAL_urwid(object):
         ('button hilight', 'white', 'dark red'),
         ('item_airing', 'dark blue', ''),
         ('item_notaired', 'yellow', ''),
-        ('item_neweps', '', 'brown'),
-        ('item_updated', '', 'dark green'),
-        ('item_playing', '', 'dark blue'),
+        ('item_neweps', 'white', 'brown'),
+        ('item_updated', 'white', 'dark green'),
+        ('item_playing', 'white', 'dark blue'),
         ('info_title', 'light red', ''),
         ('info_section', 'dark blue', ''),
         ]
