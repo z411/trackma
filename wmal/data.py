@@ -111,11 +111,6 @@ class Data(object):
         if self._queue_exists():
             self._load_queue()
         
-        # Process the queue if we're going to retrieve the list or if we're beyond the time limit for some reason
-        if (self.config['autoretrieve'] == 'always' or
-            (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
-            self.process_queue()
-
         # If cache exists, load from it
         # otherwise query the API for a remote list
         if not self._cache_exists():
@@ -124,7 +119,15 @@ class Data(object):
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
         else:
-            # Still get the cache if any autoretrieve condition is met
+            cache_loaded = False
+
+            # Process the queue if we're going to retrieve the list or if we're beyond the time limit for some reason
+            if (self.config['autoretrieve'] == 'always' or
+               (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
+                self._load_cache()
+                self.process_queue()
+
+            # Redownload list if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
                (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
                 self.meta.get('version') != VERSION):
@@ -132,9 +135,8 @@ class Data(object):
                     self.download_data()
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
-                    self._load_cache()
-            else:
-                # No need to get the list again so just use the cache
+            elif not cache_loaded:
+                # If the cache wasn't loaded before, do it no
                 self._load_cache()
         
         if self._info_exists():
