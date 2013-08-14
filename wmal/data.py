@@ -125,6 +125,8 @@ class Data(object):
             if (self.config['autoretrieve'] == 'always' or
                (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
                 self._load_cache()
+                cache_loaded = True # Flag so the cache doesn't get reloaded unnecessarily later
+
                 self.process_queue()
 
             # Redownload list if any autoretrieve condition is met
