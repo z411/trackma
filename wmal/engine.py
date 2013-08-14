@@ -546,6 +546,14 @@ class Engine:
                     # There's a new show detected, so
                     # let's save the show information and
                     # the time we detected it first
+                    
+                    # But if we're watching a new show, let's make sure turn off
+                    # the Playing flag on that one first
+                    if self.last_show and self.last_show != show:
+                        self.data_handler.set_show_attr(self.last_show, 'playing', False)
+                        self._emit_signal('playing', self.last_show)
+ 
+
                     self.last_show = show
                     last_episode = episode
                     last_time = time.time()
@@ -580,9 +588,9 @@ class Engine:
                 if self.last_show:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
-                        self.data_handler.set_show_attr(self.last_show, 'playing', False)
-                        self._emit_signal('playing', self.last_show)
                     
+                    self.data_handler.set_show_attr(self.last_show, 'playing', False)
+                    self._emit_signal('playing', self.last_show)
                     self.last_show = None
                     last_updated = False
                     last_time = 0
