@@ -30,7 +30,7 @@ from wmal.accounts import AccountManager
 import wmal.messenger as messenger
 import wmal.utils as utils
 
-_DEBUG = False
+_DEBUG = True
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'

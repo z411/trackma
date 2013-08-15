@@ -19,6 +19,7 @@ VERSION = 'v0.2'
 import re
 import os
 import subprocess
+import atexit
 
 import difflib
 import threading
@@ -61,6 +62,9 @@ class Engine:
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
         self.msg.info(self.name, 'Version '+VERSION)
+
+        # Register cleanup function when program exits
+        atexit.register(self._cleanup)
         
         self.load(account)
         self._init_data_handler()
@@ -97,6 +101,11 @@ class Engine:
                 self.signals[signal](args)
         except KeyError:
             raise Exception("Call to undefined signal.")
+
+    def _cleanup(self):
+        # If the engine wasn't closed for whatever reason, do it
+        if self.loaded:
+            self.unload()
     
     def connect_signal(self, signal, callback):
         try:
@@ -156,9 +165,9 @@ class Engine:
             self.data_handler.set_show_attr(self.last_show, 'playing', False)
             self._emit_signal('playing', self.last_show)
          
-        self.msg.debug(self.name, "Unloading...")
+        self.msg.info(self.name, "Unloading...")
         self.data_handler.unload()
-
+        
         # Save config file
         #utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
