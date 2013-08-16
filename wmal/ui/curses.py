@@ -225,8 +225,11 @@ class wMAL_urwid(object):
         
     def message_handler(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
-            self.status(msg)
-            self.mainloop.draw_screen()
+            try:
+                self.status(msg)
+                self.mainloop.draw_screen()
+            except AssertionError:
+                print(msg)
         
     def keystroke(self, input):
         try:
@@ -382,7 +385,14 @@ class wMAL_urwid(object):
         for line in details['extra']:
             if line[0] and line[1]:
                 widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
-                widgets.append( urwid.Padding(urwid.Text( line[1] + "\n" ), left=3) )
+                if isinstance(line[1], dict):
+                    linestr = repr(line[1])
+                elif isinstance(line[1], int):
+                    linestr = str(line[1])
+                else:
+                    linestr = line[1]
+
+                widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
         
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
