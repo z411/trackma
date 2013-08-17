@@ -564,6 +564,9 @@ class Engine:
  
 
                     self.last_show = show
+                    self.data_handler.set_show_attr(show, 'playing', True)
+                    self._emit_signal('playing', show)
+ 
                     last_episode = episode
                     last_time = time.time()
                     last_updated = False
@@ -577,13 +580,9 @@ class Engine:
                             # Time has passed, let's update
                             self.set_episode(show['id'], episode)
                             
-                            self.data_handler.set_show_attr(self.last_show, 'playing', False)
-                            self._emit_signal('playing', self.last_show)
                             last_updated = True
                         else:
                             self.msg.info(self.name, 'Will update %s %d in %d seconds' % (self.last_show['title'], episode, wait_s-timedif))
-                            self.data_handler.set_show_attr(self.last_show, 'playing', True)
-                            self._emit_signal('playing', self.last_show)
                     else:
                         # We shouldn't update to this episode!
                         self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % self.last_show['title'])
