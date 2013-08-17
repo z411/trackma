@@ -587,9 +587,9 @@ class wMAL_urwid(object):
         self.ask_finish(self.search_request)
         if data:
             self.last_search = data
-            self.listwalker.select_match(data)
+            self._get_cur_list().select_match(data)
         elif self.last_search:
-            self.listwalker.select_match(self.last_search) 
+            self._get_cur_list().select_match(self.last_search) 
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
