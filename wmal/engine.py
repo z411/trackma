@@ -617,7 +617,7 @@ class Engine:
             # Do a regex to the filename to get
             # the show title and episode number
             reg = re.compile(r"(\[.+\])?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
-            show_raw = filename.replace("_"," ").strip()
+            show_raw = filename.replace("_"," ").replace("v2","").strip()
             show_match = reg.match(show_raw)
             if not show_match:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
@@ -651,7 +651,7 @@ class Engine:
         """
         lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn', searchdir], stdout=subprocess.PIPE)
         output = lsof.communicate()[0]
-        fileregex = re.compile("n(.*(.mkv|.mp4|.avi))")
+        fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
         
         for line in output.splitlines():
             match = fileregex.match(line)
