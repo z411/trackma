@@ -137,6 +137,7 @@ class Data(object):
                     self.download_data()
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
+                    self._load_cache()
             elif not cache_loaded:
                 # If the cache wasn't loaded before, do it no
                 self._load_cache()

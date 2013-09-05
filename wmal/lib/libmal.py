@@ -88,6 +88,12 @@ class libmal(lib):
 
         urllib2.install_opener(self.opener)
     
+    def _request(self, url):
+        try:
+            return self.opener.open(url, timeout = 10)
+        except urllib2.URLError, e:
+            raise utils.APIError("Connection error: %s" % e) 
+
     def _request_gzip(self, url):
         """
         Requests the page as gzip and uncompresses it
@@ -95,9 +101,12 @@ class libmal(lib):
         Returns a stream object
 
         """
-        request = urllib2.Request(url)
-        request.add_header('Accept-encoding', 'gzip')
-        compressed_data = self.opener.open(request).read()
+        try:
+            request = urllib2.Request(url)
+            request.add_header('Accept-encoding', 'gzip')
+            compressed_data = self.opener.open(request).read()
+        except urllib2.URLError, e:
+            raise utils.APIError("Connection error: %s" % e)
 
         compressed_stream = StringIO(compressed_data)
         return gzip.GzipFile(fileobj=compressed_stream)
@@ -130,12 +139,12 @@ class libmal(lib):
         
         self.msg.info(self.name, 'Logging in...')
         try:
-            response = self.opener.open("http://myanimelist.net/api/account/verify_credentials.xml")
+            response = self._request("http://myanimelist.net/api/account/verify_credentials.xml")
             self.logged_in = True
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError("Incorrect credentials.")
-    
+   
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
