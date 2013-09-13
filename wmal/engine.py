@@ -506,7 +506,10 @@ class Engine:
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 self.playing = True
-                subprocess.call([self.config['player'], filename])
+                try:
+                    subprocess.call([self.config['player'], filename])
+                except OSError:
+                    raise utils.EngineError('Player not found, check your config.json')
                 self.playing = False
                 return playep
             else:
