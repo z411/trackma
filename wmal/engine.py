@@ -509,7 +509,7 @@ class Engine:
                 try:
                     subprocess.call([self.config['player'], filename])
                 except OSError:
-                    raise utils.EngineError('Player not found.')
+                    raise utils.EngineError('Player not found, check your config.json')
                 self.playing = False
                 return playep
             else:
