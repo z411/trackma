@@ -42,6 +42,10 @@ def parse_config(filename, default):
     return config
 
 def save_config(config_dict, filename):
+    path = os.path.dirname(filename)
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
     with open(filename, 'wb') as configfile:
         json.dump(config_dict, configfile, sort_keys=True,
                   indent=4, separators=(',', ': '))
