@@ -613,9 +613,9 @@ class wmal_gtk(object):
         if page is None:
             page = self.notebook.get_current_page()
 
-        widget = self.notebook.get_nth_page(page).get_child().get_selection()
+        selection = self.notebook.get_nth_page(page).get_child().get_selection()
 
-        (tree_model, tree_iter) = widget.get_selected()
+        (tree_model, tree_iter) = selection.get_selected()
         if not tree_iter:
             self.allow_buttons_push(False, lists_too=False)
             return
