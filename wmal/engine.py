@@ -138,17 +138,14 @@ class Engine:
         
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            if utils.dir_exists(self.config['searchdir']):
-                tracker_args = (
-                                int(self.config['tracker_interval']),
-                                int(self.config['tracker_update_wait']),
-                               )
-                tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
-                tracker_t.daemon = True
-                self.msg.debug(self.name, 'Enabling tracker...')
-                tracker_t.start()
-            else:
-                self.msg.warn(self.name, 'Search directory %s doesn\'t exist. Tracker disabled.' % self.config['searchdir'])
+            tracker_args = (
+                            int(self.config['tracker_interval']),
+                            int(self.config['tracker_update_wait']),
+                           )
+            tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
+            tracker_t.daemon = True
+            self.msg.debug(self.name, 'Enabling tracker...')
+            tracker_t.start()
         
         self.loaded = True
         return True
@@ -656,7 +653,7 @@ class Engine:
         Returns the files a process is playing
         
         """
-        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn', searchdir], stdout=subprocess.PIPE)
+        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
         output = lsof.communicate()[0]
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
         
