@@ -72,6 +72,9 @@ def make_dir(directory):
     if not os.path.isdir(path):
         os.mkdir(path)
     
+def dir_exists(dirname):
+    return os.path.isdir(dirname)
+
 def file_exists(filename):
     return os.path.isfile(filename)
 
