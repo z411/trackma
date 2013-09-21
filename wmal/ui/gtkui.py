@@ -376,6 +376,8 @@ class wmal_gtk(object):
             
             self.notebook.append_page(sw, gtk.Label(name))
             self.notebook.show_all()
+
+        self.notebook.connect("switch-page", self.select_show)
     
     def on_destroy(self, widget):
         gtk.main_quit()
@@ -605,7 +607,14 @@ class wmal_gtk(object):
         # Refresh the GUI
         self.task_start_engine()
         
-    def select_show(self, widget):
+    def select_show(self, widget, page=None, page_num=None):
+        page = page_num
+
+        if page is None:
+            page = self.notebook.get_current_page()
+
+        widget = self.notebook.get_nth_page(page).get_child().get_selection()
+
         (tree_model, tree_iter) = widget.get_selected()
         if not tree_iter:
             self.allow_buttons_push(False, lists_too=False)
@@ -737,7 +746,6 @@ class ImageTask(threading.Thread):
         threading.Thread.__init__(self)
     
     def run(self):
-        print "start"
         self.cancelled = False
         
         time.sleep(1)
@@ -764,7 +772,6 @@ class ImageTask(threading.Thread):
         gtk.threads_enter()
         self.show_image.image_show(self.local)
         gtk.threads_leave()
-        print "done"
         
     def cancel(self):
         self.cancelled = True
