@@ -35,8 +35,12 @@ try:
     import Image
     imaging_available = True
 except ImportError:
-    print "Warning: PIL library isn't available. Preview images will be disabled."
-    imaging_available = False
+    try:
+        from PIL import Image
+        imaging_available = True
+    except ImportError:
+        print "Warning: PIL library isn't available. Preview images will be disabled."
+        imaging_available = False
 
 import wmal.messenger as messenger
 import wmal.utils as utils
