@@ -140,7 +140,7 @@ class wmal_gtk(object):
         
         mb_account = gtk.Menu()
         mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
-        mb_retrieve.connect("activate", self.do_retrieve)
+        mb_retrieve.connect("activate", self.do_retrieve_ask)
         mb_switch_account = gtk.MenuItem('Switch Account...')
         mb_switch_account.connect("activate", self.do_switch_account)
         mb_settings = gtk.MenuItem('Global Settings...')
@@ -499,7 +499,7 @@ class wmal_gtk(object):
                     gtk.DIALOG_MODAL,
                     gtk.MESSAGE_QUESTION,
                     gtk.BUTTONS_YES_NO,
-                    "Should I update %s to episode %d?" % (show['title'], played_ep))
+                    "Update %s to episode %d?" % (show['title'], played_ep))
         dialog.show_all()
         dialog.connect("response", self.task_update_next_response, show, played_ep)
     
@@ -545,8 +545,28 @@ class wmal_gtk(object):
         self.main.destroy()
         gtk.threads_leave()
         
-    def do_retrieve(self, widget):
-        threading.Thread(target=self.task_sync, args=(False,)).start()
+    def do_retrieve_ask(self, widget):
+        queue = self.engine.get_queue()
+
+        if len(queue) > 0:
+            dialog = gtk.MessageDialog(self.main,
+                gtk.DIALOG_MODAL,
+                gtk.MESSAGE_QUESTION,
+                gtk.BUTTONS_YES_NO,
+                "There are %d queued changes in your list. If you retrieve the remote list now you will lose your queued changes. Are you sure you want to continue?" % len(queue))
+            dialog.show_all()
+            dialog.connect("response", self.do_retrieve)
+        else:
+            # If the user doesn't have any queued changes
+            # just go ahead
+            self.do_retrieve()
+
+    def do_retrieve(self, widget=None, response=gtk.RESPONSE_YES):
+        if widget:
+            widget.destroy()
+
+        if response == gtk.RESPONSE_YES:
+            threading.Thread(target=self.task_sync, args=(False,)).start()
     
     def do_send(self, widget):
         threading.Thread(target=self.task_sync, args=(True,)).start()
