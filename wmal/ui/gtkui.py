@@ -1560,6 +1560,7 @@ class ShowSearch(gtk.Window):
         searchbar = gtk.HBox(False, 5)
         searchbar.pack_start(gtk.Label('Search'), False, False, 0)
         self.searchtext = gtk.Entry(100)
+        self.searchtext.connect("activate", self.do_search)
         searchbar.pack_start(self.searchtext, True, True, 0)
         self.search_button = gtk.Button('Search')
         self.search_button.connect("clicked", self.do_search)
@@ -1582,7 +1583,8 @@ class ShowSearch(gtk.Window):
         alignment.add(bottombar)
         
         self.showlist = ShowSearchView()
-        self.showlist.get_selection().connect("changed", self.select_show);
+        self.showlist.connect("row-activated", self.do_add)
+        self.showlist.get_selection().connect("changed", self.select_show)
         
         sw.add(self.showlist)
         
@@ -1591,7 +1593,7 @@ class ShowSearch(gtk.Window):
         vbox.pack_start(alignment, False, False, 0)
         self.add(vbox)
     
-    def do_add(self, widget):
+    def do_add(self, widget, path=None, view_column=None):
         # Get show dictionary
         show = None
         for item in self.entries:
@@ -1602,7 +1604,7 @@ class ShowSearch(gtk.Window):
         if show is not None:
             try:
                 self.engine.add_show(show)
-                self.do_close()
+                #self.do_close()
             except utils.wmalError, e:
                 self.error_push(e.message)
         
