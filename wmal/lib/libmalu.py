@@ -113,7 +113,7 @@ class libmalu(lib):
         self.msg.info(self.name, "Adding show %s..." % item['title'])
 
         data = self._build_data(item, True)
-         try:
+        try:
             # POST request
             self.opener.open("http://mal-api.com/%slist/%s" % (self.mediatype, self.mediatype), data)
             return True
