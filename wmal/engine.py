@@ -636,41 +636,59 @@ class Engine:
             #print "Looking for ep ",show_ep," of show ",show_title
             highest_ratio = (None, 0)
             for show in self.get_list():
-                aliases=show['aliases']
-                ratio = difflib.SequenceMatcher(None, show['title'], show_title)
-                ratio = ratio.ratio()
+                ratio = self.compare_to_titles(show, show_title)
                 if ratio > highest_ratio[1]:
                     highest_ratio = (show, ratio)
-                
-                #Looking also for other aliases, in aliases, extra->English and extra->Synonyms
-                #For now, skips when the full info for the show is not there
-                
-                if self.data_handler.infocache.get(show['id']):
-                    #Getting the first 2 list items of extra
-                    #should be english and synonyms
-                    english=self.data_handler.infocache[show['id']]['extra'][0]
-                    synonyms=self.data_handler.infocache[show['id']]['extra'][1]
-                    if english[0]=='English' and str(english[1])!='None':
-                        aliases.extend(english[1].lstrip('; ').split('; '))
-                    if synonyms[0]=='Synonyms' and str(synonyms[1])!='None':
-                        aliases.extend(synonyms[1].lstrip('; ').split('; '))
-
-                #Looking at the show aliases
-                if aliases:
-                	for show_alias in aliases:
-                		ratio = difflib.SequenceMatcher(None, show_alias, show_title)
-                		ratio = ratio.ratio()
-                		if ratio > highest_ratio[1]:
-                			highest_ratio = (show, ratio)
-            
+                            
             playing_show = highest_ratio[0]
             if highest_ratio[1] > 0.7:
                 return (playing_show, show_ep)
             else:
                 self.msg.warn(self.name, 'Found player but show not in list.')
+                
+                #Check if we already looked for this.
+                if self.data_handler.is_in_failed_searches(show_title):
+                    return None
+                    
+                results = self.search(show_title)
+                highest_ratio = (None, 0)
+                for show in results:
+                    aliases = self.data_handler.get_all_possible_titles(show['id'])
+                    ratio = self.compare_to_titles(show, show_title)
+                    if ratio > highest_ratio[1]:
+                        highest_ratio = (show, ratio)
+                
+                if highest_ratio[1] > 0.8:
+                    show = highest_ratio[0]
+                    self.msg.info(self.name, "Show %s is not in list yet, adding it!" % (show['title']) )
+                    self.add_show(show)
+                    return (show, show_ep)
+                else:
+                    self.msg.warn(self.name, "Show %s can't be found in online database" % (show_title) )
+                    self.data_handler.failed_searches_add(show_title)
         
         return None
-    
+        
+    def compare_to_titles(self, show, title_to_compare):
+        highest_ratio = 0
+        ratio = difflib.SequenceMatcher(None, show['title'], title_to_compare).ratio()
+        if ratio > highest_ratio:
+            highest_ratio = ratio
+                
+        #Looking also for other aliases, in aliases, extra->English and extra->Synonyms
+        #For now, skips when the full info for the show is not there
+                
+        aliases = self.data_handler.get_all_possible_titles(show['id'])
+        #Looking at the show aliases
+        if aliases:
+        	for show_alias in aliases:
+          		ratio = difflib.SequenceMatcher(None, show_alias, title_to_compare).ratio()
+           		if ratio > highest_ratio:
+           			highest_ratio = ratio
+
+        return highest_ratio
+           
+
     def _playing_file(self, players, searchdir):
         """
         Returns the files a process is playing
