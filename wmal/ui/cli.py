@@ -473,16 +473,21 @@ class wmal_accounts(AccountManager):
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([A]dd, [C]ancel, [D]elete): ")
+            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete): ")
 
             if key.lower() == 'a':
+                available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+                
                 print "--- Add account ---"
                 username = raw_input('Enter username: ')
                 password = raw_input('Enter password: ')
-                api = raw_input('Enter API: ')
-
-                self.add_account(username, password, api)
-                print 'Done.'
+                api = raw_input('Enter API (%s): ' % available_libs)
+                
+                try:
+                    self.add_account(username, password, api)
+                    print 'Done.'
+                except utils.AccountError, e:
+                    print 'Error: %s' % e.message
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')

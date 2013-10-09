@@ -19,6 +19,11 @@ class AccountManager(object):
             cPickle.dump(self.accounts, f)
 
     def add_account(self, username, password, api):
+        available_libs = utils.available_libs.keys()
+        
+        if api not in available_libs:
+            raise utils.AccountError('That API doesn\'t exist.')
+
         account = {'username': username,
                    'password': password,
                    'api': api,

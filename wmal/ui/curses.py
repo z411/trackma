@@ -698,7 +698,7 @@ class AccountDialog(Dialog):
                 self.do_add_username()
             elif key == 'r':
                 self.do_select(True)
-            elif key == 'd':
+            elif key == 'D':
                 self.do_delete_ask()
             elif key == 'esc':
                 self.close()
@@ -722,7 +722,9 @@ class AccountDialog(Dialog):
 
     def do_add_api(self, data):
         self.adding_data['password'] = data
-        ask = Asker("API: ")
+
+        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+        ask = Asker("API (%s): " % available_libs)
         self.frame.footer = ask
         urwid.connect_signal(ask, 'done', self.do_add)
     
@@ -746,7 +748,14 @@ class AccountDialog(Dialog):
         password = self.adding_data['password']
         api = data
 
-        self.manager.add_account(username, password, api)
+        try:
+            self.manager.add_account(username, password, api)
+        except utils.AccountError, e:
+            self.adding = False
+            self.frame.footer = urwid.Text("Error: %s" % e.message)
+            self.frame.set_focus('body')
+            return
+
         self.build_list()
         self.foot_clear()
 
