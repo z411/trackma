@@ -633,12 +633,35 @@ class Engine:
             
             # Use difflib to see if the show title is similar to
             # one we have in the list
+            #print "Looking for ep ",show_ep," of show ",show_title
             highest_ratio = (None, 0)
             for show in self.get_list():
+                aliases=show['aliases']
                 ratio = difflib.SequenceMatcher(None, show['title'], show_title)
                 ratio = ratio.ratio()
                 if ratio > highest_ratio[1]:
                     highest_ratio = (show, ratio)
+                
+                #Looking also for other aliases, in aliases, extra->English and extra->Synonyms
+                #For now, skips when the full info for the show is not there
+                
+                if self.data_handler.infocache.get(show['id']):
+                    #Getting the first 2 list items of extra
+                    #should be english and synonyms
+                    english=self.data_handler.infocache[show['id']]['extra'][0]
+                    synonyms=self.data_handler.infocache[show['id']]['extra'][1]
+                    if english[0]=='English' and str(english[1])!='None':
+                        aliases.extend(english[1].lstrip('; ').split('; '))
+                    if synonyms[0]=='Synonyms' and str(synonyms[1])!='None':
+                        aliases.extend(synonyms[1].lstrip('; ').split('; '))
+
+                #Looking at the show aliases
+                if aliases:
+                	for show_alias in aliases:
+                		ratio = difflib.SequenceMatcher(None, show_alias, show_title)
+                		ratio = ratio.ratio()
+                		if ratio > highest_ratio[1]:
+                			highest_ratio = (show, ratio)
             
             playing_show = highest_ratio[0]
             if highest_ratio[1] > 0.7:
