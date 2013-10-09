@@ -2,13 +2,11 @@ import utils
 import cPickle
 
 class AccountManager(object):
-    accountfile = utils.get_root_filename('accounts')
-    accounts = {'default': None, 'accounts': []}
-    filename = 'accounts'
+    accounts = {'default': None, 'next': 0, 'accounts': dict()}
 
     def __init__(self):
         utils.make_dir('')
-        self.filename = utils.get_root_filename('accounts')
+        self.filename = utils.get_root_filename('accounts.dict')
         self._load()
 
     def _load(self):
@@ -19,25 +17,27 @@ class AccountManager(object):
     def _save(self):
         with open(self.filename, 'wb') as f:
             cPickle.dump(self.accounts, f)
-            f.write('ok')
 
     def add_account(self, username, password, api):
         account = {'username': username,
                    'password': password,
                    'api': api,
                   }
-        self.accounts['accounts'].append(account)
+
+        nextnum = self.accounts['next']
+        self.accounts['accounts'][nextnum] = account
+        self.accounts['next'] += 1
         self._save()
     
     def delete_account(self, num):
-        self.accounts['accounts'].pop(num)
+        del self.accounts['accounts'][num]
         self._save()
     
     def get_account(self, num):
         return self.accounts['accounts'][num]
     
     def get_accounts(self):
-        return self.accounts['accounts']
+        return self.accounts['accounts'].values()
 
     def get_default(self):
         num = self.accounts['default']
