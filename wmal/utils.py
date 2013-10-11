@@ -136,6 +136,9 @@ class DataError(wmalError):
 class APIError(wmalError):
     pass
 
+class AccountError(wmalError):
+    pass
+
 class wmalFatal(Exception):
     pass
 
@@ -147,7 +150,7 @@ class DataFatal(wmalFatal):
 
 class APIFatal(wmalFatal):
     pass
-    
+   
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',
