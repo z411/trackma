@@ -23,6 +23,7 @@ import wmal.utils as utils
 import urllib, urllib2
 import gzip
 import json
+import hashlib
 from cStringIO import StringIO
 
 class libtrakttv(lib):
@@ -34,14 +35,14 @@ class libtrakttv(lib):
     API documentation: http://trakt.tv/api-docs
     """
     name = 'libtrakttv'
-    
+        
     username = '' # TODO Must be filled by check_credentials
     logged_in = False
     password_mgr = None
     handler = None
     opener = None
     
-    api_info =  { 'name': 'trakt.tv', 'version': 'v0.1', 'merge': False }
+    api_info =  { 'name': 'trakt.tv', 'version': 'v0.1', 'merge': False } # merge needs request_info
     
     default_mediatype = 'show'
     mediatypes = dict()
@@ -53,11 +54,13 @@ class libtrakttv(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        #'status_start': 1,
-        #'status_finish': 2,
+        'status_start': 1,
+        'status_finish': 2,
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
-        'id_type': 'tvdb_id'
+        'id_type': 'tvdb_id',
+        'can_separate_episodes': True,
+        'has_seasons': True
     }
     mediatypes['movie'] = {
         'has_progress': False,
@@ -80,11 +83,11 @@ class libtrakttv(lib):
         super(libtrakttv, self).__init__(messenger, account, userconfig)
         
         self.username = account['username']
-        self.password = account['password']
+        self.password =  hashlib.sha1(account['password']).hexdigest()
         self.apikey = account['apikey']
         
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        self.password_mgr.add_password("trakt.tv API", "trakt.tv:80", account['username'], account['password']);
+        self.password_mgr.add_password("trakt.tv API", "trakt.tv:80", self.username, self.password);
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)
@@ -147,7 +150,7 @@ class libtrakttv(lib):
             # Get minimum info to go quicker
             # all other info need to first be read from cache later,
             # and requested only if not already there
-            data = self.opener.open("http://api.trakt.tv/user/library/"+self.mediatype+"s/watched.json/"+self.apikey+"/"+self.username+"/min")
+            data = self.opener.open("http://api.trakt.tv/user/library/"+self.mediatype+"s/watched.json/"+self.apikey+"/"+self.username+"/min", self._make_json())
 
             # Parse the JSON data and load it into a dictionary
             # using the proper function (show or movie)
@@ -171,18 +174,18 @@ class libtrakttv(lib):
         for showinfo in j:
             show = utils.show()
             show.update({
-                'id':           str(showinfo['tvdb_id']),
+                'id':           int(showinfo['tvdb_id']),
                 'title':        str(showinfo['title']),
                 'aliases':      [],
                 'my_progress':  self.get_last_seen(showinfo), #(int season, int episode)
-                'my_status':    -1,
+                'my_status':    1,
                 'my_score':     -1,
                 'total':        1000000,
                 'status':       -1,
                 'image':        "",
                 'url':          "",
             })
-            showlist[str(showinfo['tvdb_id'])] = show
+            showlist[int(showinfo['tvdb_id'])] = show
         return showlist
 
     def _parse_movie(self, root):
@@ -223,8 +226,11 @@ class libtrakttv(lib):
     def update_show(self, item):
         """Sends a show update to the server"""
         
-        if 'my_progress' in item.keys():
-            self.add_seen_episodes(item, item['my_progress'])
+        if ('my_progress' in item.keys()):
+            if item['my_progress'][0][1] >= 0:  # Add episodes. Considering that if negative, has to delete some
+                self.add_seen_episodes(item, item['my_progress'])
+            else:
+                self.delete_seen_episodes(item, item['my_progress'])
         if 'my_status' in item.keys():
             #This is only for local database, nothing to push to server
             pass
@@ -244,20 +250,21 @@ class libtrakttv(lib):
     #Add/Delete episodes or movies, based on prefix
     def change_seen_status(self, item, episodes_seen, prefix=''):
         self.check_credentials()
-        
+                
         #Making the JSON
         data = self._make_json({})
         if self.mediatype == 'show':
             url="http://api.trakt.tv/show/episode/"+prefix+"seen/"+self.apikey
             episode_list=[]
             for ep in episodes_seen:
-                episode_list.append({"season": ep[0], "episode": ep[1]})
+                episode_list.append({"season": ep[0], "episode": abs(ep[1])})
             data = self._make_json({"tvdb_id": item['id'],"episodes": episode_list})
         elif self.mediatype == 'movie':
             url="http://api.trakt.tv/movie/"+prefix+"seen/"+self.apikey
             data = self._make_json({"movies": [ {"imdb_id": item['id']} ] })
 
         try:
+            print data
             self.opener.open(url, data)
             return True
         except urllib2.HTTPError, e:
@@ -302,7 +309,7 @@ class libtrakttv(lib):
         return list()
     
     def request_info(self, ids):
-        dict()
+        return dict()
 
 
 
