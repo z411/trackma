@@ -217,9 +217,17 @@ class wmal_gtk(object):
         line2_t.set_size_request(70, -1)
         line2_t.set_alignment(0, 0.5)
         line2.pack_start(line2_t, False, False, 0)
+        
+        self.show_season_txt = gtk.Label(' S')
+        self.show_season_num = gtk.SpinButton()
+        self.show_season_num.set_sensitive(False)
+        self.show_ep_txt = gtk.Label(' E')
         self.show_ep_num = gtk.SpinButton()
         self.show_ep_num.set_sensitive(False)
         #self.show_ep_num.connect("value_changed", self.do_update)
+        line2.pack_start(self.show_season_txt, False, False, 0)
+        line2.pack_start(self.show_season_num, False, False, 0)
+        line2.pack_start(self.show_ep_txt, False, False, 0)
         line2.pack_start(self.show_ep_num, False, False, 0)
         
         # Buttons
@@ -372,7 +380,7 @@ class wmal_gtk(object):
             sw.set_size_request(550, 300)
             sw.set_border_width(5)
         
-            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
+            self.show_lists[status] = ShowView(self.engine, status, self.engine.mediainfo['has_progress'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].pagenumber = self.notebook.get_n_pages()
@@ -452,7 +460,7 @@ class wmal_gtk(object):
         win = InfoDialog(self.engine, show)
 
     def do_update(self, widget):
-        ep = self.show_ep_num.get_value_as_int()
+        ep = self.get_episode_value()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
         except utils.wmalError, e:
@@ -499,7 +507,7 @@ class wmal_gtk(object):
                     gtk.DIALOG_MODAL,
                     gtk.MESSAGE_QUESTION,
                     gtk.BUTTONS_YES_NO,
-                    "Update %s to episode %d?" % (show['title'], played_ep))
+                    "Update %s to episode %s?" % (show['title'], self.engine.ep2str(played_ep)))
         dialog.show_all()
         dialog.connect("response", self.task_update_next_response, show, played_ep)
     
@@ -523,11 +531,11 @@ class wmal_gtk(object):
             if playnext:
                 played_ep = self.engine.play_episode(show)
             else:
-                ep = self.show_ep_num.get_value_as_int()
+                ep = self.get_episode_value()
                 played_ep = self.engine.play_episode(show, ep)
             
             # Ask if we should update to the next episode
-            if played_ep == (show['my_progress'] + 1):
+            if played_ep == self.engine.get_next_ep(show):
                 self.do_update_next(show, played_ep)
         except utils.wmalError, e:
             self.error(e.message)
@@ -644,7 +652,7 @@ class wmal_gtk(object):
             self.allow_buttons_push(False, lists_too=False)
             return
         
-        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.selected_show = tree_model.get(tree_iter, 0)[0]
         self.allow_buttons_push(True, lists_too=False)
         
         show = self.engine.get_show_info(self.selected_show)
@@ -664,8 +672,9 @@ class wmal_gtk(object):
         else:
             adjustment = gtk.Adjustment(upper=1000, step_incr=1)
         
+        self.show_season_num.set_adjustment(gtk.Adjustment(upper=100, step_incr=1))
         self.show_ep_num.set_adjustment(adjustment)
-        self.show_ep_num.set_value(show['my_progress'])
+        self.set_episode_value(show['my_progress'])
         
         # Status selector
         for i in self.statusmodel:
@@ -700,6 +709,18 @@ class wmal_gtk(object):
             for show in self.engine.filter_list(widget.status_filter):
                 widget.append(show)
             widget.append_finish()
+            
+    def get_episode_value(self):
+        if self.engine.mediainfo.get('has_seasons'):
+            return (self.show_season_num.get_value_as_int(), self.show_ep_num.get_value_as_int())
+        else:
+            return self.show_ep_num.get_value_as_int()
+    
+    def set_episode_value(self, ep):
+        if self.engine.mediainfo.get('has_seasons'):
+            self.show_season_num.set_value(ep[0]), self.show_ep_num.set_value(ep[1])
+        else:
+            return self.show_ep_num.set_value(ep)
         
     def on_about(self, widget):
         about = gtk.AboutDialog()
@@ -744,6 +765,16 @@ class wmal_gtk(object):
         if lists_too:
             for widget in self.show_lists.itervalues():
                 widget.set_sensitive(boolean)
+
+            
+        if self.engine.mediainfo.get('has_seasons'):
+            self.show_season_txt.show()
+            self.show_season_num.show()
+            self.show_ep_txt.show()
+        else:
+            self.show_season_txt.hide()
+            self.show_season_num.hide()
+            self.show_ep_txt.hide()
                 
         if self.selected_show or not boolean:
             if self.engine.mediainfo['can_play']:
@@ -753,11 +784,12 @@ class wmal_gtk(object):
             if self.engine.mediainfo['can_update']:
                 self.update_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
-            
+                self.show_season_num.set_sensitive(boolean)
+                
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
-        
+
 
 class ImageTask(threading.Thread):
     cancelled = False
@@ -833,8 +865,10 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, has_progress=True):
+    def __init__(self, engine, status, has_progress=True):
         gtk.TreeView.__init__(self)
+        
+        self.engine = engine
         
         self.has_progress = has_progress
         self.status_filter = status
@@ -911,11 +945,8 @@ class ShowView(gtk.TreeView):
         
     def append(self, show):
         if self.has_progress:
-            if show['total'] and show['my_progress'] <= show['total']:
-                progress = (float(show['my_progress']) / show['total']) * 100
-            else:
-                progress = 0
-            episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+            progress = self.engine.get_progress_percent(show)
+            episodes_str = "%s / %d" % (self.engine.ep2str(show['my_progress']), show['total'])
         else:
             episodes_str = ''
             progress = 0
@@ -938,11 +969,8 @@ class ShowView(gtk.TreeView):
         for row in self.store:
             if int(row[0]) == show['id']:
                 if self.has_progress:
-                    if show['total']:
-                        progress = (float(show['my_progress']) / show['total']) * 100
-                    else:
-                        progress = 0
-                    episodes_str = "%d / %d" % (show['my_progress'], show['total'])                    
+                    progress = self.engine.get_progress_percent(show)
+                    episodes_str = "%s / %d" % (self.engine.ep2str(show['my_progress']), show['total'])                    
                     row[2] = episodes_str
                     row[4] = progress
                 
@@ -1101,9 +1129,20 @@ class AccountSelect(gtk.Window):
             return
             
         api = self.add_win.model_api.get(apiiter, 0)[0]
+        
+        # Getting extra info needed if any
+        api_extra = {}
+        if len(utils.available_libs[api]) > 2:
+            extras = utils.available_libs[api][2]
+            for extra in extras:
+                if not self.add_win.txt[extra].get_text():
+                    self.error('Please select the '+extra)
+                    return
+                api_extra.update({extra: self.add_win.txt[extra].get_text()})
+        
         self.add_win.destroy()
         
-        self.manager.add_account(username, password, api)
+        self.manager.add_account(username, password, api, api_extra)
         self._refresh_list()
     
     def do_delete(self, widget):
@@ -1519,6 +1558,9 @@ class AccountSelectAdd(gtk.Window):
         self.txt_passwd = gtk.Entry(128)
         self.txt_passwd.set_visibility(False)
         
+        #Void vbox for account extras
+        self.line_extra = gtk.VBox(False, 10)
+        
         # Combobox
         self.model_api = gtk.ListStore(str, str, gtk.gdk.Pixbuf)
         
@@ -1532,6 +1574,8 @@ class AccountSelectAdd(gtk.Window):
         self.cmb_api.pack_start(cell_name, True)
         self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
         self.cmb_api.add_attribute(cell_name, 'text', 1)
+        self.cmb_api.connect('changed', self.update_account_extra)
+        
         
         # Buttons
         alignment = gtk.Alignment(xalign=0.5)
@@ -1555,16 +1599,35 @@ class AccountSelectAdd(gtk.Window):
         line3 = gtk.HBox(False, 5)
         line3.pack_start(lbl_api, False, False, 0)
         line3.pack_start(self.cmb_api, True, True, 0)
-        
+                
         # Join HBoxes
-        vbox = gtk.VBox(False, 10)
-        vbox.pack_start(line1, False, False, 0)
-        vbox.pack_start(line2, False, False, 0)
-        vbox.pack_start(line3, False, False, 0)
-        vbox.pack_start(alignment, False, False, 0)
+        self.vbox = gtk.VBox(False, 10)
+        self.vbox.pack_start(line1, False, False, 0)
+        self.vbox.pack_start(line2, False, False, 0)
+        self.vbox.pack_start(line3, False, False, 0)
+        self.vbox.pack_start(self.line_extra, False, False, 0)
+        self.vbox.pack_start(alignment, False, False, 0)
         
-        self.add(vbox)
+        self.add(self.vbox)
     
+    def update_account_extra(self, widget):
+        self.line_extra.foreach(self.line_extra.remove)
+        api = self.cmb_api.get_active_text()
+        if len(utils.available_libs[api]) > 2:
+            lbl = dict()
+            self.txt = dict()
+            line = dict()
+            extras = utils.available_libs[api][2]
+            for extra in extras:
+                lbl[extra] = gtk.Label(extra)
+                lbl[extra].set_size_request(70, -1)
+                self.txt[extra] = gtk.Entry(128)
+                line[extra] = gtk.HBox(False, 5)
+                line[extra].pack_start(lbl[extra], False, False, 0)
+                line[extra].pack_start(self.txt[extra], True, True, 0)
+                self.line_extra.pack_start(line[extra], False, False, 0)
+            self.line_extra.show_all()
+                
     def do_close(self, widget):
         self.destroy()
     

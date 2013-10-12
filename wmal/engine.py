@@ -209,7 +209,8 @@ class Engine:
         """Requests the full show list from the data handler."""
         return self.data_handler.get().itervalues()
     
-    def get_show_info(self, pattern):
+    
+    def get_show_info(self, show_pattern): 
         """
         Returns the complete info for a show
         
@@ -221,19 +222,16 @@ class Engine:
         """
         showdict = self.data_handler.get()
         
-        try:
-            # ID lookup
-            showid = int(pattern)
-            
+        try: 
             try:
-                return showdict[showid]
-            except KeyError:
-                raise utils.EngineError("Show not found.")
-            
-        except ValueError:
-            # Do title lookup, slower
+                id_int = int(show_pattern)
+                return showdict[id_int]
+            except ValueError:
+                return showdict[show_pattern]
+        except KeyError:
+            self.msg.warn(self.name, "Show not found by id: "+show_pattern)
             for k, show in showdict.iteritems():
-                if show['title'] == pattern:
+                if show['title'] == show_pattern:
                     return show
             raise utils.EngineError("Show not found.")
     
@@ -314,29 +312,27 @@ class Engine:
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the episode number
-        try:
-            newep = int(newep)
-        except ValueError:
-            raise utils.EngineError('Episode must be numeric.')
+        self.is_ep_integer(newep)
         
         # Get the show info
         show = self.get_show_info(show_pattern)
         # More checks
-        if show['total'] and newep > show['total']:
+        #if show['total'] and newep > show['total']:
+        if self.data_handler.is_ep_out_of_bound(show, newep):
             raise utils.EngineError('Episode out of limits.')
         if show['my_progress'] == newep:
-            raise utils.EngineError("Show already at episode %d" % newep)
+            raise utils.EngineError("Show already at episode %s" % self.ep2str(newep))
         
         # Change episode
-        self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
+        self.msg.info(self.name, "Updating show %s to episode %s..." % (show['title'], self.ep2str(newep)))
         self.data_handler.queue_update(show, 'my_progress', newep)
 
         # Change status if required
         if self.config['auto_status_change']:
-            if newep == 1 and self.mediainfo.get('status_start'):
+            if self.is_first_ep(newep) and self.mediainfo.get('status_start'):
                 self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_start'])
                 self._emit_signal('status_changed', show)
-            elif newep == show['total'] and self.mediainfo.get('status_finish'):
+            elif self.is_last_ep(show, newep) and self.mediainfo.get('status_finish'):
                 self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_finish'])
                 self._emit_signal('status_changed', show)
 
@@ -443,7 +439,7 @@ class Engine:
         searchfile = searchfile.replace('!', '[!]?')
         searchfile = searchfile.replace('?', '[?]?')
         searchfile = searchfile.replace(' ', '.?')    
-        searchep = str(episode).zfill(2)
+        searchep = self.ep2str(episode)
         
         # Do the file search
         regex = r"(%s).*\b%s\b.*(mkv|mp4|avi)" % (searchfile, searchep)
@@ -459,13 +455,13 @@ class Engine:
             titles = [show['title']]
             titles.extend(show['aliases'])
             
-            filename = self._search_video(titles, show['my_progress']+1)
+            filename = self._search_video(titles, self.get_next_ep(show))
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
         return results
         
-    def play_episode(self, show, playep=0):
+    def play_episode(self, show, playep=None):
         """
         Searches the hard disk for an episode and plays the episode
         
@@ -481,18 +477,17 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by API.')
 
-        try:
-            playep = int(playep)
-        except ValueError:
-            raise utils.EngineError('Episode must be numeric.')
+        if not playep:
+            playep = self.null_ep()
+        self.is_ep_integer(playep)
             
         if show:
             playing_next = False
             if not playep:
-                playep = show['my_progress'] + 1
+                playep = self.get_next_ep(show)
                 playing_next = True
             
-            if show['total'] and playep > show['total']:
+            if self.is_ep_out_of_bound(show, playep):
                 raise utils.EngineError('Episode beyond limits.')
             
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
@@ -544,6 +539,7 @@ class Engine:
         
         """
         self.last_show = None
+        last_episode = -1
         last_time = 0
         last_updated = False
         wait_s = wait * 60
@@ -577,7 +573,7 @@ class Engine:
                 
                 if not last_updated:
                     # Check if we need to update the show yet
-                    if episode == (show['my_progress'] + 1):
+                    if episode == self.get_next_ep(show):
                         timedif = time.time() - last_time
                         
                         if timedif > wait_s:
@@ -586,7 +582,7 @@ class Engine:
                             
                             last_updated = True
                         else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (self.last_show['title'], episode, wait_s-timedif))
+                            self.msg.info(self.name, 'Will update %s %s in %d seconds' % (self.last_show['title'], self.ep2str(episode), wait_s-timedif))
                     else:
                         # We shouldn't update to this episode!
                         self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % self.last_show['title'])
@@ -620,20 +616,27 @@ class Engine:
         if filename:
             # Do a regex to the filename to get
             # the show title and episode number
-            reg = re.compile(r"(\[.+\])?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
-            show_raw = filename.replace("_"," ").replace("v2","").strip()
-            show_match = reg.match(show_raw)
+            regs = list()
+            regs.append(re.compile(r"([ \w\d\-,@.:;!\?]+)(S[\d]+E[\d]+) ", re.IGNORECASE))
+            regs.append(re.compile(r"\[.+\]?([ \w\d\-,@.:;!\?]+) - ([ \d]+) "))
+            show_raw = filename.replace("_"," ").replace("v2","").replace("."," ").strip()
+            for reg in regs:
+                print 
+                show_match = reg.match(show_raw)
+                if show_match:
+                    break
             if not show_match:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
                 utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], show_raw))
                 return None
             
-            show_title = show_match.group(2).strip()
-            show_ep = int(show_match.group(3).strip())
+            show_title = show_match.group(1).strip()
+            show_ep = show_match.group(2).strip()
+            #print "Looking for ep ",show_ep," of show ",show_title
+            show_ep = self.str2ep(show_ep)
             
             # Use difflib to see if the show title is similar to
             # one we have in the list
-            #print "Looking for ep ",show_ep," of show ",show_title
             highest_ratio = (None, 0)
             for show in self.get_list():
                 ratio = self.compare_to_titles(show, show_title)
@@ -718,4 +721,51 @@ class Engine:
     def get_queue(self):
         """Asks the data handler for the current queue."""
         return self.data_handler.queue
+        
+    def ep2str(self, ep):
+        if self.data_handler.has_seasons():
+            return "S%02dE%02d" % (ep[0], ep[1])
+        return "%02d" % (ep)
+        
+    def str2ep(self, s):
+        r = re.compile(r"S([\d]+)E([\d]+)", re.IGNORECASE)
+        e = r.match(s)
+        if e: return (int(e.group(1).strip()) , int(e.group(2).strip()))
+        else: return int(s)
+    
+    def is_ep_out_of_bound(self, show, ep):
+        return self.data_handler.is_ep_out_of_bound(show, ep)
+    
+    def is_first_ep(self, ep):
+        return self.data_handler.is_first_ep(ep)
+        
+    def is_last_ep(self, show, ep):
+        return self.data_handler.is_last_ep(show, ep)
+    
+    def get_next_ep(self, show):
+        return self.data_handler.get_next_ep(show)
+        
+    def get_progress_percent(self, show):
+        if self.mediainfo.get('has_seasons'):
+            return 5
+        else:
+            if show['total'] and show['my_progress'] <= show['total']:
+                return (float(show['my_progress']) / show['total']) * 100
+            else:
+                return 0
+    
+    def null_ep(self):
+        if self.data_handler.has_seasons(): return (0, 0)
+        else: return 0
+        
+    def is_ep_integer(self, ep):
+        try:
+            if self.data_handler.has_seasons():
+                ep = (int(ep[0]), int(ep[0])) #(season, episode)
+            else:
+                ep = int(ep)
+        except ValueError:
+            raise utils.EngineError('Episode must be numeric.')
+    
+    
     
