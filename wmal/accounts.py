@@ -18,7 +18,7 @@ class AccountManager(object):
         with open(self.filename, 'wb') as f:
             cPickle.dump(self.accounts, f)
 
-    def add_account(self, username, password, api):
+    def add_account(self, username, password, api, extra={}):
         available_libs = utils.available_libs.keys()
         
         if api not in available_libs:
@@ -28,6 +28,9 @@ class AccountManager(object):
                    'password': password,
                    'api': api,
                   }
+                  
+        if extra != {}:
+	        account.update(extra)
 
         nextnum = self.accounts['next']
         self.accounts['accounts'][nextnum] = account
