@@ -23,8 +23,10 @@ import wmal.utils as utils
 import urllib, urllib2
 import gzip
 import json
+import xml.etree.ElementTree as ET
 import hashlib
 from cStringIO import StringIO
+import operator as op
 
 class libtrakttv(lib):
     """
@@ -42,7 +44,7 @@ class libtrakttv(lib):
     handler = None
     opener = None
     
-    api_info =  { 'name': 'trakt.tv', 'version': 'v0.1', 'merge': False } # merge needs request_info
+    api_info =  { 'name': 'trakt.tv', 'version': 'v0.1', 'merge': True } # merge needs request_info
     
     default_mediatype = 'show'
     mediatypes = dict()
@@ -227,10 +229,14 @@ class libtrakttv(lib):
         """Sends a show update to the server"""
         
         if ('my_progress' in item.keys()):
-            if item['my_progress'][0][1] >= 0:  # Add episodes. Considering that if negative, has to delete some
-                self.add_seen_episodes(item, item['my_progress'])
-            else:
-                self.delete_seen_episodes(item, item['my_progress'])
+            # Loop to take first non-zero, break as soon as finds one
+            for i, it in enumerate(item['my_progress']):
+                if item['my_progress'][i][1] > 0:  # Add episodes. Considering that if negative, has to delete some
+                    self.add_seen_episodes(item, item['my_progress'])
+                    break
+                elif item['my_progress'][i][1] < 0:
+                    self.delete_seen_episodes(item, item['my_progress'])
+                    break
         if 'my_status' in item.keys():
             #This is only for local database, nothing to push to server
             pass
@@ -290,8 +296,190 @@ class libtrakttv(lib):
         #TODO later
         pass
 
+    def search(self, criteria):
+        if self.mediatype == 'show':
+            return self.search_show(criteria)
+        elif self.mediatype == 'movie':
+            return self.search_movie(criteria)
+        
+    def search_show(self, criteria):
+        """Searches thetvdb database for the queried show,
+           much better than the trakttv search wich returns search on every word.
+           Fills only title and id, will need full info"""
+        self.msg.info(self.name, "Searching for tv show %s..." % criteria)
+        
+        # Send the urlencoded query to the search API
+        query = self._urlencode({'seriesname': criteria})
+        data = self._request_gzip("http://thetvdb.com/api/GetSeries.php?" + query)
+        
+        # Load the results into XML
+        try:
+            root = ET.ElementTree().parse(data, parser=self._make_parser())
+        except ET.ParseError:
+            self.msg.warn(self.name, "Problem parsing the search ...")
+            return []
+        except IOError:
+            self.msg.warn(self.name, "Problem during the search, response was not as expected. Try less words ...")
+            return []
+        
+        entries = list()
+        for child in root.iter('Series'):
+            show = utils.show()
+            showid = int(child.find('seriesid').text)
+            show.update({
+                'id':           showid,
+                'title':        child.find('SeriesName').text,
+                'my_progress':  (1, 0)
+            })
+            entries.append(show)
+        
+        return entries
+    
+    
+    def search_movie(self, criteria):
+        """Searches trakt.tv database for the queried movie.
+           Fills only title and id, will need full info"""
+        self.msg.info(self.name, "Searching for tv show %s..." % criteria)
+        
+        # Send the urlencoded query to the search API
+        query = self._urlencode({criteria})
+        data = self.opener.open("http://api.trakt.tv/search/movies.json/"+self.apikey+"/"+query)
+        
+        j = json.loads(data.read())
+        
+        entries = list()
+        for movie in j:
+            show = utils.show()
+            showid = movie['imdb_id']
+            show.update({
+                'id':           showid,
+                'title':        movie['title'],
+                'my_progress':  (1, 0)
+            })
+            entries.append(show)
+
+        return entries
+        
+    def request_info(self, shows):
+        if self.mediatype == 'show':
+            return [self.request_full_info_show(show['id']) for show in shows]
+        elif self.mediatype == 'movie':
+            return [self.request_full_info_movie(show['id']) for show in shows]
+
+    def request_full_info_show(self, showid):
+        """Requests the full info"""
+        self.msg.info(self.name, "Requesting full info for tv show %s..." % showid)
+        
+        data = self.opener.open("http://api.trakt.tv/show/summary.json/"+self.apikey+"/"+str(showid)+"/extended", self._make_json())
+        
+        j = dict()
+        j.update(json.loads(data.read()))
+        items_to_delete = ["top_watchers", "top_episodes", "stats", "people"]
+        for item in items_to_delete:
+            del j[item]
+        
+        j.update({'id': j['tvdb_id']})
+        
+        j['seasons'].sort(key=op.itemgetter('season'))
+        n_seasons = j['seasons'][-1]['season']
+        #print "Number of seasons: ",n_seasons
+        for s in j['seasons']:
+            #print "Season %d has %d episodes" % (s['season'], s['episodes'][-1]['episode'])
+            for it in "url", "images", "poster":
+                del s[it]
+            l_ep = []   
+            for ep in s['episodes']:
+                l_ep.append({'episode': ep['episode'],
+                            'title': ep['title'],
+                            'synopsys': ep['overview'],
+                            'air_time': ep['first_aired_utc']
+                            })
+            s['episodes'] = l_ep
+        
+        # Tell data.py to update and save infocache
+        l = list()
+        l.append(j)
+        self._emit_signal('show_info_changed', l)
+                            
+        return j
+        
+    def request_full_info_movie(self, showid):
+        """Requests the full info"""
+        self.msg.info(self.name, "Requesting full info for movie %s..." % showid)
+        
+        data = self.opener.open("http://api.trakt.tv/movie/summary.json/"+self.apikey+"/"+str(showid)+"/extended", self._make_json())
+        
+        j = json.loads(data.read())
+        items_to_delete = ["top_watchers", "stats", "people"]
+        for item in items_to_delete:
+            del j[item]
+        
+        
+        # Tell data.py to update and save infocache
+        self._emit_signal('show_info_changed', list(j))
+        
+        return j
+    
+    def merge_info(self, show, info):
+        if self.mediatype == 'show':
+            return self.merge_info_show(show, info)
+        elif self.mediatype == 'movie':
+            return self.merge_info_movie(show, info)   
+    
+    
+    def merge_info_show(self, show, info):
+        status_translate = {'Continuing': 1, 'Ended': 2}
+        
+        show.update({
+                'my_score':     info['rating_advanced'],
+                'total':        self.n_ep_in_season(info, show['my_progress'][0]),
+                'status':       status_translate[info['status']],
+                'image':        info['poster'].replace('.jpg','-300.jpg'),
+                'url':          info['url']
+            })
+            
+        if show.get('my_status') == 1 and self.is_last_ep(info, show['my_progress']):
+            show.update({'my_status': 2})
+            
+    def merge_info_movie(self, show, info):
+        show.update({
+                'aliases':      [],
+                'my_progress':  1,
+                'my_status':    2,
+                'my_score':     info['rating_advanced'],
+                'total':        1, #no progress, so completed as soon as seen
+                'status':       2, #no progress, so completed when out
+                'image':        info['poster'],
+                'url':          info['url']
+                })
         
     
+    def is_last_ep(self, info, ep):
+        return ep == (info['seasons'][-1]['season'], info['seasons'][-1]['episodes'][-1]['episode'])
+        
+    def n_ep_in_season(self, info, season):
+        return info['seasons'][-1]['episodes'][-1]['episode']
+                
+    def _make_parser(self):
+        # For some reason MAL returns an XML file with HTML exclusive
+        # entities like &aacute;, so we have to create a custom XMLParser
+        # to convert these entities correctly.
+        parser = ET.XMLParser()
+        parser.parser.UseForeignDTD(True)
+        parser.entity['aacute'] = 'á'
+        parser.entity['eacute'] = 'é'
+        parser.entity['iacute'] = 'í'
+        parser.entity['oacute'] = 'ó'
+        parser.entity['uacute'] = 'ú'
+        parser.entity['lsquo'] = '‘'
+        parser.entity['rsquo'] = '’'
+        parser.entity['ldquo'] = '“'
+        parser.entity['rdquo'] = '“'
+        parser.entity['ndash'] = '-'
+        parser.entity['mdash'] = '—'
+        parser.entity['hellip'] = '…'
+        
+        return parser
     
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
@@ -304,12 +492,6 @@ class libtrakttv(lib):
                 out_dict[k] = v.decode('utf8')
         return urllib.urlencode(out_dict)
         
-        
-    def search(self, criteria):
-        return list()
-    
-    def request_info(self, ids):
-        return dict()
 
 
 
