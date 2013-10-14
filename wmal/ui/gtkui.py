@@ -813,7 +813,8 @@ class ImageTask(threading.Thread):
 
         # If there's a size specified, thumbnail with PIL library
         # otherwise download and save it as it is
-        img_file = StringIO(urllib.urlopen(self.remote).read())
+        req = urllib.Request(self.remote, headers={'User-Agent': 'Mozilla/5.0'})
+        img_file = StringIO(urllib.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
