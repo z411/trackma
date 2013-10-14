@@ -617,13 +617,13 @@ class Engine:
             # Do a regex to the filename to get
             # the show title and episode number
             regs = list()
-            regs.append(re.compile(r"([ \w\d\-,@.:;!\?]+)(S[\d]+E[\d]+) ", re.IGNORECASE))
-            regs.append(re.compile(r"\[.+\]?([ \w\d\-,@.:;!\?]+) - ([ \d]+) "))
+            regs.append(re.compile(r"([ \w\d\-,@'.:;!\?]+)(S[\d]+E[\d]+) ", re.IGNORECASE))
+            regs.append(re.compile(r"(?:\[.+\])?([ \w\d\-',@.:;!\?]+) - ([ \d]+) "))
             show_raw = filename.replace("_"," ").replace("v2","").replace("."," ").strip()
-            for reg in regs:
-                print 
+            for i, reg in enumerate(regs):
                 show_match = reg.match(show_raw)
                 if show_match:
+                    #print "Looking at matching with regex n° %d" % i
                     break
             if not show_match:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
@@ -647,10 +647,11 @@ class Engine:
             if highest_ratio[1] > 0.7:
                 return (playing_show, show_ep)
             else:
-                self.msg.warn(self.name, 'Found player but show not in list.')
+                self.msg.warn(self.name, 'Found player but show %s not in list.' % show_title)
                 
                 #Check if we already looked for this.
                 if self.data_handler.is_in_failed_searches(show_title):
+                    self.msg.warn(self.name, 'Show was already reported as not found online. Skipping search ...')
                     return None
                     
                 results = self.search(show_title)
