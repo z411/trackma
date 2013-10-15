@@ -118,7 +118,7 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
         
-    def start(self):
+    def start(self, load_tracker=True):
         """
         Starts the engine
         
@@ -137,7 +137,7 @@ class Engine:
             raise utils.APIFatal(e.message)
         
         # Start tracker
-        if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
+        if self.mediainfo.get('can_play') and self.config['tracker_enabled']and load_tracker:
             tracker_args = (
                             int(self.config['tracker_interval']),
                             int(self.config['tracker_update_wait']),
@@ -188,7 +188,7 @@ class Engine:
             self.userconfig['mediatype'] = mediatype
         
         self._init_data_handler()
-        self.start()
+        self.start(load_tracker=False)
     
     def get_config(self, key):
         """Returns the specified key from the configuration"""
@@ -732,7 +732,8 @@ class Engine:
         r = re.compile(r"S([\d]+)E([\d]+)", re.IGNORECASE)
         e = r.match(s)
         if e: return (int(e.group(1).strip()) , int(e.group(2).strip()))
-        else: return int(s)
+        elif self.mediainfo.get('has_seasons'): return (1, int(s))
+	else: return int(s)
     
     def is_ep_out_of_bound(self, show, ep):
         return self.data_handler.is_ep_out_of_bound(show, ep)
