@@ -206,7 +206,7 @@ class Data(object):
         self.showlist[showid] = show
         
         # Add infocache if merging is required
-        self.do_merging([show])
+        self.do_merging({showid: show})
         
         # Check if the show add is already in queue
         exists = False
@@ -313,7 +313,6 @@ class Data(object):
         else:
             to_return = value            
         
-        print "Returning ",to_return
         return to_return
     
     def queue_delete(self, show):
@@ -561,7 +560,7 @@ class Data(object):
                 # update/save infocache is done at api level when doing this
                 infos = self.api.request_info(missing)
                 for info in infos:
-                    self.api.merge_info(show[info['id']], info)
+                    self.api.merge_info(showlist[info['id']], info)
         
         
     def _cache_exists(self):
