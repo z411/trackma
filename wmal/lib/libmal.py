@@ -225,6 +225,10 @@ class libmal(lib):
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
         except ET.ParseError:
+            self.msg.warn(self.name, "Problem parsing the search ...")
+            return []
+        except IOError:
+            self.msg.warn(self.name, "Problem during the search, response was not as expected. Try less words ...")
             return []
         
         # Use the correct tag name for episodes
