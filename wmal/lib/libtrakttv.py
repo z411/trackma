@@ -187,7 +187,7 @@ class libtrakttv(lib):
                 'image':        "",
                 'url':          "",
             })
-            showlist[int(showinfo['tvdb_id'])] = show
+            showlist.update({int(showinfo['tvdb_id']): show})
         return showlist
 
     def _parse_movie(self, root):
@@ -270,7 +270,7 @@ class libtrakttv(lib):
             data = self._make_json({"movies": [ {"imdb_id": item['id']} ] })
 
         try:
-            print data
+            #print data
             self.opener.open(url, data)
             return True
         except urllib2.HTTPError, e:
@@ -354,7 +354,7 @@ class libtrakttv(lib):
             show.update({
                 'id':           showid,
                 'title':        movie['title'],
-                'my_progress':  (1, 0)
+                'my_progress':  1
             })
             entries.append(show)
 
@@ -395,6 +395,28 @@ class libtrakttv(lib):
                             'air_time': ep['first_aired_utc']
                             })
             s['episodes'] = l_ep
+        
+        # Genres
+        genre_str = ""
+        for g in j['genres']:
+            genre_str += g+" "
+        
+        # nEp / season:
+        ep_list = ""
+        for s in j['seasons']:
+            ep_list += str( (s['season'], s['episodes'][-1]['episode']) )+" "
+        
+        
+        # Adding stuff to be added to extra to show in detail view
+        j.update({'extra': [
+                    ('Synopsis',   j['overview']),
+                    ('Genre',      genre_str),
+                    ('Status',     j['status']),
+                    ('Score (%)',  j['ratings']['percentage']),
+                    ('Start date', j['first_aired_iso']),
+                    ('(# season, # episodes)', ep_list)
+                    ]})
+
         
         # Tell data.py to update and save infocache
         l = list()
@@ -458,8 +480,11 @@ class libtrakttv(lib):
         return ep == (info['seasons'][-1]['season'], info['seasons'][-1]['episodes'][-1]['episode'])
         
     def n_ep_in_season(self, info, season):
-        return info['seasons'][-1]['episodes'][-1]['episode']
-                
+        for s in info['seasons']:
+	    if s['season'] == season:
+		return s['episodes'][-1]['episode']
+        return 50               
+ 
     def _make_parser(self):
         # For some reason MAL returns an XML file with HTML exclusive
         # entities like &aacute;, so we have to create a custom XMLParser
