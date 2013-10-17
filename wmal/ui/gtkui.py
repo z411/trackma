@@ -272,7 +272,7 @@ class wmal_gtk(object):
         line4_t.set_alignment(0, 0.5)
         line4.pack_start(line4_t, False, False, 0)
         
-        self.statusmodel = gtk.ListStore(int, str)
+        self.statusmodel = gtk.ListStore(str, str)
             
         self.statusbox = gtk.ComboBox(self.statusmodel)
         cell = gtk.CellRendererText()
@@ -648,7 +648,7 @@ class wmal_gtk(object):
             self.allow_buttons_push(False, lists_too=False)
             return
         
-        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.selected_show = tree_model.get(tree_iter, 0)[0]
         self.allow_buttons_push(True, lists_too=False)
         
         show = self.engine.get_show_info(self.selected_show)
@@ -683,7 +683,7 @@ class wmal_gtk(object):
         # Image
         if show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
+            filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
             
             if os.path.isfile(filename):
                 self.show_image.image_show(filename)
@@ -892,7 +892,7 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_expand(False)
  
         # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(str, str, int, int, str)
+        self.store = gtk.ListStore(str, str, str, int, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
