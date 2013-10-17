@@ -44,6 +44,9 @@ class AccountManager(object):
     def get_accounts(self):
         return self.accounts['accounts'].values()
 
+    def get_accounts_iter(self):
+        return self.accounts['accounts'].iteritems()
+
     def get_default(self):
         num = self.accounts['default']
         if num is not None:

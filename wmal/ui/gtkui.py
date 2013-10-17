@@ -1058,13 +1058,11 @@ class AccountSelect(gtk.Window):
     
     def _refresh_list(self):
         self.store.clear()
-        i = 0
-        for account in self.manager.get_accounts():
+        for k, account in self.manager.get_accounts_iter():
             libname = account['api']
             api = utils.available_libs[libname]
             
-            self.store.append([i, account['username'], api[0], self.pixbufs[libname]])
-            i += 1
+            self.store.append([k, account['username'], api[0], self.pixbufs[libname]])
     
     def is_remember(self):
         # Return the state of the checkbutton if there's no default account
