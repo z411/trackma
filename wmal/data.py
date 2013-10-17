@@ -641,8 +641,14 @@ class Data(object):
         
         
         
-        
-        
+    def get_year(self, show):
+        showid = show['id']
+        try:
+            if self.infocache[showid]['year']:
+                return  self.infocache[showid]['year']
+        except KeyError:
+            return None
+        return None
         
         
         
