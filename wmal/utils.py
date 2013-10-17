@@ -26,6 +26,7 @@ available_libs = {
     'malu':     ('MAL Unoffic.', datadir + '/data/malu.jpg'),
     'melative': ('Melative',     datadir + '/data/melative.jpg'),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
+    'hb':       ('Hummingbird',         datadir + '/data/hb.jpg'),
 }
 
 def parse_config(filename, default):
