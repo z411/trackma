@@ -120,7 +120,6 @@ def show():
         'total':        0,
         'image':        '',
         'queued':       False,
-        'playing':      False,
         'neweps':       False,
     }
 

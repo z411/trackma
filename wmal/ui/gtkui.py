@@ -325,7 +325,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.changed_show)
+        self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_show_status)
         self.engine.connect_signal('show_deleted', self.changed_show_status)
         
@@ -493,6 +493,10 @@ class wmal_gtk(object):
         self.notebook.set_current_page(pagenumber)
         
         self.show_lists[status].select(show)
+
+    def playing_show(self, show, is_playing):
+        status = show['my_status']
+        self.show_lists[status].playing(show, is_playing)
             
     def task_update_next(self, show, played_ep):
         dialog = gtk.MessageDialog(self.main,
@@ -892,9 +896,7 @@ class ShowView(gtk.TreeView):
         self.set_model(self.store)
     
     def _get_color(self, show):
-        if show.get('playing'):
-            return '#6C2DC7'
-        elif show.get('queued'):
+        if show.get('queued'):
             return '#54C571'
         elif show.get('neweps'):
             return '#FBB917'
@@ -951,6 +953,16 @@ class ShowView(gtk.TreeView):
                 return
         
         #print "Warning: Show ID not found in ShowView (%d)" % show['id']
+
+    def playing(self, show, is_playing):
+        # Change the color if the show is currently playing
+        for row in self.store:
+            if int(row[0]) == show['id']:
+                if is_playing:
+                    row[5] = '#6C2DC7'
+                else:
+                    row[5] = self._get_color(show)
+                return
     
     def select(self, show):
         """Select specified row"""
