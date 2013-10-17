@@ -280,7 +280,7 @@ class wmal_gtk(object):
         line4_t.set_alignment(0, 0.5)
         line4.pack_start(line4_t, False, False, 0)
         
-        self.statusmodel = gtk.ListStore(int, str)
+        self.statusmodel = gtk.ListStore(str, str)
             
         self.statusbox = gtk.ComboBox(self.statusmodel)
         cell = gtk.CellRendererText()
@@ -333,7 +333,7 @@ class wmal_gtk(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.changed_show)
+        self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_show_status)
         self.engine.connect_signal('show_deleted', self.changed_show_status)
         
@@ -501,6 +501,10 @@ class wmal_gtk(object):
         self.notebook.set_current_page(pagenumber)
         
         self.show_lists[status].select(show)
+
+    def playing_show(self, show, is_playing):
+        status = show['my_status']
+        self.show_lists[status].playing(show, is_playing)
             
     def task_update_next(self, show, played_ep):
         dialog = gtk.MessageDialog(self.main,
@@ -688,7 +692,7 @@ class wmal_gtk(object):
         # Image
         if show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
+            filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
             
             if os.path.isfile(filename):
                 self.show_image.image_show(filename)
@@ -880,9 +884,9 @@ class ShowView(gtk.TreeView):
         self.cols = dict()
         i = 0
         if has_progress:
-            columns = ('ID', 'Title', 'Progress', 'Score', 'Percent')
+            columns = ('Title', 'Progress', 'Score', 'Percent')
         else:
-            columns = ('ID', 'Title', 'Score')
+            columns = ('Title', 'Score')
 
         for name in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
@@ -890,11 +894,11 @@ class ShowView(gtk.TreeView):
             self.append_column(self.cols[name])
             i += 1
         
-        renderer_id = gtk.CellRendererText()
-        self.cols['ID'].pack_start(renderer_id, False)
-        self.cols['ID'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
-        self.cols['ID'].set_expand(False)
-        self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        #renderer_id = gtk.CellRendererText()
+        #self.cols['ID'].pack_start(renderer_id, False)
+        #self.cols['ID'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        #self.cols['ID'].set_expand(False)
+        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
         
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
@@ -927,9 +931,7 @@ class ShowView(gtk.TreeView):
         self.set_model(self.store)
     
     def _get_color(self, show):
-        if show.get('playing'):
-            return '#6C2DC7'
-        elif show.get('queued'):
+        if show.get('queued'):
             return '#54C571'
         elif show.get('neweps'):
             return '#FBB917'
@@ -980,6 +982,16 @@ class ShowView(gtk.TreeView):
                 return
         
         #print "Warning: Show ID not found in ShowView (%d)" % show['id']
+
+    def playing(self, show, is_playing):
+        # Change the color if the show is currently playing
+        for row in self.store:
+            if int(row[0]) == show['id']:
+                if is_playing:
+                    row[5] = '#6C2DC7'
+                else:
+                    row[5] = self._get_color(show)
+                return
     
     def select(self, show):
         """Select specified row"""
@@ -1075,13 +1087,11 @@ class AccountSelect(gtk.Window):
     
     def _refresh_list(self):
         self.store.clear()
-        i = 0
-        for account in self.manager.get_accounts():
+        for k, account in self.manager.get_accounts_iter():
             libname = account['api']
             api = utils.available_libs[libname]
             
-            self.store.append([i, account['username'], api[0], self.pixbufs[libname]])
-            i += 1
+            self.store.append([k, account['username'], api[0], self.pixbufs[libname]])
     
     def is_remember(self):
         # Return the state of the checkbutton if there's no default account
@@ -1752,15 +1762,15 @@ class ShowSearchView(gtk.TreeView):
     
         self.cols = dict()
         i = 0
-        for name in ('ID', 'Title', 'Type', 'Total'):
+        for name in ('Title', 'Type', 'Total'):
             self.cols[name] = gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(i)
             self.append_column(self.cols[name])
             i += 1
         
-        renderer_id = gtk.CellRendererText()
-        self.cols['ID'].pack_start(renderer_id, False)
-        self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        #renderer_id = gtk.CellRendererText()
+        #self.cols['ID'].pack_start(renderer_id, False)
+        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
         
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
@@ -1777,7 +1787,7 @@ class ShowSearchView(gtk.TreeView):
         self.cols['Total'].pack_start(renderer_total, False)
         self.cols['Total'].add_attribute(renderer_total, 'text', 3)
         
-        self.store = gtk.ListStore(str, str, str, str, str)
+        self.store = gtk.ListStore(str, str, str, str)
         self.set_model(self.store)
     
     def append_start(self):

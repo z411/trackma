@@ -27,6 +27,7 @@ available_libs = {
     'melative': ('Melative',     datadir + '/data/melative.jpg'),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
     'trakttv':  ('trakt.tv',     datadir + '/data/trakttv.png', ['apikey']),
+    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg'),
 }
 
 def parse_config(filename, default):
@@ -121,7 +122,6 @@ def show():
         'total':        0,
         'image':        '',
         'queued':       False,
-        'playing':      False,
         'neweps':       False,
     }
 

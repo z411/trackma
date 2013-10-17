@@ -105,7 +105,7 @@ class wMAL_urwid(object):
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
-                ('fixed', 7, urwid.Text('ID')),
+                #('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Progress')),
                 ('fixed', 7, urwid.Text('Score')),
@@ -184,7 +184,7 @@ class wMAL_urwid(object):
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
-        self.engine.connect_signal('playing', self.changed_show)
+        self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
 
@@ -549,6 +549,11 @@ class wMAL_urwid(object):
 
         self.set_filter(go_filter)
         self._get_cur_list().select_show(show)
+
+    def playing_show(self, show, is_playing):
+        status = show['my_status']
+        self.lists[status].body.playing_show(show, is_playing)
+        self.mainloop.draw_screen()
     
     def changed_list(self, show):
         self._rebuild_list(show['my_status'])
@@ -620,7 +625,7 @@ class AddDialog(Dialog):
     
     def __init__(self, loop, showlist={}, width=30):
         listheader = urwid.Columns([
-                ('fixed', 7, urwid.Text('ID')),
+                #('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Type')),
                 ('fixed', 7, urwid.Text('Total')),
@@ -794,7 +799,7 @@ class SearchItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
         self.show = show
         self.item = [
-            ('fixed', 7, urwid.Text("%d" % show['id'])),
+            #('fixed', 7, urwid.Text("%d" % show['id'])),
             ('weight', 1, urwid.Text(show['title'])),
             ('fixed', 10, urwid.Text(str(show['type']))),
             ('fixed', 7, urwid.Text("%d" % show['total'])),
@@ -828,6 +833,15 @@ class ShowWalker(urwid.SimpleListWalker):
         else:
             return False
     
+    def playing_show(self, show, is_playing):
+        (position, showitem) = self._get_showitem(show['id'])
+        if showitem:
+            showitem.playing = is_playing
+            showitem.highlight(show)
+            return True
+        else:
+            return False
+
     def select_show(self, show):
         (position, showitem) = self._get_showitem(show['id'])
         if showitem:
@@ -851,6 +865,7 @@ class ShowItem(urwid.WidgetWrap):
         
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         self.has_progress = has_progress
+        self.playing = False
         
         self.showid = show['id']
         self.showtitle = show['title']
@@ -859,7 +874,7 @@ class ShowItem(urwid.WidgetWrap):
             self.showtitle += " (%s)" % altname
 
         self.item = [
-            ('fixed', 7, urwid.Text("%d" % self.showid)),
+            #('fixed', 7, urwid.Text("%d" % self.showid)),
             ('weight', 1, urwid.Text(self.showtitle)),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
@@ -867,7 +882,7 @@ class ShowItem(urwid.WidgetWrap):
         
         # If the show should be highlighted, do it
         # otherwise color it according to its status
-        if show.get('playing'):
+        if self.playing:
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'
@@ -898,7 +913,7 @@ class ShowItem(urwid.WidgetWrap):
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
     
     def highlight(self, show):
-        if show.get('playing'):
+        if self.playing:
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'

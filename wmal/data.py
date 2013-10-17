@@ -244,7 +244,7 @@ class Data(object):
         # Check if the show update is already in queue
         exists = False
         for q in self.queue:
-            if q['id'] == show['id'] and q['action'] == 'update':
+            if q['id'] == show['id'] and q['action'] in ['add', 'update']:
                 # Add the changed value to the already existing queue item
                 if q[key]:
                     q[key] = self.queue_append_value(value, key, q[key], show)

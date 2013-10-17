@@ -95,10 +95,10 @@ class Engine:
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
-    def _emit_signal(self, signal, args=None):
+    def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
-                self.signals[signal](args)
+                self.signals[signal](*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
 
@@ -162,10 +162,6 @@ class Engine:
         #if not self.loaded:
         #    raise utils.wmalError("Engine is not loaded.")
         
-        if self.last_show:
-            self.data_handler.set_show_attr(self.last_show, 'playing', False)
-            self._emit_signal('playing', self.last_show)
-         
         self.msg.info(self.name, "Unloading...")
         self.data_handler.unload()
         
@@ -234,7 +230,7 @@ class Engine:
                 if show['title'] == show_pattern:
                     return show
             raise utils.EngineError("Show not found.")
-    
+
     def get_show_details(self, show):
         return self.data_handler.info_get(show)
         
@@ -559,13 +555,11 @@ class Engine:
                     # But if we're watching a new show, let's make sure turn off
                     # the Playing flag on that one first
                     if self.last_show and self.last_show != show:
-                        self.data_handler.set_show_attr(self.last_show, 'playing', False)
-                        self._emit_signal('playing', self.last_show)
+                        self._emit_signal('playing', self.last_show, False)
  
 
                     self.last_show = show
-                    self.data_handler.set_show_attr(show, 'playing', True)
-                    self._emit_signal('playing', show)
+                    self._emit_signal('playing', show, True)
  
                     last_episode = episode
                     last_time = time.time()
@@ -597,8 +591,7 @@ class Engine:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
                     
-                    self.data_handler.set_show_attr(self.last_show, 'playing', False)
-                    self._emit_signal('playing', self.last_show)
+                    self._emit_signal('playing', self.last_show, False)
                     self.last_show = None
                     last_updated = False
                     last_time = 0
