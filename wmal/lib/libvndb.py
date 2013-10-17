@@ -132,7 +132,7 @@ class libvndb(lib):
         self.msg.info(self.name, 'Logging in...')
         (name, data) = self._sendcmd('login',
             {'protocol': 1,
-             'client': 'wSync',
+             'client': 'wMAL',
              'clientver': 0.2,
              'username': self.username,
              'password': self.password,
