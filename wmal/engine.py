@@ -644,11 +644,27 @@ class Engine:
                     highest_ratio = (show, ratio)
                             
             playing_show = highest_ratio[0]
+            #self.msg.info(self.name, 'Best match found is %s, with ratio = %f.' % (playing_show['title'], highest_ratio[1]))
             if highest_ratio[1] > 0.7:
                 return (playing_show, show_ep)
             else:
                 self.msg.warn(self.name, 'Found player but show %s not in list.' % show_title)
                 
+                # Adding year of first publishing to show_title
+                year = self.data_handler.get_year(playing_show)
+                if year:
+                    show_title+=" "+str((year))
+                    highest_ratio = (None, 0)
+                    for show in self.get_list():
+                        ratio = self.compare_to_titles(show, show_title)
+                        if ratio > highest_ratio[1]:
+                            highest_ratio = (show, ratio)
+
+                    playing_show = highest_ratio[0]
+                    #self.msg.info(self.name, 'Best match found is %s, with ratio = %.1f.' % (playing_show['title'], highest_ratio[1]))
+                    if highest_ratio[1] > 0.7:
+                        return (playing_show, show_ep)
+
                 #Check if we already looked for this.
                 if self.data_handler.is_in_failed_searches(show_title):
                     self.msg.warn(self.name, 'Show was already reported as not found online. Skipping search ...')
