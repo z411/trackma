@@ -48,6 +48,7 @@ class Data(object):
     queue = list()
     config = dict()
     meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': dict() }
+    failed_searches = list()
 
     autosend_timer = None
     
@@ -84,6 +85,7 @@ class Data(object):
         self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
         self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
         self.meta_file = utils.get_filename(userfolder, '%s.meta' % mediatype)
+        self.failed_searches_file = utils.get_filename(userfolder, 'searches.failed')
         self.lock_file = utils.get_filename(userfolder,  'lock')
         
         # Connect signals
@@ -110,6 +112,9 @@ class Data(object):
         
         if self._queue_exists():
             self._load_queue()
+            
+        if self._failed_searches_exists():
+            self._load_failed_searches()
         
         # If cache exists, load from it
         # otherwise query the API for a remote list
@@ -384,7 +389,32 @@ class Data(object):
 
     def altname_set(self, showid, altname):
         self.meta['altnames'][showid] = altname
-    
+        
+    #get all possible titles for the show
+    def get_all_possible_titles(self, showid):
+        #aliases = self.showlist[showid]['aliases']
+        aliases = []
+        if self.infocache.get(showid):
+            #Getting the first 2 list items of extra
+            #should be english and synonyms
+            english = self.infocache[showid]['extra'][0]
+            synonyms = self.infocache[showid]['extra'][1]
+            if english[0]=='English' and str(english[1])!='None':
+                aliases.extend(english[1].lstrip('; ').split('; '))
+            if synonyms[0]=='Synonyms' and str(synonyms[1])!='None':
+                aliases.extend(synonyms[1].lstrip('; ').split('; '))
+        return aliases
+        
+    def failed_searches_add(self, title):
+        self.failed_searches.append(title)
+        self._save_failed_searches()
+        
+    def is_in_failed_searches(self, title):
+        for t in self.failed_searches:
+            if t == title:
+                return True
+        return False
+                
     def set_show_attr(self, show, key, value):
         show[key] = value
         
@@ -407,6 +437,14 @@ class Data(object):
         self.msg.debug(self.name, "Saving cache...")
         cPickle.dump(self.showlist, open( self.cache_file , "wb" ) )
     
+    def _load_failed_searches(self):
+        self.msg.debug(self.name, "Reading failed searches...")
+        self.failed_searches = cPickle.load( open( self.failed_searches_file , "rb" ) )
+    
+    def _save_failed_searches(self):
+        self.msg.debug(self.name, "Saving failed searches...")
+        cPickle.dump(self.failed_searches, open( self.failed_searches_file , "wb" ) )
+        
     def _load_info(self):
         self.msg.debug(self.name, "Reading info DB...")
         self.infocache = cPickle.load( open( self.info_file , "rb" ) )
@@ -478,6 +516,9 @@ class Data(object):
     
     def _info_exists(self):
         return os.path.isfile(self.info_file)
+        
+    def _failed_searches_exists(self):
+        return os.path.isfile(self.failed_searches_file)
 
     def _queue_exists(self):
         return os.path.isfile(self.queue_file)
