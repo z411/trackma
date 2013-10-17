@@ -119,6 +119,11 @@ class lib(object):
     def request_info(self, ids):
         # Request detailed information for requested shows
         raise NotImplementedError
+        
+    def merge_info(self, show, info):
+        # Default merging of full show details into standard compact show dict
+        show['title'] = info['title']
+        show['image'] = info['image']
     
     def logout(self):
         # This is called whenever the API won't be required

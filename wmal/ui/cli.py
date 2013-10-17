@@ -216,13 +216,13 @@ class wmal_cmd(cmd.Cmd):
             try:
                 args = self.parse_args(arg)
                 show = self.engine.get_show_info(args[0])
-                episode = 0
+                episode = self.engine.null_ep()
                 
                 # If the user specified an episode, play it
                 # otherwise play the next episode not watched yet
                 try:
-                    episode = args[1]
-                    if episode == (show['my_progress'] + 1):
+                    episode = self.engine.str2ep(args[1])
+                    if episode == self.engine.get_next_ep(show):
                         playing_next = True
                     else:
                         playing_next = False
@@ -233,7 +233,7 @@ class wmal_cmd(cmd.Cmd):
                 
                 # Ask if we should update the show to the last episode
                 if played_episode and playing_next:
-                    do_update = raw_input("Should I update %s to episode %d? [y/N]" % (show['title'], played_episode))
+                    do_update = raw_input("Should I update %s to episode %s? [y/N]" % (show['title'], ep2str(played_episode)))
                     if do_update.lower() == 'y':
                         self.engine.set_episode(show['id'], played_episode)
             except utils.wmalError, e:
@@ -250,7 +250,7 @@ class wmal_cmd(cmd.Cmd):
         if arg:
             args = self.parse_args(arg)
             try:
-                self.engine.set_episode(args[0], args[1])
+                self.engine.set_episode(args[0], self.engine.str2ep(args[1]))
             except IndexError:
                 print "Missing arguments."
             except utils.wmalError, e:
@@ -416,7 +416,7 @@ class wmal_cmd(cmd.Cmd):
         # Fixed column widths
         col_id_length = 7
         col_title_length = 5
-        col_episodes_length = 9
+        col_episodes_length = 11
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
@@ -442,7 +442,7 @@ class wmal_cmd(cmd.Cmd):
         # List shows
         for show in showlist:
             if self.engine.mediainfo['has_progress']:
-                episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
+                episodes_str = "{0:9} / {1}".format(self.engine.ep2str(show['my_progress']), show['total'])
             else:
                 episodes_str = "-"
             
@@ -482,9 +482,12 @@ class wmal_accounts(AccountManager):
                 username = raw_input('Enter username: ')
                 password = raw_input('Enter password: ')
                 api = raw_input('Enter API (%s): ' % available_libs)
-                
+                lextra = {}
+                if len(utils.available_libs[api]) > 2:
+                    for extra in utils.available_libs[api][2]:
+                        lextra.update( {extra: raw_input('Enter %s: ' % extra)})
                 try:
-                    self.add_account(username, password, api)
+                    self.add_account(username, password, api, lextra)
                     print 'Done.'
                 except utils.AccountError, e:
                     print 'Error: %s' % e.message
