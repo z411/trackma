@@ -144,7 +144,7 @@ class Data(object):
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
             elif not cache_loaded:
-                # If the cache wasn't loaded before, do it no
+                # If the cache wasn't loaded before, do it now
                 self._load_cache()
         
         if self._info_exists():
@@ -205,6 +205,9 @@ class Data(object):
         
         self.showlist[showid] = show
         
+        # Add infocache if merging is required
+        self.do_merging({showid: show})
+        
         # Check if the show add is already in queue
         exists = False
         for q in self.queue:
@@ -237,26 +240,29 @@ class Data(object):
         """
         if key not in show.keys():
             raise utils.DataError('Invalid key for queue update.')
-        
-        # Do update on memory
-        show[key] = value
-        
+                
         # Check if the show update is already in queue
         exists = False
         for q in self.queue:
             if q['id'] == show['id'] and q['action'] in ['add', 'update']:
                 # Add the changed value to the already existing queue item
-                q[key] = value
+                if q[key]:
+                    q[key] = self.queue_append_value(value, key, q[key], show)
+                else:
+                    q[key] = self.queue_append_value(value, key, None, show)
                 exists = True
                 break
             
         if not exists:
             # Create queue item and append it
             item = {'id': show['id'], 'action': 'update', 'title': show['title']}
-            item[key] = value
+            item[key] = self.queue_append_value(value, key, None, show)
             self.queue.append(item)
         
         show['queued'] = True
+        
+        # Do update on memory
+        show[key] = value
         
         self._save_queue()
         self._save_cache()
@@ -267,6 +273,47 @@ class Data(object):
            (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
            (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size'])):
             self.process_queue()
+            
+    def queue_append_value(self, value, key, old_value, show):
+        if key == 'my_progress' and self.api.media_info().get('can_separate_episodes'):
+            # Need to check last seen, and do multiple updates
+            if self.has_seasons():
+                if show[key][0] == value[0]: #same season
+                    if show[key][1] > value[1]: #deleting shows
+                        to_return = [(value[0], i) for i in range(-show[key][1], -value[1])]
+                    else:                 #adding shows
+                        to_return = [(value[0], i) for i in range(show[key][1]+1, value[1]+1)]
+                elif show[key][0] < value[0]: #switching seasons, adding shows, need cacheinfo
+                    to_return = [(show[key][0], i) for i in range(show[key][1]+1, show['total']+1)]
+                    for season in range(value[0], show[key][0], -1):
+                        if season == value[0]:
+                            to_return.extend([(season, i) for i in range(1, value[1]+1)])
+                        else:
+                            to_return.extend([(season, i) for i in range(1, self.n_ep_in_season(self.infocache[show['id']], season)+1)])
+                elif show[key][0] > value[0]: #switching seasons, deleting shows, need cacheinfo
+                    to_return = [(show[key][0], -i) for i in range(0, show[key][1]+1)]
+                    for season in range(value[0], show[key][0]):
+                        if season == value[0]:
+                            to_return.extend([(season, -i) for i in range(value[1]+1, self.n_ep_in_season(self.infocache[show['id']], season)+1)])
+                        else:
+                            to_return.extend([(season, -i) for i in range(1, self.n_ep_in_season(self.infocache[show['id']], season)+1)])
+                
+                 #appending old value    
+                if old_value:
+                    to_return.extend([old_value]) 
+                    
+            else:
+                # Simple substraction
+                if show[key] > value: #deleting shows, getting neg values
+                    to_return = range(-show[key], -value)
+                else:                 #adding shows
+                    to_return = range(show[key]+1, value+1)
+                if old_value:
+                    to_return.append(old_value)
+        else:
+            to_return = value            
+        
+        return to_return
     
     def queue_delete(self, show):
         """
@@ -392,9 +439,10 @@ class Data(object):
         
     #get all possible titles for the show
     def get_all_possible_titles(self, showid):
-        #aliases = self.showlist[showid]['aliases']
         aliases = []
-        if self.infocache.get(showid):
+        if self.showlist.get(showid):
+            aliases = self.showlist[showid]['aliases']
+        if self.infocache.get(showid) and self.infocache.get(showid).get('extra'):
             #Getting the first 2 list items of extra
             #should be english and synonyms
             english = self.infocache[showid]['extra'][0]
@@ -474,11 +522,22 @@ class Data(object):
         """Downloads the remote list and overwrites the cache"""
         self.showlist = self.api.fetch_list()
         
+        self.do_merging(self.showlist)
+        
+        self._save_cache()
+        self.api.logout()
+        
+        # Update last retrieved time
+        self.meta['lastget'] = time.time()
+        self.meta['version'] = VERSION
+        self._save_meta()
+        
+    def do_merging(self, showlist):
         if self.api.api_info['merge']:
             # The API needs information to be merged from the
             # info database
             missing = []
-            for k, show in self.showlist.iteritems():
+            for k, show in showlist.iteritems():
                 # Here we search the information in the local
                 # info database. If it isn't available, add it
                 # to the missing list for them to be requested
@@ -490,26 +549,19 @@ class Data(object):
                 except KeyError:
                     missing.append(show)
                     continue
-                    
-                show['title'] = info['title']
-                show['image'] = info['image']
+                
+                # Filling missing info in show from full details
+                self.api.merge_info(show, info)
             
             # Here we request the missing items and merge them
-            # immedately with the list.
+            # immediately with the list.
             if len(missing) > 0:
+            
+                # update/save infocache is done at api level when doing this
                 infos = self.api.request_info(missing)
                 for info in infos:
-                    showid = info['id']
-                    self.showlist[showid]['title'] = info['title']
-                    self.showlist[showid]['image'] = info['image']
+                    self.api.merge_info(showlist[info['id']], info)
         
-        self._save_cache()
-        self.api.logout()
-        
-        # Update last retrieved time
-        self.meta['lastget'] = time.time()
-        self.meta['version'] = VERSION
-        self._save_meta()
         
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)
@@ -549,3 +601,54 @@ class Data(object):
     
     def get_api_info(self):
         return (self.api.api_info, self.api.media_info())
+        
+    def has_seasons(self):
+        return bool(self.api.media_info().get('has_seasons'))
+        
+    def is_ep_out_of_bound(self, show, ep):
+        if self.has_seasons():
+            if show['total'] and ep[1] > show['total']: return True
+        else:
+            if show['total'] and ep > show['total']: return True
+        return False
+        
+    def is_first_ep(self, ep):
+        if self.has_seasons(): 
+            if ep[0] == 1 and ep[1] == 1: return True
+        else:
+            if ep == 1: return True
+        return False
+        
+    def is_last_ep(self, show, ep):
+        if self.has_seasons():
+            return self.api.is_last_ep(self.infocache[show['id']], ep)
+        else:
+            if show['total'] and ep == show['total']: return True
+        return False
+        
+    def n_ep_in_season(self, info, season):
+        return self.api.n_ep_in_season(info, season)
+        
+        
+    def get_next_ep(self, show):
+        if self.has_seasons():
+            if show['my_progress'][1] < show['total']: return (show['my_progress'][0], show['my_progress'][1]+1)
+            elif not self.is_last_ep(show, show['my_progress']): return (show['my_progress'][0]+1, 1)
+            return (0, 0) # TODO: Need to raise an error here
+        else:
+            if not self.is_last_ep(show, show['my_progress']): return show['my_progress']+1 
+            return 0 # TODO: Need to raise an error here
+        
+        
+        
+    def get_year(self, show):
+        showid = show['id']
+        try:
+            if self.infocache[showid]['year']:
+                return  self.infocache[showid]['year']
+        except KeyError:
+            return None
+        return None
+        
+        
+        
