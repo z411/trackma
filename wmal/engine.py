@@ -308,7 +308,7 @@ class Engine:
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the episode number
-        self.is_ep_integer(newep)
+        newep = self.is_ep_integer(newep)
         
         # Get the show info
         show = self.get_show_info(show_pattern)
@@ -616,7 +616,7 @@ class Engine:
             for i, reg in enumerate(regs):
                 show_match = reg.match(show_raw)
                 if show_match:
-                    #print "Looking at matching with regex n° %d" % i
+                    #print "Looking at matching with regex No. %d" % i
                     break
             if not show_match:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
@@ -772,9 +772,9 @@ class Engine:
     def is_ep_integer(self, ep):
         try:
             if self.data_handler.has_seasons():
-                ep = (int(ep[0]), int(ep[0])) #(season, episode)
+                return (int(ep[0]), int(ep[0])) #(season, episode)
             else:
-                ep = int(ep)
+                return int(ep)
         except ValueError:
             raise utils.EngineError('Episode must be numeric.')
     
