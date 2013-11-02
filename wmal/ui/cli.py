@@ -496,9 +496,7 @@ class wmal_accounts(AccountManager):
             else:
                 try:
                     num = int(key)
-                    accounts = self.get_accounts()
-                    num -= 1
-                    return accounts[num]
+                    return self.get_account(num)
                 except ValueError:
                     print "Invalid value."
                 except IndexError:
@@ -509,8 +507,8 @@ class wmal_accounts(AccountManager):
 
         print "Available accounts:"
         i = 0
-        for account in accounts:
-            print "%d: %s (%s)" % (i+1, account['username'], account['api'])
+        for k, account in accounts:
+            print "%d: %s (%s)" % (k, account['username'], account['api'])
             i += 1
 
         if i == 0:

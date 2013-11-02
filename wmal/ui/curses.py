@@ -683,10 +683,8 @@ class AccountDialog(Dialog):
     def build_list(self):
         self.listwalker[:] = []
 
-        i = 0
-        for account in self.manager.get_accounts():
-            self.listwalker.append(AccountItem(i, account))
-            i += 1
+        for k, account in self.manager.get_accounts():
+            self.listwalker.append(AccountItem(k, account))
 
     def keypress(self, size, key):
         #if key in ('up', 'down', 'left', 'right', 'tab'):

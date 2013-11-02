@@ -35,6 +35,7 @@ class AccountManager(object):
         self._save()
     
     def delete_account(self, num):
+        self.accounts['default'] = None
         del self.accounts['accounts'][num]
         self._save()
     
@@ -42,12 +43,15 @@ class AccountManager(object):
         return self.accounts['accounts'][num]
     
     def get_accounts(self):
-        return self.accounts['accounts'].values()
+        return self.accounts['accounts'].iteritems()
 
     def get_default(self):
         num = self.accounts['default']
         if num is not None:
-            return self.accounts['accounts'][num]
+            try:
+                return self.accounts['accounts'][num]
+            except KeyError:
+                return None
         else:
             return None
 
