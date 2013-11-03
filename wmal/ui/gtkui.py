@@ -718,15 +718,17 @@ class wmal_gtk(object):
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
         print "%s: %s" % (classname, msg)
-        if msgtype != messenger.TYPE_DEBUG:
+        if msgtype == messenger.TYPE_WARN:
+            self.error("Warning: %s" % msg, gtk.MESSAGE_WARNING)
+        elif msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
-    def error(self, msg):
+    def error(self, msg, icon=None):
         # Thread safe
-        gobject.idle_add(self.error_push, msg)
+        gobject.idle_add(self.error_push, msg, icon)
         
-    def error_push(self, msg):
-        dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
+    def error_push(self, msg, icon=gtk.MESSAGE_ERROR):
+        dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, icon, gtk.BUTTONS_OK, msg)
         dialog.show_all()
         dialog.connect("response", self.modal_close)
     
