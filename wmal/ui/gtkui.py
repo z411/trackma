@@ -892,7 +892,7 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_expand(False)
  
         # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(str, str, str, int, int, str)
+        self.store = gtk.ListStore(int, str, str, int, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
