@@ -114,42 +114,42 @@ class wmal_gtk(object):
         
         # Menus
         mb_list = gtk.Menu()
-        mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
-        mb_info = gtk.MenuItem('Show details...')
-        mb_info.connect("activate", self.do_info)
-        mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
-        mb_delete.connect("activate", self.do_delete)
-        mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        mb_exit.connect("activate", self.do_quit, None)
+        self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        self.mb_info = gtk.MenuItem('Show details...')
+        self.mb_info.connect("activate", self.do_info)
+        self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        self.mb_delete.connect("activate", self.do_delete)
+        self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        self.mb_exit.connect("activate", self.do_quit, None)
         gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
-        mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
-        mb_addsearch.connect("activate", self.do_addsearch)
+        self.mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
+        self.mb_addsearch.connect("activate", self.do_addsearch)
         gtk.stock_add([(gtk.STOCK_REFRESH, "Retrieve list", 0, 0, "")])
-        mb_send = gtk.MenuItem('Send changes')
-        mb_send.connect("activate", self.do_send)
+        self.mb_send = gtk.MenuItem('Send changes')
+        self.mb_send.connect("activate", self.do_send)
         
-        mb_list.append(mb_play)
-        mb_list.append(mb_info)
+        mb_list.append(self.mb_play)
+        mb_list.append(self.mb_info)
         mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(mb_delete)
+        mb_list.append(self.mb_delete)
         mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(mb_addsearch)
-        mb_list.append(mb_send)
+        mb_list.append(self.mb_addsearch)
+        mb_list.append(self.mb_send)
         mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(mb_exit)
+        mb_list.append(self.mb_exit)
         
         mb_account = gtk.Menu()
-        mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
-        mb_retrieve.connect("activate", self.do_retrieve_ask)
-        mb_switch_account = gtk.MenuItem('Switch Account...')
-        mb_switch_account.connect("activate", self.do_switch_account)
-        mb_settings = gtk.MenuItem('Global Settings...')
-        mb_settings.connect("activate", self.do_settings)
+        self.mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
+        self.mb_retrieve.connect("activate", self.do_retrieve_ask)
+        self.mb_switch_account = gtk.MenuItem('Switch Account...')
+        self.mb_switch_account.connect("activate", self.do_switch_account)
+        self.mb_settings = gtk.MenuItem('Global Settings...')
+        self.mb_settings.connect("activate", self.do_settings)
         
-        mb_account.append(mb_switch_account)
-        mb_account.append(mb_retrieve)
+        mb_account.append(self.mb_switch_account)
+        mb_account.append(self.mb_retrieve)
         mb_account.append(gtk.SeparatorMenuItem())
-        mb_account.append(mb_settings)
+        mb_account.append(self.mb_settings)
         
         self.mb_mediatype_menu = gtk.Menu()
         
@@ -596,7 +596,12 @@ class wmal_gtk(object):
     
     def task_start_engine(self):
         if not self.engine.loaded:
-            self.engine.start()
+            try:
+                self.engine.start()
+            except utils.wmalFatal, e:
+                self.status("Fatal engine error: %s" % e.message)
+                print("Fatal engine error: %s" % e.message)
+                return
         
         gtk.threads_enter()
         self.statusbox.handler_block(self.statusbox_handler)

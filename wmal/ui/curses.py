@@ -959,4 +959,4 @@ def main():
     try:
         wMAL_urwid()
     except utils.wmalFatal, e:
-        print e.message
+        print "Fatal error: %s" % e.message
