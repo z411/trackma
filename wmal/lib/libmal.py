@@ -85,6 +85,7 @@ class libmal(lib):
         
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)
+        self.opener.addheaders = [('User-agent', 'wMAL/0.2')]
 
         urllib2.install_opener(self.opener)
     

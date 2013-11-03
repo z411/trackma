@@ -289,9 +289,12 @@ class wMAL_urwid(object):
         self.status("Ready.")
 
     def do_retrieve(self):
-        self.engine.list_download()
-        self._rebuild_all_lists()
-        self.status("Ready.")
+        try:
+            self.engine.list_download()
+            self._rebuild_all_lists()
+            self.status("Ready.")
+        except utils.wmalError, e:
+            self.error(e.message)
     
     def do_help(self):
         helptext = "wMAL-curses "+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
