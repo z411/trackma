@@ -289,9 +289,12 @@ class wMAL_urwid(object):
         self.status("Ready.")
 
     def do_retrieve(self):
-        self.engine.list_download()
-        self._rebuild_all_lists()
-        self.status("Ready.")
+        try:
+            self.engine.list_download()
+            self._rebuild_all_lists()
+            self.status("Ready.")
+        except utils.wmalError, e:
+            self.error(e.message)
     
     def do_help(self):
         helptext = "wMAL-curses "+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
@@ -683,10 +686,8 @@ class AccountDialog(Dialog):
     def build_list(self):
         self.listwalker[:] = []
 
-        i = 0
-        for account in self.manager.get_accounts():
-            self.listwalker.append(AccountItem(i, account))
-            i += 1
+        for k, account in self.manager.get_accounts():
+            self.listwalker.append(AccountItem(k, account))
 
     def keypress(self, size, key):
         #if key in ('up', 'down', 'left', 'right', 'tab'):
@@ -958,4 +959,4 @@ def main():
     try:
         wMAL_urwid()
     except utils.wmalFatal, e:
-        print e.message
+        print "Fatal error: %s" % e.message
