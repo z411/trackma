@@ -442,7 +442,7 @@ class Data(object):
     def get_all_possible_titles(self, showid):
         aliases = []
         if self.showlist.get(showid):
-            aliases = self.showlist[showid]['aliases']
+            aliases = list(self.showlist[showid]['aliases'])
         if self.infocache.get(showid) and self.infocache.get(showid).get('extra'):
             #Getting the first 2 list items of extra
             #should be english and synonyms
