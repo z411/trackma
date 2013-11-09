@@ -139,6 +139,7 @@ class Data(object):
                (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
                 self.meta.get('version') != VERSION):
                 try:
+                    self.process_queue()
                     self.download_data()
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
