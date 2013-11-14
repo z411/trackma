@@ -71,15 +71,16 @@ class libmal(lib):
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
-   
+    useragent = 'wMAL'
+
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
         # together with the urllib2 opener.
         super(libmal, self).__init__(messenger, account, userconfig)
-        
+
         self.username = account['username']
-        
+
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", account['username'], account['password']);
         
@@ -90,7 +91,9 @@ class libmal(lib):
     
     def _request(self, url):
         try:
-            return self.opener.open(url, timeout = 10)
+            request = urllib2.Request(url)
+            request.add_header('User-Agent', self.useragent)
+            return self.opener.open(request, timeout = 10)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e) 
 
@@ -103,12 +106,13 @@ class libmal(lib):
         """
         try:
             request = urllib2.Request(url)
-            request.add_header('Accept-encoding', 'gzip')
-            compressed_data = self.opener.open(request).read()
+            request.add_header('Accept-Encoding', 'gzip')
+            request.add_header('User-Agent', self.useragent)
+            compressed_data = self.opener.open(request)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e)
 
-        compressed_stream = StringIO(compressed_data)
+        compressed_stream = StringIO(compressed_data.read())
         return gzip.GzipFile(fileobj=compressed_stream)
 
     def _make_parser(self):
@@ -169,6 +173,8 @@ class libmal(lib):
                 raise utils.APIFatal('Attempted to parse unsupported media type.')
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
+        except IOError, e:
+            raise utils.APIError("Error reading list: %s" % e.message)
     
     def add_show(self, item):
         """Adds a new show in the server"""
