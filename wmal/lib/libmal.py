@@ -20,6 +20,7 @@ from wmal.lib.lib import lib
 import wmal.utils as utils
 
 import urllib, urllib2
+import base64
 import gzip
 import xml.etree.ElementTree as ET
 from cStringIO import StringIO
@@ -38,11 +39,9 @@ class libmal(lib):
     
     username = '' # TODO Must be filled by check_credentials
     logged_in = False
-    password_mgr = None
-    handler = None
     opener = None
     
-    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.2', 'merge': False }
+    api_info =  { 'name': 'MyAnimeList', 'version': 'v0.3', 'merge': False }
     
     default_mediatype = 'anime'
     mediatypes = dict()
@@ -71,7 +70,18 @@ class libmal(lib):
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
-    useragent = 'wMAL'
+    # NOTE: The guys at MAL implemented Incapsula as their CDN and
+    # several third-party clients have been having problems.
+    # I tried to contact Xinil to ask him to authorize wMAL,
+    # and even after 3 weeks downloading the list still fails even
+    # when using an User-Agent as instructed by Xinil.
+    # If you want to do your own tests, the ideal User-Agent
+    # should be the following:
+    #useragent = 'wMAL/0.3'
+    # I'm tired of waiting so until proper instructions to solve this without
+    # having to sniff HTTP packets are given, I'm going to use the
+    # Mozilla User-Agent which seems to work fine.
+    useragent = 'Mozilla/4.0 (compatible; ICS)'
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
@@ -80,20 +90,17 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         self.username = account['username']
+	auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
 
-        self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        self.password_mgr.add_password("MyAnimeList API", "myanimelist.net:80", account['username'], account['password']);
-        
-        self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
-        self.opener = urllib2.build_opener(self.handler)
-
-        urllib2.install_opener(self.opener)
+        self.opener = urllib2.build_opener()
+	self.opener.addheaders = [
+			('User-Agent', self.useragent),
+			('Authorization', auth_string),
+		]
     
     def _request(self, url):
         try:
-            request = urllib2.Request(url)
-            request.add_header('User-Agent', self.useragent)
-            return self.opener.open(request, timeout = 10)
+            return self.opener.open(url, timeout = 10)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e) 
 
@@ -107,7 +114,6 @@ class libmal(lib):
         try:
             request = urllib2.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
-            request.add_header('User-Agent', self.useragent)
             compressed_data = self.opener.open(request)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e)
