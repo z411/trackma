@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 import cPickle
 import os.path
 
@@ -57,7 +55,7 @@ class Data(object):
         self.msg = messenger
         self.config = config
         self.userconfig = userconfig
-        self.msg.info(self.name, "Version "+VERSION)
+        self.msg.info(self.name, "Initializing...")
         
         # Import the API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
@@ -116,38 +114,34 @@ class Data(object):
         if self._failed_searches_exists():
             self._load_failed_searches()
         
-        # If cache exists, load from it
+        # If there is a cache, load the list from it
         # otherwise query the API for a remote list
-        if not self._cache_exists():
-            try:
-                self.download_data()
-            except utils.APIError, e:
-                raise utils.APIFatal(e.message)
-        else:
-            cache_loaded = False
-
-            # Process the queue if we're going to retrieve the list or if we're beyond the time limit for some reason
-            if (self.config['autoretrieve'] == 'always' or
-               (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
-                self._load_cache()
-                cache_loaded = True # Flag so the cache doesn't get reloaded unnecessarily later
-
+        if self._cache_exists():
+            # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
+            if self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600:
                 self.process_queue()
 
-            # Redownload list if any autoretrieve condition is met
+            # Auto-retrieve: Redownload list if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
                (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
-                self.meta.get('version') != VERSION):
+                self.meta.get('version') != utils.VERSION):
                 try:
+                    # Make sure we process the queue first before overwriting the list
+                    # We don't want users losing their changes
                     self.process_queue()
                     self.download_data()
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
-            elif not cache_loaded:
+            elif not self.showlist:
                 # If the cache wasn't loaded before, do it now
                 self._load_cache()
-        
+        else:
+            try:
+                self.download_data()
+            except utils.APIError, e:
+                raise utils.APIFatal(e.message)
+ 
         if self._info_exists():
             self._load_info()
         
@@ -373,6 +367,10 @@ class Data(object):
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
             
+            # Load the cache if it wasn't loaded for some reason
+            if not self.showlist:
+                self._load_cache()
+            
             # Check log-in TODO
             #try:
             #    self.api.check_credentials()
@@ -562,7 +560,6 @@ class Data(object):
                 infos = self.api.request_info(missing)
                 for info in infos:
                     self.api.merge_info(showlist[info['id']], info)
-        
         
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)

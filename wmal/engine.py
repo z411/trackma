@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 import re
 import os
 import subprocess
@@ -61,7 +59,7 @@ class Engine:
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
-        self.msg.info(self.name, 'Version '+VERSION)
+        self.msg.info(self.name, 'Version '+utils.VERSION)
 
         # Register cleanup function when program exits
         atexit.register(self._cleanup)

@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 import sys
 import readline
 import cmd
@@ -55,7 +53,7 @@ class wmal_cmd(cmd.Cmd):
     __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
     def __init__(self):
-        print 'wMAL '+VERSION+'  Copyright (C) 2012  z411'
+        print 'wMAL v'+utils.VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
         print 'This is free software, and you are welcome to redistribute it'
         print 'under certain conditions; see the file COPYING for details.'

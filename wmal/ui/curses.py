@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 try:
     import urwid.curses_display
 except ImportError:
@@ -81,8 +79,8 @@ class wMAL_urwid(object):
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
         self.keymapping = self.map_key_to_func(keymap)
         
-        sys.stdout.write("\x1b]0;wMAL-curses "+VERSION+"\x07");
-        self.header_title = urwid.Text('wMAL-curses ' + VERSION)
+        sys.stdout.write("\x1b]0;wMAL-curses "+utils.VERSION+"\x07");
+        self.header_title = urwid.Text('wMAL-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:watching')
         self.header_sort = urwid.Text('Sort:title')
@@ -101,7 +99,7 @@ class wMAL_urwid(object):
             urwid.AttrMap(urwid.Text(top_text), 'status')
         ])
         
-        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+VERSION), 'status')
+        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+utils.VERSION), 'status')
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -297,7 +295,7 @@ class wMAL_urwid(object):
             self.error(e.message)
     
     def do_help(self):
-        helptext = "wMAL-curses "+VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext = "wMAL-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "wMAL is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/wmal-python\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
