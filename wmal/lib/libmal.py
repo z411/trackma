@@ -90,10 +90,10 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         self.username = account['username']
-	auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
+        auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
 
         self.opener = urllib2.build_opener()
-	self.opener.addheaders = [
+        self.opener.addheaders = [
 			('User-Agent', self.useragent),
 			('Authorization', auth_string),
 		]

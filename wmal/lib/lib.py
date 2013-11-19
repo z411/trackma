@@ -45,7 +45,7 @@ class lib(object):
     def __init__(self, messenger, account, userconfig):
         """Initializes the base for the API"""
         self.msg = messenger
-        self.msg.info(self.name, 'Version %s' % self.api_info['version'])
+        self.msg.info(self.name, 'Initializing...')
         
         if not userconfig.get('mediatype'):
             userconfig['mediatype'] = self.default_mediatype

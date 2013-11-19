@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 import cPickle
 import os.path
 
@@ -56,7 +54,7 @@ class Data(object):
         self.msg = messenger
         self.config = config
         self.userconfig = userconfig
-        self.msg.info(self.name, "Version "+VERSION)
+        self.msg.info(self.name, "Initializing...")
         
         # Import the API
         # TODO : Dangerous stuff, we should do an alphanumeric test or something.
@@ -132,7 +130,7 @@ class Data(object):
             # Redownload list if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
                (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
-                self.meta.get('version') != VERSION):
+                self.meta.get('version') != utils.VERSION):
                 try:
                     self.process_queue()
                     self.download_data()
@@ -471,7 +469,7 @@ class Data(object):
         
         # Update last retrieved time
         self.meta['lastget'] = time.time()
-        self.meta['version'] = VERSION
+        self.meta['version'] = utils.VERSION
         self._save_meta()
         
     def _cache_exists(self):

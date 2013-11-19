@@ -18,6 +18,8 @@ import os, re, shutil, copy
 import json
 import scandir
 
+VERSION = '0.2'
+
 datadir = os.path.dirname(__file__)
 
 # Put the available APIs here

@@ -2,7 +2,7 @@ import utils
 import cPickle
 
 class AccountManager(object):
-    accounts = {'default': None, 'next': 0, 'accounts': dict()}
+    accounts = {'default': None, 'next': 1, 'accounts': dict()}
 
     def __init__(self):
         utils.make_dir('')

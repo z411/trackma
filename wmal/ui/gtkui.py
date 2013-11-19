@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-VERSION = 'v0.2'
-
 import gobject
 import pygtk
 pygtk.require('2.0')
@@ -109,7 +107,7 @@ class wmal_gtk(object):
         self.main.set_position(gtk.WIN_POS_CENTER)
         self.main.connect('delete_event', self.delete_event)
         self.main.connect('destroy', self.on_destroy)
-        self.main.set_title('wMAL-gtk ' + VERSION)
+        self.main.set_title('wMAL-gtk ' + utils.VERSION)
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/wmal_icon.png')
         
         # Menus
@@ -306,13 +304,13 @@ class wmal_gtk(object):
         vbox.pack_start(self.notebook, True, True, 0)
 
         self.statusbar = gtk.Statusbar()
-        self.statusbar.push(0, 'wMAL-gtk ' + VERSION)
+        self.statusbar.push(0, 'wMAL-gtk ' + utils.VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
         
         # Status icon
         self.statusicon = gtk.StatusIcon()
         self.statusicon.set_from_file(utils.datadir + '/data/wmal_icon.png')
-        self.statusicon.set_tooltip('wMAL-gtk ' + VERSION)
+        self.statusicon.set_tooltip('wMAL-gtk ' + utils.VERSION)
         self.statusicon.connect('activate', self.status_event)
         self.statusicon.connect('popup-menu', self.status_menu_event)
         if self.config['show_tray']:
@@ -608,7 +606,7 @@ class wmal_gtk(object):
         self._clear_gui()
         self._create_lists()
         self.build_list()
-        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
+        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (utils.VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
         for i in self.mb_mediatype_menu.get_children():
@@ -713,7 +711,7 @@ class wmal_gtk(object):
     def on_about(self, widget):
         about = gtk.AboutDialog()
         about.set_program_name("wMAL-gtk")
-        about.set_version(VERSION)
+        about.set_version(utils.VERSION)
         about.set_comments("wMAL is an open source client for media tracking websites.")
         about.set_website("http://github.com/z411/wmal-python")
         about.set_copyright("(c) z411 - Icon by shuuichi")
