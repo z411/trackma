@@ -120,11 +120,7 @@ class Data(object):
             cache_loaded = False
 
             # Process the queue if we're going to retrieve the list or if we're beyond the time limit for some reason
-            if (self.config['autoretrieve'] == 'always' or
-               (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600)):
-                self._load_cache()
-                cache_loaded = True # Flag so the cache doesn't get reloaded unnecessarily later
-
+            if self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600:
                 self.process_queue()
 
             # Redownload list if any autoretrieve condition is met
@@ -137,8 +133,8 @@ class Data(object):
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
-            elif not cache_loaded:
-                # If the cache wasn't loaded before, do it no
+            elif not self.showlist:
+                # If the cache wasn't loaded before, do it now
                 self._load_cache()
         
         if self._info_exists():
@@ -318,6 +314,10 @@ class Data(object):
         """
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
+            
+            # Load the cache if it wasn't loaded for some reason
+            if not self.showlist:
+                self._load_cache()
             
             # Check log-in TODO
             #try:
