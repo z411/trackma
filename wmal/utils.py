@@ -18,7 +18,7 @@ import os, re, shutil, copy
 import json
 import scandir
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 datadir = os.path.dirname(__file__)
 
