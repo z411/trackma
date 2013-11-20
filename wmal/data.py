@@ -528,7 +528,7 @@ class Data(object):
         
         # Update last retrieved time
         self.meta['lastget'] = time.time()
-        self.meta['version'] = VERSION
+        self.meta['version'] = utils.VERSION
         self._save_meta()
         
     def do_merging(self, showlist):
