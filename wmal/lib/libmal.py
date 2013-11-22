@@ -70,18 +70,8 @@ class libmal(lib):
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
     }
     
-    # NOTE: The guys at MAL implemented Incapsula as their CDN and
-    # several third-party clients have been having problems.
-    # I tried to contact Xinil to ask him to authorize wMAL,
-    # and even after 3 weeks downloading the list still fails even
-    # when using an User-Agent as instructed by Xinil.
-    # If you want to do your own tests, the ideal User-Agent
-    # should be the following:
-    #useragent = 'wMAL/0.3'
-    # I'm tired of waiting so until proper instructions to solve this without
-    # having to sniff HTTP packets are given, I'm going to use the
-    # Mozilla User-Agent which seems to work fine.
-    useragent = 'Mozilla/4.0 (compatible; ICS)'
+    # Authorized User-Agent for wMAL
+    useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
