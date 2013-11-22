@@ -47,6 +47,7 @@ class libmelative(lib):
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
+        'segment_type': 'Episode',
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -56,6 +57,7 @@ class libmelative(lib):
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
+        'segment_type': 'Chapter',
     }
     mediatypes['vn'] = {
         'has_progress': False,
@@ -65,6 +67,7 @@ class libmelative(lib):
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
+        'segment_type': 'Chapter',
     }
     mediatypes['lightnovel'] = {
         'has_progress': True,
@@ -74,6 +77,7 @@ class libmelative(lib):
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
+        'segment_type': 'Chapter',
     }
     
     def __init__(self, messenger, account, userconfig):
@@ -134,25 +138,57 @@ class libmelative(lib):
                 _total = int(entity['length'])
             except TypeError:
                 _total = 0
-                    
+            
+            # use show progress if needed
             if self.mediatypes[self.mediatype]['has_progress']:
                 _progress = int(segment['name'])
             else:
                 _progress = 0
                 
-            itemlist[itemid] = {
-                'id':           itemid,
-                'title':        entity['aliases'][0].encode('utf-8'),
-                'my_status':    _status,
-                'my_score':     int(record['rating'] or 0),
-                'my_progress':  _progress,
-                'total':        _total,
-                'image':        entity['image_url'],
-                'status': 0, #placeholder
-            }
+            show = utils.show()
+            show['id'] = itemid
+            show['title'] = entity['aliases'][0].encode('utf-8')
+            show['my_status'] = _status
+            show['my_score'] = int(record['rating'] or 0)
+            show['my_progress'] =_progress
+            show['total'] = _total
+            show['image'] = entity['image_url']
+            show['status'] = 0 #placeholder
+
+            itemlist[itemid] = show
         
         return itemlist
             
         #except urllib2.HTTPError, e:
         #    raise utils.APIError("Error getting list. %s" % e.message)
-    
+
+    def update_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, 'Updating show %s...' % item['title'])
+        
+        values = dict()
+        if self.media_info['has_progress'] and 'my_progress' in item.keys():
+            # We need to update the segment, so we call api/scrobble
+            values = {'attribute_type': _self.media_info['segment_type'],
+                      'attribute_name': item['my_progress']}
+            data = self._urlencode(values)
+
+            try:
+                reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
+            except urllib2.HTTPError, e:
+                raise utils.APIError("Error scrobbling: " + str(e.code))
+
+        # Now we check for more changes like status or score
+        changes = dict()
+
+        if 'my_status' in item.keys:
+
+    def _urlencode(self, in_dict):
+        out_dict = {}
+        for k, v in in_dict.iteritems():
+            out_dict[k] = v
+            if isinstance(v, unicode):
+                out_dict[k] = v.encode('utf8')
+            elif isinstance(v, str):
+                out_dict[k] = v.decode('utf8')
+        return urllib.urlencode(out_dict)
