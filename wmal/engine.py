@@ -440,7 +440,7 @@ class Engine:
         searchep = str(episode).zfill(2)
         
         # Do the file search
-        regex = r"(%s).*\b%s\b.*(mkv|mp4|avi)" % (searchfile, searchep)
+        regex = r"(%s)\D*%s\D.*(mkv|mp4|avi)" % (searchfile, searchep)
         return utils.regex_find_file(regex, self.config['searchdir'])
     
     def get_new_episodes(self, showlist):

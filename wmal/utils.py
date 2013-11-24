@@ -58,6 +58,7 @@ def log_error(msg):
     
 def regex_find_file(regex, subdirectory=''):
     __re = re.compile(regex, re.I)
+    __re_crc = re.compile(r"[a-fA-F0-9]{8}")
     
     if subdirectory:
         path = subdirectory
@@ -65,7 +66,10 @@ def regex_find_file(regex, subdirectory=''):
         path = os.getcwd()
     for root, dirs, names in scandir.walk(path):
         for filename in names:
-            if __re.search(filename):
+            # Filename manipulation
+            filename_re = __re_crc.sub('', filename) # Remove CRC hash
+
+            if __re.search(filename_re):
                 return os.path.join(root, filename)
     return False
 
