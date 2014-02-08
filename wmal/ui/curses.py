@@ -496,7 +496,8 @@ class wMAL_urwid(object):
             item = self._get_selected_item()
 
             try:
-                show = self.engine.altname(item.showid, data)
+                self.engine.altname(item.showid, data)
+                item.update_altname(self.engine.altname(item.showid))
             except utils.wmalError, e:
                 self.error(e.message)
                 return
@@ -863,15 +864,17 @@ class ShowItem(urwid.WidgetWrap):
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         self.has_progress = has_progress
         self.playing = False
-        
-        self.showid = show['id']
-        self.showtitle = show['title']
 
+        self.show = show
+        self.showid = show['id']
+
+        self.showtitle = show['title']
         if altname:
             self.showtitle += " (%s)" % altname
+        self.title_str = urwid.Text(self.showtitle)
 
         self.item = [
-            ('weight', 1, urwid.Text(self.showtitle)),
+            ('weight', 1, self.title_str),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
         ]
@@ -900,13 +903,20 @@ class ShowItem(urwid.WidgetWrap):
     
     def update(self, show):
         if show['id'] == self.showid:
+            # Update progress
             if self.has_progress:
                 self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
             
+            # Update color
             self.highlight(show)
         else:
             print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
+
+    def update_altname(self, altname):
+        # Update title
+        self.showtitle = "%s (%s)" % (self.show['title'], altname)
+        self.title_str.set_text(self.showtitle)
     
     def highlight(self, show):
         if self.playing:
