@@ -103,7 +103,6 @@ class wMAL_urwid(object):
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
-                ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Progress')),
                 ('fixed', 7, urwid.Text('Score')),
@@ -798,7 +797,6 @@ class SearchItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
         self.show = show
         self.item = [
-            ('fixed', 7, urwid.Text("%d" % show['id'])),
             ('weight', 1, urwid.Text(show['title'])),
             ('fixed', 10, urwid.Text(str(show['type']))),
             ('fixed', 7, urwid.Text("%d" % show['total'])),
@@ -873,7 +871,6 @@ class ShowItem(urwid.WidgetWrap):
             self.showtitle += " (%s)" % altname
 
         self.item = [
-            ('fixed', 7, urwid.Text("%d" % self.showid)),
             ('weight', 1, urwid.Text(self.showtitle)),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),

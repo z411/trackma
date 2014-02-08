@@ -432,8 +432,7 @@ class wmal_cmd(cmd.Cmd):
                     col_title_length = len(show['title'])
             
         # Print header
-        print "| {0:{1}} {2:{3}} {4:{5}}|".format(
-                'ID',       col_id_length,
+        print "| {0:{1}} {2:{3}}|".format(
                 'Title',    col_title_length,
                 'Progress', col_episodes_length)
         
@@ -454,9 +453,7 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0:<{1}} {2}{3} {4:{5}}|".format(
-                show['id'],
-                col_id_length,
+            print "| {0}{1} {2:{3}}|".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str,

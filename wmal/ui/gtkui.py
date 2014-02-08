@@ -270,7 +270,7 @@ class wmal_gtk(object):
         line4_t.set_alignment(0, 0.5)
         line4.pack_start(line4_t, False, False, 0)
         
-        self.statusmodel = gtk.ListStore(int, str)
+        self.statusmodel = gtk.ListStore(str, str)
             
         self.statusbox = gtk.ComboBox(self.statusmodel)
         cell = gtk.CellRendererText()
@@ -854,9 +854,9 @@ class ShowView(gtk.TreeView):
         self.cols = dict()
         i = 0
         if has_progress:
-            columns = ('ID', 'Title', 'Progress', 'Score', 'Percent')
+            columns = ('Title', 'Progress', 'Score', 'Percent')
         else:
-            columns = ('ID', 'Title', 'Score')
+            columns = ('Title', 'Score')
 
         for name in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
@@ -864,11 +864,11 @@ class ShowView(gtk.TreeView):
             self.append_column(self.cols[name])
             i += 1
         
-        renderer_id = gtk.CellRendererText()
-        self.cols['ID'].pack_start(renderer_id, False)
-        self.cols['ID'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
-        self.cols['ID'].set_expand(False)
-        self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        #renderer_id = gtk.CellRendererText()
+        #self.cols['ID'].pack_start(renderer_id, False)
+        #self.cols['ID'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        #self.cols['ID'].set_expand(False)
+        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
         
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
@@ -897,7 +897,7 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_expand(False)
  
         # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(int, str, str, int, int, str)
+        self.store = gtk.ListStore(str, str, str, int, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
@@ -1703,15 +1703,15 @@ class ShowSearchView(gtk.TreeView):
     
         self.cols = dict()
         i = 0
-        for name in ('ID', 'Title', 'Type', 'Total'):
+        for name in ('Title', 'Type', 'Total'):
             self.cols[name] = gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(i)
             self.append_column(self.cols[name])
             i += 1
         
-        renderer_id = gtk.CellRendererText()
-        self.cols['ID'].pack_start(renderer_id, False)
-        self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        #renderer_id = gtk.CellRendererText()
+        #self.cols['ID'].pack_start(renderer_id, False)
+        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
         
         renderer_title = gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)

@@ -24,6 +24,7 @@ datadir = os.path.dirname(__file__)
 
 # Put the available APIs here
 available_libs = {
+    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg'),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg'),
     'malu':     ('MAL Unoffic.', datadir + '/data/malu.jpg'),
     'melative': ('Melative',     datadir + '/data/melative.jpg'),
