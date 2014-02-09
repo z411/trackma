@@ -100,10 +100,11 @@ class libhb(lib):
         
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request( "https://hummingbirdv1.p.mashape.com/users/z411/library?%s" % urllib.urlencode({'auth_token': self.auth}) )
+            data = self._request( "https://hummingbirdv1.p.mashape.com/users/%s/library?%s" % (self.username, urllib.urlencode({'auth_token': self.auth})) )
             shows = json.load(data)
             
             showlist = dict()
+            infolist = list()
             for show in shows:
                 slug = show['anime']['slug']
 
@@ -116,39 +117,49 @@ class libhb(lib):
                     'total': show['anime']['episode_count'],
                     'image': show['anime']['cover_image'],
                 })
-
+                
+                info = utils.show()
+                info.update({
+                    'id': slug,
+                    'title': show['anime']['title'],
+                    'image': show['anime']['cover_image'],
+                    'url': show['anime']['url'],
+                    'extra': [
+                        ('Alternate title', show['anime']['alternate_title']),
+                        ('Show type',       show['anime']['show_type']),
+                        ('Synopsis',        show['anime']['synopsis']),
+                        ('Status',          show['anime']['status']),
+                    ]
+                })
+                infolist.append(info)
+                
+            self._emit_signal('show_info_changed', infolist)
             return showlist
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
     
     def add_show(self, item):
         """Adds a new show in the server"""
-        self.check_credentials()
-        self.msg.info(self.name, "Adding show %s..." % item['title'])
-        
-        xml = self._build_xml(item)
-        
-        # Send the XML as POST data to the MyAnimeList API
-        values = {'data': xml}
-        data = self._urlencode(values)
-        try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/add/"+str(item['id'])+".xml", data)
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError('Error adding: ' + str(e.code))
-        
+        self.update_show(item)
+
     def update_show(self, item):
         """Sends a show update to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
         
-        xml = self._build_xml(item)
-        
-        # Send the XML as POST data to the MyAnimeList API
-        values = {'data': xml}
-        data = self._urlencode(values)
+        # Send the POST data to the Hummingbird API
+        values = {'auth_token': self.auth}
+
+        # Update necessary keys
+        if 'my_progress' in item.keys():
+            values['episodes_watched'] = item['my_progress']
+        if 'my_status' in item.keys():
+            values['status'] = item['my_status']
+        if 'my_score' in item.keys():
+            values['rating'] = item['my_score']
+
         try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/update/"+str(item['id'])+".xml", data)
+            response = self._request("https://hummingbirdv1.p.mashape.com/libraries/%s" % item['id'], values)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
@@ -158,174 +169,13 @@ class libhb(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
         
+        values = {'auth_token': self.auth}
         try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/delete/"+str(item['id'])+".xml")
+            response = self._request("https://hummingbirdv1.p.mashape.com/libraries/%s/remove" % item['id'], values)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
-        
-    def search(self, criteria):
-        """Searches MyAnimeList database for the queried show"""
-        self.msg.info(self.name, "Searching for %s..." % criteria)
-        
-        # Send the urlencoded query to the search API
-        query = self._urlencode({'q': criteria})
-        data = self._request_gzip("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
-        
-        # Load the results into XML
-        try:
-            root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except ET.ParseError:
-            return []
-        
-        # Use the correct tag name for episodes
-        if self.mediatype == 'manga':
-            episodes_str = 'chapters'
-        else:
-            episodes_str = 'episodes'
-                
-        # Since the MAL API returns the status as a string, and
-        # we handle statuses as integers, we need to convert them
-        if self.mediatype == 'anime':
-            status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
-        elif self.mediatype == 'manga':
-            status_translate = {'Publishing': 1, 'Finished': 2}
-        
-        entries = list()
-        for child in root.iter('entry'):
-            show = utils.show()
-            showid = int(child.find('id').text)
-            show.update({
-                'id':           showid,
-                'title':        child.find('title').text,
-                'type':         child.find('type').text,
-                'status':       status_translate[child.find('status').text], # TODO : This should return an int!
-                'total':        int(child.find(episodes_str).text),
-                'image':        child.find('image').text,
-                'url':          "http://myanimelist.net/anime/%d" % showid,
-                'extra': [
-                    ('English',  child.find('english').text),
-                    ('Synonyms', child.find('synonyms').text),
-                    ('Synopsis', self._translate_synopsis(child.find('synopsis').text)),
-                    (episodes_str.title(), child.find(episodes_str).text),
-                    ('Type',     child.find('type').text),
-                    ('Score',    child.find('score').text),
-                    ('Status',   child.find('status').text),
-                    ('Start date', child.find('start_date').text),
-                    ('End date', child.find('end_date').text),
-                    ]
-            })
-            entries.append(show)
-        
-        self._emit_signal('show_info_changed', entries)
-        return entries
-    
-    def _translate_synopsis(self, string):
-        if string is None:
-            return None
-        else:
-            return string.replace('<br />', '')
-
-    def request_info(self, itemlist):
-        resultdict = dict()
-        for item in itemlist:
-            # Search for it only if it hasn't been found earlier
-            if item['id'] not in resultdict:
-                infos = self.search(item['title'])
-                for info in infos:
-                    showid = info['id']
-                    resultdict[showid] = info
-
-        itemids = [ show['id'] for show in itemlist ]
-
-        reslist = [ resultdict[itemid] for itemid in itemids ]
-        return reslist
-
-    def _parse_anime(self, root):
-        """Converts an XML anime list to a dictionary"""
-        showlist = dict()
-        for child in root.iter('anime'):
-            show_id = int(child.find('series_animedb_id').text)
-            if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
-            else:
-                aliases = []
-            
-            show = utils.show()
-            show.update({
-                'id':           show_id,
-                'title':        child.find('series_title').text,
-                'aliases':      aliases,
-                'my_progress':  int(child.find('my_watched_episodes').text),
-                'my_status':    int(child.find('my_status').text),
-                'my_score':     int(child.find('my_score').text),
-                'total':     int(child.find('series_episodes').text),
-                'status':       int(child.find('series_status').text),
-                'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/anime/%d" % show_id,
-            })
-            showlist[show_id] = show
-        return showlist
-    
-    def _parse_manga(self, root):
-        """Converts an XML manga list to a dictionary"""
-        mangalist = dict()
-        for child in root.iter('manga'):
-            manga_id = int(child.find('series_mangadb_id').text)
-            if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
-            else:
-                aliases = []
-            
-            show = utils.show()
-            show.update({
-                'id':           manga_id,
-                'title':        child.find('series_title').text,
-                'aliases':      aliases,
-                'my_progress':  int(child.find('my_read_chapters').text),
-                'my_status':    int(child.find('my_status').text),
-                'my_score':     int(child.find('my_score').text),
-                'total':     int(child.find('series_chapters').text),
-                'status':       int(child.find('series_status').text),
-                'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/manga/%d" % manga_id,
-            })
-            mangalist[manga_id] = show
-        return mangalist
-    
-    def _build_xml(self, item):
-        """
-        Creates an "anime|manga data" XML to be used in the
-        add, update and delete methods.
-        
-        More information: 
-          http://myanimelist.net/modules.php?go=api#animevalues
-          http://myanimelist.net/modules.php?go=api#mangavalues
-        
-        """
-        
-        # Start building XML
-        root = ET.Element("entry")
-        
-        # Use the correct name depending on mediatype
-        if self.mediatype == 'anime':
-            progressname = 'episode'
-        else:
-            progressname = 'chapter'
-        
-        # Update necessary keys
-        if 'my_progress' in item.keys():
-            episode = ET.SubElement(root, progressname)
-            episode.text = str(item['my_progress'])
-        if 'my_status' in item.keys():
-            status = ET.SubElement(root, "status")
-            status.text = str(item['my_status'])
-        if 'my_score' in item.keys():
-            status = ET.SubElement(root, "score")
-            status.text = str(item['my_score'])
-            
-        return ET.tostring(root)
-
+   
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
         out_dict = {}

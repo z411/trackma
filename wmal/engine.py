@@ -203,7 +203,7 @@ class Engine:
         """Requests the full show list from the data handler."""
         return self.data_handler.get().itervalues()
     
-    def get_show_info(self, pattern):
+    def get_show_info(self, showid):
         """
         Returns the complete info for a show
         
@@ -215,21 +215,21 @@ class Engine:
         """
         showdict = self.data_handler.get()
         
+        #try:
+        #    # ID lookup
+        #    showid = int(pattern)
+            
         try:
-            # ID lookup
-            showid = int(pattern)
-            
-            try:
-                return showdict[showid]
-            except KeyError:
-                raise utils.EngineError("Show not found.")
-            
-        except ValueError:
-            # Do title lookup, slower
-            for k, show in showdict.iteritems():
-                if show['title'] == pattern:
-                    return show
+            return showdict[showid]
+        except KeyError:
             raise utils.EngineError("Show not found.")
+            
+        #except ValueError:
+        #    # Do title lookup, slower
+        #    for k, show in showdict.iteritems():
+        #        if show['title'] == pattern:
+        #            return show
+        #    raise utils.EngineError("Show not found.")
     
     def get_show_details(self, show):
         return self.data_handler.info_get(show)
