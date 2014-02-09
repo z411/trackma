@@ -1027,7 +1027,7 @@ class AccountSelect(gtk.Window):
         col_site.pack_start(renderer_site, False)
         col_site.add_attribute(renderer_site, 'text', 2)
         
-        self.store = gtk.ListStore(int, str, str, gtk.gdk.Pixbuf)
+        self.store = gtk.ListStore(int, str, str, gtk.gdk.Pixbuf, bool)
         self.accountlist.set_model(self.store)
         
         self.accountlist.get_selection().connect("changed", self.on_account_changed)
@@ -1069,9 +1069,13 @@ class AccountSelect(gtk.Window):
         self.store.clear()
         for k, account in self.manager.get_accounts():
             libname = account['api']
-            api = utils.available_libs[libname]
-            
-            self.store.append([k, account['username'], api[0], self.pixbufs[libname]])
+            try:
+                api = utils.available_libs[libname]
+                self.store.append([k, account['username'], api[0], self.pixbufs[libname], True])
+            except KeyError:
+                # Invalid API
+                self.store.append([k, account['username'], 'N/A', None, False])
+
     
     def is_remember(self):
         # Return the state of the checkbutton if there's no default account
@@ -1079,18 +1083,24 @@ class AccountSelect(gtk.Window):
             return self.remember.get_active()
         else:
             return True
-        
+    
+    def get_selected(self):
+        selection = self.accountlist.get_selection()
+        selection.set_mode(gtk.SELECTION_SINGLE)
+        return selection.get_selected()
+
     def get_selected_id(self):
         if self.default is not None:
             return self.default
         else:
-            selection = self.accountlist.get_selection()
-            selection.set_mode(gtk.SELECTION_SINGLE)
-            tree_model, tree_iter = selection.get_selected()
+            tree_model, tree_iter = self.get_selected()
             return tree_model.get_value(tree_iter, 0)
     
     def on_account_changed(self, widget):
-        self.use_button.set_sensitive(True)
+        tree_model, tree_iter = self.get_selected()
+        is_selectable = tree_model.get_value(tree_iter, 4)
+        
+        self.use_button.set_sensitive(is_selectable)
         self.delete_button.set_sensitive(True)
     
     def on_row_activated(self, treeview, iter, path):
