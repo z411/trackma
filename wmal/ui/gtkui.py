@@ -651,7 +651,11 @@ class wmal_gtk(object):
             self.allow_buttons_push(False, lists_too=False)
             return
         
-        self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        try:
+            self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        except ValueError:
+            self.selected_show = tree_model.get(tree_iter, 0)[0]
+
         self.allow_buttons_push(True, lists_too=False)
         
         show = self.engine.get_show_info(self.selected_show)
@@ -676,7 +680,7 @@ class wmal_gtk(object):
         
         # Status selector
         for i in self.statusmodel:
-            if i[0] == show['my_status']:
+            if i[0] == str(show['my_status']):
                 self.statusbox.set_active_iter(i.iter)
                 break
         
@@ -686,7 +690,7 @@ class wmal_gtk(object):
         # Image
         if show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%d.jpg" % (show['id']))
+            filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
             
             if os.path.isfile(filename):
                 self.show_image.image_show(filename)
