@@ -226,7 +226,7 @@ class libmal(lib):
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except ET.ParseError:
+        except (ET.ParseError, IOError):
             return []
         
         # Use the correct tag name for episodes
