@@ -1,7 +1,17 @@
 0.2
 ===
-- Uses separate account manager to handle multiple accounts
-- Now config files are stored in JSON
+- New: Basic Hummingbird support
+- New: Implemented account switching and account manager
+- New: Support for viewing show details
+- New: GTK Settings window
+- New: GTK Tray icon
+- New: Aliases and manual alternative titles
+- New: Timed autosend and autoretrieve
+- Improvement: libmal now uses gzipped requests
+- Improvement: Now config files are stored in JSON
+- Improvement: Shows get colored when queued or playing
+- Improvement: Better curses interface memory management
+- Several bugfixes
 
 0.1
 ===
