@@ -333,6 +333,10 @@ class Engine:
             elif newep == show['total'] and self.mediainfo.get('status_finish'):
                 self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_finish'])
                 self._emit_signal('status_changed', show)
+        
+        # Clear neweps flag
+        if self.data_handler.get_show_attr(show, 'neweps'):
+            self.data_handler.set_show_attr(show, 'neweps', False)
 
         # Emit signal
         self._emit_signal('episode_changed', show)

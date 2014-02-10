@@ -383,6 +383,9 @@ class Data(object):
     def altname_set(self, showid, altname):
         self.meta['altnames'][showid] = altname
     
+    def get_show_attr(self, show, key):
+        return show.get(key)
+
     def set_show_attr(self, show, key, value):
         show[key] = value
         

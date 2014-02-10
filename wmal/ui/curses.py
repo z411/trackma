@@ -426,7 +426,7 @@ class wMAL_urwid(object):
             shows = self.engine.search(data)
             if len(shows) > 0:
                 self.status("Ready.")
-                self.dialog = AddDialog(self.mainloop, showlist=shows, width=('relative', 80))
+                self.dialog = AddDialog(self.mainloop, self.engine, showlist=shows, width=('relative', 80))
                 urwid.connect_signal(self.dialog, 'done', self.addsearch_do)
                 self.dialog.show()
             else:
@@ -624,8 +624,11 @@ class AddDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
     
-    def __init__(self, loop, showlist={}, width=30):
-        listheader = urwid.Columns([
+    def __init__(self, loop, engine, showlist={}, width=30):
+        self.viewing_info = False
+        self.engine = engine
+
+        self.listheader = urwid.Columns([
                 ('fixed', 7, urwid.Text('ID')),
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Type')),
@@ -633,14 +636,15 @@ class AddDialog(Dialog):
             ])
         
         self.listwalker = urwid.SimpleListWalker([])
-        listbox = urwid.ListBox(self.listwalker)
+        self.listbox = urwid.ListBox(self.listwalker)
         
         # Add results to the list
         for show in showlist:
             self.listwalker.append(SearchItem(show))
         
-        self.frame = urwid.Frame(listbox, header=listheader)
-        self.__super.__init__(self.frame, loop, width=width, height=15, title='Search results')
+        self.info_txt = urwid.Text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
+        self.frame = urwid.Frame(self.listbox, header=self.listheader, footer=self.info_txt)
+        self.__super.__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
     
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
@@ -648,12 +652,52 @@ class AddDialog(Dialog):
         elif key == 'enter':
             show = self.listwalker.get_focus()[0].show
             urwid.emit_signal(self, 'done', show)
+        elif key == 'i':
+            show = self.listwalker.get_focus()[0].show
+            self.do_info()
         elif key == 'O':
             show = self.listwalker.get_focus()[0].show
             webbrowser.open(show['url'], 2, True)
         elif key == 'esc':
-            self.close()
+            self.do_info_exit()
 
+    def do_info(self):
+        if self.viewing_info:
+            return
+
+        show = self.listwalker.get_focus()[0].show
+
+        #self.status("Getting show details...")
+        details = self.engine.get_show_details(show)
+
+        title = urwid.Text( ('info_title', show['title']), 'center', 'any')
+        widgets = []
+        for line in details['extra']:
+            if line[0] and line[1]:
+                widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
+                if isinstance(line[1], dict):
+                    linestr = repr(line[1])
+                elif isinstance(line[1], int):
+                    linestr = str(line[1])
+                else:
+                    linestr = line[1]
+
+                widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
+        
+        self.frame.body = urwid.ListBox(widgets)
+        self.frame.header = title
+        self.viewing_info = True
+        self.info_txt.set_text("Detail View | ESC:Return  Up/Down:Scroll  O:View website")
+    
+    def do_info_exit(self):
+        if self.viewing_info:
+            self.frame.body = self.listbox
+            self.frame.header = self.listheader
+            self.info_txt.set_text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
+            self.viewing_info = False
+        else:
+            self.close()
+ 
 class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
