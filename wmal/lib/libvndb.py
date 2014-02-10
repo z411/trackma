@@ -305,6 +305,7 @@ class libvndb(lib):
         for item in data['items']:
             results.append(self._parse_info(item))
         
+        self._emit_signal('show_info_changed', results)
         return results
     
     def logout(self):

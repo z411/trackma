@@ -366,8 +366,7 @@ class Data(object):
     def info_get(self, show):
         try:
             showid = show['id']
-            info = self.infocache[showid]
-            return info
+            return self.infocache[showid]
         except KeyError:
             return self.api.request_info([show])[0]
 

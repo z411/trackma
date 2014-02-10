@@ -1629,9 +1629,13 @@ class ShowSearch(gtk.Window):
         self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         self.add_button.connect("clicked", self.do_add)
         self.add_button.set_sensitive(False)
+        self.info_button = gtk.Button('Info')
+        self.info_button.connect("clicked", self.do_info)
+        self.info_button.set_sensitive(False)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.do_close)
         bottombar.pack_start(self.add_button, False, False, 0)
+        bottombar.pack_start(self.info_button, False, False, 0)
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
         
@@ -1660,7 +1664,10 @@ class ShowSearch(gtk.Window):
                 #self.do_close()
             except utils.wmalError, e:
                 self.error_push(e.message)
-        
+    
+    def do_info(self, widget):
+        win = InfoDialog(self.engine, self.showdict[self.selected_show])
+ 
     def do_search(self, widget):
         threading.Thread(target=self.task_search).start()
     
@@ -1676,14 +1683,17 @@ class ShowSearch(gtk.Window):
         
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
         self.add_button.set_sensitive(True)
+        self.info_button.set_sensitive(True)
         
     def task_search(self):
         self.allow_buttons(False)
         self.entries = self.engine.search(self.searchtext.get_text())
-        
+        self.showdict = dict()
+
         gtk.threads_enter()
         self.showlist.append_start()
         for show in self.entries:
+            self.showdict[show['id']] = show
             self.showlist.append(show)
         self.showlist.append_finish()
         gtk.threads_leave()
