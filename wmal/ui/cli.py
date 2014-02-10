@@ -134,7 +134,7 @@ class wmal_cmd(cmd.Cmd):
     
     def do_info(self, arg):
         if(arg):
-            show = self.engine.get_show_info(arg)
+            show = self.engine.get_show_info_title(arg)
             details = self.engine.get_show_details(show)
             print "Title: %s" % details['title']
             for line in details['extra']:
@@ -195,7 +195,7 @@ class wmal_cmd(cmd.Cmd):
             args = self.parse_args(arg)
             
             try:
-                show = self.engine.get_show_info(args[0])
+                show = self.engine.get_show_info_title(args[0])
                 
                 do_delete = raw_input("Delete %s? [y/N] " % show['title'])
                 if do_delete.lower() == 'y':
@@ -213,7 +213,7 @@ class wmal_cmd(cmd.Cmd):
         if arg:
             try:
                 args = self.parse_args(arg)
-                show = self.engine.get_show_info(args[0])
+                show = self.engine.get_show_info_title(args[0])
                 episode = 0
                 
                 # If the user specified an episode, play it
@@ -248,7 +248,8 @@ class wmal_cmd(cmd.Cmd):
         if arg:
             args = self.parse_args(arg)
             try:
-                self.engine.set_episode(args[0], args[1])
+                show = self.engine.get_show_info_title(args[0])
+                self.engine.set_episode(show['id'], args[1])
             except IndexError:
                 print "Missing arguments."
             except utils.wmalError, e:

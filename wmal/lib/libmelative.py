@@ -41,19 +41,19 @@ class libmelative(lib):
     default_mediatype = 'anime'
     mediatypes['anime'] = {
         'has_progress': True,
-        'can_score': False,
-        'can_status': False,
-        'can_update': False,
-        'can_play': False,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
+        'can_play': True,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
         'segment_type': 'Episode',
     }
     mediatypes['manga'] = {
         'has_progress': True,
-        'can_score': False,
-        'can_status': False,
-        'can_update': False,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
@@ -61,9 +61,9 @@ class libmelative(lib):
     }
     mediatypes['vn'] = {
         'has_progress': False,
-        'can_score': False,
-        'can_status': False,
-        'can_update': False,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
@@ -71,9 +71,9 @@ class libmelative(lib):
     }
     mediatypes['lightnovel'] = {
         'has_progress': True,
-        'can_score': False,
-        'can_status': False,
-        'can_update': False,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
         'can_play': False,
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
@@ -166,22 +166,34 @@ class libmelative(lib):
         self.check_credentials()
         self.msg.info(self.name, 'Updating show %s...' % item['title'])
         
-        values = dict()
-        if self.media_info['has_progress'] and 'my_progress' in item.keys():
-            # We need to update the segment, so we call api/scrobble
-            values = {'attribute_type': _self.media_info['segment_type'],
-                      'attribute_name': item['my_progress']}
-            data = self._urlencode(values)
-
-            try:
-                reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
-            except urllib2.HTTPError, e:
-                raise utils.APIError("Error scrobbling: " + str(e.code))
-
-        # Now we check for more changes like status or score
         changes = dict()
+        if self.media_info()['has_progress'] and 'my_progress' in item.keys():
+            # We need to update the segment, so we call api/scrobble
+            #values = dict()
+            #values = {'attribute_type': _self.media_info['segment_type'],
+            #          'attribute_name': item['my_progress']}
+            #data = self._urlencode(values)
+            #
+            #try:
+            #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
+            #except urllib2.HTTPError, e:
+            #    raise utils.APIError("Error scrobbling: " + str(e.code))
+            changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
 
-        if 'my_status' in item.keys:
+        if 'my_status' in item.keys():
+            changes['state'] = self.statuses_dict[item['my_status']]
+
+        if 'my_score' in item.keys():
+            changes['rating'] = item['my_score']
+        
+        data = self._urlencode(changes)
+
+        try:
+            response = self.opener.open("http://melative.com/api/scrobble.json", data)
+        except urllib2.HTTPError, e:
+            raise utils.APIError("Error updating: " + str(e.code))
+        
+        return True
 
     def _urlencode(self, in_dict):
         out_dict = {}

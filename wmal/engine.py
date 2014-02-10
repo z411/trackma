@@ -230,6 +230,14 @@ class Engine:
         #        if show['title'] == pattern:
         #            return show
         #    raise utils.EngineError("Show not found.")
+
+    def get_show_info_title(self, pattern):
+        showdict = self.data_handler.get()           
+        # Do title lookup, slower
+        for k, show in showdict.iteritems():
+            if show['title'] == pattern:
+                return show
+        raise utils.EngineError("Show not found.")
     
     def get_show_details(self, show):
         return self.data_handler.info_get(show)
