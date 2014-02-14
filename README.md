@@ -39,8 +39,8 @@ Requirements
 - (Optional) PyGTK (python-gtk2) - for the GTK interface.
 - (Optional/Recommended) PIL (python-imaging) - for showing preview images in the GTK interface.
 
-Installation and Configuration
---------------------------
+Installation
+------------
 
 Like any Python program, run the setup.py installation script:
 
@@ -55,6 +55,9 @@ $ wmal-gtk (requires pygtk)
 </pre>
 
 Alternatively, you can just run the scripts directly from the bin/ folder.
+
+Configuration
+-------------
 
 A configuration file will be created in `~/.wmal/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
