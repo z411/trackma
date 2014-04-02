@@ -1,0 +1,9 @@
+#!/usr/local/bin/python
+try:
+    import wmal.ui.gtkui
+except ImportError:
+    import os, sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import wmal.ui.gtkui
+
+wmal.ui.gtkui.main()
