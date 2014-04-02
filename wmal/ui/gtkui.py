@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#
 
 import gobject
 import pygtk
@@ -222,6 +223,11 @@ class wmal_gtk(object):
         
         # Buttons
         top_buttons = gtk.HBox(False, 5)
+        
+        self.add_epp_button = gtk.Button('+')
+        self.add_epp_button.connect("clicked", self.do_add_epp)
+        self.add_epp_button.set_sensitive(False)
+        line2.pack_start(self.add_epp_button, False, False, 0)
         
         self.update_button = gtk.Button('Update')
         self.update_button.connect("clicked", self.do_update)
@@ -448,7 +454,15 @@ class wmal_gtk(object):
     def do_info(self, widget, d1=None, d2=None):
         show = self.engine.get_show_info(self.selected_show)
         win = InfoDialog(self.engine, show)
-
+        
+    def do_add_epp(self, widget):
+        ep = self.show_ep_num.get_value_as_int()
+        try:
+            show = self.engine.set_episode(self.selected_show, ep + 1)
+            self.show_ep_num.set_value(show['my_progress'])
+        except utils.wmalError, e:
+            self.error(e.message)
+    
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:
@@ -766,6 +780,7 @@ class wmal_gtk(object):
             if self.engine.mediainfo['can_update']:
                 self.update_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
+                self.add_epp_button.set_sensitive(boolean)
             
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
