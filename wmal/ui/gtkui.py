@@ -1191,6 +1191,9 @@ class InfoDialog(gtk.Window):
         self.w_title = gtk.Label('Loading...')
         
         # Middle line (sidebox)
+        eventbox_sidebox = gtk.EventBox()
+        scrolled_sidebox = gtk.ScrolledWindow()
+        scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sidebox = gtk.HBox()
 
         alignment_image = gtk.Alignment(yalign=0.0)
@@ -1201,6 +1204,12 @@ class InfoDialog(gtk.Window):
         
         sidebox.pack_start(alignment_image, padding=5)
         sidebox.pack_start(self.w_content, padding=5)
+
+        eventbox_sidebox.add(sidebox)
+        eventbox_sidebox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse('white'))
+
+        scrolled_sidebox.add_with_viewport(eventbox_sidebox)
+        scrolled_sidebox.set_size_request(600, 500)
        
         # Bottom line (buttons)
         alignment = gtk.Alignment(xalign=1.0)
@@ -1216,7 +1225,7 @@ class InfoDialog(gtk.Window):
         alignment.add(bottombar)
 
         fullbox.pack_start(self.w_title, False, False)
-        fullbox.pack_start(sidebox, padding=5)
+        fullbox.pack_start(scrolled_sidebox, padding=5)
         fullbox.pack_start(alignment)
         
         self.add(fullbox)
@@ -1266,6 +1275,7 @@ class InfoDialog(gtk.Window):
         self.w_content.set_text("\n\n".join(detail))
         self.w_content.set_line_wrap(True)
         self.w_content.set_use_markup(True)
+        self.w_content.set_size_request(340, -1)
 
         self.show_all()
         self.set_position(gtk.WIN_POS_CENTER)
