@@ -871,7 +871,7 @@ class ShowView(gtk.TreeView):
         self.set_search_column(1)
         
         self.cols = dict()
-        i = 0
+        i = 1
         if has_progress:
             columns = ('Title', 'Progress', 'Score', 'Percent')
         else:
