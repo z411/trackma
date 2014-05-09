@@ -24,6 +24,7 @@ import gtk
 gtk.gdk.threads_init() # We'll use threads
 
 import os
+import cgi
 import time
 import threading
 import webbrowser
@@ -680,7 +681,7 @@ class wmal_gtk(object):
         if self.image_thread is not None:
             self.image_thread.cancel()
         
-        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(show['title']))
+        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(show['title'])))
         self.show_title.set_use_markup(True)
         
         # Episode selector
@@ -1253,13 +1254,13 @@ class InfoDialog(gtk.Window):
     
     def _done(self, details):
         # Put the returned details into the lines VBox
-        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(details['title']))
+        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(details['title'])))
         self.w_title.set_use_markup(True)
 
         detail = list()
         for line in details['extra']:
             if line[0] and line[1]:
-                detail.append("<b>%s</b>\n%s" % (line[0], line[1]))
+                detail.append("<b>%s</b>\n%s" % (cgi.escape(line[0]), cgi.escape(line[1])))
 
                 #h = gtk.Label()
                 #h.set_alignment(0, 0.5)
