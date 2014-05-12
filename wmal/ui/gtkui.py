@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#
 
 import gobject
 import pygtk
@@ -23,6 +24,7 @@ import gtk
 gtk.gdk.threads_init() # We'll use threads
 
 import os
+import cgi
 import time
 import threading
 import webbrowser
@@ -222,6 +224,11 @@ class wmal_gtk(object):
         
         # Buttons
         top_buttons = gtk.HBox(False, 5)
+        
+        self.add_epp_button = gtk.Button('+')
+        self.add_epp_button.connect("clicked", self.do_add_epp)
+        self.add_epp_button.set_sensitive(False)
+        line2.pack_start(self.add_epp_button, False, False, 0)
         
         self.update_button = gtk.Button('Update')
         self.update_button.connect("clicked", self.do_update)
@@ -448,7 +455,15 @@ class wmal_gtk(object):
     def do_info(self, widget, d1=None, d2=None):
         show = self.engine.get_show_info(self.selected_show)
         win = InfoDialog(self.engine, show)
-
+        
+    def do_add_epp(self, widget):
+        ep = self.show_ep_num.get_value_as_int()
+        try:
+            show = self.engine.set_episode(self.selected_show, ep + 1)
+            self.show_ep_num.set_value(show['my_progress'])
+        except utils.wmalError, e:
+            self.error(e.message)
+    
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:
@@ -666,7 +681,7 @@ class wmal_gtk(object):
         if self.image_thread is not None:
             self.image_thread.cancel()
         
-        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(show['title']))
+        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(show['title'])))
         self.show_title.set_use_markup(True)
         
         # Episode selector
@@ -766,6 +781,7 @@ class wmal_gtk(object):
             if self.engine.mediainfo['can_update']:
                 self.update_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
+                self.add_epp_button.set_sensitive(boolean)
             
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
@@ -856,7 +872,7 @@ class ShowView(gtk.TreeView):
         self.set_search_column(1)
         
         self.cols = dict()
-        i = 0
+        i = 1
         if has_progress:
             columns = ('Title', 'Progress', 'Score', 'Percent')
         else:
@@ -1176,6 +1192,9 @@ class InfoDialog(gtk.Window):
         self.w_title = gtk.Label('Loading...')
         
         # Middle line (sidebox)
+        eventbox_sidebox = gtk.EventBox()
+        scrolled_sidebox = gtk.ScrolledWindow()
+        scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sidebox = gtk.HBox()
 
         alignment_image = gtk.Alignment(yalign=0.0)
@@ -1186,6 +1205,12 @@ class InfoDialog(gtk.Window):
         
         sidebox.pack_start(alignment_image, padding=5)
         sidebox.pack_start(self.w_content, padding=5)
+
+        eventbox_sidebox.add(sidebox)
+        eventbox_sidebox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse('white'))
+
+        scrolled_sidebox.add_with_viewport(eventbox_sidebox)
+        scrolled_sidebox.set_size_request(600, 500)
        
         # Bottom line (buttons)
         alignment = gtk.Alignment(xalign=1.0)
@@ -1201,7 +1226,7 @@ class InfoDialog(gtk.Window):
         alignment.add(bottombar)
 
         fullbox.pack_start(self.w_title, False, False)
-        fullbox.pack_start(sidebox, padding=5)
+        fullbox.pack_start(scrolled_sidebox, padding=5)
         fullbox.pack_start(alignment)
         
         self.add(fullbox)
@@ -1229,13 +1254,13 @@ class InfoDialog(gtk.Window):
     
     def _done(self, details):
         # Put the returned details into the lines VBox
-        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(details['title']))
+        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(details['title'])))
         self.w_title.set_use_markup(True)
 
         detail = list()
         for line in details['extra']:
             if line[0] and line[1]:
-                detail.append("<b>%s</b>\n%s" % (line[0], line[1]))
+                detail.append("<b>%s</b>\n%s" % (cgi.escape(line[0]), cgi.escape(line[1])))
 
                 #h = gtk.Label()
                 #h.set_alignment(0, 0.5)
@@ -1251,6 +1276,7 @@ class InfoDialog(gtk.Window):
         self.w_content.set_text("\n\n".join(detail))
         self.w_content.set_line_wrap(True)
         self.w_content.set_use_markup(True)
+        self.w_content.set_size_request(340, -1)
 
         self.show_all()
         self.set_position(gtk.WIN_POS_CENTER)
