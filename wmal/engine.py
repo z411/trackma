@@ -640,9 +640,10 @@ class Engine:
             # Use difflib to see if the show title is similar to
             # one we have in the list
             highest_ratio = (None, 0)
+            matcher = difflib.SequenceMatcher()
             for show in self.get_list():
-                ratio = difflib.SequenceMatcher(None, show['title'], show_title)
-                ratio = ratio.ratio()
+                matcher.set_seqs(show['title'], show_title)
+                ratio = matcher.ratio()
                 if ratio > highest_ratio[1]:
                     highest_ratio = (show, ratio)
             
