@@ -16,7 +16,6 @@
 
 import os, re, shutil, copy
 import json
-import scandir
 
 VERSION = '0.2'
 
@@ -61,10 +60,10 @@ def regex_find_file(regex, subdirectory=''):
     __re_crc = re.compile(r"[a-fA-F0-9]{8}")
     
     if subdirectory:
-        path = subdirectory
+        path = os.path.expanduser(subdirectory)
     else:
         path = os.getcwd()
-    for root, dirs, names in scandir.walk(path):
+    for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
             # Filename manipulation
             filename_re = __re_crc.sub('', filename) # Remove CRC hash

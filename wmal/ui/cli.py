@@ -28,7 +28,7 @@ from wmal.accounts import AccountManager
 import wmal.messenger as messenger
 import wmal.utils as utils
 
-_DEBUG = True
+_DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'
@@ -231,7 +231,7 @@ class wmal_cmd(cmd.Cmd):
                 
                 # Ask if we should update the show to the last episode
                 if played_episode and playing_next:
-                    do_update = raw_input("Should I update %s to episode %d? [y/N]" % (show['title'], played_episode))
+                    do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
                     if do_update.lower() == 'y':
                         self.engine.set_episode(show['id'], played_episode)
             except utils.wmalError, e:
