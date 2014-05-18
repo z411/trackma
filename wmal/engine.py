@@ -443,17 +443,41 @@ class Engine:
         self._emit_signal('show_deleted', show)
         
     def _search_video(self, titles, episode):
-        searchfile = '|'.join(titles)
-        searchfile = searchfile.replace(',', ',?')
-        searchfile = searchfile.replace('.', '.?')
-        searchfile = searchfile.replace('!', '[!]?')
-        searchfile = searchfile.replace('?', '[?]?')
-        searchfile = searchfile.replace(' ', '.?')    
         searchep = str(episode).zfill(2)
-        
+
         # Do the file search
-        regex = r"(%s)\D*%s\D.*(mkv|mp4|avi)$" % (searchfile, searchep)
-        return utils.regex_find_file(regex, self.config['searchdir'])
+        regex = r"(\[.+\])? ?([ \w\d\-,@.:;!\?]+) - (%s) " % searchep
+        candidates = utils.regex_find_files(regex, self.config['searchdir'])
+
+        # Check all candidates and apply difflib ratio to them.
+        # Then choose the highest ratio between all of them.
+        if candidates:
+            matcher = difflib.SequenceMatcher()
+
+            for candidate in candidates:
+                file_title = candidate[1]
+
+                # Compare all the alternative titles and
+                # record the tested ratio
+                for requested_title in titles:
+                    matcher.set_seqs(file_title, requested_title)
+                    ratio = matcher.ratio()
+                    if ratio > candidate[2]:
+                        candidate[2] = ratio
+            
+            # Choose the highest ratio of them all and
+            # only use it if it passes the threshold ratio
+            best_candidate = max(candidates, key=lambda x: x[2])
+
+            if best_candidate[2] > 0.7:
+                # Return the filename of the passing candidate
+                return best_candidate[0]
+            else:
+                # No candidate passed the test
+                return False
+        else:
+            # No candidates at all
+            return False
     
     def get_new_episodes(self, showlist):
         results = list()
@@ -626,7 +650,7 @@ class Engine:
         if filename:
             # Do a regex to the filename to get
             # the show title and episode number
-            reg = re.compile(r"(\[.+\])?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
+            reg = re.compile(r"(\[.+\])? ?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
             show_raw = filename.replace("_"," ").replace("v2","").strip()
             show_match = reg.match(show_raw)
             if not show_match:

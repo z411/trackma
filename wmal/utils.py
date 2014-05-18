@@ -55,10 +55,12 @@ def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
         logfile.write(msg)
     
-def regex_find_file(regex, subdirectory=''):
+def regex_find_files(regex, subdirectory=''):
     __re = re.compile(regex, re.I)
     __re_crc = re.compile(r"[a-fA-F0-9]{8}")
     
+    candidates = list()
+
     if subdirectory:
         path = os.path.expanduser(subdirectory)
     else:
@@ -67,10 +69,12 @@ def regex_find_file(regex, subdirectory=''):
         for filename in names:
             # Filename manipulation
             filename_re = __re_crc.sub('', filename) # Remove CRC hash
+            
+            match = __re.search(filename_re)
+            if match:
+                candidates.append( [os.path.join(root, filename), match.group(2), 0] )
 
-            if __re.search(filename_re):
-                return os.path.join(root, filename)
-    return False
+    return candidates
 
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
