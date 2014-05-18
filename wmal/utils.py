@@ -59,8 +59,6 @@ def regex_find_files(regex, subdirectory=''):
     __re = re.compile(regex, re.I)
     __re_crc = re.compile(r"[a-fA-F0-9]{8}")
     
-    candidates = list()
-
     if subdirectory:
         path = os.path.expanduser(subdirectory)
     else:
@@ -72,9 +70,7 @@ def regex_find_files(regex, subdirectory=''):
             
             match = __re.search(filename_re)
             if match:
-                candidates.append( [os.path.join(root, filename), match.group(2), 0] )
-
-    return candidates
+                yield (os.path.join(root, filename), match.group(2))
 
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))

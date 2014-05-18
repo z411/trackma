@@ -444,40 +444,27 @@ class Engine:
         
     def _search_video(self, titles, episode):
         searchep = str(episode).zfill(2)
-
-        # Do the file search
         regex = r"(\[.+\])? ?([ \w\d\-,@.:;!\?]+) - (%s) " % searchep
-        candidates = utils.regex_find_files(regex, self.config['searchdir'])
+        best_candidate = (None, 0)
 
-        # Check all candidates and apply difflib ratio to them.
-        # Then choose the highest ratio between all of them.
-        if candidates:
-            matcher = difflib.SequenceMatcher()
+        matcher = difflib.SequenceMatcher()
 
-            for candidate in candidates:
-                file_title = candidate[1]
+        # Check over candidates and propose our best candidate
+        for candidate in utils.regex_find_files(regex, self.config['searchdir']):
+            matcher.set_seq1(candidate[1])
 
-                # Compare all the alternative titles and
-                # record the tested ratio
-                for requested_title in titles:
-                    matcher.set_seqs(file_title, requested_title)
-                    ratio = matcher.ratio()
-                    if ratio > candidate[2]:
-                        candidate[2] = ratio
-            
-            # Choose the highest ratio of them all and
-            # only use it if it passes the threshold ratio
-            best_candidate = max(candidates, key=lambda x: x[2])
+            # We remember to compare all titles (aliases and whatnot)
+            for requested_title in titles:
+                matcher.set_seq2(requested_title)
+                ratio = matcher.ratio()
 
-            if best_candidate[2] > 0.7:
-                # Return the filename of the passing candidate
-                return best_candidate[0]
-            else:
-                # No candidate passed the test
-                return False
-        else:
-            # No candidates at all
-            return False
+                # Propose as our new candidate if its ratio is
+                # better than threshold and it's better than
+                # what we've seen yet
+                if ratio > 0.7 and ratio > best_candidate[1]:
+                    best_candidate = (candidate[0], ratio)
+
+        return best_candidate[0]
     
     def get_new_episodes(self, showlist):
         results = list()
