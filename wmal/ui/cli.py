@@ -62,6 +62,9 @@ class wmal_cmd(cmd.Cmd):
         self.accountman = wmal_accounts()
         self.account = self.accountman.select_account()
 
+    def _update_prompt(self):
+        self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+
     def start(self):
         """
         Initializes the engine
@@ -74,25 +77,36 @@ class wmal_cmd(cmd.Cmd):
         
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
-        self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+        self._update_prompt()
+    
+    def do_account(self, arg):
+        """
+        account - Switch to a different account
+
+        Usage: account
+        """
+
+        self.account = self.accountman.select_account()
+        self.engine.reload(account=self.account)
     
     def do_filter(self, arg):
         """
-        filter - Changes the filtering of list by status
+        filter - Changes the filtering of list by status; call with no arguments to see available filters
         
-        Usage: filter <filter type>
+        Usage: filter [filter type]
         """
         # Query the engine for the available statuses
         # that the user can choose
         
         if arg:
             try:
-                self.filter_num = self._guess_status(arg)
-                self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+                args = self.parse_args(arg)
+                self.filter_num = self._guess_status(args[0].lower())
+                self._update_prompt()
             except KeyError:
                 print "Invalid filter."
         else:
-            print "Missing arguments."
+            print "Available filters: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
     
     def do_sort(self, arg):
         """
@@ -107,20 +121,25 @@ class wmal_cmd(cmd.Cmd):
         else:
             print "Invalid sort."
     
-    def do_reload(self, arg):
+    def do_mediatype(self, arg):
         """
-        reload - Reloads engine with specifid API and mediatype
+        mediatype - Reloads engine with different mediatype; call with no arguments to see supported mediatypes
         
-        Usage: reload <api> <mediatype>
+        Usage: mediatype [mediatype]
         """
         if arg:
             args = self.parse_args(arg)
-            (api, mediatype) = (args[0], args[1])
-            self.engine.reload(api=api, mediatype=mediatype)
+            if args[0] in self.engine.api_info['supported_mediatypes']:
+                self.engine.reload(mediatype=args[0])
             
-            # Start with default filter selected
-            self.filter_num = self.engine.mediainfo['statuses'][0]
-            self.prompt = "{0} {1}> ".format(self.engine.api_info['name'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+                # Start with default filter selected
+                self.filter_num = self.engine.mediainfo['statuses'][0]
+                self.prompt = "{0}({1}) {1}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+                self._update_prompt()
+            else:
+                print "Invalid mediatype."
+        else:
+            print "Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes'])
         
     def do_list(self, arg):
         """
@@ -369,7 +388,7 @@ class wmal_cmd(cmd.Cmd):
             return self.engine.regex_list_titles(text)
     
     def complete_filter(self, text, line, begidx, endidx):
-        return self.engine.mediainfo['statuses_dict'].values()
+        return (v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values())
     
     def parse_args(self, arg):
         if arg:
@@ -404,7 +423,7 @@ class wmal_cmd(cmd.Cmd):
     
     def _guess_status(self, string):
         for k, v in self.engine.mediainfo['statuses_dict'].items():
-            if string == v.lower().replace(' ', ''):
+            if string.lower() == v.lower().replace(' ', ''):
                 return k
         raise KeyError
 
