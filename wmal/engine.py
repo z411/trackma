@@ -641,8 +641,10 @@ class Engine:
             # one we have in the list
             highest_ratio = (None, 0)
             matcher = difflib.SequenceMatcher()
+            matcher.set_seq1(show_title.lower())
+            
             for show in self.get_list():
-                matcher.set_seqs(show['title'], show_title)
+                matcher.set_seq2(show['title'].lower())
                 ratio = matcher.ratio()
                 if ratio > highest_ratio[1]:
                     highest_ratio = (show, ratio)
