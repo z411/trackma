@@ -451,11 +451,11 @@ class Engine:
 
         # Check over candidates and propose our best candidate
         for candidate in utils.regex_find_files(regex, self.config['searchdir']):
-            matcher.set_seq1(candidate[1])
+            matcher.set_seq1(candidate[1].lower())
 
             # We remember to compare all titles (aliases and whatnot)
             for requested_title in titles:
-                matcher.set_seq2(requested_title)
+                matcher.set_seq2(requested_title.lower())
                 ratio = matcher.ratio()
 
                 # Propose as our new candidate if its ratio is
