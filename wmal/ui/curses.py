@@ -166,7 +166,6 @@ class wMAL_urwid(object):
         self.set_filter(0)
 
         self.status('Ready.')
-        self.do_quit()
     
     def _rebuild_all_lists(self):
         for status in self.lists.keys():
