@@ -160,19 +160,22 @@ class wMAL_urwid(object):
         self.filters_nums = self.engine.mediainfo['statuses']
         
         for status in self.filters_nums:
-            #self.lists = ShowWalker([])
-            #self.listbox = urwid.ListBox(self.listwalker)
             self.lists[status] = urwid.ListBox(ShowWalker([]))
-            self._rebuild_list(status)
 
+        self._rebuild_all_lists()
         self.set_filter(0)
 
         self.status('Ready.')
     
     def _rebuild_all_lists(self):
         for status in self.lists.keys():
-            self._rebuild_list(status)
+            self.lists[status].body[:] = []
         
+        showlist = self.engine.get_list()
+        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
+        for show in sortedlist:
+            self.lists[show['my_status']].body.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
+     
     def start(self, account):
         """Starts the engine"""
         # Engine configuration
