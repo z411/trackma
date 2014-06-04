@@ -380,6 +380,7 @@ class wmal_gtk(object):
             self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
+            self.show_lists[status].connect("button-press-event", self.showview_context_menu)
             self.show_lists[status].pagenumber = self.notebook.get_n_pages()
             sw.add(self.show_lists[status])
             
@@ -494,6 +495,10 @@ class wmal_gtk(object):
     def changed_show(self, show):
         status = show['my_status']
         self.show_lists[status].update(show)
+
+    def changed_show_title(self, show, altname):
+        status = show['my_status']
+        self.show_lists[status].update_title(show, altname)
    
     def changed_show_status(self, show):
         # Rebuild lists
@@ -724,7 +729,7 @@ class wmal_gtk(object):
         for widget in self.show_lists.itervalues():
             widget.append_start()
             for show in self.engine.filter_list(widget.status_filter):
-                widget.append(show)
+                widget.append(show, self.engine.altname(show['id']))
             widget.append_finish()
         
     def on_about(self, widget):
@@ -787,6 +792,80 @@ class wmal_gtk(object):
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
         
+    def do_copytoclip(self, widget):
+        # Copy selected show title to clipboard
+        show = self.engine.get_show_info(self.selected_show)
+
+        clipboard = gtk.clipboard_get()
+        clipboard.set_text(show['title'])
+
+        self.status('Title copied to clipboard.')
+
+    def do_altname(self,widget):
+        show = self.engine.get_show_info(self.selected_show)
+        current_altname = self.engine.altname(self.selected_show)
+
+        dialog = gtk.MessageDialog(
+            None,
+            gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+            gtk.MESSAGE_QUESTION,
+            gtk.BUTTONS_OK_CANCEL,
+            None)
+        dialog.set_markup('Set the <b>alternate title</b> for the show.')
+        entry = gtk.Entry()
+        entry.set_text(current_altname)
+        entry.connect("activate", self.altname_response, dialog, gtk.RESPONSE_OK)
+        hbox = gtk.HBox()
+        hbox.pack_start(gtk.Label("Alternate Title:"), False, 5, 5)
+        hbox.pack_end(entry)
+        dialog.format_secondary_markup("Use this if the tracker is unable to find this show. Leave blank to disable.")
+        dialog.vbox.pack_end(hbox, True, True, 0)
+        dialog.show_all()
+        retval = dialog.run()
+        
+        if retval == gtk.RESPONSE_OK:
+            text = entry.get_text()
+            self.engine.altname(self.selected_show, text)
+            self.changed_show_title(show, text)
+        
+        dialog.destroy()
+
+    def altname_response(self, entry, dialog, response):
+        dialog.response(response)
+    
+    def do_web(self, widget):
+        show = self.engine.get_show_info(self.selected_show)
+        if show['url']:
+            webbrowser.open(show['url'], 2, True)
+
+    def showview_context_menu(self, treeview, event):
+        if event.button == 3:
+            x = int(event.x)
+            y = int(event.y)
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path, col, 0)
+
+                menu = gtk.Menu()
+                mb_info = gtk.MenuItem("Show details...")
+                mb_info.connect("activate", self.do_info)
+                mb_web = gtk.MenuItem("Open web site")
+                mb_web.connect("activate", self.do_web)
+                mb_copy = gtk.MenuItem("Copy title to clipboard")
+                mb_copy.connect("activate", self.do_copytoclip)
+                mb_alt_title = gtk.MenuItem("Set alternate title...")
+                mb_alt_title.connect("activate", self.do_altname)
+
+                menu.append(mb_info)
+                menu.append(mb_web)
+                menu.append(gtk.SeparatorMenuItem())
+                menu.append(mb_copy)
+                menu.append(mb_alt_title)
+                menu.show_all()
+
+                menu.popup(None, None, None, event.button, event.time)
 
 class ImageTask(threading.Thread):
     cancelled = False
@@ -936,7 +1015,7 @@ class ShowView(gtk.TreeView):
         self.freeze_child_notify()
         self.store.clear()
         
-    def append(self, show):
+    def append(self, show, altname=None):
         if self.has_progress:
             if show['total'] and show['my_progress'] <= show['total']:
                 progress = (float(show['my_progress']) / show['total']) * 100
@@ -946,8 +1025,12 @@ class ShowView(gtk.TreeView):
         else:
             episodes_str = ''
             progress = 0
-                
-        row = [show['id'], show['title'], episodes_str, show['my_score'], progress, self._get_color(show)]
+        
+        title_str = show['title']
+        if altname:
+            title_str += " [%s]" % altname
+
+        row = [show['id'], title_str, episodes_str, show['my_score'], progress, self._get_color(show)]
         self.store.append(row)
         
     def append_finish(self):
@@ -978,6 +1061,17 @@ class ShowView(gtk.TreeView):
                 return
         
         #print "Warning: Show ID not found in ShowView (%d)" % show['id']
+
+    def update_title(self, show, altname=None):
+        for row in self.store:
+            if int(row[0]) == show['id']:
+                if altname:
+                    title_str = "%s [%s]" % (show['title'], altname)
+                else:
+                    title_str = show['title']
+
+                row[1] = title_str
+                return
 
     def playing(self, show, is_playing):
         # Change the color if the show is currently playing

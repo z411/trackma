@@ -528,8 +528,13 @@ class Engine:
         return self.data_handler.queue_clear()
        
     def altname(self, showid, newname=None):
-        if newname:
-            self.data_handler.altname_set(showid, newname)
+        if newname is not None:
+            if newname == '':
+                self.data_handler.altname_clear(showid)
+                self.msg.info(self.name, 'Cleared alternate name.')
+            else:
+                self.data_handler.altname_set(showid, newname)
+                self.msg.info(self.name, 'Changed alternate name to %s.' % newname)
         else:
             return self.data_handler.altname_get(showid)
 
