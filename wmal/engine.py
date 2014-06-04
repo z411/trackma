@@ -268,6 +268,12 @@ class Engine:
                     
         return newlist
     
+    def get_show_titles(self, show):
+        if self.data_handler.altname_get(show['id']):
+            return [ self.data_handler.altname_get(show['id']) ]
+        else:
+            return [show['title']] + show['aliases']
+
     def search(self, criteria):
         """
         Calls the API to do a search in the remote list
@@ -473,12 +479,8 @@ class Engine:
         for i, show in enumerate(showlist):
             self.msg.info(self.name, "Searching %d/%d..." % (i+1, total))
 
-            if self.data_handler.altname_get(show['id']):
-                titles = [ self.data_handler.altname_get(show['id']) ]
-            else:
-                titles = [show['title']]
-                titles.extend(show['aliases'])
-            
+            titles = self.get_show_titles(show)
+
             filename = self._search_video(titles, show['my_progress']+1)
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
@@ -517,12 +519,8 @@ class Engine:
             
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
             
-            if self.data_handler.altname_get(show['id']):
-                titles = [ self.data_handler.altname_get(show['id']) ]
-            else:
-                titles = [show['title']]
-                titles.extend(show['aliases'])
-            
+            titles = self.get_show_titles(show)
+
             filename = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
@@ -541,8 +539,13 @@ class Engine:
         return self.data_handler.queue_clear()
        
     def altname(self, showid, newname=None):
-        if newname:
-            self.data_handler.altname_set(showid, newname)
+        if newname is not None:
+            if newname == '':
+                self.data_handler.altname_clear(showid)
+                self.msg.info(self.name, 'Cleared alternate name.')
+            else:
+                self.data_handler.altname_set(showid, newname)
+                self.msg.info(self.name, 'Changed alternate name to %s.' % newname)
         else:
             return self.data_handler.altname_get(showid)
 
@@ -654,11 +657,16 @@ class Engine:
             matcher = difflib.SequenceMatcher()
             matcher.set_seq1(show_title.lower())
             
+            # Compare to every show in our list to see which one
+            # has the most similar name
             for show in self.get_list():
-                matcher.set_seq2(show['title'].lower())
-                ratio = matcher.ratio()
-                if ratio > highest_ratio[1]:
-                    highest_ratio = (show, ratio)
+                titles = self.get_show_titles(show)
+                # Make sure to search through all the aliases
+                for title in titles:
+                    matcher.set_seq2(title.lower())
+                    ratio = matcher.ratio()
+                    if ratio > highest_ratio[1]:
+                        highest_ratio = (show, ratio)
             
             playing_show = highest_ratio[0]
             if highest_ratio[1] > 0.7:
