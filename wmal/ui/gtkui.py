@@ -1354,17 +1354,7 @@ class InfoDialog(gtk.Window):
         detail = list()
         for line in details['extra']:
             if line[0] and line[1]:
-                detail.append("<b>%s</b>\n%s" % (cgi.escape(line[0]), cgi.escape(line[1])))
-
-                #h = gtk.Label()
-                #h.set_alignment(0, 0.5)
-                #h.set_text("<b>%s</b>" % line[0])
-                #h.set_use_markup(True)
-                #c = gtk.Label("%s\n" % line[1])
-                #c.set_alignment(0, 0.5)
-                #c.set_line_wrap(True)
-                #self.lines.pack_start(h, False, False, 0)
-                #self.lines.pack_start(c, False, False, 0)
+                detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
 
         self.w_content.set_alignment(0, 0)
         self.w_content.set_text("\n\n".join(detail))
