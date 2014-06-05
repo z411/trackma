@@ -44,7 +44,7 @@ class wMAL_urwid(object):
     engine = None
     mainloop = None
     cur_sort = 'title'
-    sorts_iter = cycle(('id', 'title', 'my_progress', 'total', 'my_score'))
+    sorts_iter = cycle(('my_progress', 'total', 'my_score', 'id', 'title'))
     keymapping = dict()
     positions = list()
     last_search = None
@@ -82,7 +82,7 @@ class wMAL_urwid(object):
         sys.stdout.write("\x1b]0;wMAL-curses "+utils.VERSION+"\x07");
         self.header_title = urwid.Text('wMAL-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
-        self.header_filter = urwid.Text('Filter:watching')
+        self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
