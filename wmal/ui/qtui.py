@@ -108,7 +108,7 @@ class wmal(QtGui.QMainWindow):
 
 
         main_hbox.addLayout(left_box)
-        main_hbox.addWidget(self.notebook)
+        main_hbox.addWidget(self.notebook, 1)
 
         main_layout.addWidget(self.show_title)
         main_layout.addLayout(main_hbox)
