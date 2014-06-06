@@ -19,21 +19,23 @@ class wmal(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
         self.accountman = AccountManager()
-        self.accountman_widget = AccountWidget(self.accountman)
+        self.accountman_widget = AccountWidget(None, self.accountman)
         self.accountman_widget.selected.connect(self.accountman_selected)
         
         # Build UI
         self.setGeometry(300, 300, 680, 500)
         self.setWindowTitle('wMAL-qt v0.2')
-        self.setCentralWidget(self.accountman_widget)
-        
-        self.show()
-
-        self.statusBar().showMessage('wMAL-qt')
+        self.accountman_widget.show()
+        self.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
 
     def accountman_selected(self, account_num):
         account = self.accountman.get_account(account_num)
-        self.reload(account)
+
+        if self.started:
+            self.reload(account)
+        else:
+            self.show()
+            self.start(account)
 
     def start(self, account):
         """
@@ -42,6 +44,23 @@ class wmal(QtGui.QMainWindow):
         """
         self.worker = Engine_Worker(account)
         
+        # Build menus
+        action_reload = QtGui.QAction('Switch &Account', self)
+        action_reload.triggered.connect(self.s_switch_account)
+
+        action_about = QtGui.QAction('About...', self)
+        action_about.triggered.connect(self.s_about)
+        action_about_qt = QtGui.QAction('About Qt...', self)
+        action_about_qt.triggered.connect(self.s_about_qt)
+
+        menubar = self.menuBar()
+        menu_options = menubar.addMenu('&Options')
+        menu_options.addAction(action_reload)
+        menu_help = menubar.addMenu('&Help')
+        menu_help.addAction(action_about)
+        menu_help.addAction(action_about_qt)
+
+        # Build layout
         main_layout = QtGui.QVBoxLayout()
         
         self.show_title = QtGui.QLabel('Show title')
@@ -62,12 +81,7 @@ class wmal(QtGui.QMainWindow):
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
         
-        # Show everything
-        self.show()
-        
         # Prepare globals
-        self.show_ids = dict()
-        self.show_lists = dict()
         
         # Start loading engine
         self.started = True
@@ -75,12 +89,9 @@ class wmal(QtGui.QMainWindow):
         self.worker.start()
 
     def reload(self, account=None, mediatype=None):
-        if not self.started:
-            self.start(account)
-        else:
-            # TODO reload
-            self.worker.set_function('reload', self.r_engine_reloaded, account, mediatype)
-            self.worker.start()
+        # TODO reload
+        self.worker.set_function('reload', self.r_engine_loaded, account, mediatype)
+        self.worker.start()
         
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
@@ -117,7 +128,6 @@ class wmal(QtGui.QMainWindow):
         self.show_lists[status].setRowCount(len(showlist))
 
         # TODO clear lists and show_ids
-        self.show_ids[status] = list()
 
         i = 0
         for show in showlist:
@@ -128,7 +138,6 @@ class wmal(QtGui.QMainWindow):
             if show['total'] > 0:
                 progress_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
-            self.show_ids[status].append(show['id'])
             self.show_lists[status].setItem(i, 0, QtGui.QTableWidgetItem(show['title']))
             self.show_lists[status].setItem(i, 1, QtGui.QTableWidgetItem(progress_str))
             self.show_lists[status].setItem(i, 2, QtGui.QTableWidgetItem(str(show['my_score']) ))
@@ -138,7 +147,7 @@ class wmal(QtGui.QMainWindow):
             i += 1
 
     ### Slots
-    def selected_show(self, new, old):
+    def s_show_selected(self, new, old):
         index = new.row()
         selected_id = self.notebook.currentWidget().item( index, 4 ).text()
 
@@ -156,6 +165,19 @@ class wmal(QtGui.QMainWindow):
         # Make it global
         self.selected_show = show
 
+    def s_switch_account(self):
+        self.accountman_widget.show()
+
+    def s_about(self):
+        QtGui.QMessageBox.about(self, 'About wMAL-qt',
+            '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
+            '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
+            '<p>Copyright (C) z411 - Icon by shuuichi</p>'
+            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>')
+
+    def s_about_qt(self):
+        QtGui.QMessageBox.aboutQt(self, 'About Qt')
+
     ### Returning functions 
     def r_engine_loaded(self, result):
         if result['success']:
@@ -164,6 +186,9 @@ class wmal(QtGui.QMainWindow):
 
     def r_build_lists(self, result):
         if result['success']:
+            self.notebook.clear()
+            self.show_lists = dict()
+
             statuses_nums = self.worker.engine.mediainfo['statuses']
             statuses_names = self.worker.engine.mediainfo['statuses_dict']
             
@@ -178,11 +203,12 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].verticalHeader().hide()
+                self.show_lists[status].setColumnHidden(4, True)
                 self.show_lists[status].horizontalHeader().resizeSection(0, 300)
                 self.show_lists[status].horizontalHeader().resizeSection(1, 70)
                 self.show_lists[status].horizontalHeader().resizeSection(2, 55)
                 self.show_lists[status].horizontalHeader().resizeSection(3, 100)
-                self.show_lists[status].currentItemChanged.connect(self.selected_show)
+                self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 
                 self.notebook.addTab(self.show_lists[status], name)
 
@@ -193,11 +219,12 @@ class wmal(QtGui.QMainWindow):
             self.close()
 
 
-class AccountWidget(QtGui.QWidget):
+class AccountWidget(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int)
+    aborted = QtCore.pyqtSignal()
 
-    def __init__(self, accountman):
-        QtGui.QWidget.__init__(self, None)
+    def __init__(self, parent, accountman):
+        QtGui.QDialog.__init__(self, parent)
 
         self.accountman = accountman
         
@@ -223,18 +250,33 @@ class AccountWidget(QtGui.QWidget):
 
             i += 1
         
+        bottom_layout = QtGui.QHBoxLayout()
+        cancel_btn = QtGui.QPushButton('Cancel')
+        cancel_btn.clicked.connect(self.cancel)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
+        bottom_layout.addWidget(cancel_btn)
+        bottom_layout.addWidget(select_btn)
 
         # Finish layout
         layout.addWidget(self.table)
-        layout.addWidget(select_btn)
+        layout.addLayout(bottom_layout)
         self.setLayout(layout)
 
     def select(self, checked):
-        selected_account_num = self.table.selectedItems()[0].num
-        self.selected.emit(selected_account_num)
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            self.selected.emit(selected_account_num)
+            self.close()
+        except IndexError:
+            self._error("Please select an account.")
 
+    def cancel(self, checked):
+        self.aborted.emit()
+        self.close()
+
+    def _error(self, msg):
+        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
 
 class AccountItem(QtGui.QTableWidgetItem):
     """
@@ -273,6 +315,7 @@ class Engine_Worker(QtCore.QThread):
 
         self.function_list = {
             'start': self._start,
+            'reload': self._reload,
             'get_list': self._get_list,
             'unload': self._unload,
         }
@@ -290,6 +333,15 @@ class Engine_Worker(QtCore.QThread):
     def _start(self):
         try:
             self.engine.start()
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+        
+        return {'success': True}
+ 
+    def _reload(self, account, mediatype):
+        try:
+            self.engine.reload(account, mediatype)
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
