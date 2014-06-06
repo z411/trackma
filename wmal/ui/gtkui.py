@@ -500,12 +500,13 @@ class wmal_gtk(object):
         status = show['my_status']
         self.show_lists[status].update_title(show, altname)
    
-    def changed_show_status(self, show):
+    def changed_show_status(self, show, old_status=None):
         # Rebuild lists
-        self.build_list()
-        
         status = show['my_status']
-        self.show_lists[status].update(show)
+        
+        self.build_list(status)
+        if old_status:
+            self.build_list(old_status)
         
         pagenumber = self.show_lists[status].pagenumber
         self.notebook.set_current_page(pagenumber)
@@ -602,7 +603,7 @@ class wmal_gtk(object):
             self.engine.list_download()
         
         gtk.threads_enter()
-        self.build_list()
+        self.build_all_lists()
         gtk.threads_leave()
         
         self.status("Ready.")
@@ -625,7 +626,7 @@ class wmal_gtk(object):
         self.statusbox.handler_block(self.statusbox_handler)
         self._clear_gui()
         self._create_lists()
-        self.build_list()
+        self.build_all_lists()
         self.main.set_title('wMAL-gtk %s [%s (%s)]' % (utils.VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
@@ -725,12 +726,16 @@ class wmal_gtk(object):
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
            
-    def build_list(self):
-        for widget in self.show_lists.itervalues():
-            widget.append_start()
-            for show in self.engine.filter_list(widget.status_filter):
-                widget.append(show, self.engine.altname(show['id']))
-            widget.append_finish()
+    def build_all_lists(self):
+        for status in self.show_lists.iterkeys():
+            self.build_list(status)
+
+    def build_list(self, status):
+        widget = self.show_lists[status]
+        widget.append_start()
+        for show in self.engine.filter_list(widget.status_filter):
+            widget.append(show, self.engine.altname(show['id']))
+        widget.append_finish()
         
     def on_about(self, widget):
         about = gtk.AboutDialog()
