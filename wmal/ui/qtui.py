@@ -30,6 +30,7 @@ class wmal(QtGui.QMainWindow):
     worker = None
     image_worker = None
     started = False
+    selected_show_id = None
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
@@ -72,6 +73,9 @@ class wmal(QtGui.QMainWindow):
         self.worker = Engine_Worker(account)
         
         # Build menus
+        action_quit = QtGui.QAction('&Quit', self)
+        action_quit.triggered.connect(self.close)
+
         action_reload = QtGui.QAction('Switch &Account', self)
         action_reload.triggered.connect(self.s_switch_account)
 
@@ -81,6 +85,8 @@ class wmal(QtGui.QMainWindow):
         action_about_qt.triggered.connect(self.s_about_qt)
 
         menubar = self.menuBar()
+        menu_show = menubar.addMenu('&Show')
+        menu_show.addAction(action_quit)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
         menu_help = menubar.addMenu('&Help')
@@ -92,7 +98,7 @@ class wmal(QtGui.QMainWindow):
         main_hbox = QtGui.QHBoxLayout()
         left_box = QtGui.QFormLayout()
         
-        self.show_title = QtGui.QLabel('Show title')
+        self.show_title = QtGui.QLabel('wMAL-qt')
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
@@ -108,10 +114,13 @@ class wmal(QtGui.QMainWindow):
         self.show_progress = QtGui.QSpinBox()
         self.show_progress_bar = QtGui.QProgressBar()
         show_progress_btn = QtGui.QPushButton('Update')
+        show_progress_btn.clicked.connect(self.s_set_episode)
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QSpinBox()
         show_score_btn = QtGui.QPushButton('Set')
+        show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
+        self.show_status.currentIndexChanged.connect(self.s_set_status)
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar) # , 1, QtCore.Qt.AlignTop)
@@ -134,8 +143,8 @@ class wmal(QtGui.QMainWindow):
  
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
-        
-        # Prepare globals
+        self.worker.changed_show.connect(self.ws_changed_show)
+        self.worker.changed_list.connect(self.ws_changed_list)
         
         # Start loading engine
         self.started = True
@@ -177,7 +186,10 @@ class wmal(QtGui.QMainWindow):
 
         self.status('Ready.')
 
-    def _rebuild_list(self, status, showlist):
+    def _rebuild_list(self, status, showlist=None):
+        if not showlist:
+            showlist = self.worker.engine.filter_list(status)
+
         widget = self.show_lists[status]
         columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
         widget.clear()
@@ -192,30 +204,41 @@ class wmal(QtGui.QMainWindow):
 
         i = 0
         for show in showlist:
-            color = self._get_color(show)
-            progress_str = "%d / %d" % (show['my_progress'], show['total'])
-            progress_widget = QtGui.QProgressBar()
-            progress_widget.setMinimum(0)
-            progress_widget.setMaximum(100)
-            if show['total'] > 0:
-                progress_widget.setValue( 100L * show['my_progress'] / show['total'] )
-
-            widget.setRowHeight(i, QtGui.QFontMetrics(widget.font()).height() + 2);
-            widget.setItem(i, 0, ShowItem( show['title'], color ))
-            widget.setItem(i, 1, ShowItem( progress_str, color ))
-            widget.setItem(i, 2, ShowItem( str(show['my_score']), color ))
-            widget.setCellWidget(i, 3, progress_widget )
-            widget.setItem(i, 4, ShowItem( str(show['id']), color ))
-
+            self._update_row(widget, i, show)
             i += 1
 
         widget.model().sort(0)
-    
+
+    def _update_row(self, widget, row, show):
+        color = self._get_color(show)
+        progress_str = "%d / %d" % (show['my_progress'], show['total'])
+        progress_widget = QtGui.QProgressBar()
+        progress_widget.setMinimum(0)
+        progress_widget.setMaximum(100)
+        if show['total'] > 0:
+            progress_widget.setValue( 100L * show['my_progress'] / show['total'] )
+
+        widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
+        widget.setItem(row, 0, ShowItem( show['title'], color ))
+        widget.setItem(row, 1, ShowItem( progress_str, color ))
+        widget.setItem(row, 2, ShowItem( str(show['my_score']), color ))
+        widget.setCellWidget(row, 3, progress_widget )
+        widget.setItem(row, 4, ShowItem( str(show['id']), color ))
+
     def _get_color(self, show):
         if show['status'] == 1:
             return QtGui.QColor(216, 255, 255)
         else:
             return None
+    
+    def _get_row_from_showid(self, widget, showid):
+        # identify the row this show is in the table
+        for row in xrange(0, widget.rowCount()):
+            if widget.item(row, 4).text() == str(showid):
+                return row
+
+        print "Warning: Show not found in list for some reason"
+        return 0
 
     ### Slots
     def s_show_selected(self, new, old):
@@ -233,8 +256,7 @@ class wmal(QtGui.QMainWindow):
         # Update information
         self.show_title.setText(show['title'])
         self.show_progress.setValue(show['my_progress'])
-        status_index = self.show_status.findData(show['my_status'])
-        self.show_status.setCurrentIndex(status_index)
+        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
         self.show_score.setValue(show['my_score'])
        
         # Download image or use cache
@@ -261,6 +283,19 @@ class wmal(QtGui.QMainWindow):
         # Make it global
         self.selected_show_id = selected_id
 
+    def s_set_episode(self):
+        self.worker.set_function('set_episode', None, self.selected_show_id, self.show_progress.value())
+        self.worker.start()
+
+    def s_set_score(self):
+        self.worker.set_function('set_score', None, self.selected_show_id, self.show_score.value())
+        self.worker.start()
+
+    def s_set_status(self, index):
+        if self.selected_show_id:
+            self.worker.set_function('set_status', None, self.selected_show_id, self.statuses_nums[index])
+            self.worker.start()
+
     def s_switch_account(self):
         self.accountman_widget.show()
 
@@ -277,6 +312,21 @@ class wmal(QtGui.QMainWindow):
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
 
+    ### Worker slots
+    def ws_changed_show(self, show):
+        widget = self.show_lists[show['my_status']]
+        row = self._get_row_from_showid(widget, show['id'])
+        self._update_row(widget, row, show)
+        
+    def ws_changed_list(self, show, old_status=None):
+        # Rebuild both new and old (if any) lists
+        self._rebuild_list(show['my_status'])
+        if old_status:
+            self._rebuild_list(old_status)
+        
+        # Set notebook to the new page
+        self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
+
     ### Responses from the engine thread
     def r_engine_loaded(self, result):
         if result['success']:
@@ -289,15 +339,15 @@ class wmal(QtGui.QMainWindow):
             self.show_status.clear()
             self.show_lists = dict()
 
-            statuses_nums = self.worker.engine.mediainfo['statuses']
-            statuses_names = self.worker.engine.mediainfo['statuses_dict']
+            self.statuses_nums = self.worker.engine.mediainfo['statuses']
+            self.statuses_names = self.worker.engine.mediainfo['statuses_dict']
             
-            for status in statuses_nums:
-                name = statuses_names[status]
+            for status in self.statuses_nums:
+                name = self.statuses_names[status]
 
                 self.show_lists[status] = QtGui.QTableWidget()
                 self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-                self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
+                #self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
@@ -305,7 +355,7 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 
                 self.notebook.addTab(self.show_lists[status], name)
-                self.show_status.addItem(name, status)
+                self.show_status.addItem(name)
 
             self._rebuild_lists(result['showlist'])
 
@@ -468,28 +518,44 @@ class Engine_Worker(QtCore.QThread):
     raised_error = QtCore.pyqtSignal(str)
 
     # Event handler signals
-    engine_changed_show = QtCore.pyqtSignal(dict)
+    changed_show = QtCore.pyqtSignal(dict)
+    changed_list = QtCore.pyqtSignal(dict, object)
+    playing_show = QtCore.pyqtSignal(dict, bool)
 
     def __init__(self, account):
         super(Engine_Worker, self).__init__()
         self.engine = Engine(account, self._messagehandler)
         self.engine.connect_signal('episode_changed', self._changed_show)
+        self.engine.connect_signal('score_changed', self._changed_show)
+        self.engine.connect_signal('status_changed', self._changed_list)
+        self.engine.connect_signal('playing', self._playing_show)
+        self.engine.connect_signal('show_added', self._changed_list)
+        self.engine.connect_signal('show_deleted', self._changed_list)
 
         self.function_list = {
             'start': self._start,
             'reload': self._reload,
             'get_list': self._get_list,
+            'set_episode': self._set_episode,
+            'set_score': self._set_score,
+            'set_status': self._set_status,
             'unload': self._unload,
         }
 
     def _messagehandler(self, classname, msgtype, msg):
-        self.changed_status.emit(msg)
+        self.changed_status.emit("%s: %s" % (classname, msg))
 
     def _error(self, msg):
         self.raised_error.emit(msg)
 
     def _changed_show(self, show):
-        self.engine_changed_show.emit(show)
+        self.changed_show.emit(show)
+
+    def _changed_list(self, show, old_status=None):
+        self.changed_list.emit(show, old_status)
+
+    def _playing_show(self, show, is_playing):
+        self.playing_show.emit(show, is_playing)
     
     # Callable functions
     def _start(self):
@@ -528,13 +594,44 @@ class Engine_Worker(QtCore.QThread):
 
         return {'success': True, 'showlist': showlist}
 
+    def _set_episode(self, showid, episode):
+        try:
+            self.engine.set_episode(showid, episode)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _set_score(self, showid, score):
+        try:
+            self.engine.set_score(showid, score)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _set_status(self, showid, status):
+        try:
+            self.engine.set_status(showid, status)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
     def set_function(self, function, ret_function, *args, **kwargs):
         self.function = self.function_list[function]
+
         try:
             self.finished.disconnect()
         except Exception:
             pass
-        self.finished.connect(ret_function)
+
+        if ret_function:
+            self.finished.connect(ret_function)
+
         self.args = args
         self.kwargs = kwargs
 
