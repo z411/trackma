@@ -23,7 +23,6 @@ class wmal(QtGui.QMainWindow):
         self.accountman_widget.selected.connect(self.accountman_selected)
         
         # Build UI
-        self.setGeometry(300, 300, 680, 500)
         self.setWindowTitle('wMAL-qt v0.2')
         self.accountman_widget.show()
         self.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
@@ -70,6 +69,7 @@ class wmal(QtGui.QMainWindow):
         self.show_title.setFont(show_title_font)
 
         self.notebook = QtGui.QTabWidget()
+        self.setMinimumSize(680, 450)
         
         main_layout.addWidget(self.show_title)
         main_layout.addWidget(self.notebook)
@@ -125,9 +125,16 @@ class wmal(QtGui.QMainWindow):
         self.status('Ready.')
 
     def _rebuild_list(self, status, showlist):
+        columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
+        self.show_lists[status].clear()
         self.show_lists[status].setRowCount(len(showlist))
-
-        # TODO clear lists and show_ids
+        self.show_lists[status].setColumnCount(len(columns))
+        self.show_lists[status].setHorizontalHeaderLabels(columns)
+        self.show_lists[status].setColumnHidden(4, True)
+        self.show_lists[status].horizontalHeader().resizeSection(0, 300)
+        self.show_lists[status].horizontalHeader().resizeSection(1, 70)
+        self.show_lists[status].horizontalHeader().resizeSection(2, 55)
+        self.show_lists[status].horizontalHeader().resizeSection(3, 100)
 
         i = 0
         for show in showlist:
@@ -194,20 +201,12 @@ class wmal(QtGui.QMainWindow):
             
             for status in statuses_nums:
                 name = statuses_names[status]
-                columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
 
                 self.show_lists[status] = QtGui.QTableWidget()
-                self.show_lists[status].setColumnCount(len(columns))
-                self.show_lists[status].setHorizontalHeaderLabels(columns)
                 self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].verticalHeader().hide()
-                self.show_lists[status].setColumnHidden(4, True)
-                self.show_lists[status].horizontalHeader().resizeSection(0, 300)
-                self.show_lists[status].horizontalHeader().resizeSection(1, 70)
-                self.show_lists[status].horizontalHeader().resizeSection(2, 55)
-                self.show_lists[status].horizontalHeader().resizeSection(3, 100)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 
                 self.notebook.addTab(self.show_lists[status], name)
@@ -242,11 +241,15 @@ class AccountWidget(QtGui.QDialog):
 
         # Populate
         accounts = self.accountman.get_accounts()
+        icons = dict()
+        for libname, lib in utils.available_libs.iteritems():
+            icons[libname] = QtGui.QIcon(lib[1])
+
         self.table.setRowCount(len(self.accountman.accounts['accounts']))
         i = 0
         for k, account in accounts:
             self.table.setItem(i, 0, AccountItem(k, account['username']))
-            self.table.setItem(i, 1, AccountItem(k, account['api']))
+            self.table.setItem(i, 1, AccountItem(k, account['api'], icons[account['api']]))
 
             i += 1
         
@@ -285,9 +288,24 @@ class AccountItem(QtGui.QTableWidgetItem):
     """
     num = None
 
-    def __init__(self, num, text):
+    def __init__(self, num, text, icon=None):
         QtGui.QTableWidgetItem.__init__(self, text)
         self.num = num
+        if icon:
+            self.setIcon( icon )
+
+class ShowItem(QtGui.QTableWidgetItem):
+    """
+    Regular item able to show colors and alignment
+    
+    """
+    
+    def __init__(self, text, alignment=None, color=None):
+        QtGui.QTableWidgetItem.__init__(self, text)
+        if alignment:
+            self.setTextAlignment( alignment )
+        if color:
+            self.setBackgroundColor( color )
 
 
 class Engine_Worker(QtCore.QThread):
