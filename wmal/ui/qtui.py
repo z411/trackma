@@ -24,11 +24,24 @@ class wmal(QtGui.QMainWindow):
         
         # Build UI
         self.setWindowTitle('wMAL-qt v0.2')
-        self.accountman_widget.show()
         self.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
 
-    def accountman_selected(self, account_num):
+        # Go directly into the application if a default account is set
+        # Open the selection dialog otherwise
+        default = self.accountman.get_default()
+        if default:
+            self.show()
+            self.start(default)
+        else:
+            self.accountman_widget.show()
+
+    def accountman_selected(self, account_num, remember):
         account = self.accountman.get_account(account_num)
+
+        if remember:
+            self.accountman.set_default(account_num)
+        else:
+            self.accountman.set_default(None)
 
         if self.started:
             self.reload(account)
@@ -61,6 +74,8 @@ class wmal(QtGui.QMainWindow):
 
         # Build layout
         main_layout = QtGui.QVBoxLayout()
+        main_hbox = QtGui.QHBoxLayout()
+        left_box = QtGui.QFormLayout()
         
         self.show_title = QtGui.QLabel('Show title')
         show_title_font = QtGui.QFont()
@@ -71,8 +86,32 @@ class wmal(QtGui.QMainWindow):
         self.notebook = QtGui.QTabWidget()
         self.setMinimumSize(680, 450)
         
+        self.show_image = QtGui.QLabel()
+        self.show_image.setFixedHeight( 149 )
+        self.show_image.setFixedWidth( 100 )
+        show_progress_label = QtGui.QLabel('Progress')
+        self.show_progress = QtGui.QSpinBox()
+        self.show_progress_bar = QtGui.QProgressBar()
+        show_progress_btn = QtGui.QPushButton('Update')
+        show_score_label = QtGui.QLabel('Score')
+        self.show_score = QtGui.QSpinBox()
+        show_score_btn = QtGui.QPushButton('Set')
+        self.show_status = QtGui.QComboBox()
+
+        left_box.addRow(self.show_image)
+        left_box.addRow(self.show_progress_bar) # , 1, QtCore.Qt.AlignTop)
+        left_box.addRow(show_progress_label, self.show_progress)
+        left_box.addRow(show_progress_btn)
+        left_box.addRow(show_score_label, self.show_score)
+        left_box.addRow(show_score_btn)
+        left_box.addRow(self.show_status)
+
+
+        main_hbox.addLayout(left_box)
+        main_hbox.addWidget(self.notebook)
+
         main_layout.addWidget(self.show_title)
-        main_layout.addWidget(self.notebook)
+        main_layout.addLayout(main_hbox)
 
         self.main_widget = QtGui.QWidget(self)
         self.main_widget.setLayout(main_layout)
@@ -89,7 +128,6 @@ class wmal(QtGui.QMainWindow):
         self.worker.start()
 
     def reload(self, account=None, mediatype=None):
-        # TODO reload
         self.worker.set_function('reload', self.r_engine_loaded, account, mediatype)
         self.worker.start()
         
@@ -125,33 +163,44 @@ class wmal(QtGui.QMainWindow):
         self.status('Ready.')
 
     def _rebuild_list(self, status, showlist):
+        widget = self.show_lists[status]
         columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
-        self.show_lists[status].clear()
-        self.show_lists[status].setRowCount(len(showlist))
-        self.show_lists[status].setColumnCount(len(columns))
-        self.show_lists[status].setHorizontalHeaderLabels(columns)
-        self.show_lists[status].setColumnHidden(4, True)
-        self.show_lists[status].horizontalHeader().resizeSection(0, 300)
-        self.show_lists[status].horizontalHeader().resizeSection(1, 70)
-        self.show_lists[status].horizontalHeader().resizeSection(2, 55)
-        self.show_lists[status].horizontalHeader().resizeSection(3, 100)
+        widget.clear()
+        widget.setRowCount(len(showlist))
+        widget.setColumnCount(len(columns))
+        widget.setHorizontalHeaderLabels(columns)
+        widget.setColumnHidden(4, True)
+        widget.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
+        widget.horizontalHeader().resizeSection(1, 70)
+        widget.horizontalHeader().resizeSection(2, 55)
+        widget.horizontalHeader().resizeSection(3, 100)
 
         i = 0
         for show in showlist:
-            progress_str = "%d/%d" % (show['my_progress'], show['total'])
+            color = self._get_color(show)
+            progress_str = "%d / %d" % (show['my_progress'], show['total'])
             progress_widget = QtGui.QProgressBar()
             progress_widget.setMinimum(0)
             progress_widget.setMaximum(100)
             if show['total'] > 0:
                 progress_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
-            self.show_lists[status].setItem(i, 0, QtGui.QTableWidgetItem(show['title']))
-            self.show_lists[status].setItem(i, 1, QtGui.QTableWidgetItem(progress_str))
-            self.show_lists[status].setItem(i, 2, QtGui.QTableWidgetItem(str(show['my_score']) ))
-            self.show_lists[status].setCellWidget(i, 3, progress_widget )
-            self.show_lists[status].setItem(i, 4, QtGui.QTableWidgetItem(str(show['id'])))
+            widget.setRowHeight(i, QtGui.QFontMetrics(widget.font()).height() + 2);
+            widget.setItem(i, 0, ShowItem( show['title'], color ))
+            widget.setItem(i, 1, ShowItem( progress_str, color ))
+            widget.setItem(i, 2, ShowItem( str(show['my_score']), color ))
+            widget.setCellWidget(i, 3, progress_widget )
+            widget.setItem(i, 4, ShowItem( str(show['id']), color ))
 
             i += 1
+
+        widget.model().sort(0)
+    
+    def _get_color(self, show):
+        if show['status'] == 1:
+            return QtGui.QColor(216, 255, 255)
+        else:
+            return None
 
     ### Slots
     def s_show_selected(self, new, old):
@@ -168,9 +217,21 @@ class wmal(QtGui.QMainWindow):
         
         # Update information
         self.show_title.setText(show['title'])
+        self.show_progress.setValue(show['my_progress'])
+        status_index = self.show_status.findData(show['my_status'])
+        self.show_status.setCurrentIndex(status_index)
+        self.show_score.setValue(show['my_score'])
+        
+        # TODO image
+        self.show_image.setPixmap( QtGui.QPixmap( utils.get_filename('cache', '%d.jpg' % show['id']) ) )
+        
+        if show['total'] > 0:
+            self.show_progress_bar.setValue( 100L * show['my_progress'] / show['total'] )
+        else:
+            self.show_progress_bar.setValue( 0 )
 
         # Make it global
-        self.selected_show = show
+        self.selected_show_id = selected_id
 
     def s_switch_account(self):
         self.accountman_widget.show()
@@ -185,7 +246,7 @@ class wmal(QtGui.QMainWindow):
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
 
-    ### Returning functions 
+    ### Responses from the engine thread
     def r_engine_loaded(self, result):
         if result['success']:
             self.worker.set_function('get_list', self.r_build_lists)
@@ -194,6 +255,7 @@ class wmal(QtGui.QMainWindow):
     def r_build_lists(self, result):
         if result['success']:
             self.notebook.clear()
+            self.show_status.clear()
             self.show_lists = dict()
 
             statuses_nums = self.worker.engine.mediainfo['statuses']
@@ -204,12 +266,15 @@ class wmal(QtGui.QMainWindow):
 
                 self.show_lists[status] = QtGui.QTableWidget()
                 self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+                self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+                self.show_lists[status].horizontalHeader().setHighlightSections(False)
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 
                 self.notebook.addTab(self.show_lists[status], name)
+                self.show_status.addItem(name, status)
 
             self._rebuild_lists(result['showlist'])
 
@@ -219,7 +284,7 @@ class wmal(QtGui.QMainWindow):
 
 
 class AccountWidget(QtGui.QDialog):
-    selected = QtCore.pyqtSignal(int)
+    selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
 
     def __init__(self, parent, accountman):
@@ -254,10 +319,14 @@ class AccountWidget(QtGui.QDialog):
             i += 1
         
         bottom_layout = QtGui.QHBoxLayout()
+        self.remember_chk = QtGui.QCheckBox('Remember')
+        if self.accountman.get_default() is not None:
+            self.remember_chk.setChecked(True)
         cancel_btn = QtGui.QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
+        bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(select_btn)
 
@@ -269,7 +338,7 @@ class AccountWidget(QtGui.QDialog):
     def select(self, checked):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            self.selected.emit(selected_account_num)
+            self.selected.emit(selected_account_num, self.remember_chk.isChecked())
             self.close()
         except IndexError:
             self._error("Please select an account.")
@@ -300,10 +369,10 @@ class ShowItem(QtGui.QTableWidgetItem):
     
     """
     
-    def __init__(self, text, alignment=None, color=None):
+    def __init__(self, text, color=None):
         QtGui.QTableWidgetItem.__init__(self, text)
-        if alignment:
-            self.setTextAlignment( alignment )
+        #if alignment:
+        #    self.setTextAlignment( alignment )
         if color:
             self.setBackgroundColor( color )
 
