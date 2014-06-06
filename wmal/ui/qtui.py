@@ -1,11 +1,25 @@
+import os
 import sys
 from PyQt4 import QtGui, QtCore
+from cStringIO import StringIO
+import urllib2 as urllib
 
 import wmal.messenger as messenger
 import wmal.utils as utils
 
 from wmal.engine import Engine
 from wmal.accounts import AccountManager
+
+try:
+    import Image
+    imaging_available = True
+except ImportError:
+    try:
+        from PIL import Image
+        imaging_available = True
+    except ImportError:
+        print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
+        imaging_available = False
 
 class wmal(QtGui.QMainWindow):
     """
@@ -14,6 +28,7 @@ class wmal(QtGui.QMainWindow):
     """
     accountman = None
     worker = None
+    image_worker = None
     started = False
 
     def __init__(self):
@@ -221,9 +236,22 @@ class wmal(QtGui.QMainWindow):
         status_index = self.show_status.findData(show['my_status'])
         self.show_status.setCurrentIndex(status_index)
         self.show_score.setValue(show['my_score'])
-        
-        # TODO image
-        self.show_image.setPixmap( QtGui.QPixmap( utils.get_filename('cache', '%d.jpg' % show['id']) ) )
+       
+        # Download image or use cache
+        if show.get('image'):
+            if self.image_worker is not None:
+                self.image_worker.cancel()
+
+            utils.make_dir('cache')
+            filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+
+            if os.path.isfile(filename):
+                self.s_show_image(filename)
+            else:
+                self.show_image.setText('Loading...')
+                self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+                self.image_worker.finished.connect(self.s_show_image)
+                self.image_worker.start()
         
         if show['total'] > 0:
             self.show_progress_bar.setValue( 100L * show['my_progress'] / show['total'] )
@@ -235,6 +263,9 @@ class wmal(QtGui.QMainWindow):
 
     def s_switch_account(self):
         self.accountman_widget.show()
+
+    def s_show_image(self, filename):
+        self.show_image.setPixmap( QtGui.QPixmap( filename ) )
 
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
@@ -377,6 +408,50 @@ class ShowItem(QtGui.QTableWidgetItem):
             self.setBackgroundColor( color )
 
 
+class Image_Worker(QtCore.QThread):
+    """
+    Image thread
+
+    Downloads an image and shrinks it if necessary.
+
+    """
+    cancelled = False
+    finished = QtCore.pyqtSignal(str)
+
+    def __init__(self, remote, local, size=None):
+        self.remote = remote
+        self.local = local
+        self.size = size
+        super(Image_Worker, self).__init__()
+    
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.cancelled = False
+
+        QtCore.QThread.sleep(1)
+
+        if self.cancelled:
+            return
+
+        img_file = StringIO(urllib.urlopen(self.remote).read())
+        if self.size:
+            im = Image.open(img_file)
+            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+            im.save(self.local)
+        else:
+            with open(self.local, 'wb') as f:
+                f.write(img_file.read())
+
+        if self.cancelled:
+            return
+
+        self.finished.emit(self.local)
+
+    def cancel(self):
+        self.cancelled = True
+
 class Engine_Worker(QtCore.QThread):
     """
     Worker thread
@@ -467,7 +542,6 @@ class Engine_Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
-        print "Running"
         ret = self.function(*self.args,**self.kwargs)
         self.finished.emit(ret)
 
@@ -475,5 +549,4 @@ class Engine_Worker(QtCore.QThread):
 def main():
     app = QtGui.QApplication(sys.argv)
     mainwindow = wmal()
-    #mainwindow.start()
     sys.exit(app.exec_())
