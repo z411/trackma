@@ -1,3 +1,19 @@
+# This file is part of wMAL.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 import os
 import sys
 from PyQt4 import QtGui, QtCore
@@ -124,9 +140,11 @@ class wmal(QtGui.QMainWindow):
         self.notebook.currentChanged.connect(self.s_tab_changed)
         self.setMinimumSize(680, 450)
         
-        self.show_image = QtGui.QLabel()
+        self.show_image = QtGui.QLabel('wMAL-qt')
         self.show_image.setFixedHeight( 149 )
         self.show_image.setFixedWidth( 100 )
+        self.show_image.setAlignment( QtCore.Qt.AlignCenter )
+        self.show_image.setStyleSheet("border: 1px solid #777;background-color:#999;text-align:center")
         show_progress_label = QtGui.QLabel('Progress')
         self.show_progress = QtGui.QSpinBox()
         self.show_progress_bar = QtGui.QProgressBar()
@@ -271,6 +289,9 @@ class wmal(QtGui.QMainWindow):
 
     ### Slots
     def s_show_selected(self, new, old=None):
+        if not new:
+            return # Nothing to select
+        
         index = new.row()
         selected_id = self.notebook.currentWidget().item( index, 4 ).text()
 
