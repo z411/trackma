@@ -422,6 +422,7 @@ class AccountWidget(QtGui.QDialog):
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
 
         # Populate
         accounts = self.accountman.get_accounts()
