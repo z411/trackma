@@ -34,19 +34,19 @@ class wmal(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
+        
+        # Build UI
+        QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
+        self.setWindowTitle('wMAL-qt v0.2')
+        
         self.accountman = AccountManager()
         self.accountman_widget = AccountWidget(None, self.accountman)
         self.accountman_widget.selected.connect(self.accountman_selected)
-        
-        # Build UI
-        self.setWindowTitle('wMAL-qt v0.2')
-        self.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
 
         # Go directly into the application if a default account is set
         # Open the selection dialog otherwise
         default = self.accountman.get_default()
         if default:
-            self.show()
             self.start(default)
         else:
             self.accountman_widget.show()
@@ -62,7 +62,6 @@ class wmal(QtGui.QMainWindow):
         if self.started:
             self.reload(account)
         else:
-            self.show()
             self.start(account)
 
     def start(self, account):
@@ -138,7 +137,6 @@ class wmal(QtGui.QMainWindow):
         left_box.addRow(show_score_btn)
         left_box.addRow(self.show_status)
 
-
         main_hbox.addLayout(left_box)
         main_hbox.addWidget(self.notebook, 1)
 
@@ -153,6 +151,9 @@ class wmal(QtGui.QMainWindow):
         self.worker.changed_status.connect(self.status)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
+        
+        # Show main window
+        self.show()
         
         # Start loading engine
         self.started = True
@@ -326,6 +327,7 @@ class wmal(QtGui.QMainWindow):
             self.worker.start()
 
     def s_switch_account(self):
+        self.accountman_widget.setModal(True)
         self.accountman_widget.show()
 
     def s_show_image(self, filename):
@@ -410,6 +412,8 @@ class AccountWidget(QtGui.QDialog):
         self.accountman = accountman
         
         layout = QtGui.QVBoxLayout()
+        
+        self.setWindowTitle('Select Account')
         
         # Create list
         columns = ['Username', 'Site']
