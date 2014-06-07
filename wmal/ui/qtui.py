@@ -79,11 +79,19 @@ class wmal(QtGui.QMainWindow):
         self.image_timer.timeout.connect(self.s_download_image)
         
         # Build menus
+        action_send = QtGui.QAction('&Send changes', self)
+        action_send.setStatusTip('Upload any changes made to the list immediately.')
+        action_send.triggered.connect(self.s_send)
         action_quit = QtGui.QAction('&Quit', self)
+        action_quit.setStatusTip('Exit wMAL.')
         action_quit.triggered.connect(self.close)
 
         action_reload = QtGui.QAction('Switch &Account', self)
+        action_reload.setStatusTip('Switch to a different account.')
         action_reload.triggered.connect(self.s_switch_account)
+        action_retrieve = QtGui.QAction('&Redownload list', self)
+        action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
+        action_retrieve.triggered.connect(self.s_retrieve)
 
         action_about = QtGui.QAction('About...', self)
         action_about.triggered.connect(self.s_about)
@@ -92,9 +100,11 @@ class wmal(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         menu_show = menubar.addMenu('&Show')
+        menu_show.addAction(action_send)
         menu_show.addAction(action_quit)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
+        menu_options.addAction(action_retrieve)
         menu_help = menubar.addMenu('&Help')
         menu_help.addAction(action_about)
         menu_help.addAction(action_about_qt)
@@ -120,21 +130,21 @@ class wmal(QtGui.QMainWindow):
         show_progress_label = QtGui.QLabel('Progress')
         self.show_progress = QtGui.QSpinBox()
         self.show_progress_bar = QtGui.QProgressBar()
-        show_progress_btn = QtGui.QPushButton('Update')
-        show_progress_btn.clicked.connect(self.s_set_episode)
+        self.show_progress_btn = QtGui.QPushButton('Update')
+        self.show_progress_btn.clicked.connect(self.s_set_episode)
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QSpinBox()
-        show_score_btn = QtGui.QPushButton('Set')
-        show_score_btn.clicked.connect(self.s_set_score)
+        self.show_score_btn = QtGui.QPushButton('Set')
+        self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
         self.show_status.currentIndexChanged.connect(self.s_set_status)
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar) # , 1, QtCore.Qt.AlignTop)
         left_box.addRow(show_progress_label, self.show_progress)
-        left_box.addRow(show_progress_btn)
+        left_box.addRow(self.show_progress_btn)
         left_box.addRow(show_score_label, self.show_score)
-        left_box.addRow(show_score_btn)
+        left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
 
         main_hbox.addLayout(left_box)
@@ -157,26 +167,36 @@ class wmal(QtGui.QMainWindow):
         
         # Start loading engine
         self.started = True
-        self.worker.set_function('start', self.r_engine_loaded)
-        self.worker.start()
+        self._enable_widgets(False)
+        self.worker_call('start', self.r_engine_loaded)
 
     def reload(self, account=None, mediatype=None):
-        self.worker.set_function('reload', self.r_engine_loaded, account, mediatype)
-        self.worker.start()
+        self._enable_widgets(False)
+        self.worker_call('reload', self.r_engine_loaded, account, mediatype)
         
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
         else:
-            self.worker.set_function('unload', self.r_engine_unloaded)
-            self.worker.start()
+            self._enable_widgets(False)
+            self.worker_call('unload', self.r_engine_unloaded)
             event.ignore()
 
     def status(self, string):
         self.statusBar().showMessage(string)
         print string
+
+    def worker_call(self, function, ret_function, *args, **kwargs):
+        # Run worker in a thread
+        self.worker.set_function(function, ret_function, *args, **kwargs)
+        self.worker.start()
     
     ### GUI Functions
+    def _enable_widgets(self, enable):
+        self.notebook.setEnabled(enable)
+        self.show_progress_btn.setEnabled(enable)
+        self.show_score_btn.setEnabled(enable)
+    
     def _rebuild_lists(self, showlist):
         """
         Using a full showlist, rebuilds every QTreeView
@@ -314,17 +334,25 @@ class wmal(QtGui.QMainWindow):
             self.s_show_selected(item)
 
     def s_set_episode(self):
-        self.worker.set_function('set_episode', None, self.selected_show_id, self.show_progress.value())
-        self.worker.start()
+        self._enable_widgets(False)
+        self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value())
 
     def s_set_score(self):
-        self.worker.set_function('set_score', None, self.selected_show_id, self.show_score.value())
-        self.worker.start()
+        self._enable_widgets(False)
+        self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
 
     def s_set_status(self, index):
         if self.selected_show_id:
-            self.worker.set_function('set_status', None, self.selected_show_id, self.statuses_nums[index])
-            self.worker.start()
+            self._enable_widgets(False)
+            self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
+    
+    def s_retrieve(self):
+        self._enable_widgets(False)
+        self.worker_call('list_download', self.r_engine_loaded)
+    
+    def s_send(self):
+        self._enable_widgets(False)
+        self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
         self.accountman_widget.setModal(True)
@@ -359,13 +387,17 @@ class wmal(QtGui.QMainWindow):
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
 
     ### Responses from the engine thread
+    def r_generic(self):
+        self._enable_widgets(True)
+    
+    def r_generic_ready(self):
+        self._enable_widgets(True)
+        self.status('Ready.')
+        
     def r_engine_loaded(self, result):
         if result['success']:
-            self.worker.set_function('get_list', self.r_build_lists)
-            self.worker.start()
-
-    def r_build_lists(self, result):
-        if result['success']:
+            showlist = self.worker.engine.get_list()
+            
             self.notebook.blockSignals(True)
             self.show_status.blockSignals(True)
 
@@ -395,7 +427,15 @@ class wmal(QtGui.QMainWindow):
             self.show_status.blockSignals(False)
             self.notebook.blockSignals(False)
 
-            self._rebuild_lists(result['showlist'])
+            self._rebuild_lists(showlist)
+            
+            self._enable_widgets(True)
+    
+    def r_list_retrieved(self, result):
+        if result['success']:
+            showlist = self.worker.engine.get_list()
+            self._rebuild_lists(showlist)
+            self._enable_widgets(True)
 
     def r_engine_unloaded(self, result):
         if result['success']:
@@ -577,6 +617,8 @@ class Engine_Worker(QtCore.QThread):
             'set_episode': self._set_episode,
             'set_score': self._set_score,
             'set_status': self._set_status,
+            'list_download': self._list_download,
+            'list_upload': self._list_upload,
             'unload': self._unload,
         }
 
@@ -653,6 +695,24 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+       
+    def _list_download(self):
+        try:
+            self.engine.list_download()
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+    
+    def _list_upload(self):
+        try:
+            self.engine.list_upload()
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
