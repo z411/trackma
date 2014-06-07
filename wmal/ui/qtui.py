@@ -112,6 +112,7 @@ class wmal(QtGui.QMainWindow):
         self.show_title.setFont(show_title_font)
 
         self.notebook = QtGui.QTabWidget()
+        self.notebook.currentChanged.connect(self.s_tab_changed)
         self.setMinimumSize(680, 450)
         
         self.show_image = QtGui.QLabel()
@@ -248,7 +249,7 @@ class wmal(QtGui.QMainWindow):
         return 0
 
     ### Slots
-    def s_show_selected(self, new, old):
+    def s_show_selected(self, new, old=None):
         index = new.row()
         selected_id = self.notebook.currentWidget().item( index, 4 ).text()
 
@@ -260,6 +261,9 @@ class wmal(QtGui.QMainWindow):
 
         show = self.worker.engine.get_show_info(selected_id)
         
+        # Block signals
+        self.show_status.blockSignals(True)
+
         # Update information
         self.show_title.setText(show['title'])
         self.show_progress.setValue(show['my_progress'])
@@ -288,14 +292,25 @@ class wmal(QtGui.QMainWindow):
         # Make it global
         self.selected_show_id = selected_id
 
+        # Unblock signals
+        self.show_status.blockSignals(False)
+
     def s_download_image(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        self.show_image.setText('Downloading...')
-        filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+        if imaging_available:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+            self.show_image.setText('Downloading...')
+            filename = utils.get_filename('cache', "%s.jpg" % show['id'])
         
-        self.image_worker = Image_Worker(show['image'], filename, (100, 140))
-        self.image_worker.finished.connect(self.s_show_image)
-        self.image_worker.start()
+            self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+            self.image_worker.finished.connect(self.s_show_image)
+            self.image_worker.start()
+        else:
+            self.show_image.setText('Not available')
+    
+    def s_tab_changed(self):
+        item = self.notebook.currentWidget().currentItem()
+        if item:
+            self.s_show_selected(item)
 
     def s_set_episode(self):
         self.worker.set_function('set_episode', None, self.selected_show_id, self.show_progress.value())
@@ -349,6 +364,9 @@ class wmal(QtGui.QMainWindow):
 
     def r_build_lists(self, result):
         if result['success']:
+            self.notebook.blockSignals(True)
+            self.show_status.blockSignals(True)
+
             self.notebook.clear()
             self.show_status.clear()
             self.show_lists = dict()
@@ -370,6 +388,9 @@ class wmal(QtGui.QMainWindow):
                 
                 self.notebook.addTab(self.show_lists[status], name)
                 self.show_status.addItem(name)
+
+            self.show_status.blockSignals(False)
+            self.notebook.blockSignals(False)
 
             self._rebuild_lists(result['showlist'])
 
