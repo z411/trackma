@@ -255,6 +255,11 @@ class wmal(QtGui.QMainWindow):
             i += 1
 
         widget.model().sort(0)
+        
+        # Update tab name with total
+        tab_index = self.statuses_nums.index(status)
+        tab_name = "%s (%d)" % (self.statuses_names[status], i)
+        self.notebook.setTabText(tab_index, tab_name)
 
     def _update_row(self, widget, row, show):
         color = self._get_color(show)
