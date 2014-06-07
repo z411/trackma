@@ -21,6 +21,10 @@ class AccountManager(object):
     def add_account(self, username, password, api):
         available_libs = utils.available_libs.keys()
         
+        if not username:
+            raise utils.AccountError('Empty username.')
+        if not password:
+            raise utils.AccountError('Empty password.')
         if api not in available_libs:
             raise utils.AccountError('That API doesn\'t exist.')
 

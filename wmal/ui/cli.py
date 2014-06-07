@@ -491,7 +491,7 @@ class wmal_accounts(AccountManager):
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete): ")
+            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
@@ -509,8 +509,10 @@ class wmal_accounts(AccountManager):
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')
-                num = int(num) - 1
+                num = int(num)
                 self.delete_account(num)
+            elif key.lower() == 'q':
+                sys.exit(0)
             else:
                 try:
                     num = int(key)
