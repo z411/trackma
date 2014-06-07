@@ -41,6 +41,11 @@ class AccountManager(object):
     def delete_account(self, num):
         self.accounts['default'] = None
         del self.accounts['accounts'][num]
+        
+        # Reset index if there are no accounts left
+        if not self.accounts['accounts']:
+            self.accounts['next'] = 1
+        
         self._save()
     
     def get_account(self, num):
