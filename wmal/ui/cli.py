@@ -17,7 +17,10 @@
 #
 
 import sys
-import readline
+try:
+    import readline
+except ImportError:
+    pass # readline is optional
 import cmd
 import re
 from operator import itemgetter # Used for sorting list
