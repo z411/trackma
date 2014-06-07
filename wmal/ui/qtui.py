@@ -70,7 +70,14 @@ class wmal(QtGui.QMainWindow):
         Start engine and everything
 
         """
+        # Workers
         self.worker = Engine_Worker(account)
+
+        # Timers
+        self.image_timer = QtCore.QTimer()
+        self.image_timer.setInterval(1000)
+        self.image_timer.setSingleShot(True)
+        self.image_timer.timeout.connect(self.s_download_image)
         
         # Build menus
         action_quit = QtGui.QAction('&Quit', self)
@@ -270,11 +277,9 @@ class wmal(QtGui.QMainWindow):
             if os.path.isfile(filename):
                 self.s_show_image(filename)
             else:
-                self.show_image.setText('Loading...')
-                self.image_worker = Image_Worker(show['image'], filename, (100, 140))
-                self.image_worker.finished.connect(self.s_show_image)
-                self.image_worker.start()
-        
+                self.show_image.setText('Waiting...')
+                self.image_timer.start()
+               
         if show['total'] > 0:
             self.show_progress_bar.setValue( 100L * show['my_progress'] / show['total'] )
         else:
@@ -282,6 +287,15 @@ class wmal(QtGui.QMainWindow):
 
         # Make it global
         self.selected_show_id = selected_id
+
+    def s_download_image(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        self.show_image.setText('Downloading...')
+        filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+        
+        self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+        self.image_worker.finished.connect(self.s_show_image)
+        self.image_worker.start()
 
     def s_set_episode(self):
         self.worker.set_function('set_episode', None, self.selected_show_id, self.show_progress.value())
@@ -479,11 +493,6 @@ class Image_Worker(QtCore.QThread):
 
     def run(self):
         self.cancelled = False
-
-        QtCore.QThread.sleep(1)
-
-        if self.cancelled:
-            return
 
         img_file = StringIO(urllib.urlopen(self.remote).read())
         if self.size:
