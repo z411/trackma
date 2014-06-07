@@ -235,7 +235,7 @@ class wmal(QtGui.QMainWindow):
 
     def _get_color(self, show):
         if show['status'] == 1:
-            return QtGui.QColor(216, 255, 255)
+            return QtGui.QColor(210, 250, 250)
         else:
             return None
     
@@ -384,6 +384,7 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
                 self.show_lists[status].verticalHeader().hide()
+                self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 
                 self.notebook.addTab(self.show_lists[status], name)
@@ -420,6 +421,7 @@ class AccountWidget(QtGui.QDialog):
         self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
+        self.table.setGridStyle(QtCore.Qt.NoPen)
 
         # Populate
         accounts = self.accountman.get_accounts()
