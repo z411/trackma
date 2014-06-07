@@ -415,6 +415,7 @@ class AccountWidget(QtGui.QDialog):
         self.table = QtGui.QTableWidget()
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
+        self.table.horizontalHeader().setHighlightSections(False)
         self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
