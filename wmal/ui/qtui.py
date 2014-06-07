@@ -281,8 +281,11 @@ class wmal(QtGui.QMainWindow):
             if os.path.isfile(filename):
                 self.s_show_image(filename)
             else:
-                self.show_image.setText('Waiting...')
-                self.image_timer.start()
+                if imaging_available:
+                    self.show_image.setText('Waiting...')
+                    self.image_timer.start()
+                else:
+                    self.show_image.setText('Not available')
                
         if show['total'] > 0:
             self.show_progress_bar.setValue( 100L * show['my_progress'] / show['total'] )
@@ -296,16 +299,13 @@ class wmal(QtGui.QMainWindow):
         self.show_status.blockSignals(False)
 
     def s_download_image(self):
-        if imaging_available:
-            show = self.worker.engine.get_show_info(self.selected_show_id)
-            self.show_image.setText('Downloading...')
-            filename = utils.get_filename('cache', "%s.jpg" % show['id'])
-        
-            self.image_worker = Image_Worker(show['image'], filename, (100, 140))
-            self.image_worker.finished.connect(self.s_show_image)
-            self.image_worker.start()
-        else:
-            self.show_image.setText('Not available')
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        self.show_image.setText('Downloading...')
+        filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+    
+        self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+        self.image_worker.finished.connect(self.s_show_image)
+        self.image_worker.start()
     
     def s_tab_changed(self):
         item = self.notebook.currentWidget().currentItem()
