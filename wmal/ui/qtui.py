@@ -407,11 +407,11 @@ class wmal(QtGui.QMainWindow):
     
     def s_retrieve(self):
         self._busy(False)
-        self.worker_call('list_download', self.r_engine_loaded)
+        self.worker_call('list_download', self.r_list_retrieved)
     
     def s_send(self):
         self._busy(True)
-        self.worker_call('list_upload', self.r_generic_ready)
+        self.worker_call('list_upload', self.r_list_retrieved)
 
     def s_switch_account(self):
         self.accountman_widget.setModal(True)
