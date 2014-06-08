@@ -53,7 +53,7 @@ class lib(object):
         if userconfig['mediatype'] in self.mediatypes:
             self.mediatype = userconfig['mediatype']
         else:
-            raise utils.APIFatal('Unsupported mediatype.')
+            raise utils.APIFatal('Unsupported mediatype %s.' % userconfig['mediatype'])
         
         self.api_info['mediatype'] = self.mediatype
         self.api_info['supported_mediatypes'] = self.mediatypes.keys()

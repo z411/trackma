@@ -123,10 +123,13 @@ class wmal(QtGui.QMainWindow):
         action_about_qt.triggered.connect(self.s_about_qt)
 
         menubar = self.menuBar()
-        menu_show = menubar.addMenu('&Show')
-        menu_show.addAction(action_details)
-        menu_show.addAction(action_send)
-        menu_show.addAction(action_quit)
+        self.menu_show = menubar.addMenu('&Show')
+        self.menu_show.addAction(action_details)
+        self.menu_show.addAction(action_send)
+        self.menu_show.addAction(action_quit)
+        self.menu_mediatype = menubar.addMenu('&Mediatype')
+        self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
+        self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
         menu_options.addAction(action_retrieve)
@@ -147,7 +150,7 @@ class wmal(QtGui.QMainWindow):
 
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
-        self.setMinimumSize(680, 450)
+        self.setMinimumSize(740, 480)
         
         self.show_image = QtGui.QLabel('wMAL-qt')
         self.show_image.setFixedHeight( 149 )
@@ -159,6 +162,10 @@ class wmal(QtGui.QMainWindow):
         self.show_progress_bar = QtGui.QProgressBar()
         self.show_progress_btn = QtGui.QPushButton('Update')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
+        self.show_play_btn = QtGui.QPushButton('Play')
+        self.show_play_btn.clicked.connect(self.s_play, False)
+        self.show_play_next_btn = QtGui.QPushButton('Next')
+        self.show_play_next_btn.clicked.connect(self.s_play, True)
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QSpinBox()
         self.show_score_btn = QtGui.QPushButton('Set')
@@ -167,9 +174,10 @@ class wmal(QtGui.QMainWindow):
         self.show_status.currentIndexChanged.connect(self.s_set_status)
 
         left_box.addRow(self.show_image)
-        left_box.addRow(self.show_progress_bar) # , 1, QtCore.Qt.AlignTop)
+        left_box.addRow(self.show_progress_bar)
         left_box.addRow(show_progress_label, self.show_progress)
         left_box.addRow(self.show_progress_btn)
+        left_box.addRow(self.show_play_btn, self.show_play_next_btn)
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
@@ -186,6 +194,7 @@ class wmal(QtGui.QMainWindow):
  
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
+        self.worker.raised_error.connect(self.error)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.playing_show.connect(self.ws_changed_show)
@@ -213,6 +222,9 @@ class wmal(QtGui.QMainWindow):
     def status(self, string):
         self.statusBar().showMessage(string)
         print string
+    
+    def error(self, msg):
+        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
 
     def worker_call(self, function, ret_function, *args, **kwargs):
         # Run worker in a thread
@@ -222,8 +234,13 @@ class wmal(QtGui.QMainWindow):
     ### GUI Functions
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
-        self.show_progress_btn.setEnabled(enable)
-        self.show_score_btn.setEnabled(enable)
+
+        if self.selected_show_id:
+            self.show_progress_btn.setEnabled(enable)
+            self.show_score_btn.setEnabled(enable)
+            self.show_play_btn.setEnabled(enable)
+            self.show_play_next_btn.setEnabled(enable)
+            self.show_status.setEnabled(enable)
     
     def _busy(self, wait=False):
         if wait:
@@ -328,7 +345,20 @@ class wmal(QtGui.QMainWindow):
         
     def s_show_selected(self, new, old=None):
         if not new:
-            return # Nothing to select
+            # Unselect any show
+            self.selected_show_id = None
+
+            self.show_title.setText('wMAL-gtk')
+            self.show_image.setText('wMAL-gtk')
+            self.show_progress.setValue(0)
+            self.show_score.setValue(0)
+            self.show_progress_bar.setValue(0)
+            self.show_status.setEnabled(False)
+            self.show_progress_btn.setEnabled(False)
+            self.show_score_btn.setEnabled(False)
+            self.show_play_btn.setEnabled(False)
+            self.show_play_next_btn.setEnabled(False)
+            return
         
         index = new.row()
         selected_id = self.notebook.currentWidget().item( index, 4 ).text()
@@ -349,7 +379,14 @@ class wmal(QtGui.QMainWindow):
         self.show_progress.setValue(show['my_progress'])
         self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
         self.show_score.setValue(show['my_score'])
-       
+        
+        # Enable relevant buttons
+        self.show_progress_btn.setEnabled(True)
+        self.show_score_btn.setEnabled(True)
+        self.show_play_btn.setEnabled(True)
+        self.show_play_next_btn.setEnabled(True)
+        self.show_status.setEnabled(True)
+ 
         # Download image or use cache
         if show.get('image'):
             if self.image_worker is not None:
@@ -405,6 +442,17 @@ class wmal(QtGui.QMainWindow):
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
     
+    def s_play(self, play_next):
+        if self.selected_show_id:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+
+            episode = None
+            if not play_next:
+                episode = self.show_progress.value()
+
+            self._busy(False)
+            self.worker_call('play_episode', self.r_generic_ready, show, episode)
+
     def s_retrieve(self):
         self._busy(False)
         self.worker_call('list_download', self.r_list_retrieved)
@@ -427,7 +475,12 @@ class wmal(QtGui.QMainWindow):
         self.detailswindow.setModal(True)
         self.detailswindow.load(show)
         self.detailswindow.show()
-
+    
+    def s_mediatype(self, action):
+        index = action.data().toInt()[0]
+        mediatype = self.api_info['supported_mediatypes'][index]
+        self.reload(None, mediatype)
+    
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
             '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
@@ -468,15 +521,18 @@ class wmal(QtGui.QMainWindow):
             
             self.notebook.blockSignals(True)
             self.show_status.blockSignals(True)
-
+            
+            # Set globals
             self.notebook.clear()
             self.show_status.clear()
             self.show_lists = dict()
 
+            self.api_info = self.worker.engine.api_info
             self.statuses_nums = self.worker.engine.mediainfo['statuses']
             self.statuses_names = self.worker.engine.mediainfo['statuses_dict']
             self.has_progress = self.worker.engine.mediainfo['has_progress']
             
+            # Build notebook
             for status in self.statuses_nums:
                 name = self.statuses_names[status]
 
@@ -495,11 +551,24 @@ class wmal(QtGui.QMainWindow):
 
             self.show_status.blockSignals(False)
             self.notebook.blockSignals(False)
+            
+            # Build mediatype menu
+            for action in self.mediatype_actiongroup.actions():
+                self.mediatype_actiongroup.removeAction(action)
 
+            for n, mediatype in enumerate(self.api_info['supported_mediatypes']):
+                action = QtGui.QAction(mediatype, self, checkable=True)
+                if mediatype == self.api_info['mediatype']:
+                    action.setChecked(True)
+                else:
+                    action.setData(n)
+                self.mediatype_actiongroup.addAction(action)
+                self.menu_mediatype.addAction(action)
+            
+            # Rebuild lists
             self._rebuild_lists(showlist)
             
-            if not self.has_progress:
-                self.show_progress_btn.setEnabled(False)
+            self.s_show_selected(None)
             
             self.status('Ready.')
             
@@ -775,6 +844,7 @@ class Engine_Worker(QtCore.QThread):
             'set_episode': self._set_episode,
             'set_score': self._set_score,
             'set_status': self._set_status,
+            'play_episode': self._play_episode,
             'list_download': self._list_download,
             'list_upload': self._list_upload,
             'get_show_details': self._get_show_details,
@@ -860,6 +930,15 @@ class Engine_Worker(QtCore.QThread):
 
         return {'success': True}
        
+    def _play_episode(self, show, episode):
+        try:
+            self.engine.play_episode(show, episode)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
     def _list_download(self):
         try:
             self.engine.list_download()
