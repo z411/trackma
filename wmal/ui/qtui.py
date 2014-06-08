@@ -53,7 +53,7 @@ class wmal(QtGui.QMainWindow):
         
         # Build UI
         QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
-        self.setWindowTitle('wMAL-qt v0.2')
+        self.setWindowTitle('wMAL-qt')
         
         self.accountman = AccountManager()
         self.accountman_widget = AccountWidget(None, self.accountman)
@@ -87,6 +87,7 @@ class wmal(QtGui.QMainWindow):
         """
         # Workers
         self.worker = Engine_Worker(account)
+        self.account = account
 
         # Timers
         self.image_timer = QtCore.QTimer()
@@ -139,6 +140,7 @@ class wmal(QtGui.QMainWindow):
 
         # Build layout
         main_layout = QtGui.QVBoxLayout()
+        top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
         left_box = QtGui.QFormLayout()
         
@@ -147,6 +149,13 @@ class wmal(QtGui.QMainWindow):
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
         self.show_title.setFont(show_title_font)
+
+        self.api_icon = QtGui.QLabel('icon')
+        self.api_user = QtGui.QLabel('user')
+
+        top_hbox.addWidget(self.show_title, 1)
+        top_hbox.addWidget(self.api_icon)
+        top_hbox.addWidget(self.api_user)
 
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
@@ -177,7 +186,7 @@ class wmal(QtGui.QMainWindow):
         left_box.addRow(self.show_progress_bar)
         left_box.addRow(show_progress_label, self.show_progress)
         left_box.addRow(self.show_progress_btn)
-        left_box.addRow(self.show_play_btn, self.show_play_next_btn)
+        left_box.addRow(self.show_play_btn)
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
@@ -185,7 +194,7 @@ class wmal(QtGui.QMainWindow):
         main_hbox.addLayout(left_box)
         main_hbox.addWidget(self.notebook, 1)
 
-        main_layout.addWidget(self.show_title)
+        main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
 
         self.main_widget = QtGui.QWidget(self)
@@ -208,6 +217,9 @@ class wmal(QtGui.QMainWindow):
         self.worker_call('start', self.r_engine_loaded)
 
     def reload(self, account=None, mediatype=None):
+        if account:
+            self.account = account
+
         self._busy(False)
         self.worker_call('reload', self.r_engine_loaded, account, mediatype)
         
@@ -565,6 +577,11 @@ class wmal(QtGui.QMainWindow):
                 self.mediatype_actiongroup.addAction(action)
                 self.menu_mediatype.addAction(action)
             
+            # Show API info
+            self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
+            self.api_user.setText( self.account['username'] )
+            self.setWindowTitle( "wMAL-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
+
             # Rebuild lists
             self._rebuild_lists(showlist)
             
@@ -704,6 +721,7 @@ class AccountWidget(QtGui.QDialog):
         self.table.setRowCount(len(self.accountman.accounts['accounts']))
         i = 0
         for k, account in accounts:
+            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
             self.table.setItem(i, 0, AccountItem(k, account['username']))
             self.table.setItem(i, 1, AccountItem(k, account['api'], icons[account['api']]))
 
