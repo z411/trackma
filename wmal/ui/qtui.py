@@ -94,7 +94,15 @@ class wmal(QtGui.QMainWindow):
         self.image_timer.setSingleShot(True)
         self.image_timer.timeout.connect(self.s_download_image)
         
+        self.busy_timer = QtCore.QTimer()
+        self.busy_timer.setInterval(100)
+        self.busy_timer.setSingleShot(True)
+        self.busy_timer.timeout.connect(self.s_busy)
+        
         # Build menus
+        action_details = QtGui.QAction('Show &details...', self)
+        action_details.setStatusTip('Show detailed information about the selected show.')
+        action_details.triggered.connect(self.s_show_details)
         action_send = QtGui.QAction('&Send changes', self)
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
@@ -116,6 +124,7 @@ class wmal(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         menu_show = menubar.addMenu('&Show')
+        menu_show.addAction(action_details)
         menu_show.addAction(action_send)
         menu_show.addAction(action_quit)
         menu_options = menubar.addMenu('&Options')
@@ -185,18 +194,18 @@ class wmal(QtGui.QMainWindow):
         
         # Start loading engine
         self.started = True
-        self._enable_widgets(False)
+        self._busy(False)
         self.worker_call('start', self.r_engine_loaded)
 
     def reload(self, account=None, mediatype=None):
-        self._enable_widgets(False)
+        self._busy(False)
         self.worker_call('reload', self.r_engine_loaded, account, mediatype)
         
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
         else:
-            self._enable_widgets(False)
+            self._busy()
             self.worker_call('unload', self.r_engine_unloaded)
             event.ignore()
 
@@ -215,6 +224,18 @@ class wmal(QtGui.QMainWindow):
         self.show_progress_btn.setEnabled(enable)
         self.show_score_btn.setEnabled(enable)
     
+    def _busy(self, wait=False):
+        if wait:
+            self.busy_timer.start()
+        else:
+            self._enable_widgets(False)
+    
+    def _unbusy(self):
+        if self.busy_timer.isActive():
+            self.busy_timer.stop()
+        else:
+            self._enable_widgets(True)
+    
     def _rebuild_lists(self, showlist):
         """
         Using a full showlist, rebuilds every QTreeView
@@ -231,7 +252,6 @@ class wmal(QtGui.QMainWindow):
         for status in statuses_nums:
             self._rebuild_list(status, filtered_list[status])
 
-        self.status('Ready.')
 
     def _rebuild_list(self, status, showlist=None):
         if not showlist:
@@ -293,6 +313,9 @@ class wmal(QtGui.QMainWindow):
         return 0
 
     ### Slots
+    def s_busy(self):
+        self._enable_widgets(False)
+        
     def s_show_selected(self, new, old=None):
         if not new:
             return # Nothing to select
@@ -360,24 +383,24 @@ class wmal(QtGui.QMainWindow):
             self.s_show_selected(item)
 
     def s_set_episode(self):
-        self._enable_widgets(False)
+        self._busy(True)
         self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value())
 
     def s_set_score(self):
-        self._enable_widgets(False)
+        self._busy(True)
         self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
 
     def s_set_status(self, index):
         if self.selected_show_id:
-            self._enable_widgets(False)
+            self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
     
     def s_retrieve(self):
-        self._enable_widgets(False)
+        self._busy(False)
         self.worker_call('list_download', self.r_engine_loaded)
     
     def s_send(self):
-        self._enable_widgets(False)
+        self._busy(True)
         self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
@@ -386,6 +409,14 @@ class wmal(QtGui.QMainWindow):
 
     def s_show_image(self, filename):
         self.show_image.setPixmap( QtGui.QPixmap( filename ) )
+    
+    def s_show_details(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        
+        self.detailswindow = DetailsDialog(None, self.worker)
+        self.detailswindow.setModal(True)
+        self.detailswindow.load(show)
+        self.detailswindow.show()
 
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
@@ -396,6 +427,7 @@ class wmal(QtGui.QMainWindow):
 
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
+        
 
     ### Worker slots
     def ws_changed_show(self, show):
@@ -414,10 +446,10 @@ class wmal(QtGui.QMainWindow):
 
     ### Responses from the engine thread
     def r_generic(self):
-        self._enable_widgets(True)
+        self._unbusy()
     
     def r_generic_ready(self):
-        self._enable_widgets(True)
+        self._unbusy()
         self.status('Ready.')
         
     def r_engine_loaded(self, result):
@@ -433,6 +465,7 @@ class wmal(QtGui.QMainWindow):
 
             self.statuses_nums = self.worker.engine.mediainfo['statuses']
             self.statuses_names = self.worker.engine.mediainfo['statuses_dict']
+            self.has_progress = self.worker.engine.mediainfo['has_progress']
             
             for status in self.statuses_nums:
                 name = self.statuses_names[status]
@@ -455,19 +488,108 @@ class wmal(QtGui.QMainWindow):
 
             self._rebuild_lists(showlist)
             
-            self._enable_widgets(True)
+            if not self.has_progress:
+                self.show_progress_btn.setEnabled(False)
+            
+            self.status('Ready.')
+            
+        self._unbusy()
     
     def r_list_retrieved(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
             self._rebuild_lists(showlist)
-            self._enable_widgets(True)
-
+            
+            self.status('Ready.')
+            
+        self._unbusy()
+        
     def r_engine_unloaded(self, result):
         if result['success']:
             self.close()
 
 
+class DetailsDialog(QtGui.QDialog):
+    worker = None
+
+    def __init__(self, parent, worker):
+        QtGui.QMainWindow.__init__(self, parent)
+        self.setMinimumSize(530, 550)
+        self.setWindowTitle('Details')
+        self.worker = worker
+    
+        # Build layout
+        main_layout = QtGui.QVBoxLayout()
+        
+        self.show_title = QtGui.QLabel()
+        show_title_font = QtGui.QFont()
+        show_title_font.setBold(True)
+        show_title_font.setPointSize(12)
+        self.show_title.setAlignment( QtCore.Qt.AlignCenter )
+        self.show_title.setFont(show_title_font)
+        
+        info_area = QtGui.QWidget()
+        info_layout = QtGui.QHBoxLayout()
+        
+        self.show_image = QtGui.QLabel('Downloading...')
+        self.show_image.setAlignment( QtCore.Qt.AlignTop )
+        self.show_info = QtGui.QLabel('Wait...')
+        self.show_info.setWordWrap(True)
+        self.show_info.setAlignment( QtCore.Qt.AlignTop )
+        
+        info_layout.addWidget( self.show_image )
+        info_layout.addWidget( self.show_info, 1 )
+        
+        info_area.setLayout(info_layout)
+        
+        scroll_area = QtGui.QScrollArea()
+        scroll_area.setBackgroundRole(QtGui.QPalette.Dark)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(info_area)
+        
+        done_button = QtGui.QPushButton('Done')
+        done_button.clicked.connect(self.close)
+
+        main_layout.addWidget(self.show_title)
+        main_layout.addWidget(scroll_area)
+        main_layout.addWidget(done_button)
+
+        self.setLayout(main_layout)
+    
+    def worker_call(self, function, ret_function, *args, **kwargs):
+        # Run worker in a thread
+        self.worker.set_function(function, ret_function, *args, **kwargs)
+        self.worker.start()
+        
+    def load(self, show):
+        self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], show['title']) )
+        
+        # Load show info
+        self.worker_call('get_show_details', self.r_details_loaded, show)
+        
+        # Load show image
+        filename = utils.get_filename('cache', "f_%s.jpg" % show['id'])
+        
+        if os.path.isfile(filename):
+            self.s_show_image(filename)
+        else:
+            self.image_worker = Image_Worker(show['image'], filename)
+            self.image_worker.finished.connect(self.s_show_image)
+            self.image_worker.start()
+    
+    def s_show_image(self, filename):
+        self.show_image.setPixmap( QtGui.QPixmap( filename ) )
+    
+    def r_details_loaded(self, result):
+        details = result['details']
+        
+        info_string = ""
+        for line in details['extra']:
+            if line[0] and line[1]:
+                info_string += "<h3>%s</h3><p>%s</p>" % (line[0], line[1])
+                
+        self.show_info.setText( info_string )
+        
 class AccountWidget(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
@@ -645,6 +767,7 @@ class Engine_Worker(QtCore.QThread):
             'set_status': self._set_status,
             'list_download': self._list_download,
             'list_upload': self._list_upload,
+            'get_show_details': self._get_show_details,
             'unload': self._unload,
         }
 
@@ -744,6 +867,15 @@ class Engine_Worker(QtCore.QThread):
             return {'success': False}
 
         return {'success': True}
+    
+    def _get_show_details(self, show):
+        try:
+            details = self.engine.get_show_details(show)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True, 'details': details}
 
     def set_function(self, function, ret_function, *args, **kwargs):
         self.function = self.function_list[function]
