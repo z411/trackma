@@ -18,6 +18,10 @@ Features
 Screenshots
 -----------
 
+Qt interface
+
+![Qt](https://z411.github.io/wmal-python/images/screen_qt.png)
+
 GTK interface
 
 ![GTK](http://z411.github.com/wmal-python/images/screen_gtk.png)
