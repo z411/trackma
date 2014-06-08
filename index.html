@@ -30,51 +30,54 @@
 
       </header>
       <section>
-        <h1>wMAL</h1>
+        <h1>
+<a name="wmal" class="anchor" href="#wmal"><span class="octicon octicon-link"></span></a>wMAL</h1>
 
-<img alt="Icon" style="float:right" src="images/wmal_icon.png">
-<p>
-wMAL aims to be a lightweight and simple but feature-rich program for GNU/Linux and Unix based systems
+<p>wMAL aims to be a lightweight and simple but feature-rich program for Unix based systems
 for fetching, updating and using data from personal lists hosted in different
 media tracking websites like MyAnimeList, Melative or VNDB.</p>
 
-<h2>Features</h2>
+<h2>
+<a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h2>
 
 <ul>
 <li>Manage local list and synchronize when necessary, useful when offline</li>
 <li>Manage multiple accounts on different sites like MyAnimeList, Melative or VNDB.</li>
 <li>Support for several mediatypes depending on the site (like VNs, anime, manga, LNs)</li>
-<li>Multiple user interfaces (GTK, curses, command-line)</li>
+<li>Multiple user interfaces (Qt, GTK, curses, command-line)</li>
 <li>Detection of running media player, updates list if necessary</li>
 <li>Ability to launch media player for a requested media in the list and update list if necessary</li>
 <li>Highly scalable, easy to code new interfaces and support for other sites</li>
-</ul><h2>Screenshots</h2>
+</ul><h2>
+<a name="screenshots" class="anchor" href="#screenshots"><span class="octicon octicon-link"></span></a>Screenshots</h2>
 
-<h3>Qt Interface</h3>
-<img alt="Qt" src="images/screen_qt.png">
-<h3>GTK Interface</h3>
-<img alt="GTK" src="images/screen_gtk.png">
-<h3>Curses Interface</h3>
-<img alt="Curses" src="images/screen_curses.png">
-<h3>CLI</h3>
-<img alt="CLI" src="images/screen_cli.png">
+<p>Qt interface</p>
 
-<h2>Requirements</h2>
+<p><img src="https://z411.github.io/wmal-python/images/screen_qt.png" alt="Qt"></p>
+
+<p>GTK interface</p>
+
+<p><img src="http://z411.github.com/wmal-python/images/screen_gtk.png" alt="GTK"></p>
+
+<p>Curses interface</p>
+
+<p><img src="http://z411.github.com/wmal-python/images/screen_curses.png" alt="Curses"></p>
+
+<p>CLI</p>
+
+<p><img src="http://z411.github.com/wmal-python/images/screen_cli.png" alt="CLI"></p>
+
+<h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
 
 <ul>
-
 <li>Python 2.6/2.7</li>
 <li>lsof - for the media player detection tracker.</li>
 <li>(Optional) Urwid (python-urwid) - for the curses/urwid interface.</li>
 <li>(Optional) PyGTK (python-gtk2) - for the GTK interface.</li>
 <li>(Optional/Recommended) PIL (python-imaging) - for showing preview images in the GTK interface.</li>
-
-</ul>
-<h2>Download</h2>
-The installable source code is available at the top left of this page.<br />
-wMAL is also available at the AUR as <a href="https://aur.archlinux.org/packages/wmal-git/">wmal-git</a> (thanks to Toost_Inc).
-
-<h2>Installation</h2>
+</ul><h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
 <p>Like any Python program, run the setup.py installation script:</p>
 
@@ -90,7 +93,18 @@ $ wmal-gtk (requires pygtk)
 
 <p>Alternatively, you can just run the scripts directly from the bin/ folder.</p>
 
-<h2>Development</h2>
+<h2>
+<a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h2>
+
+<p>A configuration file will be created in <code>~/.wmal/config.json</code>, make sure to fill in the directory
+where you store your video files and other settings. Details about what each option does can be done here:</p>
+
+<p><a href="https://github.com/z411/wmal-python/wiki/Configuration-File">https://github.com/z411/wmal-python/wiki/Configuration-File</a></p>
+
+<p>Alternatively, the GTK interface provides a Settings panel, found in Options -&gt; Global Settings...</p>
+
+<h2>
+<a name="development" class="anchor" href="#development"><span class="octicon octicon-link"></span></a>Development</h2>
 
 <p>The code is hosted as a git repository in github:</p>
 
@@ -101,17 +115,19 @@ hesitate to submit an issue in the github issue tracker:</p>
 
 <p><a href="http://github.com/z411/wmal-python/issues">http://github.com/z411/wmal-python/issues</a></p>
 
-<h2>License</h2>
+<h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
 
 <p>wMAL is licensed under the GPLv3 license, please see LICENSE for details.</p>
 
-<h2>Authors</h2>
+<h2>
+<a name="authors" class="anchor" href="#authors"><span class="octicon octicon-link"></span></a>Authors</h2>
 
 <p>wMAL was written by z411 <a href="mailto:electrik.persona@gmail.com">electrik.persona@gmail.com</a>
 GTK icon designed by shuuichi</p>
       </section>
       <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
       </footer>
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
