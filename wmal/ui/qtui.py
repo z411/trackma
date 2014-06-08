@@ -188,6 +188,7 @@ class wmal(QtGui.QMainWindow):
         self.worker.changed_status.connect(self.status)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
+        self.worker.playing_show.connect(self.ws_changed_show)
         
         # Show main window
         self.show()
@@ -281,8 +282,11 @@ class wmal(QtGui.QMainWindow):
         tab_name = "%s (%d)" % (self.statuses_names[status], i)
         self.notebook.setTabText(tab_index, tab_name)
 
-    def _update_row(self, widget, row, show):
-        color = self._get_color(show)
+    def _update_row(self, widget, row, show, is_playing=False):
+        if is_playing:
+            color = QtGui.QColor(150, 150, 250)
+        else:
+            color = self._get_color(show)
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         progress_widget = QtGui.QProgressBar()
         progress_widget.setMinimum(0)
@@ -298,8 +302,14 @@ class wmal(QtGui.QMainWindow):
         widget.setItem(row, 4, ShowItem( str(show['id']), color ))
 
     def _get_color(self, show):
-        if show['status'] == 1:
+        if show.get('queued'):
+            return QtGui.QColor(210, 250, 210)
+        elif show.get('neweps'):
+            return QtGui.QColor(250, 250, 130)
+        elif show['status'] == 1:
             return QtGui.QColor(210, 250, 250)
+        elif show['status'] == 3:
+            return QtGui.QColor(250, 250, 210)
         else:
             return None
     
@@ -430,10 +440,10 @@ class wmal(QtGui.QMainWindow):
         
 
     ### Worker slots
-    def ws_changed_show(self, show):
+    def ws_changed_show(self, show, is_playing=False):
         widget = self.show_lists[show['my_status']]
         row = self._get_row_from_showid(widget, show['id'])
-        self._update_row(widget, row, show)
+        self._update_row(widget, row, show, is_playing)
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
