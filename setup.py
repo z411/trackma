@@ -9,6 +9,6 @@ setup(name='wMAL',
       url='https://github.com/z411/wmal-python',
       packages=['wmal', 'wmal.lib', 'wmal.ui'],
       package_data={'wmal': ['data/*']},
-      scripts=['bin/wmal', 'bin/wmal-curses', 'bin/wmal-gtk'],
+      scripts=['bin/wmal', 'bin/wmal-curses', 'bin/wmal-gtk', 'bin/wmal-qt'],
       requires=[]
       )
