@@ -542,8 +542,10 @@ class wMAL_urwid(object):
         self.lists[status].body.update_show(show)
         self.mainloop.draw_screen()
 
-    def changed_show_status(self, show):
-        self._rebuild_all_lists()
+    def changed_show_status(self, show, old_status=None):
+        self._rebuild_list(show['my_status'])
+        if old_status:
+            self._rebuild_list(old_status)
         
         go_filter = 0
         for _filter in self.filters_nums:

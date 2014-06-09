@@ -17,7 +17,10 @@
 #
 
 import sys
-import readline
+try:
+    import readline
+except ImportError:
+    pass # readline is optional
 import cmd
 import re
 from operator import itemgetter # Used for sorting list
@@ -488,14 +491,15 @@ class wmal_accounts(AccountManager):
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete): ")
+            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
                 
                 print "--- Add account ---"
+                import getpass
                 username = raw_input('Enter username: ')
-                password = raw_input('Enter password: ')
+                password = getpass.getpass('Enter password (no echo): ')
                 api = raw_input('Enter API (%s): ' % available_libs)
                 
                 try:
@@ -506,8 +510,13 @@ class wmal_accounts(AccountManager):
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')
-                num = int(num) - 1
-                self.delete_account(num)
+                num = int(num)
+                confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(num)['username']))
+                if confirm.lower() == 'y':
+                    self.delete_account(num)
+                    print 'Account %d deleted.' % num
+            elif key.lower() == 'q':
+                sys.exit(0)
             else:
                 try:
                     num = int(key)

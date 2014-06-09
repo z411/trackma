@@ -10,13 +10,17 @@ Features
 - Manage local list and synchronize when necessary, useful when offline
 - Manage multiple accounts on different sites like MyAnimeList, Melative or VNDB.
 - Support for several mediatypes depending on the site (like VNs, anime, manga, LNs)
-- Multiple user interfaces (GTK, curses, command-line)
+- Multiple user interfaces (Qt, GTK, curses, command-line)
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
 - Highly scalable, easy to code new interfaces and support for other sites
 
 Screenshots
 -----------
+
+Qt interface
+
+![Qt](https://z411.github.io/wmal-python/images/screen_qt.png)
 
 GTK interface
 

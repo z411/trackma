@@ -342,11 +342,9 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change']:
             if newep == 1 and self.mediainfo.get('status_start'):
-                self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_start'])
-                self._emit_signal('status_changed', show)
+                self.set_status(show['id'], self.mediainfo['status_start'])
             elif newep == show['total'] and self.mediainfo.get('status_finish'):
-                self.data_handler.queue_update(show, 'my_status', self.mediainfo['status_finish'])
-                self._emit_signal('status_changed', show)
+                self.set_status(show['id'], self.mediainfo['status_finish'])
         
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
@@ -423,12 +421,13 @@ class Engine:
         if show['my_status'] == newstatus:
             raise utils.EngineError("Show already in %s." % _statuses[newstatus])
         
-        # Change score
+        # Change status
+        old_status = show['my_status']
         self.msg.info(self.name, "Updating show %s status to %s..." % (show['title'], _statuses[newstatus]))
         self.data_handler.queue_update(show, 'my_status', newstatus)
         
         # Emit signal
-        self._emit_signal('status_changed', show)
+        self._emit_signal('status_changed', show, old_status)
         
         return show
     
