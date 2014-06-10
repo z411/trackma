@@ -55,7 +55,7 @@ class libvndb(lib):
     mediatypes['wishlist'] = {
         'has_progress': False,
         'can_score': True,
-        'can_status': False,
+        'can_status': True,
         'can_add': True,
         'can_delete': True,
         'can_update': False,
