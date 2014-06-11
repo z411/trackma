@@ -27,23 +27,42 @@ class lib(object):
     version = 'dummy'
     msg = None
     
-    # api_info is a dictionary containing useful information about the API itself
-    # name: API name
-    # version: API version
     api_info = { 'name': 'BaseAPI', 'version': 'undefined', 'merge': False }
+    """
+    api_info is a dictionary containing useful information about the API itself
+    name: API name
+    version: API version
+    """
     
-    # mediatypes is a dictionary containing the possible mediatypes for the current API.
-    # An example mediatype should look like this:
-    #
-    # 
-    default_mediatype = None
     mediatypes = dict()
+    """
+    mediatypes is a dictionary containing the possible mediatypes for the current API.
+    An example mediatype should look like this:
+    ::
+    
+        mediatypes['anime'] = {
+            'has_progress': True,
+            'can_add': True,
+            'can_delete': True,
+            'can_score': True,
+            'can_status': True,
+            'can_update': True,
+            'can_play': True,
+            'status_start': 1,
+            'status_finish': 2,
+            'statuses':  [1, 2, 3, 4, 6],
+            'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
+        }
+    
+    """
+    
+    default_mediatype = None
 
     # Supported signals for the data handler
-    signals = { 'show_info_changed':    None, }
+    signals = { 'show_info_changed': None, }
     
     def __init__(self, messenger, account, userconfig):
-        """Initializes the base for the API"""
+        """Initializes the API"""
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
         
@@ -77,32 +96,24 @@ class lib(object):
     
     def fetch_list(self):
         """
-        Fetches the remote list and returns a dictionary of show dictionaries
+        Fetches the remote list and returns a dictionary of show dictionaries.
 
-        A show dictionary has the following keys:
-        
-        id: (int) Internal ID of the show
-        title: (string) UTF-8 encoded title of the show
-        my_progress: (int) Current progress for the show
-        my_status: (int) Current status number as defined in the mediatype
-        my_score: (int) Current score or rating
-        total: (int) Maximum possible progress for this show (total episodes, etc.)
-        status: (int) Show status number as in airing, completed, not aired, etc.
-        image: (string) Optional. URL for the show image/cover/etc.
-
-        This function should return a dictionary with the show id as the key,
-        and the show dictionary as the value.
+        It should return a dictionary with the show ID as the key and a show dictionary as its value.
+        You can create an empty show dictionary with the :func:`utils.show` function.
         """
         raise NotImplementedError
     
     def add_show(self, item):
+        """
+        Adds the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
+        """
         raise NotImplementedError
     
     def update_show(self, item):
         """
-        Send the updates of a show to the remote site
+        Sends the updates of a show to the remote site.
 
-        This function gets called everytime a show should be updated remotely,
+        This function gets called every time a show should be updated remotely,
         and in a queue it may be called many times consecutively, so you should
         use a boolean (or other method) to login only once.
 
@@ -110,10 +121,17 @@ class lib(object):
         raise NotImplementedError
     
     def delete_show(self, item):
+        """
+        Deletes the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
+        """
         raise NotImplementedError
         
     def search(self, criteria):
-        # Search for shows
+        """
+        Called when the data handler needs a detailed list of shows from the remote server.
+        It should return a list of show dictionaries with the additional 'extra' key (which is a list of tuples)
+        containing any additional detailed information about the show.
+        """
         raise NotImplementedError
     
     def request_info(self, ids):

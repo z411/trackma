@@ -30,14 +30,19 @@ import utils
 
 class Engine:
     """
-    Main engine class
+    The engine is the controller that handles commands coming from
+    the user interface and then queries the Data Handler for the necessary data.
+    It doesn't control nor care about how the data is fetched by the Data Handler.
     
-    Controller that handles commands from the visual client
-    and then queries the Data Handler for the necessary data.
-    It doesn't care about how the data is fetched, it just
-    handles the commands coming from the visual client.
-
-    message_handler: Reference to a function for the engine
+    After instantiating this class, the :func:`start` must be run to initialize the engine.
+    Likewise, the :func:`unload` function must be called when you're done using the engine.
+    
+    The account and mediatype can be changed later on the fly by calling :func:`reload`.
+    
+    The **account** parameter is an account dictionary passed by an Account Manager
+      and is used to run the engine.
+    
+    The **message_handler** is a reference to a messaging function for the engine
       to send to. Optional.
     """
     data_handler = None
@@ -64,10 +69,10 @@ class Engine:
         # Register cleanup function when program exits
         atexit.register(self._cleanup)
         
-        self.load(account)
+        self._load(account)
         self._init_data_handler()
     
-    def load(self, account):
+    def _load(self, account):
         self.account = account
         
         # Create home directory
@@ -112,14 +117,13 @@ class Engine:
             raise utils.EngineFatal("Invalid signal.")
         
     def set_message_handler(self, message_handler):
-        """Changes the data handler even after the class initialization."""
+        """Changes the message handler function on the fly."""
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
         
     def start(self):
         """
-        Starts the engine
-        
+        Starts the engine.
         This function should be called before doing anything with the engine,
         as it initializes the data handler.
         """
@@ -150,11 +154,10 @@ class Engine:
     
     def unload(self):
         """
-        Closes the data handler and closes the engine
-
+        Closes the data handler and closes the engine cleanly.
         This should be called when closing the client application, or when you're
         sure you're not going to use the engine anymore. This does all the necessary
-        procedures to close the data handler and then itself.
+        procedures to close the data handler cleanly and then itself.
         
         """
         #if not self.loaded:
@@ -177,7 +180,7 @@ class Engine:
         self.unload()
         
         if account:
-            self.load(account)
+            self._load(account)
         if mediatype:
             self.userconfig['mediatype'] = mediatype
         
@@ -185,51 +188,41 @@ class Engine:
         self.start()
     
     def get_config(self, key):
-        """Returns the specified key from the configuration"""
+        """Returns the specified key from the configuration."""
         return self.config[key]
     
     def set_config(self, key, value):
-        """Writes the defined key to the configuration"""
+        """
+        Writes the defined key to the configuration.
+        Note that this writes the configuration only to memory; when you're
+        done doing all necessary changes, make sure to write the configuration file
+        with :func:`save_config`."""
         self.config[key] = value
         
     def save_config(self):
-        """Writes configuration files"""
+        """Writes all configuration files to disk."""
         
         # Save config file
         utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
         
     def get_list(self):
-        """Requests the full show list from the data handler."""
+        """
+        Returns the full show list requested from the data handler as a list of show dictionaries.
+        If you only need shows in a specified status, use :func:`filter_list`.
+        """
         return self.data_handler.get().itervalues()
     
     def get_show_info(self, showid):
         """
-        Returns the complete info for a show
-        
-        It asks the data handler for the full details of a show, and returns it as
-        a show dictionary.
-
-        pattern: The show ID as a number or the full show title.
-        
+        Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
         
-        #try:
-        #    # ID lookup
-        #    showid = int(pattern)
-            
         try:
             return showdict[showid]
         except KeyError:
             raise utils.EngineError("Show not found.")
-            
-        #except ValueError:
-        #    # Do title lookup, slower
-        #    for k, show in showdict.iteritems():
-        #        if show['title'] == pattern:
-        #            return show
-        #    raise utils.EngineError("Show not found.")
 
     def get_show_info_title(self, pattern):
         showdict = self.data_handler.get()           
@@ -240,17 +233,15 @@ class Engine:
         raise utils.EngineError("Show not found.")
     
     def get_show_details(self, show):
+        """
+        Returns detailed information about **show** requested from the data handler.
+        """
         return self.data_handler.info_get(show)
         
     def regex_list(self, regex):
         """
-        Searches for a show and returns a list with the matches
-        
         It asks the data handler to do a regex search for a show and returns the
-        list with all the matches.
-        
-        pattern: Regex string to search in the show title
-        
+        list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
         return list(v for k, v in showlist.iteritems() if re.match(regex, v['title'], re.I))
@@ -276,25 +267,16 @@ class Engine:
 
     def search(self, criteria):
         """
-        Calls the API to do a search in the remote list
-        
-        This will immediatly call the API and request a list of
-        shows matching the criteria. This is useful to add a show.
-        
-        citeria: Search keyword
-        
+        Request a remote list of shows matching the criteria
+        and returns it as a list of show dictionaries.
+        This is useful to add a show.
         """
         return self.data_handler.search(criteria)
     
     def add_show(self, show):
         """
-        Adds a show to the list
-        
-        It adds a show to the list and queues the list update
+        Adds **show** to the list and queues the list update
         for the next sync.
-        
-        show: Full show dictionary
-        
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_add'):
@@ -306,16 +288,10 @@ class Engine:
         # Emit signal
         self._emit_signal('show_added', show)
         
-    def set_episode(self, show_pattern, newep):
+    def set_episode(self, showid, newep):
         """
-        Updates the progress for a show
-        
-        It asks the data handler to update the progress of the specified show to
-        a specified number.
-
-        show_pattern: ID or full title of the show
-        newep: The progress number to update the show to
-
+        Updates the progress of the specified **showid** to **newep**
+        and queues the list update for the next sync.
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_update'):
@@ -328,7 +304,7 @@ class Engine:
             raise utils.EngineError('Episode must be numeric.')
         
         # Get the show info
-        show = self.get_show_info(show_pattern)
+        show = self.get_show_info(showid)
         # More checks
         if show['total'] and newep > show['total']:
             raise utils.EngineError('Episode out of limits.')
@@ -355,16 +331,10 @@ class Engine:
         
         return show
     
-    def set_score(self, show_pattern, newscore):
+    def set_score(self, showid, newscore):
         """
-        Updates the score for a show
-        
-        It asks the data handler to update the score of the specified show
-        to a specified number.
-
-        show_pattern: ID or full title of the show
-        newscore: The score number to update the show to
-        
+        Updates the score of the specified **showid** to **newscore**
+        and queues the list update for the next sync.
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_score'):
@@ -377,7 +347,7 @@ class Engine:
             raise utils.EngineError('Score must be numeric.')
         
         # Get the show and update it
-        show = self.get_show_info(show_pattern)
+        show = self.get_show_info(showid)
         # More checks
         if newscore > 10:
             raise utils.EngineError('Score out of limits.')
@@ -393,16 +363,10 @@ class Engine:
         
         return show
     
-    def set_status(self, show_pattern, newstatus):
+    def set_status(self, showid, newstatus):
         """
-        Updates the status for a show
-        
-        It asks the data handler to update the status of the specified show
-        to a specified number.
-
-        show_pattern: ID or full title of the show
-        newstatus: The status number to update the show to
-
+        Updates the score of the specified **showid** to **newstatus** (number)
+        and queues the list update for the next sync.
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_status'):
@@ -416,7 +380,7 @@ class Engine:
         
         # Get the show and update it
         _statuses = self.mediainfo['statuses_dict']
-        show = self.get_show_info(show_pattern)
+        show = self.get_show_info(showid)
         # More checks
         if show['my_status'] == newstatus:
             raise utils.EngineError("Show already in %s." % _statuses[newstatus])
@@ -433,10 +397,7 @@ class Engine:
     
     def delete_show(self, show):
         """
-        Deletes a show completely from the list
-        
-        show: Show dictionary
-        
+        Deletes **show** completely from the list and queues the list update for the next sync.
         """
         if not self.mediainfo.get('can_delete'):
             raise utils.EngineError('Operation not supported by API.')
@@ -488,15 +449,10 @@ class Engine:
         
     def play_episode(self, show, playep=0):
         """
-        Searches the hard disk for an episode and plays the episode
-        
         Does a local search in the hard disk (in the folder specified by the config file)
-        for the specified episode for the specified show.
-
-        show: Show dictionary
-        playep: Episode to play. Optional. If none specified, the next episode will be played.
-
-
+        for the specified episode (**playep**) for the specified **show**.
+        
+        If no **playep** is specified, the next episode of the show will be played.
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
@@ -534,10 +490,14 @@ class Engine:
                 raise utils.EngineError('Episode file not found.')
     
     def undoall(self):
-        """Clears the data handler queue."""
+        """Clears the data handler queue and discards any unsynced change."""
         return self.data_handler.queue_clear()
        
     def altname(self, showid, newname=None):
+        """
+        If **newname** is specified, it gets the alternate name of **showid**.
+        Otherwise, it sets the alternate name of **showid** to **newname**.
+        """
         if newname is not None:
             if newname == '':
                 self.data_handler.altname_clear(showid)
@@ -548,23 +508,15 @@ class Engine:
         else:
             return self.data_handler.altname_get(showid)
 
-    def filter_list(self, filter_num):
+    def filter_list(self, status_num):
         """
-        Returns a list filtered by status
-        
-        It asks the data handler to fetch the list and filter it by the specified status.
-
-        filter_num = Status number
-
+        Returns a show list with the shows in the specified **status_num** status.
+        If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if v['my_status'] == filter_num)
+        return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
     
     def tracker(self, interval, wait):
-        """
-        Tracker loop to be used in a thread
-        
-        """
         self.last_show = None
         last_time = 0
         last_updated = False
@@ -676,10 +628,6 @@ class Engine:
         return None
     
     def _playing_file(self, players, searchdir):
-        """
-        Returns the files a process is playing
-        
-        """
         lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
         output = lsof.communicate()[0]
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
@@ -696,12 +644,12 @@ class Engine:
         self.data_handler.download_data()
     
     def list_upload(self):
-        """Asks the data handler to upload the remote list."""
+        """Asks the data handler to upload the unsynced changes in the queue."""
         result = self.data_handler.process_queue()
         #for show in result:
         #    self._emit_signal('episode_changed', show)
 
     def get_queue(self):
-        """Asks the data handler for the current queue."""
+        """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
     
