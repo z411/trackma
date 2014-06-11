@@ -40,10 +40,10 @@ class Engine:
     The account and mediatype can be changed later on the fly by calling :func:`reload`.
     
     The **account** parameter is an account dictionary passed by an Account Manager
-      and is used to run the engine.
+    and is used to run the engine.
     
     The **message_handler** is a reference to a messaging function for the engine
-      to send to. Optional.
+    to send to. Optional.
     """
     data_handler = None
     config = dict()
