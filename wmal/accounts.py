@@ -2,6 +2,15 @@ import utils
 import cPickle
 
 class AccountManager(object):
+    """
+    This is the account manager.
+    
+    It provides a generic way for the user interface to query for the
+    available registered accounts, and add or delete accounts.
+    
+    This class returns an Account Dictionary used by
+    the :class:`Engine` to start.
+    """
     accounts = {'default': None, 'next': 1, 'accounts': dict()}
 
     def __init__(self):
@@ -19,6 +28,14 @@ class AccountManager(object):
             cPickle.dump(self.accounts, f)
 
     def add_account(self, username, password, api):
+        """
+        Registers a new account with the specified
+        *username*, *password* and *api*.
+        
+        The *api* must be one of the available APIs
+        found in the utils.available_libs dict.
+        """
+        
         available_libs = utils.available_libs.keys()
         
         if not username:
@@ -39,6 +56,9 @@ class AccountManager(object):
         self._save()
     
     def delete_account(self, num):
+        """
+        Deletes the account number **num**.
+        """
         self.accounts['default'] = None
         del self.accounts['accounts'][num]
         
@@ -49,12 +69,22 @@ class AccountManager(object):
         self._save()
     
     def get_account(self, num):
+        """
+        Returns the account dict **num**.
+        """
         return self.accounts['accounts'][num]
     
     def get_accounts(self):
+        """
+        Returns an iterator of available accounts.
+        """
         return self.accounts['accounts'].iteritems()
 
     def get_default(self):
+        """
+        Returns the default account number, if set.
+        Otherwise returns None.
+        """
         num = self.accounts['default']
         if num is not None:
             try:
@@ -65,10 +95,16 @@ class AccountManager(object):
             return None
 
     def set_default(self, val):
+        """
+        Sets a new default account number.
+        """
         self.accounts['default'] = val
         self._save()
 
     def unset_default(self):
+        """
+        Unsets the default account number.
+        """
         self.accounts['default'] = None
 
 

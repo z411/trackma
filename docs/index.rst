@@ -7,6 +7,12 @@
 wMAL
 ====
 
+wMAL is a simple a lightweight program for GNU/Linux for fetching, updating and using data from personal lists hosted in
+different media tracking websites like MyAnimeList, Melative, Hummingbird or VNDB.
+
+It also provides an automatic media tracker which detects any running media player in your computer and updates your list accordingly.
+It aims to be an alternative to other lightweight but powerful programs like Taiga for GNU/Linux users, but it has also been reported to run on the BSDs, OS X and on Windows (with varying success).
+
 User Guide
 ==========
 
@@ -16,12 +22,3 @@ User Guide
    overview
    gettingstarted
    developer
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
