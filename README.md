@@ -37,7 +37,7 @@ CLI
 Documentation
 -------------
 
-The documentation for wMAL is `available on ReadTheDocs <http://wmal.readthedocs.org>`_.
+The documentation for wMAL is [available on ReadTheDocs](http://wmal.readthedocs.org).
 
 Requirements
 ------------
