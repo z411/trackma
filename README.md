@@ -34,14 +34,20 @@ CLI
 
 ![CLI](http://z411.github.com/wmal-python/images/screen_cli.png)
 
+Documentation
+-------------
+
+The documentation for wMAL is `available on ReadTheDocs <http://wmal.readthedocs.org>`_.
+
 Requirements
 ------------
 
 - Python 2.6/2.7
 - lsof - for the media player detection tracker.
-- (Optional) Urwid (python-urwid) - for the curses/urwid interface.
+- (Optional) PyQt - for the Qt Interface
 - (Optional) PyGTK (python-gtk2) - for the GTK interface.
-- (Optional/Recommended) PIL (python-imaging) - for showing preview images in the GTK interface.
+- (Optional) Urwid (python-urwid) - for the curses/urwid interface.
+- (Optional/Recommended) PIL (python-imaging) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
