@@ -1755,7 +1755,7 @@ class ShowSearch(gtk.Window):
         alignment.add(bottombar)
         
         self.showlist = ShowSearchView()
-        self.showlist.connect("row-activated", self.do_add)
+        self.showlist.connect("row-activated", self.do_info)
         self.showlist.get_selection().connect("changed", self.select_show)
         
         sw.add(self.showlist)
