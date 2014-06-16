@@ -104,6 +104,8 @@ class wmal(QtGui.QMainWindow):
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
+        action_add = QtGui.QAction('Search/Add from Remote', self)
+        action_add.triggered.connect(self.s_add)
         action_send = QtGui.QAction('&Send changes', self)
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
@@ -126,6 +128,7 @@ class wmal(QtGui.QMainWindow):
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
         self.menu_show.addAction(action_details)
+        self.menu_show.addAction(action_add)
         self.menu_show.addAction(action_send)
         self.menu_show.addAction(action_quit)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
@@ -481,12 +484,20 @@ class wmal(QtGui.QMainWindow):
         self.show_image.setPixmap( QtGui.QPixmap( filename ) )
     
     def s_show_details(self):
+        if not self.selected_show_id:
+            return
+            
         show = self.worker.engine.get_show_info(self.selected_show_id)
         
         self.detailswindow = DetailsDialog(None, self.worker)
         self.detailswindow.setModal(True)
         self.detailswindow.load(show)
         self.detailswindow.show()
+    
+    def s_add(self):
+        self.addwindow = AddDialog(None, self.worker)
+        self.addwindow.setModal(True)
+        self.addwindow.show()
     
     def s_mediatype(self, action):
         index = action.data().toInt()[0]
@@ -557,6 +568,7 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
+                self.show_lists[status].doubleClicked.connect(self.s_show_details)
                 
                 self.notebook.addTab(self.show_lists[status], name)
                 self.show_status.addItem(name)
@@ -685,7 +697,121 @@ class DetailsDialog(QtGui.QDialog):
                 info_string += "<h3>%s</h3><p>%s</p>" % (line[0], line[1])
                 
         self.show_info.setText( info_string )
+
+class AddDialog(QtGui.QDialog):
+    worker = None
+    selected_show = None
+
+    def __init__(self, parent, worker):
+        QtGui.QMainWindow.__init__(self, parent)
+        self.setMinimumSize(530, 550)
+        self.setWindowTitle('Search/Add from Remote')
+        self.worker = worker
+    
+        layout = QtGui.QVBoxLayout()
         
+        # Create top layout
+        top_layout = QtGui.QHBoxLayout()
+        search_lbl = QtGui.QLabel('Search terms:')
+        self.search_txt = QtGui.QLineEdit()
+        self.search_txt.returnPressed.connect(self.s_search)
+        self.search_btn = QtGui.QPushButton('Search')
+        self.search_btn.clicked.connect(self.s_search)
+        top_layout.addWidget(search_lbl)
+        top_layout.addWidget(self.search_txt)
+        top_layout.addWidget(self.search_btn)
+        
+        # Create table
+        columns = ['Title', 'Type', 'Total']
+        self.table = QtGui.QTableWidget()
+        self.table.setColumnCount(len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
+        self.table.horizontalHeader().setHighlightSections(False)
+        self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.verticalHeader().hide()
+        self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
+        self.table.currentItemChanged.connect(self.s_show_selected)
+        self.table.doubleClicked.connect(self.s_show_details)
+        
+        bottom_layout = QtGui.QHBoxLayout()
+        cancel_btn = QtGui.QPushButton('Cancel')
+        cancel_btn.clicked.connect(self.close)
+        self.select_btn = QtGui.QPushButton('Add')
+        self.select_btn.setEnabled(False)
+        self.select_btn.clicked.connect(self.s_add)
+        bottom_layout.addWidget(cancel_btn)
+        bottom_layout.addWidget(self.select_btn)
+
+        # Finish layout
+        layout.addLayout(top_layout)
+        layout.addWidget(self.table)
+        layout.addLayout(bottom_layout)
+        self.setLayout(layout)
+    
+    def worker_call(self, function, ret_function, *args, **kwargs):
+        # Run worker in a thread
+        self.worker.set_function(function, ret_function, *args, **kwargs)
+        self.worker.start()
+    
+    def _enable_widgets(self, enable):
+        self.search_btn.setEnabled(enable)
+        self.table.setEnabled(enable)
+    
+    # Slots
+    def s_search(self):
+        self.search_btn.setEnabled(False)
+        self.select_btn.setEnabled(False)
+        self.table.setEnabled(False)
+        
+        self.worker_call('search', self.r_searched, self.search_txt.text())
+    
+    def s_show_selected(self, new, old=None):
+        if not new:
+            return
+        
+        index = new.row()
+        self.selected_show = self.results[index]
+        self.select_btn.setEnabled(True)
+    
+    def s_show_details(self):
+        if not self.selected_show:
+            return
+            
+        self.detailswindow = DetailsDialog(None, self.worker)
+        self.detailswindow.setModal(True)
+        self.detailswindow.load(self.selected_show)
+        self.detailswindow.show()
+    
+    def s_add(self):
+        if self.selected_show:
+            self.worker_call('add_show', self.r_added, self.selected_show)
+    
+    # Worker responses
+    def r_searched(self, result):
+        if result['success']:
+            self.search_btn.setEnabled(True)
+            self.table.setEnabled(True)
+        
+            self.results = result['results']
+        
+            self.table.setRowCount(len(self.results))
+            i = 0
+            for res in self.results:
+                self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
+                self.table.setItem(i, 0, ShowItem(res['title']))
+                self.table.setItem(i, 1, ShowItem(res['type']))
+                self.table.setItem(i, 2, ShowItem(str(res['total'])))
+
+                i += 1
+    
+    def r_added(self, result):
+        if result['success']:
+            print "added"
+        
+
 class AccountWidget(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
@@ -866,6 +992,8 @@ class Engine_Worker(QtCore.QThread):
             'list_download': self._list_download,
             'list_upload': self._list_upload,
             'get_show_details': self._get_show_details,
+            'search': self._search,
+            'add_show': self._add_show,
             'unload': self._unload,
         }
 
@@ -983,6 +1111,24 @@ class Engine_Worker(QtCore.QThread):
             return {'success': False}
 
         return {'success': True, 'details': details}
+
+    def _search(self, terms):
+        try:
+            results = self.engine.search(terms)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True, 'results': results}
+    
+    def _add_show(self, show):
+        try:
+            results = self.engine.add_show(show)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
 
     def set_function(self, function, ret_function, *args, **kwargs):
         self.function = self.function_list[function]
