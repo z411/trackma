@@ -826,32 +826,13 @@ class AccountDialog(QtGui.QDialog):
         self.setWindowTitle('Select Account')
         
         # Create list
-        columns = ['Username', 'Site']
         self.table = QtGui.QTableWidget()
-        self.table.setColumnCount(len(columns))
-        self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setHighlightSections(False)
         self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
-        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
-
-        # Populate
-        accounts = self.accountman.get_accounts()
-        icons = dict()
-        for libname, lib in utils.available_libs.iteritems():
-            icons[libname] = QtGui.QIcon(lib[1])
-
-        self.table.setRowCount(len(self.accountman.accounts['accounts']))
-        i = 0
-        for k, account in accounts:
-            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
-            self.table.setItem(i, 0, AccountItem(k, account['username']))
-            self.table.setItem(i, 1, AccountItem(k, account['api'], icons[account['api']]))
-
-            i += 1
         
         bottom_layout = QtGui.QHBoxLayout()
         self.remember_chk = QtGui.QCheckBox('Remember')
@@ -861,22 +842,65 @@ class AccountDialog(QtGui.QDialog):
         cancel_btn.clicked.connect(self.cancel)
         add_btn = QtGui.QPushButton('Add')
         add_btn.clicked.connect(self.add)
+        delete_btn = QtGui.QPushButton('Delete')
+        delete_btn.clicked.connect(self.delete)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
+        bottom_layout.addWidget(delete_btn)
         bottom_layout.addWidget(select_btn)
-
+        
+        # Get icons
+        self.icons = dict()
+        for libname, lib in utils.available_libs.iteritems():
+            self.icons[libname] = QtGui.QIcon(lib[1])
+            
+        # Populate list
+        self.rebuild()
+        
         # Finish layout
         layout.addWidget(self.table)
         layout.addLayout(bottom_layout)
         self.setLayout(layout)
     
     def add(self):
-        result = AccountAddDialog.do()
+        result = AccountAddDialog.do(icons=self.icons)
         if result:
-            print result
+            (username, password, api) = result
+            self.accountman.add_account(username, password, api)
+            self.rebuild()
+    
+    def delete(self):
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            reply = QtGui.QMessageBox.question(self, 'Confirmation', 'Do you want to delete the selected account?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+            if reply == QtGui.QMessageBox.Yes:
+                self.accountman.delete_account(selected_account_num)
+                self.rebuild()
+        except IndexError:
+            self._error("Please select an account.")
+        
+    def rebuild(self):
+        self.table.clear()
+
+        columns = ['Username', 'Site']
+        self.table.setColumnCount(len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
+        self.table.setRowCount(len(self.accountman.accounts['accounts']))
+        
+        accounts = self.accountman.get_accounts()
+        i = 0
+        for k, account in accounts:
+            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
+            self.table.setItem(i, 0, AccountItem(k, account['username']))
+            self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons[account['api']]))
+
+            i += 1
+        
+        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
         
     def select(self, checked):
         try:
@@ -920,7 +944,7 @@ class ShowItem(QtGui.QTableWidgetItem):
             self.setBackgroundColor( color )
 
 class AccountAddDialog(QtGui.QDialog):
-    def __init__(self, parent):
+    def __init__(self, parent, icons):
         QtGui.QDialog.__init__(self, parent)
         
         # Build UI
@@ -929,7 +953,9 @@ class AccountAddDialog(QtGui.QDialog):
         formlayout = QtGui.QFormLayout()
         self.username = QtGui.QLineEdit()
         self.password = QtGui.QLineEdit()
+        self.password.setEchoMode(QtGui.QLineEdit.Password)
         self.api = QtGui.QComboBox()
+        
         formlayout.addRow( QtGui.QLabel('Username:'), self.username )
         formlayout.addRow( QtGui.QLabel('Password:'), self.password )
         formlayout.addRow( QtGui.QLabel('Site:'), self.api )
@@ -937,23 +963,42 @@ class AccountAddDialog(QtGui.QDialog):
         bottombox = QtGui.QDialogButtonBox()
         bottombox.addButton(QtGui.QDialogButtonBox.Save)
         bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
-        bottombox.accepted.connect(self.accept)
+        bottombox.accepted.connect(self.validate)
         bottombox.rejected.connect(self.reject)
         
+        # Populate APIs
+        for libname, lib in utils.available_libs.iteritems():
+            self.api.addItem(icons[libname], lib[0], libname)
+        
+        # Finish layouts
         layout.addLayout(formlayout)
         layout.addWidget(bottombox)
         
         self.setLayout(layout)
     
+    def validate(self):
+        if len(self.username.text()) > 0 and len(self.password.text()) > 0:
+            self.accept()
+        else:
+            self._error('Please fill all the fields.')
+        
+    def _error(self, msg):
+        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
+        
     @staticmethod
-    def do(parent=None):
-        dialog = AccountAddDialog(parent)
+    def do(parent=None, icons=None):
+        dialog = AccountAddDialog(parent, icons)
         result = dialog.exec_()
         
         if result == QtGui.QDialog.Accepted:
-            return dialog.username.text()
+            currentIndex = dialog.api.currentIndex()
+            return (
+                    str( dialog.username.text() ),
+                    str( dialog.password.text() ),
+                    str( dialog.api.itemData(currentIndex).toString() )
+                   )
         else:
-            return
+            return None
     
 class Image_Worker(QtCore.QThread):
     """
