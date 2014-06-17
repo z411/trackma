@@ -35,7 +35,7 @@ class libvndb(lib):
     
     api_info =  {
                   'name': 'VNDB',
-                  'version': 'v0.1',
+                  'version': 'v0.2',
                   'merge': True,
                 }
     
@@ -133,7 +133,7 @@ class libvndb(lib):
         (name, data) = self._sendcmd('login',
             {'protocol': 1,
              'client': 'wMAL',
-             'clientver': 0.2,
+             'clientver': self.api_info['version'],
              'username': self.username,
              'password': self.password,
              })

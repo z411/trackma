@@ -1,6 +1,4 @@
-# wMAL-curses v0.2
-# Lightweight urwid+curses based script for using data from MyAnimeList.
-# Copyright (C) 2012  z411
+# This file is part of wMAL.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -71,6 +71,7 @@ class libmal(lib):
     }
     
     # Authorized User-Agent for wMAL
+    url = 'http://myanimelist.net/api/'
     useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
 
     def __init__(self, messenger, account, userconfig):
@@ -139,7 +140,7 @@ class libmal(lib):
         
         self.msg.info(self.name, 'Logging in...')
         try:
-            response = self._request("http://myanimelist.net/api/account/verify_credentials.xml")
+            response = self._request(self.url + "account/verify_credentials.xml")
             self.logged_in = True
             return True
         except urllib2.HTTPError, e:
@@ -183,7 +184,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/add/"+str(item['id'])+".xml", data)
+            response = self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error adding: ' + str(e.code))
@@ -199,7 +200,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/update/"+str(item['id'])+".xml", data)
+            response = self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
@@ -210,7 +211,7 @@ class libmal(lib):
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
         
         try:
-            response = self.opener.open("http://myanimelist.net/api/"+self.mediatype+"list/delete/"+str(item['id'])+".xml")
+            response = self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
@@ -221,7 +222,7 @@ class libmal(lib):
         
         # Send the urlencoded query to the search API
         query = self._urlencode({'q': criteria})
-        data = self._request_gzip("http://myanimelist.net/api/"+self.mediatype+"/search.xml?" + query)
+        data = self._request_gzip(self.url + self.mediatype + "/search.xml?" + query)
         
         # Load the results into XML
         try:
