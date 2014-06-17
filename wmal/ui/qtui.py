@@ -363,8 +363,8 @@ class wmal(QtGui.QMainWindow):
             # Unselect any show
             self.selected_show_id = None
 
-            self.show_title.setText('wMAL-gtk')
-            self.show_image.setText('wMAL-gtk')
+            self.show_title.setText('wMAL-qt')
+            self.show_image.setText('')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
             self.show_progress_bar.setValue(0)
