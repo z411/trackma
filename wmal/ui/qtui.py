@@ -56,7 +56,7 @@ class wmal(QtGui.QMainWindow):
         self.setWindowTitle('wMAL-qt')
         
         self.accountman = AccountManager()
-        self.accountman_widget = AccountWidget(None, self.accountman)
+        self.accountman_widget = AccountDialog(None, self.accountman)
         self.accountman_widget.selected.connect(self.accountman_selected)
 
         # Go directly into the application if a default account is set
@@ -812,7 +812,7 @@ class AddDialog(QtGui.QDialog):
             print "added"
         
 
-class AccountWidget(QtGui.QDialog):
+class AccountDialog(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
 
@@ -859,17 +859,25 @@ class AccountWidget(QtGui.QDialog):
             self.remember_chk.setChecked(True)
         cancel_btn = QtGui.QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
+        add_btn = QtGui.QPushButton('Add')
+        add_btn.clicked.connect(self.add)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
+        bottom_layout.addWidget(add_btn)
         bottom_layout.addWidget(select_btn)
 
         # Finish layout
         layout.addWidget(self.table)
         layout.addLayout(bottom_layout)
         self.setLayout(layout)
-
+    
+    def add(self):
+        result = AccountAddDialog.do()
+        if result:
+            print result
+        
     def select(self, checked):
         try:
             selected_account_num = self.table.selectedItems()[0].num
@@ -911,7 +919,42 @@ class ShowItem(QtGui.QTableWidgetItem):
         if color:
             self.setBackgroundColor( color )
 
-
+class AccountAddDialog(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        
+        # Build UI
+        layout = QtGui.QVBoxLayout()
+        
+        formlayout = QtGui.QFormLayout()
+        self.username = QtGui.QLineEdit()
+        self.password = QtGui.QLineEdit()
+        self.api = QtGui.QComboBox()
+        formlayout.addRow( QtGui.QLabel('Username:'), self.username )
+        formlayout.addRow( QtGui.QLabel('Password:'), self.password )
+        formlayout.addRow( QtGui.QLabel('Site:'), self.api )
+        
+        bottombox = QtGui.QDialogButtonBox()
+        bottombox.addButton(QtGui.QDialogButtonBox.Save)
+        bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
+        bottombox.accepted.connect(self.accept)
+        bottombox.rejected.connect(self.reject)
+        
+        layout.addLayout(formlayout)
+        layout.addWidget(bottombox)
+        
+        self.setLayout(layout)
+    
+    @staticmethod
+    def do(parent=None):
+        dialog = AccountAddDialog(parent)
+        result = dialog.exec_()
+        
+        if result == QtGui.QDialog.Accepted:
+            return dialog.username.text()
+        else:
+            return
+    
 class Image_Worker(QtCore.QThread):
     """
     Image thread
