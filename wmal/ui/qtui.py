@@ -203,6 +203,12 @@ class wmal(QtGui.QMainWindow):
         self.main_widget = QtGui.QWidget(self)
         self.main_widget.setLayout(main_layout)
         self.setCentralWidget(self.main_widget)
+        
+        # Statusbar
+        self.status_text = QtGui.QLabel('wMAL-qt')
+        self.queue_text = QtGui.QLabel('Unsynced items: N/A')
+        self.statusBar().addWidget(self.status_text, 1)
+        self.statusBar().addWidget(self.queue_text)
  
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
@@ -235,7 +241,7 @@ class wmal(QtGui.QMainWindow):
             event.ignore()
 
     def status(self, string):
-        self.statusBar().showMessage(string)
+        self.status_text.setText(string)
         print string
     
     def error(self, msg):
@@ -256,6 +262,10 @@ class wmal(QtGui.QMainWindow):
             self.show_play_btn.setEnabled(enable)
             self.show_play_next_btn.setEnabled(enable)
             self.show_status.setEnabled(enable)
+    
+    def _update_queue_counter(self):
+        size = len( self.worker.engine.get_queue() )
+        self.queue_text.setText("Unsynced items: %d" % size)
     
     def _busy(self, wait=False):
         if wait:
@@ -351,8 +361,7 @@ class wmal(QtGui.QMainWindow):
             if widget.item(row, 4).text() == str(showid):
                 return row
 
-        print "Warning: Show not found in list for some reason"
-        return 0
+        return None
 
     ### Slots
     def s_busy(self):
@@ -474,7 +483,7 @@ class wmal(QtGui.QMainWindow):
     
     def s_send(self):
         self._busy(True)
-        self.worker_call('list_upload', self.r_list_retrieved)
+        self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
         self.accountman_widget.setModal(True)
@@ -517,9 +526,11 @@ class wmal(QtGui.QMainWindow):
 
     ### Worker slots
     def ws_changed_show(self, show, is_playing=False):
-        widget = self.show_lists[show['my_status']]
-        row = self._get_row_from_showid(widget, show['id'])
-        self._update_row(widget, row, show, is_playing)
+        if show:
+            widget = self.show_lists[show['my_status']]
+            row = self._get_row_from_showid(widget, show['id'])
+            self._update_row(widget, row, show, is_playing)
+        self._update_queue_counter()
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -529,6 +540,8 @@ class wmal(QtGui.QMainWindow):
         
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
+        
+        self._update_queue_counter()
 
     ### Responses from the engine thread
     def r_generic(self):
@@ -598,6 +611,7 @@ class wmal(QtGui.QMainWindow):
             self._rebuild_lists(showlist)
             
             self.s_show_selected(None)
+            self._update_queue_counter()
             
             self.status('Ready.')
             
@@ -1068,6 +1082,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('playing', self._playing_show)
         self.engine.connect_signal('show_added', self._changed_list)
         self.engine.connect_signal('show_deleted', self._changed_list)
+        self.engine.connect_signal('show_synced', self._changed_show)
 
         self.function_list = {
             'start': self._start,

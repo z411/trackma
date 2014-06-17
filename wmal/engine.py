@@ -59,6 +59,7 @@ class Engine:
                 'episode_changed':  None,
                 'score_changed':    None,
                 'status_changed':   None,
+                'show_synced':      None,
                 'playing':          None, }
     
     def __init__(self, account, message_handler=None):
@@ -94,10 +95,14 @@ class Engine:
     def _init_data_handler(self):
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config, self.account, self.userconfig)
+        self.data_handler.connect_signal('show_synced', self._data_show_synced)
         
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
+    def _data_show_synced(self, show):
+        self._emit_signal('show_synced', show)
+        
     def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
