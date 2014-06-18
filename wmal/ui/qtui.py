@@ -564,7 +564,8 @@ class wmal(QtGui.QMainWindow):
             self._update_row(widget, row, show, is_playing)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
-                self.tray.showMessage('wMAL Tracker', "%s will be updated in %d minutes." % ('show', 5))
+                delay = self.worker.engine.get_config('tracker_update_wait')
+                self.tray.showMessage('wMAL Tracker', "%s will be updated to %d in %d minutes." % (show['title'], episode, delay))
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -1358,7 +1359,7 @@ class Engine_Worker(QtCore.QThread):
     changed_show = QtCore.pyqtSignal(dict)
     changed_list = QtCore.pyqtSignal(dict, object)
     changed_queue = QtCore.pyqtSignal(int)
-    playing_show = QtCore.pyqtSignal(dict, bool)
+    playing_show = QtCore.pyqtSignal(dict, bool, int)
 
     def __init__(self, account):
         super(Engine_Worker, self).__init__()
@@ -1403,8 +1404,8 @@ class Engine_Worker(QtCore.QThread):
     def _changed_queue(self, queue):
         self.changed_queue.emit(queue)
     
-    def _playing_show(self, show, is_playing):
-        self.playing_show.emit(show, is_playing)
+    def _playing_show(self, show, is_playing, episode):
+        self.playing_show.emit(show, is_playing, episode)
     
     # Callable functions
     def _start(self):

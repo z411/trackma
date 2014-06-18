@@ -547,11 +547,11 @@ class Engine:
                     # But if we're watching a new show, let's make sure turn off
                     # the Playing flag on that one first
                     if self.last_show and self.last_show != show:
-                        self._emit_signal('playing', self.last_show, False)
+                        self._emit_signal('playing', self.last_show, False, 0)
  
 
                     self.last_show = show
-                    self._emit_signal('playing', show, True)
+                    self._emit_signal('playing', show, True, episode)
  
                     last_episode = episode
                     last_time = time.time()

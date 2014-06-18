@@ -555,7 +555,7 @@ class wMAL_urwid(object):
         self.set_filter(go_filter)
         self._get_cur_list().select_show(show)
 
-    def playing_show(self, show, is_playing):
+    def playing_show(self, show, is_playing, episode=None):
         status = show['my_status']
         self.lists[status].body.playing_show(show, is_playing)
         self.mainloop.draw_screen()

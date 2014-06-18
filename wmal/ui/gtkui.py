@@ -510,7 +510,7 @@ class wmal_gtk(object):
         
         self.show_lists[status].select(show)
 
-    def playing_show(self, show, is_playing):
+    def playing_show(self, show, is_playing, episode):
         status = show['my_status']
         self.show_lists[status].playing(show, is_playing)
             
