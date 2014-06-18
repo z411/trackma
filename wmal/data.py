@@ -49,7 +49,10 @@ class Data(object):
 
     autosend_timer = None
     
-    signals = { 'show_synced':       None, }
+    signals = {
+                'show_synced':       None,
+                'queue_changed':     None,
+              }
     
     def __init__(self, messenger, config, account, userconfig):
         """Checks if the config is correct and creates an API object."""
@@ -227,6 +230,7 @@ class Data(object):
         
         self._save_queue()
         self._save_cache()
+        self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued add for %s" % show['title'])
         
     def queue_update(self, show, key, value):
@@ -265,6 +269,7 @@ class Data(object):
         
         self._save_queue()
         self._save_cache()
+        self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued update for %s" % show['title'])
         
         # Immediately process the action if necessary
@@ -307,6 +312,7 @@ class Data(object):
         
         self._save_queue()
         self._save_cache()
+        self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued delete for %s" % item['title'])
     
     def queue_clear(self):
@@ -316,6 +322,7 @@ class Data(object):
         
         self.queue = []
         self._save_queue()
+        self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Cleared queue.")
         
     def process_queue(self):
@@ -360,8 +367,8 @@ class Data(object):
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
                         self._emit_signal('show_synced', self.showlist[showid])
-                    else:
-                        self._emit_signal('show_synced', None)
+                    
+                    self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)

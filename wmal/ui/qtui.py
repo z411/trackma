@@ -215,6 +215,7 @@ class wmal(QtGui.QMainWindow):
         self.worker.raised_error.connect(self.error)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
+        self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.playing_show.connect(self.ws_changed_show)
         
         # Show main window
@@ -263,9 +264,8 @@ class wmal(QtGui.QMainWindow):
             self.show_play_next_btn.setEnabled(enable)
             self.show_status.setEnabled(enable)
     
-    def _update_queue_counter(self):
-        size = len( self.worker.engine.get_queue() )
-        self.queue_text.setText("Unsynced items: %d" % size)
+    def _update_queue_counter(self, queue):
+        self.queue_text.setText("Unsynced items: %d" % queue)
     
     def _busy(self, wait=False):
         if wait:
@@ -530,7 +530,6 @@ class wmal(QtGui.QMainWindow):
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
             self._update_row(widget, row, show, is_playing)
-        self._update_queue_counter()
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -540,8 +539,9 @@ class wmal(QtGui.QMainWindow):
         
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
-        
-        self._update_queue_counter()
+    
+    def ws_changed_queue(self, queue):
+        self._update_queue_counter(queue)
 
     ### Responses from the engine thread
     def r_generic(self):
@@ -611,7 +611,7 @@ class wmal(QtGui.QMainWindow):
             self._rebuild_lists(showlist)
             
             self.s_show_selected(None)
-            self._update_queue_counter()
+            self._update_queue_counter( len( self.worker.engine.get_queue() ) )
             
             self.status('Ready.')
             
@@ -1071,6 +1071,7 @@ class Engine_Worker(QtCore.QThread):
     # Event handler signals
     changed_show = QtCore.pyqtSignal(dict)
     changed_list = QtCore.pyqtSignal(dict, object)
+    changed_queue = QtCore.pyqtSignal(int)
     playing_show = QtCore.pyqtSignal(dict, bool)
 
     def __init__(self, account):
@@ -1083,6 +1084,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('show_added', self._changed_list)
         self.engine.connect_signal('show_deleted', self._changed_list)
         self.engine.connect_signal('show_synced', self._changed_show)
+        self.engine.connect_signal('queue_changed', self._changed_queue)
 
         self.function_list = {
             'start': self._start,
@@ -1111,7 +1113,10 @@ class Engine_Worker(QtCore.QThread):
 
     def _changed_list(self, show, old_status=None):
         self.changed_list.emit(show, old_status)
-
+    
+    def _changed_queue(self, queue):
+        self.changed_queue.emit(queue)
+    
     def _playing_show(self, show, is_playing):
         self.playing_show.emit(show, is_playing)
     

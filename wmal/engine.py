@@ -60,6 +60,7 @@ class Engine:
                 'score_changed':    None,
                 'status_changed':   None,
                 'show_synced':      None,
+                'queue_changed':    None,
                 'playing':          None, }
     
     def __init__(self, account, message_handler=None):
@@ -96,12 +97,16 @@ class Engine:
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config, self.account, self.userconfig)
         self.data_handler.connect_signal('show_synced', self._data_show_synced)
+        self.data_handler.connect_signal('queue_changed', self._data_queue_changed)
         
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
     
     def _data_show_synced(self, show):
         self._emit_signal('show_synced', show)
+    
+    def _data_queue_changed(self, queue):
+        self._emit_signal('queue_changed', queue)
         
     def _emit_signal(self, signal, *args):
         try:
