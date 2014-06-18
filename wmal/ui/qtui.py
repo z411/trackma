@@ -43,6 +43,7 @@ class wmal(QtGui.QMainWindow):
 
     """
     config = None
+    tray = None
     accountman = None
     worker = None
     image_worker = None
@@ -222,10 +223,9 @@ class wmal(QtGui.QMainWindow):
         self.statusBar().addWidget(self.queue_text)
         
         # Tray icon
-        if self.config['show_tray']:
-            self.tray = QtGui.QSystemTrayIcon(self.windowIcon())
-            self.tray.activated.connect(self.s_hide)
-            self.tray.show()
+        self.tray = QtGui.QSystemTrayIcon(self.windowIcon())
+        self.tray.activated.connect(self.s_hide)
+        self._tray()
 
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
@@ -290,6 +290,12 @@ class wmal(QtGui.QMainWindow):
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
     
+    def _tray(self):
+        if self.tray.isVisible() and not self.config['show_tray']:
+            self.tray.hide()
+        elif not self.tray.isVisible() and self.config['show_tray']:
+            self.tray.show()
+
     def _busy(self, wait=False):
         if wait:
             self.busy_timer.start()
@@ -543,8 +549,10 @@ class wmal(QtGui.QMainWindow):
         self.reload(None, mediatype)
     
     def s_settings(self):
-        response = SettingsDialog(None, self.worker).exec_()
-        
+        dialog = SettingsDialog(None, self.worker, self.config, self.configfile)
+        dialog.saved.connect(self._tray)
+        dialog.exec_()
+                    
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
             '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
@@ -864,11 +872,17 @@ class AddDialog(QtGui.QDialog):
 
 class SettingsDialog(QtGui.QDialog):
     worker = None
+    config = None
+    configfile = None
+
+    saved = QtCore.pyqtSignal()
     
-    def __init__(self, parent, worker):
+    def __init__(self, parent, worker, config, configfile):
         QtGui.QDialog.__init__(self, parent)
         
         self.worker = worker
+        self.config = config
+        self.configfile = configfile
         self.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.setWindowTitle('Settings')
         layout = QtGui.QGridLayout()
@@ -1059,10 +1073,9 @@ class SettingsDialog(QtGui.QDialog):
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
         self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
 
-        # TODO Not ready yet
-        self.tray_icon.setEnabled(False)
-        self.close_to_tray.setEnabled(False)
-        self.notifications.setEnabled(False)
+        self.tray_icon.setChecked(self.config['show_tray'])
+        self.close_to_tray.setChecked(self.config['close_to_tray'])
+        self.notifications.setChecked(self.config['notifications'])
 
     def _save(self):
         engine = self.worker.engine
@@ -1095,8 +1108,15 @@ class SettingsDialog(QtGui.QDialog):
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
 
         engine.save_config()
-        print 'Config saved.'
-    
+
+        self.config['show_tray'] = self.tray_icon.isChecked()
+        self.config['close_to_tray'] = self.close_to_tray.isChecked()
+        self.config['notifications'] = self.notifications.isChecked()
+
+        utils.save_config(self.config, self.configfile)
+
+        self.saved.emit()
+
     def s_save(self):
         self._save()
         self.accept()
