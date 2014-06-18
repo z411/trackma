@@ -185,6 +185,7 @@ class wMAL_urwid(object):
         self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
+        self.engine.connect_signal('show_synced', self.changed_show)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
@@ -283,7 +284,6 @@ class wMAL_urwid(object):
     
     def do_send(self):
         self.engine.list_upload()
-        self._rebuild_all_lists();
         self.status("Ready.")
 
     def do_retrieve(self):
@@ -536,9 +536,10 @@ class wMAL_urwid(object):
             self.status('Ready.')
     
     def changed_show(self, show):
-        status = show['my_status']
-        self.lists[status].body.update_show(show)
-        self.mainloop.draw_screen()
+        if show:
+            status = show['my_status']
+            self.lists[status].body.update_show(show)
+            self.mainloop.draw_screen()
 
     def changed_show_status(self, show, old_status=None):
         self._rebuild_list(show['my_status'])
