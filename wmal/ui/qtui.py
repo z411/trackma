@@ -42,6 +42,7 @@ class wmal(QtGui.QMainWindow):
     Main GUI class
 
     """
+    config = None
     accountman = None
     worker = None
     image_worker = None
@@ -50,7 +51,11 @@ class wmal(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
-        
+
+        # Load QT specific configuration
+        self.configfile = utils.get_root_filename('wmal-qt.json')
+        self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+         
         # Build UI
         QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
         self.setWindowTitle('wMAL-qt')
@@ -111,7 +116,7 @@ class wmal(QtGui.QMainWindow):
         action_send.triggered.connect(self.s_send)
         action_quit = QtGui.QAction('&Quit', self)
         action_quit.setStatusTip('Exit wMAL.')
-        action_quit.triggered.connect(self.close)
+        action_quit.triggered.connect(self._exit)
 
         action_reload = QtGui.QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
@@ -215,7 +220,13 @@ class wmal(QtGui.QMainWindow):
         self.queue_text = QtGui.QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
         self.statusBar().addWidget(self.queue_text)
- 
+        
+        # Tray icon
+        if self.config['show_tray']:
+            self.tray = QtGui.QSystemTrayIcon(self.windowIcon())
+            self.tray.activated.connect(self.s_hide)
+            self.tray.show()
+
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
         self.worker.raised_error.connect(self.error)
@@ -242,11 +253,13 @@ class wmal(QtGui.QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
-        else:
-            self._busy()
-            self.worker_call('unload', self.r_engine_unloaded)
+        elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
-
+            self.s_hide()
+        else:
+            event.ignore()
+            self._exit()
+            
     def status(self, string):
         self.status_text.setText(string)
         print string
@@ -260,6 +273,10 @@ class wmal(QtGui.QMainWindow):
         self.worker.start()
     
     ### GUI Functions
+    def _exit(self):
+        self._busy()
+        self.worker_call('unload', self.r_engine_unloaded)
+
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
 
@@ -370,6 +387,12 @@ class wmal(QtGui.QMainWindow):
         return None
 
     ### Slots
+    def s_hide(self):
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show()
+
     def s_busy(self):
         self._enable_widgets(False)
         
@@ -534,11 +557,14 @@ class wmal(QtGui.QMainWindow):
         
 
     ### Worker slots
-    def ws_changed_show(self, show, is_playing=False):
+    def ws_changed_show(self, show, is_playing=False, episode=None):
         if show:
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
             self._update_row(widget, row, show, is_playing)
+
+            if is_playing and self.config['show_tray'] and self.config['notifications']:
+                self.tray.showMessage('wMAL Tracker', "%s will be updated in %d minutes." % ('show', 5))
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -1029,6 +1055,7 @@ class SettingsDialog(QtGui.QDialog):
         else:
             self.autosend_off.setChecked(True)
 
+        self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
         self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
 
         # TODO Not ready yet
@@ -1063,6 +1090,7 @@ class SettingsDialog(QtGui.QDialog):
         else:
             engine.set_config('autosend', 'off')
         
+        engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
 
         engine.save_config()
