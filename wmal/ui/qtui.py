@@ -119,6 +119,8 @@ class wmal(QtGui.QMainWindow):
         action_retrieve = QtGui.QAction('&Redownload list', self)
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
+        action_settings = QtGui.QAction('&Settings...', self)
+        action_settings.triggered.connect(self.s_settings)
 
         action_about = QtGui.QAction('About...', self)
         action_about.triggered.connect(self.s_about)
@@ -129,7 +131,9 @@ class wmal(QtGui.QMainWindow):
         self.menu_show = menubar.addMenu('&Show')
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_add)
+        self.menu_show.addSeparator()
         self.menu_show.addAction(action_send)
+        self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
@@ -137,6 +141,8 @@ class wmal(QtGui.QMainWindow):
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
         menu_options.addAction(action_retrieve)
+        menu_options.addSeparator()
+        menu_options.addAction(action_settings)
         menu_help = menubar.addMenu('&Help')
         menu_help.addAction(action_about)
         menu_help.addAction(action_about_qt)
@@ -373,7 +379,7 @@ class wmal(QtGui.QMainWindow):
             self.selected_show_id = None
 
             self.show_title.setText('wMAL-qt')
-            self.show_image.setText('')
+            self.show_image.setText('wMAL-qt')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
             self.show_progress_bar.setValue(0)
@@ -390,8 +396,8 @@ class wmal(QtGui.QMainWindow):
         # Attempt to convert to int if possible
         try:
             selected_id = int(selected_id)
-        except:
-            pass
+        except ValueError:
+            selected_id = str(selected_id)
 
         show = self.worker.engine.get_show_info(selected_id)
         
@@ -513,6 +519,10 @@ class wmal(QtGui.QMainWindow):
         mediatype = self.api_info['supported_mediatypes'][index]
         self.reload(None, mediatype)
     
+    def s_settings(self):
+        response = SettingsDialog(None, self.worker).exec_()
+        print response
+        
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
             '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
@@ -826,6 +836,87 @@ class AddDialog(QtGui.QDialog):
             print "added"
         
 
+class SettingsDialog(QtGui.QDialog):
+    worker = None
+    
+    def __init__(self, parent, worker):
+        QtGui.QDialog.__init__(self, parent)
+        
+        self.worker = worker
+        self.setWindowTitle('Settings')
+        layout = QtGui.QGridLayout()
+        
+        # Categories
+        self.category_list = QtGui.QListWidget()
+        category_media = QtGui.QListWidgetItem(self.category_list)
+        category_media.setText('Media')
+        category_sync = QtGui.QListWidgetItem(self.category_list)
+        category_sync.setText('Sync')
+        category_ui = QtGui.QListWidgetItem(self.category_list)
+        category_ui.setText('User Interface')
+        self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.category_list.setCurrentRow(0)
+        self.category_list.setFocus()
+        self.category_list.currentItemChanged.connect(self.s_switch_page)
+        
+        # Tabs
+        page_media = QtGui.QWidget()
+        page_media_layout = QtGui.QFormLayout()
+        page_media_header1 = QtGui.QLabel('<h2>Media settings</h2>')
+        self.enable_tracker = QtGui.QCheckBox()
+        self.tracker_interval = QtGui.QSpinBox()
+        self.tracker_process = QtGui.QLineEdit()
+        self.tracker_update_wait = QtGui.QSpinBox()
+        page_media_header2 = QtGui.QLabel('<h2>Play Next</h2>')
+        self.player = QtGui.QLineEdit()
+        self.searchdir = QtGui.QLineEdit()
+        
+        page_media_layout.addRow( page_media_header1 )
+        page_media_layout.addRow( 'Enable tracker', self.enable_tracker )
+        page_media_layout.addRow( 'Tracker interval (seconds)', self.tracker_interval )
+        page_media_layout.addRow( 'Process name (regex)', self.tracker_process )
+        page_media_layout.addRow( 'Wait before updating (minutes)', self.tracker_update_wait )
+        page_media_layout.addRow( page_media_header2 )
+        page_media_layout.addRow( 'Player', self.player )
+        page_media_layout.addRow( 'Media directory', self.searchdir )
+        page_media.setLayout(page_media_layout)
+        
+        page_sync = QtGui.QWidget()
+        page_sync_layout = QtGui.QFormLayout()
+        page_sync_layout.addRow( 'The sync', QtGui.QLineEdit() )
+        page_sync.setLayout(page_sync_layout)
+        
+        page_ui = QtGui.QWidget()
+        page_ui_layout = QtGui.QFormLayout()
+        page_ui_layout.addRow( 'The UI', QtGui.QLineEdit() )
+        page_ui.setLayout(page_ui_layout)
+        
+        # Content
+        self.contents = QtGui.QStackedWidget()
+        self.contents.addWidget(page_media)
+        self.contents.addWidget(page_sync)
+        self.contents.addWidget(page_ui)
+        self.contents.layout().setMargin(0)
+        
+        # Bottom buttons
+        bottombox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Apply|QtGui.QDialogButtonBox.Cancel)
+        bottombox.accepted.connect(self.accept)
+        bottombox.rejected.connect(self.reject)
+        
+        # Main layout finish
+        layout.addWidget(self.category_list,  0, 0, 1, 1)
+        layout.addWidget(self.contents,       0, 1, 1, 1)
+        layout.addWidget(bottombox,           1, 0, 1, 2)
+        layout.setColumnStretch(1, 4)
+        
+        self.setLayout(layout)
+    
+    def s_switch_page(self, new, old):
+        if not new:
+            new = old
+        
+        self.contents.setCurrentIndex( self.category_list.row( new ) )
+        
 class AccountDialog(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
