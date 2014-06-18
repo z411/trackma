@@ -521,7 +521,6 @@ class wmal(QtGui.QMainWindow):
     
     def s_settings(self):
         response = SettingsDialog(None, self.worker).exec_()
-        print response
         
     def s_about(self):
         QtGui.QMessageBox.about(self, 'About wMAL-qt',
@@ -843,6 +842,7 @@ class SettingsDialog(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         
         self.worker = worker
+        self.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.setWindowTitle('Settings')
         layout = QtGui.QGridLayout()
         
@@ -856,39 +856,125 @@ class SettingsDialog(QtGui.QDialog):
         category_ui.setText('User Interface')
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
+        self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
         self.category_list.setFocus()
         self.category_list.currentItemChanged.connect(self.s_switch_page)
         
-        # Tabs
+        # Media tab
         page_media = QtGui.QWidget()
-        page_media_layout = QtGui.QFormLayout()
-        page_media_header1 = QtGui.QLabel('<h2>Media settings</h2>')
-        self.enable_tracker = QtGui.QCheckBox()
+        page_media_layout = QtGui.QVBoxLayout()
+        page_media_layout.setAlignment(QtCore.Qt.AlignTop)
+        
+        # Group: Media settings
+        g_media = QtGui.QGroupBox('Media settings')
+        g_media.setFlat(True)
+        g_media_layout = QtGui.QFormLayout()
+        self.tracker_enabled = QtGui.QCheckBox()
         self.tracker_interval = QtGui.QSpinBox()
+        self.tracker_interval.setRange(5, 1000)
+        self.tracker_interval.setMaximumWidth(60)
         self.tracker_process = QtGui.QLineEdit()
         self.tracker_update_wait = QtGui.QSpinBox()
-        page_media_header2 = QtGui.QLabel('<h2>Play Next</h2>')
+        self.tracker_update_wait.setRange(0, 1000)
+        self.tracker_update_wait.setMaximumWidth(60)
+        g_media_layout.addRow( 'Enable tracker', self.tracker_enabled )
+        g_media_layout.addRow( 'Tracker interval (seconds)', self.tracker_interval )
+        g_media_layout.addRow( 'Process name (regex)', self.tracker_process )
+        g_media_layout.addRow( 'Wait before updating (minutes)', self.tracker_update_wait )
+
+        g_media.setLayout(g_media_layout)
+
+        # Group: Play Next
+        g_playnext = QtGui.QGroupBox('Play Next')
+        g_playnext.setFlat(True)
         self.player = QtGui.QLineEdit()
+        self.player_browse = QtGui.QPushButton('Browse...')
+        self.player_browse.clicked.connect(self.s_player_browse)
         self.searchdir = QtGui.QLineEdit()
-        
-        page_media_layout.addRow( page_media_header1 )
-        page_media_layout.addRow( 'Enable tracker', self.enable_tracker )
-        page_media_layout.addRow( 'Tracker interval (seconds)', self.tracker_interval )
-        page_media_layout.addRow( 'Process name (regex)', self.tracker_process )
-        page_media_layout.addRow( 'Wait before updating (minutes)', self.tracker_update_wait )
-        page_media_layout.addRow( page_media_header2 )
-        page_media_layout.addRow( 'Player', self.player )
-        page_media_layout.addRow( 'Media directory', self.searchdir )
+        self.searchdir_browse = QtGui.QPushButton('Browse...')
+        self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
+
+        g_playnext_layout = QtGui.QGridLayout()
+        g_playnext_layout.addWidget( QtGui.QLabel('Player'),            0, 0, 1, 1)
+        g_playnext_layout.addWidget( self.player,                       0, 1, 1, 1)
+        g_playnext_layout.addWidget( self.player_browse,                0, 2, 1, 1)
+        g_playnext_layout.addWidget( QtGui.QLabel('Media directory'),   1, 0, 1, 1)
+        g_playnext_layout.addWidget( self.searchdir,                    1, 1, 1, 1)
+        g_playnext_layout.addWidget( self.searchdir_browse,             1, 2, 1, 1)
+
+        g_playnext.setLayout(g_playnext_layout)
+       
+        # Media form
+        page_media_layout.addWidget(g_media)
+        page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
         
+        # Sync tab
         page_sync = QtGui.QWidget()
-        page_sync_layout = QtGui.QFormLayout()
-        page_sync_layout.addRow( 'The sync', QtGui.QLineEdit() )
+        page_sync_layout = QtGui.QVBoxLayout()
+        page_sync_layout.setAlignment(QtCore.Qt.AlignTop)
+        
+        # Group: Autoretrieve
+        g_autoretrieve = QtGui.QGroupBox('Autoretrieve')
+        g_autoretrieve.setFlat(True)
+        self.autoretrieve_off = QtGui.QRadioButton('Disabled')
+        self.autoretrieve_always = QtGui.QRadioButton('Always at start')
+        self.autoretrieve_days = QtGui.QRadioButton('After x days')
+        g_autoretrieve_layout = QtGui.QVBoxLayout()
+        g_autoretrieve_layout.addWidget(self.autoretrieve_off)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_always)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days)
+        g_autoretrieve.setLayout(g_autoretrieve_layout)
+
+        # Group: Autosend
+        g_autosend = QtGui.QGroupBox('Autosend')
+        g_autosend.setFlat(True)
+        self.autosend_off = QtGui.QRadioButton('Disabled')
+        self.autosend_always = QtGui.QRadioButton('Immediately after every change')
+        self.autosend_hours = QtGui.QRadioButton('After x hours')
+        self.autosend_size = QtGui.QRadioButton('After the queue reaches x items')
+        self.autosend_at_exit = QtGui.QCheckBox('At exit')
+        g_autosend_layout = QtGui.QVBoxLayout()
+        g_autosend_layout.addWidget(self.autosend_off)
+        g_autosend_layout.addWidget(self.autosend_always)
+        g_autosend_layout.addWidget(self.autosend_hours)
+        g_autosend_layout.addWidget(self.autosend_size)
+        g_autosend_layout.addWidget(self.autosend_at_exit)
+        g_autosend.setLayout(g_autosend_layout)
+
+        # Group: Extra
+        g_extra = QtGui.QGroupBox('Additional options')
+        g_extra.setFlat(True)
+        self.auto_status_change = QtGui.QCheckBox('Change status automatically')
+        g_extra_layout = QtGui.QVBoxLayout()
+        g_extra_layout.addWidget(self.auto_status_change)
+        g_extra.setLayout(g_extra_layout)
+        
+        # Sync layout
+        page_sync_layout.addWidget( g_autoretrieve )
+        page_sync_layout.addWidget( g_autosend )
+        page_sync_layout.addWidget( g_extra )
         page_sync.setLayout(page_sync_layout)
         
+        # UI tab
         page_ui = QtGui.QWidget()
         page_ui_layout = QtGui.QFormLayout()
-        page_ui_layout.addRow( 'The UI', QtGui.QLineEdit() )
+        page_ui_layout.setAlignment(QtCore.Qt.AlignTop)
+        
+        # Group: Icon
+        g_icon = QtGui.QGroupBox('Notification Icon')
+        g_icon.setFlat(True)
+        self.tray_icon = QtGui.QCheckBox('Show tray icon')
+        self.close_to_tray = QtGui.QCheckBox('Close to tray')
+        self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
+        g_icon_layout = QtGui.QVBoxLayout()
+        g_icon_layout.addWidget(self.tray_icon)
+        g_icon_layout.addWidget(self.close_to_tray)
+        g_icon_layout.addWidget(self.notifications)
+        g_icon.setLayout(g_icon_layout)
+
+        # UI layout
+        page_ui_layout.addWidget(g_icon)
         page_ui.setLayout(page_ui_layout)
         
         # Content
@@ -900,17 +986,98 @@ class SettingsDialog(QtGui.QDialog):
         
         # Bottom buttons
         bottombox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Apply|QtGui.QDialogButtonBox.Cancel)
-        bottombox.accepted.connect(self.accept)
+        bottombox.accepted.connect(self.s_save)
+        bottombox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(self._save)
         bottombox.rejected.connect(self.reject)
         
         # Main layout finish
         layout.addWidget(self.category_list,  0, 0, 1, 1)
         layout.addWidget(self.contents,       0, 1, 1, 1)
         layout.addWidget(bottombox,           1, 0, 1, 2)
-        layout.setColumnStretch(1, 4)
+        layout.setColumnStretch(1, 1)
         
+        self._load()
+
         self.setLayout(layout)
     
+    def _load(self):
+        engine = self.worker.engine
+        autoretrieve = engine.get_config('autoretrieve')
+        autosend = engine.get_config('autosend')
+
+        self.tracker_enabled.setChecked(engine.get_config('tracker_enabled'))
+        self.tracker_interval.setValue(engine.get_config('tracker_interval'))
+        self.tracker_process.setText(engine.get_config('tracker_process'))
+        self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait'))
+
+        self.player.setText(engine.get_config('player'))
+        self.searchdir.setText(engine.get_config('searchdir'))
+
+        if autoretrieve == 'always':
+            self.autoretrieve_always.setChecked(True)
+        elif autoretrieve == 'days':
+            self.autoretrieve_days.setChecked(True)
+        else:
+            self.autoretrieve_off.setChecked(True)
+
+        if autosend == 'always':
+            self.autosend_always.setChecked(True)
+        elif autosend == 'hours':
+            self.autosend_hours.setChecked(True)
+        elif autosend == 'size':
+            self.autosend_size.setChecked(True)
+        else:
+            self.autosend_off.setChecked(True)
+
+        self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
+
+        # TODO Not ready yet
+        self.tray_icon.setEnabled(False)
+        self.close_to_tray.setEnabled(False)
+        self.notifications.setEnabled(False)
+
+    def _save(self):
+        engine = self.worker.engine
+
+        engine.set_config('tracker_enabled',     self.tracker_enabled.isChecked())
+        engine.set_config('tracker_interval',    self.tracker_interval.value())
+        engine.set_config('tracker_process',     str(self.tracker_process.text()))
+        engine.set_config('tracker_update_wait', self.tracker_update_wait.value())
+
+        engine.set_config('player',     str(self.player.text()))
+        engine.set_config('searchdir',  str(self.searchdir.text()))
+
+        if self.autoretrieve_always.isChecked():
+            engine.set_config('autoretrieve', 'always')
+        elif self.autoretrieve_days.isChecked():
+            engine.set_config('autoretrieve', 'days')
+        else:
+            engine.set_config('autoretrieve', 'off')
+
+        if self.autosend_always.isChecked():
+            engine.set_config('autosend', 'always')
+        elif self.autosend_hours.isChecked():
+            engine.set_config('autosend', 'hours')
+        elif self.autosend_size.isChecked():
+            engine.set_config('autosend', 'size')
+        else:
+            engine.set_config('autosend', 'off')
+        
+        engine.set_config('auto_status_change', self.auto_status_change.isChecked())
+
+        engine.save_config()
+        print 'Config saved.'
+    
+    def s_save(self):
+        self._save()
+        self.accept()
+        
+    def s_player_browse(self):
+        self.player.setText( QtGui.QFileDialog.getOpenFileName(caption='Choose player executable') )
+
+    def s_searchdir_browse(self):
+        self.searchdir.setText( QtGui.QFileDialog.getExistingDirectory(caption='Choose media directory') )
+
     def s_switch_page(self, new, old):
         if not new:
             new = old
