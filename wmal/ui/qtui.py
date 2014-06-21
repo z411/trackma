@@ -359,17 +359,16 @@ class wmal(QtGui.QMainWindow):
         else:
             color = self._get_color(show)
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
-        progress_widget = QtGui.QProgressBar()
-        progress_widget.setMinimum(0)
-        progress_widget.setMaximum(100)
+        percent_widget = QtGui.QProgressBar()
+        percent_widget.setRange(0, 100)
         if show['total'] > 0:
-            progress_widget.setValue( 100L * show['my_progress'] / show['total'] )
+            percent_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( show['title'], color ))
         widget.setItem(row, 1, ShowItem( progress_str, color ))
         widget.setItem(row, 2, ShowItem( str(show['my_score']), color ))
-        widget.setCellWidget(row, 3, progress_widget )
+        widget.setCellWidget(row, 3, percent_widget )
         widget.setItem(row, 4, ShowItem( str(show['id']), color ))
 
     def _get_color(self, show):
@@ -411,6 +410,8 @@ class wmal(QtGui.QMainWindow):
             self.show_image.setText('wMAL-qt')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
+            self.show_progress.setEnabled(False)
+            self.show_score.setEnabled(False)
             self.show_progress_bar.setValue(0)
             self.show_status.setEnabled(False)
             self.show_progress_btn.setEnabled(False)
@@ -439,7 +440,15 @@ class wmal(QtGui.QMainWindow):
         self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
         self.show_score.setValue(show['my_score'])
         
+        # Set proper ranges
+        if show['total']:
+            self.show_progress.setRange(0, show['total'])
+        else:
+            self.show_progress.setRange(0, 5000)
+            
         # Enable relevant buttons
+        self.show_progress.setEnabled(True)
+        self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
@@ -611,6 +620,9 @@ class wmal(QtGui.QMainWindow):
             self.statuses_nums = self.worker.engine.mediainfo['statuses']
             self.statuses_names = self.worker.engine.mediainfo['statuses_dict']
             self.has_progress = self.worker.engine.mediainfo['has_progress']
+            
+            # Set allowed ranges (this should be reported by the engine later)
+            self.show_score.setRange(0, 10)
             
             # Build notebook
             for status in self.statuses_nums:
