@@ -191,7 +191,7 @@ class wmal(QtGui.QMainWindow):
         self.show_play_next_btn = QtGui.QPushButton('Next')
         self.show_play_next_btn.clicked.connect(self.s_play, True)
         show_score_label = QtGui.QLabel('Score')
-        self.show_score = QtGui.QSpinBox()
+        self.show_score = QtGui.QDoubleSpinBox()
         self.show_score_btn = QtGui.QPushButton('Set')
         self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
@@ -617,12 +617,16 @@ class wmal(QtGui.QMainWindow):
             self.show_lists = dict()
 
             self.api_info = self.worker.engine.api_info
-            self.statuses_nums = self.worker.engine.mediainfo['statuses']
-            self.statuses_names = self.worker.engine.mediainfo['statuses_dict']
-            self.has_progress = self.worker.engine.mediainfo['has_progress']
+            self.mediainfo = self.worker.engine.mediainfo
+            
+            self.statuses_nums = self.mediainfo['statuses']
+            self.statuses_names = self.mediainfo['statuses_dict']
             
             # Set allowed ranges (this should be reported by the engine later)
-            self.show_score.setRange(0, 10)
+            if self.mediainfo.get('score_max'):
+                self.show_score.setRange(0, self.mediainfo['score_max'])
+            if self.mediainfo.get('score_decimals'):
+                self.show_score.setDecimals(self.mediainfo['score_decimals'])
             
             # Build notebook
             for status in self.statuses_nums:
