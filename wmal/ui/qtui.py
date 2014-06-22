@@ -623,10 +623,8 @@ class wmal(QtGui.QMainWindow):
             self.statuses_names = self.mediainfo['statuses_dict']
             
             # Set allowed ranges (this should be reported by the engine later)
-            if self.mediainfo.get('score_max'):
-                self.show_score.setRange(0, self.mediainfo['score_max'])
-            if self.mediainfo.get('score_decimals'):
-                self.show_score.setDecimals(self.mediainfo['score_decimals'])
+            self.show_score.setRange(0, self.mediainfo['score_max'])
+            self.show_score.setDecimals(self.mediainfo['score_decimals'])
             
             # Build notebook
             for status in self.statuses_nums:

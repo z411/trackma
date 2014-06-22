@@ -352,14 +352,18 @@ class Engine:
         
         # Check for the correctness of the score
         try:
-            newscore = int(newscore)
+            # Use float if the mediainfo supports it
+            if self.mediainfo['score_decimals']:
+                newscore = float(newscore)
+            else:
+                newscore = int(newscore)
         except ValueError:
-            raise utils.EngineError('Score must be numeric.')
+            raise utils.EngineError('Invalid score.')
         
         # Get the show and update it
         show = self.get_show_info(showid)
         # More checks
-        if newscore > 10:
+        if newscore > self.mediainfo['score_max']:
             raise utils.EngineError('Score out of limits.')
         if show['my_score'] == newscore:
             raise utils.EngineError("Score already at %d" % newscore)

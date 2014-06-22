@@ -36,7 +36,6 @@ class libmelative(lib):
     # All mediatypes share the same statuses so we'll reuse them
     statuses = [1, 2, 3, 4, 6]
     statuses_dict = { 1: 'Current', 2: 'Complete', 3: 'Hold', 4: 'Dropped', 6: 'Wishlisted' }
-    #mediadict = 
     
     default_mediatype = 'anime'
     mediatypes['anime'] = {
@@ -48,6 +47,8 @@ class libmelative(lib):
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
         'segment_type': 'Episode',
+        'score_max': 10,
+        'score_decimals': 1,
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -58,6 +59,8 @@ class libmelative(lib):
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
+        'score_max': 10,
+        'score_decimals': 1,
     }
     mediatypes['vn'] = {
         'has_progress': False,
@@ -68,6 +71,8 @@ class libmelative(lib):
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
+        'score_max': 10,
+        'score_decimals': 1,
     }
     mediatypes['lightnovel'] = {
         'has_progress': True,
@@ -78,6 +83,8 @@ class libmelative(lib):
         'statuses':  statuses,
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
+        'score_max': 10,
+        'score_decimals': 1,
     }
     
     def __init__(self, messenger, account, userconfig):

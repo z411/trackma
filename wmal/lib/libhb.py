@@ -54,6 +54,8 @@ class libhb(lib):
         'status_finish': 2,
         'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],
         'statuses_dict': { 'currently-watching': 'Watching', 'completed': 'Completed', 'on-hold': 'On Hold', 'dropped': 'Dropped', 'plan-to-watch': 'Plan to Watch' },
+        'score_max': 10,
+        'score_decimals': 1,
     }
     
     def __init__(self, messenger, account, userconfig):
