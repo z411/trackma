@@ -198,7 +198,7 @@ class libvndb(lib):
             for item in data['items']:
                 vnid = item['vn']
                 try:
-                    vns[vnid]['my_score'] = (item['vote'] / 10)
+                    vns[vnid]['my_score'] = (item['vote'] / 10.0)
                 except KeyError:
                     # Ghost vote; ignore it
                     pass
