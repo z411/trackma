@@ -223,8 +223,15 @@ class wmal(QtGui.QMainWindow):
         self.statusBar().addWidget(self.queue_text)
         
         # Tray icon
+        tray_menu = QtGui.QMenu(self)
+        action_hide = QtGui.QAction('Show/Hide', self)
+        action_hide.triggered.connect(self.s_hide)
+        tray_menu.addAction(action_hide)
+        tray_menu.addAction(action_quit)
+        
         self.tray = QtGui.QSystemTrayIcon(self.windowIcon())
-        self.tray.activated.connect(self.s_hide)
+        self.tray.setContextMenu(tray_menu)
+        self.tray.activated.connect(self.s_tray_clicked)
         self._tray()
 
         # Connect worker signals
@@ -397,6 +404,10 @@ class wmal(QtGui.QMainWindow):
             self.hide()
         else:
             self.show()
+    
+    def s_tray_clicked(self, reason):
+        if reason == QtGui.QSystemTrayIcon.Trigger:
+            self.s_hide()
 
     def s_busy(self):
         self._enable_widgets(False)
