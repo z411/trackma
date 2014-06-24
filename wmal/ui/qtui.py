@@ -353,7 +353,7 @@ class wmal(QtGui.QMainWindow):
             self._update_row(widget, i, show)
             i += 1
 
-        widget.model().sort(0)
+        widget.sortByColumn(0, QtCore.Qt.AscendingOrder)
         
         # Update tab name with total
         tab_index = self.statuses_nums.index(status)
@@ -365,6 +365,7 @@ class wmal(QtGui.QMainWindow):
             color = QtGui.QColor(150, 150, 250)
         else:
             color = self._get_color(show)
+        
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = QtGui.QProgressBar()
         percent_widget.setRange(0, 100)
@@ -373,8 +374,8 @@ class wmal(QtGui.QMainWindow):
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( show['title'], color ))
-        widget.setItem(row, 1, ShowItem( progress_str, color ))
-        widget.setItem(row, 2, ShowItem( str(show['my_score']), color ))
+        widget.setItem(row, 1, ShowItemNum( show['my_progress'], progress_str, color ))
+        widget.setItem(row, 2, ShowItemNum( show['my_score'], str(show['my_score']), color ))
         widget.setCellWidget(row, 3, percent_widget )
         widget.setItem(row, 4, ShowItem( str(show['id']), color ))
 
@@ -648,6 +649,7 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
                 self.show_lists[status].verticalHeader().hide()
+                self.show_lists[status].setSortingEnabled(True)
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 self.show_lists[status].doubleClicked.connect(self.s_show_details)
@@ -1288,6 +1290,14 @@ class ShowItem(QtGui.QTableWidgetItem):
         #    self.setTextAlignment( alignment )
         if color:
             self.setBackgroundColor( color )
+
+class ShowItemNum(QtGui.QTableWidgetItem):
+    def __init__(self, num, text, color=None):
+        QtGui.QTableWidgetItem.__init__(self, text)
+        self.num = num
+        
+    def __lt__(self, other):
+        return self.num < other.num
 
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
