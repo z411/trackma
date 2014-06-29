@@ -92,7 +92,7 @@ def analyze(filename):
     else:
         return (None, None)
     # Get title
-    first_separator = string.find('-')
+    first_separator = string.find(' - ')
     if first_separator > 0:
         final_title = string[:first_separator].strip()
     else:
