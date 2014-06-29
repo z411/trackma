@@ -31,7 +31,7 @@ available_libs = {
 
 # Used in filename analysis
 _re_enclosers = re.compile(r"[\[\(].+?[\]\)]")
-_re_episode = re.compile(r"\b(EP)?(\d\d)(v\d)?\b")
+_re_episode = re.compile(r"\b(?:(\d{2,3})|EP(\d{1,3}))(?:v\d)?\b")
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -86,7 +86,7 @@ def analyze(filename):
     # Get episode and remove it
     m = _re_episode.search(string)
     if m:
-        final_episode = int(m.group(2))
+        final_episode = int(m.group(1) or m.group(2))
         # Remove episode from our string
         string = ''.join([ string[:m.start()], string[m.end():] ])
     else:
