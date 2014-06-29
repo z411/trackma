@@ -423,15 +423,20 @@ class Engine:
         self._emit_signal('show_deleted', show)
         
     def _search_video(self, titles, episode):
-        searchep = str(episode).zfill(2)
-        regex = r"(\[.+\])? ?([ \w\d\-,@.:;!\?]+) - (%s) " % searchep
         best_candidate = (None, 0)
 
         matcher = difflib.SequenceMatcher()
 
-        # Check over candidates and propose our best candidate
-        for candidate in utils.regex_find_files(regex, self.config['searchdir']):
-            matcher.set_seq1(candidate[1].lower())
+        # Check over video files and propose our best candidate
+        for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
+            # Use our analyze function to see what's the title and episode of the file
+            (candidate_title, candidate_episode) = utils.analyze(filename)
+
+            # Skip this file if we couldn't analyze it or it isn't the episode we want
+            if not candidate_title or candidate_episode != episode:
+                continue
+            
+            matcher.set_seq1(candidate_title.lower())
 
             # We remember to compare all titles (aliases and whatnot)
             for requested_title in titles:
@@ -442,7 +447,7 @@ class Engine:
                 # better than threshold and it's better than
                 # what we've seen yet
                 if ratio > 0.7 and ratio > best_candidate[1]:
-                    best_candidate = (candidate[0], ratio)
+                    best_candidate = (fullpath, ratio)
 
         return best_candidate[0]
     
@@ -605,16 +610,11 @@ class Engine:
         if filename:
             # Do a regex to the filename to get
             # the show title and episode number
-            reg = re.compile(r"(\[.+\])? ?([ \w\d\-,@.:;!\?]+) - ([ \d]+) ")
-            show_raw = filename.replace("_"," ").replace("v2","").strip()
-            show_match = reg.match(show_raw)
-            if not show_match:
+            (show_title, show_ep) = utils.analyze(filename)
+            if not show_title:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
                 utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], show_raw))
                 return None
-            
-            show_title = show_match.group(2).strip()
-            show_ep = int(show_match.group(3).strip())
             
             # Use difflib to see if the show title is similar to
             # one we have in the list

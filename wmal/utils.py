@@ -29,6 +29,10 @@ available_libs = {
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
 }
 
+# Used in filename analysis
+_re_enclosers = re.compile(r"[\[\(].+?[\]\)]")
+_re_episode = re.compile(r"\b(EP)?(\d\d)(v\d)?\b")
+
 def parse_config(filename, default):
     config = copy.copy(default)
 
@@ -55,9 +59,8 @@ def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
         logfile.write(msg)
     
-def regex_find_files(regex, subdirectory=''):
-    __re = re.compile(regex, re.I)
-    __re_crc = re.compile(r"[a-fA-F0-9]{8}")
+def regex_find_videos(extensions, subdirectory=''):
+    __re = re.compile(extensions, re.I)
     
     if subdirectory:
         path = os.path.expanduser(subdirectory)
@@ -66,11 +69,36 @@ def regex_find_files(regex, subdirectory=''):
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
             # Filename manipulation
-            filename_re = __re_crc.sub('', filename) # Remove CRC hash
             
-            match = __re.search(filename_re)
+            extension = os.path.splitext(filename)[1][1:]
+            match = __re.match(extension)
             if match:
-                yield (os.path.join(root, filename), match.group(2))
+                yield ( os.path.join(root, filename), filename )
+
+def analyze(filename):
+    # Remove extension
+    string = os.path.splitext(filename)[0]
+    # Remove enclosed tags - we won't need them at this point
+    string = _re_enclosers.sub('', string)
+    # Use spaces always
+    string = string.replace('_', ' ')
+    string = string.replace('.', ' ')
+    # Get episode and remove it
+    m = _re_episode.search(string)
+    if m:
+        final_episode = int(m.group(2))
+        # Remove episode from our string
+        string = ''.join([ string[:m.start()], string[m.end():] ])
+    else:
+        return (None, None)
+    # Get title
+    first_separator = string.find('-')
+    if first_separator:
+        final_title = string[:first_separator].strip()
+    else:
+        final_title = string.strip()
+
+    return (final_title, final_episode)
 
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
