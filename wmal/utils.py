@@ -92,7 +92,7 @@ def analyze(filename):
     else:
         return (None, None)
     # Get title
-    first_separator = string.find(' - ')
+    first_separator = string.rfind(' - ')
     if first_separator > 0:
         final_title = string[:first_separator].strip()
     else:
@@ -148,6 +148,8 @@ def show():
         'my_progress':  0,
         'my_status':    1,
         'my_score':     0,
+        'my_start_date': None,
+        'my_end_date':  None,
         'type':         0,
         'status':       0,
         'total':        0,
