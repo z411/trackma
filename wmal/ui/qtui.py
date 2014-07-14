@@ -339,6 +339,7 @@ class wmal(QtGui.QMainWindow):
         widget = self.show_lists[status]
         columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
         widget.clear()
+        widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
         widget.setColumnCount(len(columns))
         widget.setHorizontalHeaderLabels(columns)
@@ -352,7 +353,8 @@ class wmal(QtGui.QMainWindow):
         for show in showlist:
             self._update_row(widget, i, show)
             i += 1
-
+        
+        widget.setSortingEnabled(True)
         widget.sortByColumn(0, QtCore.Qt.AscendingOrder)
         
         # Update tab name with total
@@ -649,7 +651,6 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
                 self.show_lists[status].verticalHeader().hide()
-                self.show_lists[status].setSortingEnabled(True)
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 self.show_lists[status].doubleClicked.connect(self.s_show_details)
