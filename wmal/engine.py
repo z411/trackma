@@ -613,7 +613,7 @@ class Engine:
             (show_title, show_ep) = utils.analyze(filename)
             if not show_title:
                 self.msg.warn(self.name, 'Regex error. Check logs.')
-                utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], show_raw))
+                utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], filename))
                 return None
             
             # Use difflib to see if the show title is similar to
