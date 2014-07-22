@@ -325,20 +325,24 @@ class Engine:
         self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
         self.data_handler.queue_update(show, 'my_progress', newep)
 
+        # Emit signal
+        self._emit_signal('episode_changed', show)
+        
         # Change status if required
         if self.config['auto_status_change']:
-            if newep == 1 and self.mediainfo.get('status_start'):
-                self.set_status(show['id'], self.mediainfo['status_start'])
-            elif newep == show['total'] and self.mediainfo.get('status_finish'):
-                self.set_status(show['id'], self.mediainfo['status_finish'])
+            try:
+                if newep == 1 and self.mediainfo.get('status_start'):
+                    self.set_status(show['id'], self.mediainfo['status_start'])
+                elif newep == show['total'] and self.mediainfo.get('status_finish'):
+                    self.set_status(show['id'], self.mediainfo['status_finish'])
+            except utils.EngineError, e:
+                # Only warn about engine errors since status change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
         
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
             self.data_handler.set_show_attr(show, 'neweps', False)
-
-        # Emit signal
-        self._emit_signal('episode_changed', show)
-        
+                
         return show
     
     def set_score(self, showid, newscore):
