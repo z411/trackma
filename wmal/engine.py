@@ -592,7 +592,7 @@ class Engine:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
                     
-                    self._emit_signal('playing', self.last_show, False)
+                    self._emit_signal('playing', self.last_show, False, 0)
                     self.last_show = None
                     last_updated = False
                     last_time = 0
