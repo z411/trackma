@@ -616,7 +616,7 @@ class Engine:
             # the show title and episode number
             (show_title, show_ep) = utils.analyze(filename)
             if not show_title:
-                self.msg.warn(self.name, 'Regex error. Check logs.')
+                self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
                 utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], filename))
                 return None
             

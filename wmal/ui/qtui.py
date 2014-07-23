@@ -448,17 +448,17 @@ class wmal(QtGui.QMainWindow):
         # Block signals
         self.show_status.blockSignals(True)
 
-        # Update information
-        self.show_title.setText(show['title'])
-        self.show_progress.setValue(show['my_progress'])
-        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
-        self.show_score.setValue(show['my_score'])
-        
         # Set proper ranges
         if show['total']:
             self.show_progress.setRange(0, show['total'])
         else:
             self.show_progress.setRange(0, 5000)
+
+        # Update information
+        self.show_title.setText(show['title'])
+        self.show_progress.setValue(show['my_progress'])
+        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
+        self.show_score.setValue(show['my_score'])
             
         # Enable relevant buttons
         self.show_progress.setEnabled(True)
