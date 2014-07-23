@@ -107,6 +107,9 @@ class wmal(QtGui.QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
         
         # Build menus
+        action_play_next = QtGui.QAction('Play &Next', self)
+        action_play_next.setStatusTip('Play the next unwatched episode.')
+        action_play_next.triggered.connect(self.s_play, True)
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
@@ -135,6 +138,7 @@ class wmal(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
+        self.menu_show.addAction(action_play_next)
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_add)
         self.menu_show.addSeparator()
@@ -286,6 +290,7 @@ class wmal(QtGui.QMainWindow):
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
+        self.menuBar().setEnabled(enable)
 
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
