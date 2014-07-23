@@ -112,8 +112,15 @@ class wmal_gtk(object):
         # Menus
         mb_list = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        self.mb_play.connect("activate", self.do_play, True)
         self.mb_info = gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.do_info)
+        mb_web = gtk.MenuItem("Open web site")
+        mb_web.connect("activate", self.do_web)
+        mb_copy = gtk.MenuItem("Copy title to clipboard")
+        mb_copy.connect("activate", self.do_copytoclip)
+        mb_alt_title = gtk.MenuItem("Set alternate title...")
+        mb_alt_title.connect("activate", self.do_altname)
         self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         self.mb_delete.connect("activate", self.do_delete)
         self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -127,6 +134,10 @@ class wmal_gtk(object):
         
         mb_list.append(self.mb_play)
         mb_list.append(self.mb_info)
+        mb_list.append(mb_web)
+        mb_list.append(gtk.SeparatorMenuItem())
+        mb_list.append(mb_copy)
+        mb_list.append(mb_alt_title)
         mb_list.append(gtk.SeparatorMenuItem())
         mb_list.append(self.mb_delete)
         mb_list.append(gtk.SeparatorMenuItem())
@@ -849,8 +860,10 @@ class wmal_gtk(object):
                 path, col, cellx, celly = pthinfo
                 treeview.grab_focus()
                 treeview.set_cursor(path, col, 0)
-
+ 
                 menu = gtk.Menu()
+                mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+                mb_play.connect("activate", self.do_play, True)
                 mb_info = gtk.MenuItem("Show details...")
                 mb_info.connect("activate", self.do_info)
                 mb_web = gtk.MenuItem("Open web site")
@@ -860,13 +873,14 @@ class wmal_gtk(object):
                 mb_alt_title = gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.do_altname)
 
+                menu.append(mb_play)
                 menu.append(mb_info)
                 menu.append(mb_web)
                 menu.append(gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
-                menu.show_all()
 
+                menu.show_all()
                 menu.popup(None, None, None, event.button, event.time)
 
 class ImageTask(threading.Thread):
