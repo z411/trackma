@@ -538,7 +538,7 @@ class wmal(QtGui.QMainWindow):
                 episode = self.show_progress.value()
 
             self._busy(False)
-            self.worker_call('play_episode', self.r_generic_ready, show, episode)
+            self.worker_call('play_episode', self.r_played, show, episode)
 
     def s_retrieve(self):
         self._busy(False)
@@ -706,6 +706,22 @@ class wmal(QtGui.QMainWindow):
     def r_engine_unloaded(self, result):
         if result['success']:
             self.close()
+
+    def r_played(self, result):
+        self._unbusy()
+        self.status('Ready.')
+
+        if result['success']:
+            show = result['show']
+            played_ep = result['played_ep']
+            
+            if played_ep == (show['my_progress'] + 1):
+                reply = QtGui.QMessageBox.question(self, 'Message',
+                    'Do you want to update the show to %d?' % result['played_ep'],
+                    QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+                if reply == QtGui.QMessageBox.Yes:
+                    self.worker_call('set_episode', self.r_generic, show['id'], played_ep)
 
 
 class DetailsDialog(QtGui.QDialog):
@@ -1534,12 +1550,12 @@ class Engine_Worker(QtCore.QThread):
        
     def _play_episode(self, show, episode):
         try:
-            self.engine.play_episode(show, episode)
+            played_ep = self.engine.play_episode(show, episode)
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
 
-        return {'success': True}
+        return {'success': True, 'show': show, 'played_ep': played_ep}
 
     def _list_download(self):
         try:
