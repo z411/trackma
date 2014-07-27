@@ -410,6 +410,9 @@ class Data(object):
 
     def altname_clear(self, showid):
         del self.meta['altnames'][showid]
+
+    def altnames_get(self):
+        return self.meta['altnames']
     
     def get_show_attr(self, show, key):
         return show.get(key)

@@ -113,8 +113,14 @@ class wmal(QtGui.QMainWindow):
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
+        action_altname = QtGui.QAction('Change &alternate name...', self)
+        action_altname.setStatusTip('Set an alternate title for the tracker.')
+        action_altname.triggered.connect(self.s_altname)
         action_add = QtGui.QAction('Search/Add from Remote', self)
         action_add.triggered.connect(self.s_add)
+        action_delete = QtGui.QAction('&Delete', self)
+        action_delete.setStatusTip('Remove this show from your list.')
+        action_delete.triggered.connect(self.s_delete)
         action_send = QtGui.QAction('&Send changes', self)
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
@@ -140,7 +146,9 @@ class wmal(QtGui.QMainWindow):
         self.menu_show = menubar.addMenu('&Show')
         self.menu_show.addAction(action_play_next)
         self.menu_show.addAction(action_details)
+        self.menu_show.addAction(action_altname)
         self.menu_show.addAction(action_add)
+        self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_send)
         self.menu_show.addSeparator()
@@ -271,9 +279,9 @@ class wmal(QtGui.QMainWindow):
             event.ignore()
             self._exit()
             
-    def status(self, string):
-        self.status_text.setText(string)
-        print string
+    def status(self, message):
+        self.status_text.setText(message)
+        print message
     
     def error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
@@ -320,7 +328,7 @@ class wmal(QtGui.QMainWindow):
         else:
             self._enable_widgets(True)
     
-    def _rebuild_lists(self, showlist):
+    def _rebuild_lists(self, showlist, altnames):
         """
         Using a full showlist, rebuilds every QTreeView
 
@@ -334,12 +342,14 @@ class wmal(QtGui.QMainWindow):
             filtered_list[show['my_status']].append(show)
 
         for status in statuses_nums:
-            self._rebuild_list(status, filtered_list[status])
+            self._rebuild_list(status, filtered_list[status], altnames)
 
 
-    def _rebuild_list(self, status, showlist=None):
+    def _rebuild_list(self, status, showlist=None, altnames=None):
         if not showlist:
             showlist = self.worker.engine.filter_list(status)
+        if not altnames:
+            altnames = self.worker.engine.altnames()
 
         widget = self.show_lists[status]
         columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
@@ -356,7 +366,7 @@ class wmal(QtGui.QMainWindow):
 
         i = 0
         for show in showlist:
-            self._update_row(widget, i, show)
+            self._update_row( widget, i, show, altnames.get(show['id']) )
             i += 1
         
         widget.setSortingEnabled(True)
@@ -367,12 +377,15 @@ class wmal(QtGui.QMainWindow):
         tab_name = "%s (%d)" % (self.statuses_names[status], i)
         self.notebook.setTabText(tab_index, tab_name)
 
-    def _update_row(self, widget, row, show, is_playing=False):
+    def _update_row(self, widget, row, show, altname, is_playing=False):
         if is_playing:
             color = QtGui.QColor(150, 150, 250)
         else:
             color = self._get_color(show)
         
+        title_str = show['title']
+        if altname:
+            title_str += " [%s]" % altname
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = QtGui.QProgressBar()
         percent_widget.setRange(0, 100)
@@ -380,7 +393,7 @@ class wmal(QtGui.QMainWindow):
             percent_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
-        widget.setItem(row, 0, ShowItem( show['title'], color ))
+        widget.setItem(row, 0, ShowItem( title_str, color ))
         widget.setItem(row, 1, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_score'], str(show['my_score']), color ))
         widget.setCellWidget(row, 3, percent_widget )
@@ -540,6 +553,27 @@ class wmal(QtGui.QMainWindow):
             self._busy(False)
             self.worker_call('play_episode', self.r_played, show, episode)
 
+    def s_delete(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        reply = QtGui.QMessageBox.question(self, 'Confirmation',
+            'Are you sure you want to delete %s?' % show['title'],
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        
+        if reply == QtGui.QMessageBox.Yes:
+            self.worker_call('delete_show', self.r_generic, show)
+
+    def s_altname(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        current_altname = self.worker.engine.altname(self.selected_show_id)
+
+        new_altname, ok = QtGui.QInputDialog.getText(self, 'Alternative title',
+            'Set the new alternative title for %s (blank to remove):' % show['title'],
+            text=current_altname)
+
+        if ok:
+            self.worker.engine.altname(self.selected_show_id, str(new_altname))
+            self.ws_changed_show(show, altname=new_altname)
+
     def s_retrieve(self):
         self._busy(False)
         self.worker_call('list_download', self.r_list_retrieved)
@@ -593,11 +627,11 @@ class wmal(QtGui.QMainWindow):
         
 
     ### Worker slots
-    def ws_changed_show(self, show, is_playing=False, episode=None):
+    def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
-            self._update_row(widget, row, show, is_playing)
+            self._update_row(widget, row, show, altname, is_playing)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 delay = self.worker.engine.get_config('tracker_update_wait')
@@ -626,6 +660,7 @@ class wmal(QtGui.QMainWindow):
     def r_engine_loaded(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
+            altnames = self.worker.engine.altnames()
             
             self.notebook.blockSignals(True)
             self.show_status.blockSignals(True)
@@ -685,7 +720,7 @@ class wmal(QtGui.QMainWindow):
             self.setWindowTitle( "wMAL-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
             # Rebuild lists
-            self._rebuild_lists(showlist)
+            self._rebuild_lists(showlist, altnames)
             
             self.s_show_selected(None)
             self._update_queue_counter( len( self.worker.engine.get_queue() ) )
@@ -697,7 +732,8 @@ class wmal(QtGui.QMainWindow):
     def r_list_retrieved(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
-            self._rebuild_lists(showlist)
+            altnames = self.worker.engine.altnames()
+            self._rebuild_lists(showlist, altnames)
             
             self.status('Ready.')
             
@@ -1463,6 +1499,7 @@ class Engine_Worker(QtCore.QThread):
             'get_show_details': self._get_show_details,
             'search': self._search,
             'add_show': self._add_show,
+            'delete_show': self._delete_show,
             'unload': self._unload,
         }
 
@@ -1515,11 +1552,12 @@ class Engine_Worker(QtCore.QThread):
     def _get_list(self):
         try:
             showlist = self.engine.get_list()
+            altnames = self.engine.altnames()
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
 
-        return {'success': True, 'showlist': showlist}
+        return {'success': True, 'showlist': showlist, 'altnames': altnames}
 
     def _set_episode(self, showid, episode):
         try:
@@ -1596,6 +1634,15 @@ class Engine_Worker(QtCore.QThread):
     def _add_show(self, show):
         try:
             results = self.engine.add_show(show)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _delete_show(self, show):
+        try:
+            results = self.engine.delete_show(show)
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}

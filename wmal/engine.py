@@ -531,6 +531,12 @@ class Engine:
         else:
             return self.data_handler.altname_get(showid)
 
+    def altnames(self):
+        """
+        Gets a dictionary of all set alternative names.
+        """
+        return self.data_handler.altnames_get()
+
     def filter_list(self, status_num):
         """
         Returns a show list with the shows in the specified **status_num** status.
