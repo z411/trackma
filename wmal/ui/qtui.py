@@ -1170,8 +1170,8 @@ class SettingsDialog(QtGui.QDialog):
         engine.set_config('tracker_process',     str(self.tracker_process.text()))
         engine.set_config('tracker_update_wait', self.tracker_update_wait.value())
 
-        engine.set_config('player',     str(self.player.text()))
-        engine.set_config('searchdir',  str(self.searchdir.text()))
+        engine.set_config('player',     unicode(self.player.text()))
+        engine.set_config('searchdir',  unicode(self.searchdir.text()))
 
         if self.autoretrieve_always.isChecked():
             engine.set_config('autoretrieve', 'always')
