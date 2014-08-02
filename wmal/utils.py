@@ -31,7 +31,7 @@ available_libs = {
 
 # Used in filename analysis
 _re_enclosers = re.compile(r"[\[\(].+?[\]\)]")
-_re_episode = re.compile(r"\b(?:(\d{2,3})|EP(\d{1,3}))(?:v\d)?\b")
+_re_episode = re.compile(r"\b(?:(\d{2,3})|EP(\d{1,3}))(?:v\d)?\b", re.I)
 
 def parse_config(filename, default):
     config = copy.copy(default)
