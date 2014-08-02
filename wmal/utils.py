@@ -15,6 +15,7 @@
 #
 
 import os, re, shutil, copy
+import subprocess
 import json
 
 VERSION = '0.2'
@@ -57,7 +58,7 @@ def save_config(config_dict, filename):
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg)
+        logfile.write(msg.encode('utf-8'))
     
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -74,6 +75,18 @@ def regex_find_videos(extensions, subdirectory=''):
             match = __re.match(extension)
             if match:
                 yield ( os.path.join(root, filename), filename )
+
+def get_playing_file(players, searchdir):
+    lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+    output = lsof.communicate()[0].decode('utf-8')
+    fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
+    
+    for line in output.splitlines():
+        match = fileregex.match(line)
+        if match is not None:
+            return os.path.basename(match.group(1))
+    
+    return False
 
 def analyze(filename):
     # Remove extension
