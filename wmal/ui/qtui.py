@@ -635,11 +635,11 @@ class wmal(QtGui.QMainWindow):
         dialog.exec_()
                     
     def s_about(self):
-        QtGui.QMessageBox.about(self, 'About wMAL-qt',
-            '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
+        QtGui.QMessageBox.about(self, 'About wMAL-qt %s' % utils.VERSION,
+            '<p><b>About wMAL-qt %s</b></p><p>wMAL is an open source client for media tracking websites.</p>'
             '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
             '<p>Copyright (C) z411 - Icon by shuuichi</p>'
-            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>')
+            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>' % utils.VERSION)
 
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
