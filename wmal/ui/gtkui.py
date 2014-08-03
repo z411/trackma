@@ -192,7 +192,6 @@ class wmal_gtk(object):
         self.top_hbox.set_border_width(5)
 
         self.show_image = ImageView(100, 149)
-
         self.top_hbox.pack_start(self.show_image, False, False, 0)
         
         # Right box
@@ -254,11 +253,6 @@ class wmal_gtk(object):
         line2.pack_start(self.play_next_button, False, False, 0)
         
         top_right_box.pack_start(line2, True, False, 0)
-        
-        # Disable play button if it's not supported by the mediatype
-        if not self.engine.mediainfo['can_play']:
-            self.play_button.set_sensitive(False)
-            self.play_next_button.set_sensitive(False)
         
         # Line 3: Score
         line3 = gtk.HBox(False, 5)
@@ -354,13 +348,29 @@ class wmal_gtk(object):
     def _clear_gui(self):
         self.show_title.set_text('<span size="14000"><b>wMAL</b></span>')
         self.show_title.set_use_markup(True)
+        self.show_image.pholder_show("wMAL")
         
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
         
         self.api_icon.set_from_file(api_iconfile)
         self.api_user.set_text(self.account['username'])
+
+        self.show_score.set_value(0)
+        self.show_score.set_value(0)
+        self.show_score.set_digits(self.engine.mediainfo['score_decimals'])
+        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
         
+        can_play = self.engine.mediainfo['can_play']
+        can_update = self.engine.mediainfo['can_update']
+
+        self.play_button.set_sensitive(can_play)
+        self.play_next_button.set_sensitive(can_play)
+    
+        self.update_button.set_sensitive(can_update)
+        self.show_ep_num.set_sensitive(can_update)
+        self.add_epp_button.set_sensitive(can_update)
+
     def _create_lists(self):
         statuses_nums = self.engine.mediainfo['statuses']
         statuses_names = self.engine.mediainfo['statuses_dict']
@@ -449,6 +459,8 @@ class wmal_gtk(object):
         win.show_all()
         
     def do_reload(self, widget, account, mediatype):
+        self.selected_show = 0
+
         threading.Thread(target=self.task_reload, args=[account, mediatype]).start()
         
     def do_play(self, widget, playnext):
