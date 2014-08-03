@@ -813,16 +813,17 @@ class DetailsDialog(QtGui.QDialog):
         info_area.setLayout(info_layout)
         
         scroll_area = QtGui.QScrollArea()
-        scroll_area.setBackgroundRole(QtGui.QPalette.Dark)
+        scroll_area.setBackgroundRole(QtGui.QPalette.Light)
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
         
-        done_button = QtGui.QPushButton('Done')
-        done_button.clicked.connect(self.close)
+        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
+        bottom_buttons.setCenterButtons(True)
+        bottom_buttons.rejected.connect(self.close)
 
         main_layout.addWidget(self.show_title)
         main_layout.addWidget(scroll_area)
-        main_layout.addWidget(done_button)
+        main_layout.addWidget(bottom_buttons)
 
         self.setLayout(main_layout)
     
@@ -856,11 +857,12 @@ class DetailsDialog(QtGui.QDialog):
     def r_details_loaded(self, result):
         details = result['details']
         
-        info_string = ""
+        info_strings = []
         for line in details['extra']:
             if line[0] and line[1]:
-                info_string += "<h3>%s</h3><p>%s</p>" % (line[0], line[1])
-                
+                info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+        
+        info_string = ''.join(info_strings)
         self.show_info.setText( info_string )
 
 class AddDialog(QtGui.QDialog):
@@ -901,19 +903,16 @@ class AddDialog(QtGui.QDialog):
         self.table.currentItemChanged.connect(self.s_show_selected)
         self.table.doubleClicked.connect(self.s_show_details)
         
-        bottom_layout = QtGui.QHBoxLayout()
-        cancel_btn = QtGui.QPushButton('Cancel')
-        cancel_btn.clicked.connect(self.close)
-        self.select_btn = QtGui.QPushButton('Add')
-        self.select_btn.setEnabled(False)
-        self.select_btn.clicked.connect(self.s_add)
-        bottom_layout.addWidget(cancel_btn)
-        bottom_layout.addWidget(self.select_btn)
+        bottom_buttons = QtGui.QDialogButtonBox(self)
+        bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        bottom_buttons.addButton("Add", QtGui.QDialogButtonBox.AcceptRole)
+        bottom_buttons.accepted.connect(self.s_add)
+        bottom_buttons.rejected.connect(self.close)
 
         # Finish layout
         layout.addLayout(top_layout)
         layout.addWidget(self.table)
-        layout.addLayout(bottom_layout)
+        layout.addWidget(bottom_buttons)
         self.setLayout(layout)
     
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -996,12 +995,9 @@ class SettingsDialog(QtGui.QDialog):
         
         # Categories
         self.category_list = QtGui.QListWidget()
-        category_media = QtGui.QListWidgetItem(self.category_list)
-        category_media.setText('Media')
-        category_sync = QtGui.QListWidgetItem(self.category_list)
-        category_sync.setText('Sync')
-        category_ui = QtGui.QListWidgetItem(self.category_list)
-        category_ui.setText('User Interface')
+        category_media = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('media-playback-start'), 'Media', self.category_list)
+        category_sync = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('view-refresh'), 'Sync', self.category_list)
+        category_ui = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('window-new'), 'User Interface', self.category_list)
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
