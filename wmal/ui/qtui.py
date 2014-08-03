@@ -1064,6 +1064,7 @@ class SettingsDialog(QtGui.QDialog):
         self.autoretrieve_off = QtGui.QRadioButton('Disabled')
         self.autoretrieve_always = QtGui.QRadioButton('Always at start')
         self.autoretrieve_days = QtGui.QRadioButton('After n days')
+        self.autoretrieve_days.toggled.connect(self.s_autoretrieve_days)
         self.autoretrieve_days_n = QtGui.QSpinBox()
         self.autoretrieve_days_n.setRange(1, 100)
         g_autoretrieve_layout = QtGui.QGridLayout()
@@ -1080,9 +1081,11 @@ class SettingsDialog(QtGui.QDialog):
         self.autosend_off = QtGui.QRadioButton('Disabled')
         self.autosend_always = QtGui.QRadioButton('Immediately after every change')
         self.autosend_hours = QtGui.QRadioButton('After n hours')
+        self.autosend_hours.toggled.connect(self.s_autosend_hours)
         self.autosend_hours_n = QtGui.QSpinBox()
         self.autosend_hours_n.setRange(1, 1000)
         self.autosend_size = QtGui.QRadioButton('After the queue reaches n items')
+        self.autosend_size.toggled.connect(self.s_autosend_size)
         self.autosend_size_n = QtGui.QSpinBox()
         self.autosend_size_n.setRange(2, 20)
         self.autosend_at_exit = QtGui.QCheckBox('At exit')
@@ -1120,6 +1123,7 @@ class SettingsDialog(QtGui.QDialog):
         g_icon = QtGui.QGroupBox('Notification Icon')
         g_icon.setFlat(True)
         self.tray_icon = QtGui.QCheckBox('Show tray icon')
+        self.tray_icon.toggled.connect(self.s_tray_icon)
         self.close_to_tray = QtGui.QCheckBox('Close to tray')
         self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
         g_icon_layout = QtGui.QVBoxLayout()
@@ -1196,6 +1200,13 @@ class SettingsDialog(QtGui.QDialog):
         self.close_to_tray.setChecked(self.config['close_to_tray'])
         self.notifications.setChecked(self.config['notifications'])
 
+        self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
+        self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
+        self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
+        self.close_to_tray.setEnabled(self.tray_icon.isChecked())
+        self.notifications.setEnabled(self.tray_icon.isChecked())
+
+
     def _save(self):
         engine = self.worker.engine
 
@@ -1244,7 +1255,20 @@ class SettingsDialog(QtGui.QDialog):
     def s_save(self):
         self._save()
         self.accept()
-        
+    
+    def s_autoretrieve_days(self, checked):
+        self.autoretrieve_days_n.setEnabled(checked)
+
+    def s_autosend_hours(self, checked):
+        self.autosend_hours_n.setEnabled(checked)
+
+    def s_autosend_size(self, checked):
+        self.autosend_size_n.setEnabled(checked)
+
+    def s_tray_icon(self, checked):
+        self.close_to_tray.setEnabled(checked)
+        self.notifications.setEnabled(checked)
+
     def s_player_browse(self):
         self.player.setText( QtGui.QFileDialog.getOpenFileName(caption='Choose player executable') )
 
