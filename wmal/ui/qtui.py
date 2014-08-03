@@ -833,6 +833,9 @@ class DetailsDialog(QtGui.QDialog):
         
     def load(self, show):
         self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], show['title']) )
+        self.show_title.setTextFormat(QtCore.Qt.RichText)
+        self.show_title.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.show_title.setOpenExternalLinks(True)
         
         # Load show info
         self.worker_call('get_show_details', self.r_details_loaded, show)
