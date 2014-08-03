@@ -18,7 +18,7 @@ import os, re, shutil, copy
 import subprocess
 import json
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 datadir = os.path.dirname(__file__)
 
