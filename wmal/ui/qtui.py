@@ -1063,11 +1063,15 @@ class SettingsDialog(QtGui.QDialog):
         g_autoretrieve.setFlat(True)
         self.autoretrieve_off = QtGui.QRadioButton('Disabled')
         self.autoretrieve_always = QtGui.QRadioButton('Always at start')
-        self.autoretrieve_days = QtGui.QRadioButton('After x days')
-        g_autoretrieve_layout = QtGui.QVBoxLayout()
-        g_autoretrieve_layout.addWidget(self.autoretrieve_off)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_always)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_days)
+        self.autoretrieve_days = QtGui.QRadioButton('After n days')
+        self.autoretrieve_days_n = QtGui.QSpinBox()
+        self.autoretrieve_days_n.setRange(1, 100)
+        g_autoretrieve_layout = QtGui.QGridLayout()
+        g_autoretrieve_layout.setColumnStretch(0, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_off,      0, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_always,   1, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days,     2, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days_n,   2, 1, 1, 1)
         g_autoretrieve.setLayout(g_autoretrieve_layout)
 
         # Group: Autosend
@@ -1075,15 +1079,22 @@ class SettingsDialog(QtGui.QDialog):
         g_autosend.setFlat(True)
         self.autosend_off = QtGui.QRadioButton('Disabled')
         self.autosend_always = QtGui.QRadioButton('Immediately after every change')
-        self.autosend_hours = QtGui.QRadioButton('After x hours')
-        self.autosend_size = QtGui.QRadioButton('After the queue reaches x items')
+        self.autosend_hours = QtGui.QRadioButton('After n hours')
+        self.autosend_hours_n = QtGui.QSpinBox()
+        self.autosend_hours_n.setRange(1, 1000)
+        self.autosend_size = QtGui.QRadioButton('After the queue reaches n items')
+        self.autosend_size_n = QtGui.QSpinBox()
+        self.autosend_size_n.setRange(2, 20)
         self.autosend_at_exit = QtGui.QCheckBox('At exit')
-        g_autosend_layout = QtGui.QVBoxLayout()
-        g_autosend_layout.addWidget(self.autosend_off)
-        g_autosend_layout.addWidget(self.autosend_always)
-        g_autosend_layout.addWidget(self.autosend_hours)
-        g_autosend_layout.addWidget(self.autosend_size)
-        g_autosend_layout.addWidget(self.autosend_at_exit)
+        g_autosend_layout = QtGui.QGridLayout()
+        g_autosend_layout.setColumnStretch(0, 1)
+        g_autosend_layout.addWidget(self.autosend_off,      0, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_always,   1, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_hours,    2, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_hours_n,  2, 1, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_size,     3, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_size_n,   3, 1, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_at_exit,  4, 0, 1, 1)
         g_autosend.setLayout(g_autosend_layout)
 
         # Group: Extra
@@ -1164,6 +1175,8 @@ class SettingsDialog(QtGui.QDialog):
         else:
             self.autoretrieve_off.setChecked(True)
 
+        self.autoretrieve_days_n.setValue(engine.get_config('autoretrieve_days'))
+
         if autosend == 'always':
             self.autosend_always.setChecked(True)
         elif autosend == 'hours':
@@ -1172,6 +1185,9 @@ class SettingsDialog(QtGui.QDialog):
             self.autosend_size.setChecked(True)
         else:
             self.autosend_off.setChecked(True)
+        
+        self.autosend_hours_n.setValue(engine.get_config('autosend_hours'))
+        self.autosend_size_n.setValue(engine.get_config('autosend_size'))
 
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
         self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
@@ -1198,6 +1214,8 @@ class SettingsDialog(QtGui.QDialog):
         else:
             engine.set_config('autoretrieve', 'off')
 
+        engine.set_config('autoretrieve_days',   self.autoretrieve_days_n.value())
+
         if self.autosend_always.isChecked():
             engine.set_config('autosend', 'always')
         elif self.autosend_hours.isChecked():
@@ -1206,6 +1224,9 @@ class SettingsDialog(QtGui.QDialog):
             engine.set_config('autosend', 'size')
         else:
             engine.set_config('autosend', 'off')
+        
+        engine.set_config('autosend_hours',   self.autosend_hours_n.value())
+        engine.set_config('autosend_size',   self.autosend_size_n.value())
         
         engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
