@@ -19,6 +19,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 gtk.gdk.threads_init() # We'll use threads
+import pango
 
 import os
 import cgi
@@ -202,6 +203,7 @@ class wmal_gtk(object):
         self.show_title = gtk.Label()
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
+        self.show_title.set_ellipsize(pango.ELLIPSIZE_END)
 
         line1.pack_start(self.show_title, True, True, 0)
         
@@ -353,8 +355,14 @@ class wmal_gtk(object):
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
         
+        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (
+            utils.VERSION,
+            self.engine.api_info['name'],
+            self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
-        self.api_user.set_text(self.account['username'])
+        self.api_user.set_text("%s (%s)" % (
+            self.account['username'],
+            self.engine.api_info['mediatype']))
 
         self.show_score.set_value(0)
         self.show_score.set_value(0)
@@ -395,7 +403,10 @@ class wmal_gtk(object):
             sw.set_size_request(550, 300)
             sw.set_border_width(5)
         
-            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
+            self.show_lists[status] = ShowView(
+                    status,
+                    self.engine.mediainfo['has_progress'],
+                    self.engine.mediainfo['score_decimals'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -493,7 +504,7 @@ class wmal_gtk(object):
             self.error(e.message)
     
     def do_score(self, widget):
-        score = self.show_score.get_value_as_int()
+        score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
         except utils.wmalError, e:
@@ -647,7 +658,6 @@ class wmal_gtk(object):
         self._clear_gui()
         self._create_lists()
         self.build_all_lists()
-        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (utils.VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
         for i in self.mb_mediatype_menu.get_children():
@@ -775,7 +785,7 @@ class wmal_gtk(object):
         elif msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
-    def error(self, msg, icon=None):
+    def error(self, msg, icon=gtk.MESSAGE_ERROR):
         # Thread safe
         gobject.idle_add(self.error_push, msg, icon)
         
@@ -969,10 +979,11 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, has_progress=True):
+    def __init__(self, status, has_progress=True, decimals=0):
         gtk.TreeView.__init__(self)
         
         self.has_progress = has_progress
+        self.decimals = decimals
         self.status_filter = status
         
         self.set_enable_search(True)
@@ -1024,7 +1035,7 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_expand(False)
  
         # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(str, str, str, int, int, str)
+        self.store = gtk.ListStore(str, str, str, str, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
@@ -1058,7 +1069,9 @@ class ShowView(gtk.TreeView):
         if altname:
             title_str += " [%s]" % altname
 
-        row = [show['id'], title_str, episodes_str, show['my_score'], progress, self._get_color(show)]
+        score_str = "%0.*f" % (self.decimals, show['my_score'])
+
+        row = [show['id'], title_str, episodes_str, score_str, progress, self._get_color(show)]
         self.store.append(row)
         
     def append_finish(self):
