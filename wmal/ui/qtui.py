@@ -107,7 +107,7 @@ class wmal(QtGui.QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
         
         # Build menus
-        action_play_next = QtGui.QAction('Play &Next', self)
+        action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Play &Next', self)
         action_play_next.setStatusTip('Play the next unwatched episode.')
         action_play_next.triggered.connect(self.s_play, True)
         action_details = QtGui.QAction('Show &details...', self)
@@ -116,28 +116,29 @@ class wmal(QtGui.QMainWindow):
         action_altname = QtGui.QAction('Change &alternate name...', self)
         action_altname.setStatusTip('Set an alternate title for the tracker.')
         action_altname.triggered.connect(self.s_altname)
-        action_add = QtGui.QAction('Search/Add from Remote', self)
+        action_add = QtGui.QAction(QtGui.QIcon.fromTheme('edit-find'), 'Search/Add from Remote', self)
         action_add.triggered.connect(self.s_add)
-        action_delete = QtGui.QAction('&Delete', self)
+        action_delete = QtGui.QAction(QtGui.QIcon.fromTheme('edit-delete'), '&Delete', self)
         action_delete.setStatusTip('Remove this show from your list.')
         action_delete.triggered.connect(self.s_delete)
-        action_send = QtGui.QAction('&Send changes', self)
-        action_send.setStatusTip('Upload any changes made to the list immediately.')
-        action_send.triggered.connect(self.s_send)
-        action_quit = QtGui.QAction('&Quit', self)
+        action_quit = QtGui.QAction(QtGui.QIcon.fromTheme('application-exit'), '&Quit', self)
         action_quit.setStatusTip('Exit wMAL.')
         action_quit.triggered.connect(self._exit)
 
-        action_reload = QtGui.QAction('Switch &Account', self)
-        action_reload.setStatusTip('Switch to a different account.')
-        action_reload.triggered.connect(self.s_switch_account)
+        action_send = QtGui.QAction('&Send changes', self)
+        action_send.setStatusTip('Upload any changes made to the list immediately.')
+        action_send.triggered.connect(self.s_send)
         action_retrieve = QtGui.QAction('&Redownload list', self)
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
+        
+        action_reload = QtGui.QAction('Switch &Account', self)
+        action_reload.setStatusTip('Switch to a different account.')
+        action_reload.triggered.connect(self.s_switch_account)
         action_settings = QtGui.QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
-        action_about = QtGui.QAction('About...', self)
+        action_about = QtGui.QAction(QtGui.QIcon.fromTheme('help-about'), 'About...', self)
         action_about.triggered.connect(self.s_about)
         action_about_qt = QtGui.QAction('About Qt...', self)
         action_about_qt.triggered.connect(self.s_about_qt)
@@ -147,18 +148,19 @@ class wmal(QtGui.QMainWindow):
         self.menu_show.addAction(action_play_next)
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_altname)
+        self.menu_show.addSeparator()
         self.menu_show.addAction(action_add)
         self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
-        self.menu_show.addAction(action_send)
-        self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
+        menu_list = menubar.addMenu('&List')
+        menu_list.addAction(action_send)
+        menu_list.addAction(action_retrieve)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
-        menu_options.addAction(action_retrieve)
         menu_options.addSeparator()
         menu_options.addAction(action_settings)
         menu_help = menubar.addMenu('&Help')
@@ -575,12 +577,29 @@ class wmal(QtGui.QMainWindow):
             self.ws_changed_show(show, altname=new_altname)
 
     def s_retrieve(self):
-        self._busy(False)
-        self.worker_call('list_download', self.r_list_retrieved)
+        queue = self.worker.engine.get_queue()
+
+        if queue:
+            reply = QtGui.QMessageBox.question(self, 'Confirmation',
+                'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No, QtGui.QMessageBox.Cancel)
+            
+            if reply == QtGui.QMessageBox.Yes:
+                self.s_send(True)
+            elif reply == QtGui.QMessageBox.No:
+                self._busy(True)
+                self.worker_call('list_download', self.r_list_retrieved)
+        else:
+            self._busy(True)
+            self.worker_call('list_download', self.r_list_retrieved)
+
     
-    def s_send(self):
+    def s_send(self, retrieve=False):
         self._busy(True)
-        self.worker_call('list_upload', self.r_generic_ready)
+        if retrieve:
+            self.worker_call('list_upload', self.s_retrieve)
+        else:
+            self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
         self.accountman_widget.setModal(True)
