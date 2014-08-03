@@ -1302,6 +1302,7 @@ class AccountDialog(QtGui.QDialog):
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.doubleClicked.connect(self.select)
         
         bottom_layout = QtGui.QHBoxLayout()
         self.remember_chk = QtGui.QCheckBox('Remember')
