@@ -480,12 +480,16 @@ class Engine:
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by API.')
-
+        if not self.config['searchdir']:
+            raise utils.EngineError('Media directory is not set.')
+        if not utils.dir_exists(self.config['searchdir']):
+            raise utils.EngineError('The set media directory doesn\'t exist.')
+ 
         try:
             playep = int(playep)
         except ValueError:
             raise utils.EngineError('Episode must be numeric.')
-            
+           
         if show:
             playing_next = False
             if not playep:
