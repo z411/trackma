@@ -184,7 +184,12 @@ class wmal_cmd(cmd.Cmd):
         
         """
         if(arg):
-            entries = self.engine.search(arg)
+            try:
+                entries = self.engine.search(arg)
+            except utils.wmalError, e:
+                self.display_error(e)
+                return
+            
             for i, entry in enumerate(entries, start=1):
                 print "%d: (%s) %s" % (i, entry['type'], entry['title'])
             do_update = raw_input("Choose show to add (blank to cancel): ")
