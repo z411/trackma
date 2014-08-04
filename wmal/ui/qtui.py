@@ -904,8 +904,8 @@ class AddDialog(QtGui.QDialog):
         self.table.doubleClicked.connect(self.s_show_details)
         
         bottom_buttons = QtGui.QDialogButtonBox(self)
-        self.select_btn = bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        bottom_buttons.addButton("Add", QtGui.QDialogButtonBox.AcceptRole)
+        bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        self.select_btn = bottom_buttons.addButton("Add", QtGui.QDialogButtonBox.AcceptRole)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
