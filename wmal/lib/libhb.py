@@ -182,6 +182,7 @@ class libhb(lib):
             infolist = list()
             for show in shows:
                 info = self._parse_info(show)
+                info['my_status'] = 'currently-watching' # TODO : Default to watching; this should be changeable
                 infolist.append(info)
                 
             self._emit_signal('show_info_changed', infolist)
