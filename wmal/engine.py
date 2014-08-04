@@ -390,14 +390,17 @@ class Engine:
         if not self.mediainfo.get('can_status'):
             raise utils.EngineError('Operation not supported by API.')
         
-        # Check for the correctness of the score
         try:
             newstatus = int(newstatus)
         except ValueError:
-            raise utils.EngineError('Status must be numeric.')
+            pass # It's not necessary for it to be an int
         
-        # Get the show and update it
+        # Check if the status is valid
         _statuses = self.mediainfo['statuses_dict']
+        if newstatus not in _statuses.keys():
+            raise utils.EngineError('Invalid status.')
+            
+        # Get the show and update it
         show = self.get_show_info(showid)
         # More checks
         if show['my_status'] == newstatus:
