@@ -257,7 +257,8 @@ class wmal(QtGui.QMainWindow):
         self.worker.playing_show.connect(self.ws_changed_show)
         
         # Show main window
-        self.show()
+        if not (self.config['show_tray'] and self.config['start_in_tray']):
+            self.show()
         
         # Start loading engine
         self.started = True
@@ -1125,10 +1126,12 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_icon = QtGui.QCheckBox('Show tray icon')
         self.tray_icon.toggled.connect(self.s_tray_icon)
         self.close_to_tray = QtGui.QCheckBox('Close to tray')
+        self.start_in_tray = QtGui.QCheckBox('Start minimized to tray')
         self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
         g_icon_layout = QtGui.QVBoxLayout()
         g_icon_layout.addWidget(self.tray_icon)
         g_icon_layout.addWidget(self.close_to_tray)
+        g_icon_layout.addWidget(self.start_in_tray)
         g_icon_layout.addWidget(self.notifications)
         g_icon.setLayout(g_icon_layout)
 
@@ -1198,12 +1201,14 @@ class SettingsDialog(QtGui.QDialog):
 
         self.tray_icon.setChecked(self.config['show_tray'])
         self.close_to_tray.setChecked(self.config['close_to_tray'])
+        self.start_in_tray.setChecked(self.config['start_in_tray'])
         self.notifications.setChecked(self.config['notifications'])
 
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
         self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
         self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
         self.close_to_tray.setEnabled(self.tray_icon.isChecked())
+        self.start_in_tray.setEnabled(self.tray_icon.isChecked())
         self.notifications.setEnabled(self.tray_icon.isChecked())
 
 
@@ -1246,6 +1251,7 @@ class SettingsDialog(QtGui.QDialog):
 
         self.config['show_tray'] = self.tray_icon.isChecked()
         self.config['close_to_tray'] = self.close_to_tray.isChecked()
+        self.config['start_in_tray'] = self.start_in_tray.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
 
         utils.save_config(self.config, self.configfile)
@@ -1267,6 +1273,7 @@ class SettingsDialog(QtGui.QDialog):
 
     def s_tray_icon(self, checked):
         self.close_to_tray.setEnabled(checked)
+        self.start_in_tray.setEnabled(checked)
         self.notifications.setEnabled(checked)
 
     def s_player_browse(self):
