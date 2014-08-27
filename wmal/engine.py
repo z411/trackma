@@ -50,7 +50,8 @@ class Engine:
     msg = None
     loaded = False
     playing = False
-    last_show = None
+    last_show_tuple = None
+    last_filename = None
     
     name = 'Engine'
     
@@ -554,7 +555,6 @@ class Engine:
     
     def tracker(self, interval, wait):
         last_code = None
-        self.last_show = None
         last_time = 0
         last_updated = False
         wait_s = wait * 60
@@ -566,21 +566,19 @@ class Engine:
             if show_tuple:
                 (show, episode) = show_tuple
                 
-                if not self.last_show or show['id'] != self.last_show['id'] or episode != last_episode:
+                if not self.last_show_tuple or show['id'] != self.last_show_tuple[0]['id'] or episode != self.last_show_tuple[1]:
                     # There's a new show detected, so
                     # let's save the show information and
                     # the time we detected it first
                     
                     # But if we're watching a new show, let's make sure turn off
                     # the Playing flag on that one first
-                    if self.last_show and self.last_show != show:
-                        self._emit_signal('playing', self.last_show, False, 0)
+                    if self.last_show_tuple and self.last_show_tuple[0] != show:
+                        self._emit_signal('playing', self.last_show_tuple[0], False, 0)
  
-
-                    self.last_show = show
+                    self.last_show_tuple = (show, episode)
                     self._emit_signal('playing', show, True, episode)
  
-                    last_episode = episode
                     last_time = time.time()
                     last_updated = False
                 
@@ -595,29 +593,29 @@ class Engine:
                             
                             last_updated = True
                         else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (self.last_show['title'], episode, wait_s-timedif))
+                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, wait_s-timedif))
                     else:
                         # We shouldn't update to this episode!
-                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % self.last_show['title'])
+                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
                         last_updated = True
                 else:
                     # The episode was updated already. do nothing
                     pass
             elif last_code != code:
-                # There isn't any show playing right now
-                # Check if the player was closed
-                if code == 1 and self.last_show:
-                    if not last_updated:
-                        self.msg.info(self.name, 'Player was closed before update.')
-                    
-                    self._emit_signal('playing', self.last_show, False, 0)
-                    self.last_show = None
-                    last_updated = False
-                    last_time = 0
+                # React depending on code
+                if code == 1 and self.last_show_tuple and not last_updated:
+                    self.msg.info(self.name, 'Player was closed before update.')
                 elif code == 2:
                     self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
                 elif code == 3:
                     self.msg.warn(self.name, 'Found player but show not in list.')
+                
+                # Clear any show previously playing
+                if self.last_show_tuple:
+                    self._emit_signal('playing', self.last_show_tuple[0], False, 0)
+                    last_updated = False
+                    last_time = 0
+                    self.last_show_tuple = None
             
             last_code = code
             
@@ -632,6 +630,12 @@ class Engine:
         filename = utils.get_playing_file(self.config['tracker_process'], self.config['searchdir'])
         
         if filename:
+            if filename == self.last_filename:
+                # It's the exact same filename, there's no need to do the processing again
+                return (4, self.last_show_tuple)
+            
+            self.last_filename = filename
+
             # Do a regex to the filename to get
             # the show title and episode number
             (show_title, show_ep) = utils.analyze(filename)
@@ -660,8 +664,8 @@ class Engine:
                 return (0, (playing_show, show_ep))
             else:
                 return (3, None) # Show not in list
-        
-        return (1, None) # Not playing
+        else:
+            return (1, None) # Not playing
     
     def list_download(self):
         """Asks the data handler to download the remote list."""
