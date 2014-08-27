@@ -657,8 +657,6 @@ class wmal(QtGui.QMainWindow):
                 if episode == (show['my_progress'] + 1):
                     delay = self.worker.engine.get_config('tracker_update_wait')
                     self.tray.showMessage('wMAL Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
-                else:
-                    self.tray.showMessage('wMAL Tracker', "Playing %s %s. Will not update." % (show['title'], episode))
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
