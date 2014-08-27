@@ -668,6 +668,7 @@ class Engine:
             else:
                 return (3, None) # Show not in list
         else:
+            self.last_filename = None
             return (1, None) # Not playing
     
     def list_download(self):
