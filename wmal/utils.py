@@ -245,6 +245,7 @@ keymap_defaults = {
 gtk_defaults = {
     'show_tray': True,
     'close_to_tray': True,
+    'start_in_tray': False,
 }
 
 qt_defaults = {

@@ -299,7 +299,7 @@ class wmal_gtk(object):
 
         self.top_hbox.pack_start(top_right_box, True, True, 0)
         vbox.pack_start(self.top_hbox, False, False, 0)
-        
+
         # Notebook for lists
         self.notebook = gtk.Notebook()
         self.notebook.set_tab_pos(gtk.POS_TOP)
@@ -317,6 +317,8 @@ class wmal_gtk(object):
         self.statusbar = gtk.Statusbar()
         self.statusbar.push(0, 'wMAL-gtk ' + utils.VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
+
+        vbox.show_all()
         
         # Status icon
         self.statusicon = gtk.StatusIcon()
@@ -344,7 +346,13 @@ class wmal_gtk(object):
             self.show_image.pholder_show("PIL library\nnot available")
 
         self.allow_buttons(False)
-        self.main.show_all()
+        
+        # Don't show the main dialog if start in tray option is set
+        if self.config['show_tray'] and self.config['start_in_tray']:
+            self.hidden = True
+        else:
+            self.main.show()
+
         self.start_engine()
     
     def _clear_gui(self):
@@ -1557,11 +1565,15 @@ class Settings(gtk.Window):
         
         self.chk_show_tray = gtk.CheckButton('Show Tray Icon')
         self.chk_close_to_tray = gtk.CheckButton('Close to Tray')
+        self.chk_start_in_tray = gtk.CheckButton('Start Minimized to Tray')
         self.chk_close_to_tray.set_sensitive(False)
+        self.chk_start_in_tray.set_sensitive(False)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
+        self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_start_in_tray)
         line6 = gtk.VBox(False, 5)
         line6.pack_start(self.chk_show_tray, False, False, 0)
         line6.pack_start(self.chk_close_to_tray, False, False, 0)
+        line6.pack_start(self.chk_start_in_tray, False, False, 0)
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
@@ -1609,6 +1621,7 @@ class Settings(gtk.Window):
         """GTK Interface Configuration"""
         self.chk_show_tray.set_active(self.config['show_tray'])
         self.chk_close_to_tray.set_active(self.config['close_to_tray'])
+        self.chk_start_in_tray.set_active(self.config['start_in_tray'])
     
     def save_config(self):
         """Engine Configuration"""
@@ -1647,8 +1660,10 @@ class Settings(gtk.Window):
         
         if self.chk_show_tray.get_active():
             self.config['close_to_tray'] = self.chk_close_to_tray.get_active()
+            self.config['start_in_tray'] = self.chk_start_in_tray.get_active()
         else:
             self.config['close_to_tray'] = False
+            self.config['start_in_tray'] = False
         
         utils.save_config(self.config, self.configfile)
     
