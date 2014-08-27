@@ -628,7 +628,7 @@ class Engine:
     def track_process(self):
         if self.playing:
             # Don't do anything if the engine is busy playing a file
-            return None
+            return (1, None)
         
         filename = utils.get_playing_file(self.config['tracker_process'], self.config['searchdir'])
         
