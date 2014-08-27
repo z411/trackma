@@ -553,6 +553,7 @@ class Engine:
         return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
     
     def tracker(self, interval, wait):
+        last_code = None
         self.last_show = None
         last_time = 0
         last_updated = False
@@ -560,10 +561,10 @@ class Engine:
         
         while True:
             # This runs the tracker and returns the playing show, if any
-            result = self.track_process()
-            
-            if result:
-                (show, episode) = result
+            (code, show_tuple) = self.track_process()
+
+            if show_tuple:
+                (show, episode) = show_tuple
                 
                 if not self.last_show or show['id'] != self.last_show['id'] or episode != last_episode:
                     # There's a new show detected, so
@@ -602,10 +603,10 @@ class Engine:
                 else:
                     # The episode was updated already. do nothing
                     pass
-            else:
+            elif last_code != code:
                 # There isn't any show playing right now
                 # Check if the player was closed
-                if self.last_show:
+                if code == 1 and self.last_show:
                     if not last_updated:
                         self.msg.info(self.name, 'Player was closed before update.')
                     
@@ -613,6 +614,12 @@ class Engine:
                     self.last_show = None
                     last_updated = False
                     last_time = 0
+                elif code == 2:
+                    self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
+                elif code == 3:
+                    self.msg.warn(self.name, 'Found player but show not in list.')
+            
+            last_code = code
             
             # Wait for the interval before running check again
             time.sleep(interval)
@@ -629,9 +636,7 @@ class Engine:
             # the show title and episode number
             (show_title, show_ep) = utils.analyze(filename)
             if not show_title:
-                self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-                utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], filename))
-                return None
+                return (2, None) # Format not recognized
             
             # Use difflib to see if the show title is similar to
             # one we have in the list
@@ -652,11 +657,11 @@ class Engine:
             
             playing_show = highest_ratio[0]
             if highest_ratio[1] > 0.7:
-                return (playing_show, show_ep)
+                return (0, (playing_show, show_ep))
             else:
-                self.msg.warn(self.name, 'Found player but show not in list.')
+                return (3, None) # Show not in list
         
-        return None
+        return (1, None) # Not playing
     
     def list_download(self):
         """Asks the data handler to download the remote list."""
