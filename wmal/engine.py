@@ -554,14 +554,14 @@ class Engine:
         return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
     
     def tracker(self, interval, wait):
-        last_code = None
+        last_state = None
         last_time = 0
         last_updated = False
         wait_s = wait * 60
         
         while True:
             # This runs the tracker and returns the playing show, if any
-            (code, show_tuple) = self.track_process()
+            (state, show_tuple) = self.track_process()
 
             if show_tuple:
                 (show, episode) = show_tuple
@@ -601,13 +601,16 @@ class Engine:
                 else:
                     # The episode was updated already. do nothing
                     pass
-            elif last_code != code:
-                # React depending on code
-                if code == 1 and self.last_show_tuple and not last_updated:
+            elif last_state != state:
+                # React depending on state
+                # 1 : No video is playing anymroe
+                # 2 : There's a new video playing but the regex didn't recognize the format
+                # 3 : There's a new video playing but an associated show wasn't found
+                if state == 1 and self.last_show_tuple and not last_updated:
                     self.msg.info(self.name, 'Player was closed before update.')
-                elif code == 2:
+                elif state == 2:
                     self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-                elif code == 3:
+                elif state == 3:
                     self.msg.warn(self.name, 'Found player but show not in list.')
                 
                 # Clear any show previously playing
@@ -617,7 +620,7 @@ class Engine:
                     last_time = 0
                     self.last_show_tuple = None
             
-            last_code = code
+            last_state = state
             
             # Wait for the interval before running check again
             time.sleep(interval)
