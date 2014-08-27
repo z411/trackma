@@ -781,7 +781,7 @@ class wmal_gtk(object):
         # Thread safe
         print "%s: %s" % (classname, msg)
         if msgtype == messenger.TYPE_WARN:
-            self.error("Warning: %s" % msg, gtk.MESSAGE_WARNING)
+            gobject.idle_add(self.status_push, "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
