@@ -114,9 +114,9 @@ class wmal_cmd(cmd.Cmd):
         sort - Change sort
         
         Usage: sort <sort type>
-        Available types: id, title, my_progress, episodes
+        Available types: id, title, my_progress, total, my_score
         """
-        sorts = ('id', 'title', 'my_progress', 'total')
+        sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
         if arg in sorts:
             self.sort = arg
         else:
@@ -441,11 +441,12 @@ class wmal_cmd(cmd.Cmd):
         col_id_length = 7
         col_title_length = 5
         col_episodes_length = 9
+        col_score_length = 6
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
-        max_title_length = width - col_id_length - col_episodes_length - 5
+        max_title_length = width - col_id_length - col_episodes_length - col_score_length - 5
         
         # Find the widest title so we can adjust the title column
         for show in showlist:
@@ -458,9 +459,10 @@ class wmal_cmd(cmd.Cmd):
                     col_title_length = len(show['title'])
             
         # Print header
-        print "| {0:{1}} {2:{3}}|".format(
+        print "| {0:{1}} {2:{3}} {4:{5}} |".format(
                 'Title',    col_title_length,
-                'Progress', col_episodes_length)
+                'Progress', col_episodes_length,
+                'Score',    col_score_length)
         
         # List shows
         for show in showlist:
@@ -479,11 +481,11 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}}|".format(
+            print "| {0}{1} {2:{3}} {4:^{5}} |".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
-                episodes_str,
-                col_episodes_length)
+                episodes_str, col_episodes_length,
+                show['my_score'], col_score_length)
         
         # Print result count
         print '%d results' % len(showlist)
