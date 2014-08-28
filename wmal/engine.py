@@ -23,6 +23,7 @@ import difflib
 import threading
 import time
 import webbrowser
+import shlex
 
 import messenger
 import data
@@ -511,8 +512,10 @@ class Engine:
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 self.playing = True
+                arg_list = shlex.split(self.config['player'])
+                arg_list.append(filename)
                 try:
-                    subprocess.call([self.config['player'], filename])
+                    subprocess.call(arg_list)
                 except OSError:
                     raise utils.EngineError('Player not found, check your config.json')
                 self.playing = False
