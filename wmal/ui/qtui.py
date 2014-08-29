@@ -552,9 +552,6 @@ class wmal(QtGui.QMainWindow):
             episode = self.show_progress.value() + 1
             if not play_next:
                 episode = self.show_progress.value()
-            
-            print episode
-            print play_next
 
             self._busy(False)
             self.worker_call('play_episode', self.r_played, show, episode)
