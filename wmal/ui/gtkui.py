@@ -1391,28 +1391,39 @@ class InfoDialog(gtk.Window):
     def task_load(self):
         # Thread to ask the engine for show details
         
-        details = self.engine.get_show_details(self.show)
+        try:
+            self.details = self.engine.get_show_details(self.show)
+        except utils.wmalError, e:
+            self.details = None
+            self.details_e = e
  
-        gobject.idle_add(self._done, details)
+        gobject.idle_add(self._done)
     
-    def _done(self, details):
-        # Put the returned details into the lines VBox
-        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(details['title'])))
-        self.w_title.set_use_markup(True)
-
-        detail = list()
-        for line in details['extra']:
-            if line[0] and line[1]:
-                detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+    def _done(self):
+        if self.details:
+            # Put the returned details into the lines VBox
+            self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(self.details['title'])))
+            self.w_title.set_use_markup(True)
+    
+            detail = list()
+            for line in self.details['extra']:
+                if line[0] and line[1]:
+                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+    
+            self.w_content.set_text("\n\n".join(detail))
+            self.w_content.set_size_request(340, -1)
+    
+            self.show_all()
+            self.set_position(gtk.WIN_POS_CENTER)
+        else:
+            self.w_title.set_text('Error while getting details.')
+            if self.details_e:
+                self.w_content.set_text(self.details_e.message)
 
         self.w_content.set_alignment(0, 0)
-        self.w_content.set_text("\n\n".join(detail))
         self.w_content.set_line_wrap(True)
         self.w_content.set_use_markup(True)
         self.w_content.set_size_request(340, -1)
-
-        self.show_all()
-        self.set_position(gtk.WIN_POS_CENTER)
 
     def do_close(self, widget):
         self.destroy()

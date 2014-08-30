@@ -379,8 +379,13 @@ class wMAL_urwid(object):
         show = self.engine.get_show_info(showid)
 
         self.status("Getting show details...")
-        details = self.engine.get_show_details(show)
 
+        try:
+            details = self.engine.get_show_details(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+            return
+ 
         title = urwid.Text( ('info_title', show['title']), 'center', 'any')
         widgets = []
         for line in details['extra']:

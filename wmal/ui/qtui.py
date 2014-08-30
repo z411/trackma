@@ -857,15 +857,18 @@ class DetailsDialog(QtGui.QDialog):
         self.show_image.setPixmap( QtGui.QPixmap( filename ) )
     
     def r_details_loaded(self, result):
-        details = result['details']
+        if result['success']:
+            details = result['details']
         
-        info_strings = []
-        for line in details['extra']:
-            if line[0] and line[1]:
-                info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+            info_strings = []
+            for line in details['extra']:
+                if line[0] and line[1]:
+                    info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
         
-        info_string = ''.join(info_strings)
-        self.show_info.setText( info_string )
+            info_string = ''.join(info_strings)
+            self.show_info.setText( info_string )
+        else:
+            self.show_info.setText( 'There was an error while getting details.' )
 
 class AddDialog(QtGui.QDialog):
     worker = None

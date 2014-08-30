@@ -154,8 +154,13 @@ class wmal_cmd(cmd.Cmd):
     
     def do_info(self, arg):
         if(arg):
-            show = self.engine.get_show_info_title(arg)
-            details = self.engine.get_show_details(show)
+            try:
+                show = self.engine.get_show_info_title(arg)
+                details = self.engine.get_show_details(show)
+            except utils.wmalError, e:
+                self.display_error(e)
+                return
+
             print "Title: %s" % details['title']
             for line in details['extra']:
                 print "%s: %s" % line
