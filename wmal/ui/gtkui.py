@@ -1411,6 +1411,7 @@ class InfoDialog(gtk.Window):
                     detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
     
             self.w_content.set_text("\n\n".join(detail))
+            self.w_content.set_use_markup(True)
             self.w_content.set_size_request(340, -1)
     
             self.show_all()
@@ -1422,7 +1423,6 @@ class InfoDialog(gtk.Window):
 
         self.w_content.set_alignment(0, 0)
         self.w_content.set_line_wrap(True)
-        self.w_content.set_use_markup(True)
         self.w_content.set_size_request(340, -1)
 
     def do_close(self, widget):
