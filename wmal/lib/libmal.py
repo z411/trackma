@@ -136,6 +136,7 @@ class libmal(lib):
         parser.entity['ndash'] = '-'
         parser.entity['mdash'] = '—'
         parser.entity['hellip'] = '…'
+        parser.entity['alpha'] = 'α'
         
         return parser
     
