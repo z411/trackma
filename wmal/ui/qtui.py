@@ -549,7 +549,7 @@ class wmal(QtGui.QMainWindow):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            episode = self.show_progress.value() + 1
+            episode = 0 # Engine plays next unwatched episode
             if not play_next:
                 episode = self.show_progress.value()
 
