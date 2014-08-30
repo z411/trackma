@@ -885,8 +885,9 @@ class AddDialog(QtGui.QDialog):
         # Create top layout
         top_layout = QtGui.QHBoxLayout()
         search_lbl = QtGui.QLabel('Search terms:')
-        self.search_txt = QtGui.QLineEdit()
+        self.search_txt = QtGui.QLineEdit(self)
         self.search_txt.returnPressed.connect(self.s_search)
+        self.search_txt.setFocus()
         self.search_btn = QtGui.QPushButton('Search')
         self.search_btn.clicked.connect(self.s_search)
         top_layout.addWidget(search_lbl)
@@ -975,6 +976,11 @@ class AddDialog(QtGui.QDialog):
                 self.table.setItem(i, 2, ShowItem(str(res['total'])))
 
                 i += 1
+        else:
+            self.table.setRowCount(0)
+
+        self.search_btn.setEnabled(True)
+        self.table.setEnabled(True)
     
     def r_added(self, result):
         if result['success']:

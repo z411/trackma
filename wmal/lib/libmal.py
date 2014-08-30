@@ -234,7 +234,7 @@ class libmal(lib):
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
         except (ET.ParseError, IOError), e:
-            raise utils.APIError(repr(e.message))
+            raise utils.APIError("Search error: %s" % repr(e.message))
         
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':

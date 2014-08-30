@@ -429,7 +429,12 @@ class wMAL_urwid(object):
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)
         if data:
-            shows = self.engine.search(data)
+            try:
+                shows = self.engine.search(data)
+            except utils.wmalError, e:
+                self.error(e.message)
+                return
+
             if len(shows) > 0:
                 self.status("Ready.")
                 self.dialog = AddDialog(self.mainloop, self.engine, showlist=shows, width=('relative', 80))

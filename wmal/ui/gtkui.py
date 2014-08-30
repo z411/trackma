@@ -1864,7 +1864,13 @@ class ShowSearch(gtk.Window):
         
     def task_search(self):
         self.allow_buttons(False)
-        self.entries = self.engine.search(self.searchtext.get_text())
+
+        try:
+            self.entries = self.engine.search(self.searchtext.get_text())
+        except utils.APIError, e:
+            self.entries = []
+            self.error(e.message)
+
         self.showdict = dict()
 
         gtk.threads_enter()
