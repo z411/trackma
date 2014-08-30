@@ -109,7 +109,7 @@ class wmal(QtGui.QMainWindow):
         # Build menus
         action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Play &Next', self)
         action_play_next.setStatusTip('Play the next unwatched episode.')
-        action_play_next.triggered.connect(self.s_play, True)
+        action_play_next.triggered.connect(lambda: self.s_play(True))
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
@@ -201,9 +201,9 @@ class wmal(QtGui.QMainWindow):
         self.show_progress_btn = QtGui.QPushButton('Update')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QtGui.QPushButton('Play')
-        self.show_play_btn.clicked.connect(self.s_play, False)
+        self.show_play_btn.clicked.connect(lambda: self.s_play(False))
         self.show_play_next_btn = QtGui.QPushButton('Next')
-        self.show_play_next_btn.clicked.connect(self.s_play, True)
+        self.show_play_next_btn.clicked.connect(lambda: self.s_play(True))
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QDoubleSpinBox()
         self.show_score_btn = QtGui.QPushButton('Set')
@@ -549,7 +549,7 @@ class wmal(QtGui.QMainWindow):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            episode = None
+            episode = self.show_progress.value() + 1
             if not play_next:
                 episode = self.show_progress.value()
 
