@@ -296,7 +296,11 @@ class libmal(lib):
 
         itemids = [ show['id'] for show in itemlist ]
 
-        reslist = [ resultdict[itemid] for itemid in itemids ]
+        try:
+            reslist = [ resultdict[itemid] for itemid in itemids ]
+        except KeyError:
+            raise utils.APIError('There was a problem getting the show details.')
+
         return reslist
 
     def _parse_anime(self, root):
