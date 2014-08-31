@@ -341,22 +341,7 @@ class Engine:
             except utils.EngineError, e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
-
-        # Change dates if required
-        if self.config['auto_date_change'] and self.mediainfo.get('can_date'):
-            start_date = finish_date = None
-            
-            try:
-                if newep == 1:
-                    start_date = datetime.date.today()
-                elif newep == show['total']:
-                    finish_date = datetime.date.today()
-
-                self.set_dates(show['id'], start_date, finish_date)
-            except utils.EngineError, e:
-                # Only warn about engine errors since date change here is not crtical
-                self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
-        
+       
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
             self.data_handler.set_show_attr(show, 'neweps', False)
@@ -453,6 +438,21 @@ class Engine:
         # Emit signal
         self._emit_signal('status_changed', show, old_status)
         
+        # Change dates if required
+        if self.config['auto_date_change'] and self.mediainfo.get('can_date'):
+            start_date = finish_date = None
+            
+            try:
+                if self.mediainfo.get('status_start') and newstatus == self.mediainfo.get('status_start'):
+                    start_date = datetime.date.today()
+                elif self.mediainfo.get('status_finish') and newstatus == self.mediainfo.get('status_finish'):
+                    finish_date = datetime.date.today()
+
+                self.set_dates(show['id'], start_date, finish_date)
+            except utils.EngineError, e:
+                # Only warn about engine errors since date change here is not crtical
+                self.msg.warn(self.name, 'Updated status but dates weren\'t changed: %s' % e)
+ 
         return show
     
     def delete_show(self, show):
