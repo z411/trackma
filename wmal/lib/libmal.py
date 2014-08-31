@@ -20,6 +20,7 @@ from wmal.lib.lib import lib
 import wmal.utils as utils
 
 import urllib, urllib2
+import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
@@ -53,6 +54,7 @@ class libmal(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'can_date': True,
         'status_start': 1,
         'status_finish': 2,
         'statuses':  [1, 2, 3, 4, 6],
@@ -68,6 +70,7 @@ class libmal(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+        'can_date': True,
         'status_start': 1,
         'status_finish': 2,
         'statuses': [1, 2, 3, 4, 6],
@@ -322,6 +325,8 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_watched_episodes').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
+                'my_start_date':  self._str2date( child.find('my_start_date').text ),
+                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
@@ -348,6 +353,8 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_read_chapters').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
+                'my_start_date':  self._str2date( child.find('my_start_date').text ),
+                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_chapters').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
@@ -384,10 +391,31 @@ class libmal(lib):
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
         if 'my_score' in item.keys():
-            status = ET.SubElement(root, "score")
-            status.text = str(item['my_score'])
+            score = ET.SubElement(root, "score")
+            score.text = str(item['my_score'])
+        if 'my_start_date' in item.keys():
+            start_date = ET.SubElement(root, "date_start")
+            start_date.text = self._date2str(item['my_start_date'])
+        if 'my_finish_date' in item.keys():
+            finish_date = ET.SubElement(root, "date_finish")
+            finish_date.text = self._date2str(item['my_finish_date'])
             
         return ET.tostring(root)
+
+    def _date2str(self, date):
+        if date:
+            return date.strftime("%m%d%Y")
+        else:
+            return '0000-00-00'
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except ValueError:
+                return None # Ignore date if it's invalid
+        else:
+            return None
 
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""

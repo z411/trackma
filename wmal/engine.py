@@ -22,6 +22,7 @@ import atexit
 import difflib
 import threading
 import time
+import datetime
 import webbrowser
 import shlex
 
@@ -331,7 +332,7 @@ class Engine:
         self._emit_signal('episode_changed', show)
         
         # Change status if required
-        if self.config['auto_status_change']:
+        if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
                 if newep == 1 and self.mediainfo.get('status_start'):
                     self.set_status(show['id'], self.mediainfo['status_start'])
@@ -340,6 +341,21 @@ class Engine:
             except utils.EngineError, e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
+
+        # Change dates if required
+        if self.config['auto_date_change'] and self.mediainfo.get('can_date'):
+            start_date = finish_date = None
+            
+            try:
+                if newep == 1:
+                    start_date = datetime.date.today()
+                elif newep == show['total']:
+                    finish_date = datetime.date.today()
+
+                self.set_dates(show['id'], start_date, finish_date)
+            except utils.EngineError, e:
+                # Only warn about engine errors since date change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
         
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
@@ -347,6 +363,27 @@ class Engine:
                 
         return show
     
+    def set_dates(self, showid, start_date=None, finish_date=None):
+        """
+        Updates the start date and finish date of a show.
+        If any of the two are None, it won't be changed.
+        """
+        if not self.mediainfo.get('can_date'):
+            raise utils.EngineError('Operation not supported by API.')
+
+        show = self.get_show_info(showid)
+
+        # Change the start date if required
+        if start_date:
+            if not isinstance(start_date, datetime.date):
+                raise utils.EngineError('start_date must be a Date object.')
+            self.data_handler.queue_update(show, 'my_start_date', start_date)
+
+        if finish_date:
+            if not isinstance(finish_date, datetime.date):
+                raise utils.EngineError('finish_date must be a Date object.')
+            self.data_handler.queue_update(show, 'my_finish_date', finish_date)
+
     def set_score(self, showid, newscore):
         """
         Updates the score of the specified **showid** to **newscore**

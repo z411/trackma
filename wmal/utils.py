@@ -161,8 +161,8 @@ def show():
         'my_progress':  0,
         'my_status':    1,
         'my_score':     0,
-        'my_start_date': None,
-        'my_end_date':  None,
+        'my_start_date':  None,
+        'my_finish_date': None,
         'type':         0,
         'status':       0,
         'total':        0,
@@ -214,6 +214,7 @@ config_defaults = {
     'autosend_at_exit': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
+    'auto_date_change': True,
 }
 userconfig_defaults = {
     'mediatype': '',
