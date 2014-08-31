@@ -124,19 +124,19 @@ class libmal(lib):
         # to convert these entities correctly.
         parser = ET.XMLParser()
         parser.parser.UseForeignDTD(True)
-        parser.entity['aacute'] = 'á'
-        parser.entity['eacute'] = 'é'
-        parser.entity['iacute'] = 'í'
-        parser.entity['oacute'] = 'ó'
-        parser.entity['uacute'] = 'ú'
-        parser.entity['lsquo'] = '‘'
-        parser.entity['rsquo'] = '’'
-        parser.entity['ldquo'] = '“'
-        parser.entity['rdquo'] = '“'
-        parser.entity['ndash'] = '-'
-        parser.entity['mdash'] = '—'
-        parser.entity['hellip'] = '…'
-        parser.entity['alpha'] = 'α'
+        parser.entity['aacute'] = u'á'
+        parser.entity['eacute'] = u'é'
+        parser.entity['iacute'] = u'í'
+        parser.entity['oacute'] = u'ó'
+        parser.entity['uacute'] = u'ú'
+        parser.entity['lsquo'] = u'‘'
+        parser.entity['rsquo'] = u'’'
+        parser.entity['ldquo'] = u'“'
+        parser.entity['rdquo'] = u'“'
+        parser.entity['ndash'] = u'-'
+        parser.entity['mdash'] = u'—'
+        parser.entity['hellip'] = u'…'
+        parser.entity['alpha'] = u'α'
         
         return parser
     
