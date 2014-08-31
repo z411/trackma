@@ -1115,8 +1115,10 @@ class SettingsDialog(QtGui.QDialog):
         g_extra = QtGui.QGroupBox('Additional options')
         g_extra.setFlat(True)
         self.auto_status_change = QtGui.QCheckBox('Change status automatically')
+        self.auto_date_change = QtGui.QCheckBox('Change start and finish dates automatically')
         g_extra_layout = QtGui.QVBoxLayout()
         g_extra_layout.addWidget(self.auto_status_change)
+        g_extra_layout.addWidget(self.auto_date_change)
         g_extra.setLayout(g_extra_layout)
         
         # Sync layout
@@ -1208,6 +1210,7 @@ class SettingsDialog(QtGui.QDialog):
 
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
         self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
+        self.auto_date_change.setChecked(engine.get_config('auto_date_change'))
 
         self.tray_icon.setChecked(self.config['show_tray'])
         self.close_to_tray.setChecked(self.config['close_to_tray'])
@@ -1256,6 +1259,7 @@ class SettingsDialog(QtGui.QDialog):
         
         engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
+        engine.set_config('auto_date_change',   self.auto_date_change.isChecked())
 
         engine.save_config()
 
