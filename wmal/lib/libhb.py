@@ -114,8 +114,9 @@ class libhb(lib):
             infolist = list()
             for show in shows:
                 slug = show['anime']['slug']
-
+                epCount = show['anime']['episode_count']
                 alt_titles = []
+
                 if show['anime']['alternate_title'] is not None:
                     alt_titles.append(show['anime']['alternate_title'])
                 showlist[slug] = utils.show()
@@ -125,7 +126,7 @@ class libhb(lib):
                     'my_progress': show['episodes_watched'],
                     'aliases': alt_titles,
                     'my_status': show['status'],
-                    'total': show['anime']['episode_count'],
+                    'total': int(epCount) if epCount is not None else 0,
                     'image': show['anime']['cover_image'],
                 })
                 info = self._parse_info(show['anime'])
