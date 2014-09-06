@@ -33,6 +33,7 @@ _DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'
+_COLOR_TRACKER = '\033[0;35m'
 _COLOR_ERROR = '\033[0;31m'
 _COLOR_FATAL = '\033[1;31m'
 _COLOR_RESET = '\033[0m'
@@ -420,6 +421,8 @@ class wmal_cmd(cmd.Cmd):
             color_escape = _COLOR_ENGINE
         elif classname == 'Data':
             color_escape = _COLOR_DATA
+        elif classname == 'Tracker':
+            color_escape = _COLOR_TRACKER
         elif classname.startswith('lib'):
             color_escape = _COLOR_API
         else:
