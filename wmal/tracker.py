@@ -17,6 +17,8 @@
 import subprocess
 import threading
 import re
+import time
+import os
 from decimal import Decimal
 import difflib
 
@@ -316,13 +318,17 @@ class Tracker(object):
     
     name = 'Tracker'
 
-    def __init__(self, messenger, tracker_list, interval, update_wait):
+    signals = { 'playing' : None,
+                'update': None, }
+
+    def __init__(self, messenger, tracker_list, process_name, interval, update_wait):
         self.msg = messenger
         self.msg.info(self.name, 'Version '+utils.VERSION)
     
         self.list = tracker_list
         #self.interval = interval
         #self.update_wait = update_wait
+        self.process_name = process_name
         
         tracker_args = (interval, update_wait)
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
@@ -343,6 +349,19 @@ class Tracker(object):
     def update_list(self, tracker_list):
         self.list = tracker_list
     
+    def connect_signal(self, signal, callback):
+        try:
+            self.signals[signal] = callback
+        except KeyError:
+            raise utils.EngineFatal("Invalid signal.")
+
+    def _emit_signal(self, signal, *args):
+        try:
+            if self.signals[signal]:
+                self.signals[signal](*args)
+        except KeyError:
+            raise Exception("Call to undefined signal.")
+
     def _get_playing_file(self, players):
         lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
         output = lsof.communicate()[0].decode('utf-8')
@@ -384,10 +403,10 @@ class Tracker(object):
                     # But if we're watching a new show, let's make sure turn off
                     # the Playing flag on that one first
                     if self.last_show_tuple and self.last_show_tuple[0] != show:
-                        self._emit_signal('playing', self.last_show_tuple[0], False, 0)
+                        self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
  
                     self.last_show_tuple = (show, episode)
-                    self._emit_signal('playing', show, True, episode)
+                    self._emit_signal('playing', show['id'], True, episode)
  
                     last_time = time.time()
                     last_updated = False
@@ -399,7 +418,7 @@ class Tracker(object):
                         
                         if timedif > wait_s:
                             # Time has passed, let's update
-                            self.set_episode(show['id'], episode)
+                            self._emit_signal('update', show['id'], episode)
                             
                             last_updated = True
                         else:
@@ -425,7 +444,7 @@ class Tracker(object):
                 
                 # Clear any show previously playing
                 if self.last_show_tuple:
-                    self._emit_signal('playing', self.last_show_tuple[0], False, 0)
+                    self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
                     last_updated = False
                     last_time = 0
                     self.last_show_tuple = None
@@ -440,8 +459,7 @@ class Tracker(object):
             # Don't do anything if the Tracker is disabled
             return (1, None)
         
-        #filename = self._get_playing_file(self.process_name) TODO
-        filename = "[HorribleSubs] Mahouka - 12 [720p].mkv"
+        filename = self._get_playing_file(self.process_name)
         
         if filename:
             if filename == self.last_filename:

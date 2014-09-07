@@ -109,6 +109,13 @@ class Engine:
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
         
+    def _tracker_playing(self, showid, playing, episode):
+        show = self.get_show_info(showid)
+        self._emit_signal('playing', show, playing, episode)
+
+    def _tracker_update(self, showid, episode):
+        self.set_episode(showid, episode)
+
     def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
@@ -124,7 +131,12 @@ class Engine:
             else:
                 titles = [show['title']] + show['aliases']
             
-            tracker_list.append({'id': show['id'], 'type': None, 'titles': titles}) # TODO types
+            tracker_list.append({'id': show['id'],
+                                 'title': show['title'], 
+                                 'my_progress': show['my_progress'],
+                                 'type': None,
+                                 'titles': titles,
+                                 }) # TODO types
         
         return tracker_list
     
@@ -170,9 +182,12 @@ class Engine:
             import tracker
             self.tracker = tracker.Tracker(self.msg,
                                    self._get_tracker_list(),
+                                   self.config['tracker_process'],
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait']),
                                   )
+            self.tracker.connect_signal('playing', self._tracker_playing)
+            self.tracker.connect_signal('update', self._tracker_update)
                         
         self.loaded = True
         return True
@@ -369,7 +384,10 @@ class Engine:
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
             self.data_handler.set_show_attr(show, 'neweps', False)
-                
+
+        # Update the tracker with the new information
+        self._update_tracker()
+                 
         return show
     
     def set_dates(self, showid, start_date=None, finish_date=None):
