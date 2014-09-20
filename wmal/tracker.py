@@ -323,7 +323,7 @@ class Tracker(object):
 
     def __init__(self, messenger, tracker_list, process_name, interval, update_wait):
         self.msg = messenger
-        self.msg.info(self.name, 'Version '+utils.VERSION)
+        self.msg.info(self.name, 'Initializing...')
     
         self.list = tracker_list
         #self.interval = interval
