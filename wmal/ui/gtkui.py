@@ -19,6 +19,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 gtk.gdk.threads_init() # We'll use threads
+import pango
 
 import os
 import cgi
@@ -112,8 +113,15 @@ class wmal_gtk(object):
         # Menus
         mb_list = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        self.mb_play.connect("activate", self.do_play, True)
         self.mb_info = gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.do_info)
+        mb_web = gtk.MenuItem("Open web site")
+        mb_web.connect("activate", self.do_web)
+        mb_copy = gtk.MenuItem("Copy title to clipboard")
+        mb_copy.connect("activate", self.do_copytoclip)
+        mb_alt_title = gtk.MenuItem("Set alternate title...")
+        mb_alt_title.connect("activate", self.do_altname)
         self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         self.mb_delete.connect("activate", self.do_delete)
         self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -127,6 +135,10 @@ class wmal_gtk(object):
         
         mb_list.append(self.mb_play)
         mb_list.append(self.mb_info)
+        mb_list.append(mb_web)
+        mb_list.append(gtk.SeparatorMenuItem())
+        mb_list.append(mb_copy)
+        mb_list.append(mb_alt_title)
         mb_list.append(gtk.SeparatorMenuItem())
         mb_list.append(self.mb_delete)
         mb_list.append(gtk.SeparatorMenuItem())
@@ -181,7 +193,6 @@ class wmal_gtk(object):
         self.top_hbox.set_border_width(5)
 
         self.show_image = ImageView(100, 149)
-
         self.top_hbox.pack_start(self.show_image, False, False, 0)
         
         # Right box
@@ -192,6 +203,7 @@ class wmal_gtk(object):
         self.show_title = gtk.Label()
         self.show_title.set_use_markup(True)
         self.show_title.set_alignment(0, 0.5)
+        self.show_title.set_ellipsize(pango.ELLIPSIZE_END)
 
         line1.pack_start(self.show_title, True, True, 0)
         
@@ -244,11 +256,6 @@ class wmal_gtk(object):
         
         top_right_box.pack_start(line2, True, False, 0)
         
-        # Disable play button if it's not supported by the mediatype
-        if not self.engine.mediainfo['can_play']:
-            self.play_button.set_sensitive(False)
-            self.play_next_button.set_sensitive(False)
-        
         # Line 3: Score
         line3 = gtk.HBox(False, 5)
         line3_t = gtk.Label('  Score')
@@ -292,7 +299,7 @@ class wmal_gtk(object):
 
         self.top_hbox.pack_start(top_right_box, True, True, 0)
         vbox.pack_start(self.top_hbox, False, False, 0)
-        
+
         # Notebook for lists
         self.notebook = gtk.Notebook()
         self.notebook.set_tab_pos(gtk.POS_TOP)
@@ -310,6 +317,8 @@ class wmal_gtk(object):
         self.statusbar = gtk.Statusbar()
         self.statusbar.push(0, 'wMAL-gtk ' + utils.VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
+
+        vbox.show_all()
         
         # Status icon
         self.statusicon = gtk.StatusIcon()
@@ -337,19 +346,47 @@ class wmal_gtk(object):
             self.show_image.pholder_show("PIL library\nnot available")
 
         self.allow_buttons(False)
-        self.main.show_all()
+        
+        # Don't show the main dialog if start in tray option is set
+        if self.config['show_tray'] and self.config['start_in_tray']:
+            self.hidden = True
+        else:
+            self.main.show()
+
         self.start_engine()
     
     def _clear_gui(self):
         self.show_title.set_text('<span size="14000"><b>wMAL</b></span>')
         self.show_title.set_use_markup(True)
+        self.show_image.pholder_show("wMAL")
         
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
         
+        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (
+            utils.VERSION,
+            self.engine.api_info['name'],
+            self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
-        self.api_user.set_text(self.account['username'])
+        self.api_user.set_text("%s (%s)" % (
+            self.account['username'],
+            self.engine.api_info['mediatype']))
+
+        self.show_score.set_value(0)
+        self.show_score.set_value(0)
+        self.show_score.set_digits(self.engine.mediainfo['score_decimals'])
+        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
         
+        can_play = self.engine.mediainfo['can_play']
+        can_update = self.engine.mediainfo['can_update']
+
+        self.play_button.set_sensitive(can_play)
+        self.play_next_button.set_sensitive(can_play)
+    
+        self.update_button.set_sensitive(can_update)
+        self.show_ep_num.set_sensitive(can_update)
+        self.add_epp_button.set_sensitive(can_update)
+
     def _create_lists(self):
         statuses_nums = self.engine.mediainfo['statuses']
         statuses_names = self.engine.mediainfo['statuses_dict']
@@ -374,7 +411,10 @@ class wmal_gtk(object):
             sw.set_size_request(550, 300)
             sw.set_border_width(5)
         
-            self.show_lists[status] = ShowView(status, self.engine.mediainfo['has_progress'])
+            self.show_lists[status] = ShowView(
+                    status,
+                    self.engine.mediainfo['has_progress'],
+                    self.engine.mediainfo['score_decimals'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -438,6 +478,8 @@ class wmal_gtk(object):
         win.show_all()
         
     def do_reload(self, widget, account, mediatype):
+        self.selected_show = 0
+
         threading.Thread(target=self.task_reload, args=[account, mediatype]).start()
         
     def do_play(self, widget, playnext):
@@ -470,7 +512,7 @@ class wmal_gtk(object):
             self.error(e.message)
     
     def do_score(self, widget):
-        score = self.show_score.get_value_as_int()
+        score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
         except utils.wmalError, e:
@@ -624,7 +666,6 @@ class wmal_gtk(object):
         self._clear_gui()
         self._create_lists()
         self.build_all_lists()
-        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (utils.VERSION, self.engine.api_info['name'], self.engine.api_info['mediatype']))
         
         # Clear and build API and mediatypes menus
         for i in self.mb_mediatype_menu.get_children():
@@ -748,11 +789,11 @@ class wmal_gtk(object):
         # Thread safe
         print "%s: %s" % (classname, msg)
         if msgtype == messenger.TYPE_WARN:
-            self.error("Warning: %s" % msg, gtk.MESSAGE_WARNING)
+            gobject.idle_add(self.status_push, "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
             gobject.idle_add(self.status_push, "%s: %s" % (classname, msg))
     
-    def error(self, msg, icon=None):
+    def error(self, msg, icon=gtk.MESSAGE_ERROR):
         # Thread safe
         gobject.idle_add(self.error_push, msg, icon)
         
@@ -849,8 +890,10 @@ class wmal_gtk(object):
                 path, col, cellx, celly = pthinfo
                 treeview.grab_focus()
                 treeview.set_cursor(path, col, 0)
-
+ 
                 menu = gtk.Menu()
+                mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+                mb_play.connect("activate", self.do_play, True)
                 mb_info = gtk.MenuItem("Show details...")
                 mb_info.connect("activate", self.do_info)
                 mb_web = gtk.MenuItem("Open web site")
@@ -860,13 +903,14 @@ class wmal_gtk(object):
                 mb_alt_title = gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.do_altname)
 
+                menu.append(mb_play)
                 menu.append(mb_info)
                 menu.append(mb_web)
                 menu.append(gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
-                menu.show_all()
 
+                menu.show_all()
                 menu.popup(None, None, None, event.button, event.time)
 
 class ImageTask(threading.Thread):
@@ -943,10 +987,11 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, has_progress=True):
+    def __init__(self, status, has_progress=True, decimals=0):
         gtk.TreeView.__init__(self)
         
         self.has_progress = has_progress
+        self.decimals = decimals
         self.status_filter = status
         
         self.set_enable_search(True)
@@ -998,7 +1043,7 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_expand(False)
  
         # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(str, str, str, int, int, str)
+        self.store = gtk.ListStore(str, str, str, str, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
@@ -1032,7 +1077,9 @@ class ShowView(gtk.TreeView):
         if altname:
             title_str += " [%s]" % altname
 
-        row = [show['id'], title_str, episodes_str, show['my_score'], progress, self._get_color(show)]
+        score_str = "%0.*f" % (self.decimals, show['my_score'])
+
+        row = [show['id'], title_str, episodes_str, score_str, progress, self._get_color(show)]
         self.store.append(row)
         
     def append_finish(self):
@@ -1344,28 +1391,39 @@ class InfoDialog(gtk.Window):
     def task_load(self):
         # Thread to ask the engine for show details
         
-        details = self.engine.get_show_details(self.show)
+        try:
+            self.details = self.engine.get_show_details(self.show)
+        except utils.wmalError, e:
+            self.details = None
+            self.details_e = e
  
-        gobject.idle_add(self._done, details)
+        gobject.idle_add(self._done)
     
-    def _done(self, details):
-        # Put the returned details into the lines VBox
-        self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(details['title'])))
-        self.w_title.set_use_markup(True)
-
-        detail = list()
-        for line in details['extra']:
-            if line[0] and line[1]:
-                detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+    def _done(self):
+        if self.details:
+            # Put the returned details into the lines VBox
+            self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(self.details['title'])))
+            self.w_title.set_use_markup(True)
+    
+            detail = list()
+            for line in self.details['extra']:
+                if line[0] and line[1]:
+                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+    
+            self.w_content.set_text("\n\n".join(detail))
+            self.w_content.set_use_markup(True)
+            self.w_content.set_size_request(340, -1)
+    
+            self.show_all()
+            self.set_position(gtk.WIN_POS_CENTER)
+        else:
+            self.w_title.set_text('Error while getting details.')
+            if self.details_e:
+                self.w_content.set_text(self.details_e.message)
 
         self.w_content.set_alignment(0, 0)
-        self.w_content.set_text("\n\n".join(detail))
         self.w_content.set_line_wrap(True)
-        self.w_content.set_use_markup(True)
         self.w_content.set_size_request(340, -1)
-
-        self.show_all()
-        self.set_position(gtk.WIN_POS_CENTER)
 
     def do_close(self, widget):
         self.destroy()
@@ -1518,11 +1576,15 @@ class Settings(gtk.Window):
         
         self.chk_show_tray = gtk.CheckButton('Show Tray Icon')
         self.chk_close_to_tray = gtk.CheckButton('Close to Tray')
+        self.chk_start_in_tray = gtk.CheckButton('Start Minimized to Tray')
         self.chk_close_to_tray.set_sensitive(False)
+        self.chk_start_in_tray.set_sensitive(False)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
+        self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_start_in_tray)
         line6 = gtk.VBox(False, 5)
         line6.pack_start(self.chk_show_tray, False, False, 0)
         line6.pack_start(self.chk_close_to_tray, False, False, 0)
+        line6.pack_start(self.chk_start_in_tray, False, False, 0)
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
@@ -1570,6 +1632,7 @@ class Settings(gtk.Window):
         """GTK Interface Configuration"""
         self.chk_show_tray.set_active(self.config['show_tray'])
         self.chk_close_to_tray.set_active(self.config['close_to_tray'])
+        self.chk_start_in_tray.set_active(self.config['start_in_tray'])
     
     def save_config(self):
         """Engine Configuration"""
@@ -1608,8 +1671,10 @@ class Settings(gtk.Window):
         
         if self.chk_show_tray.get_active():
             self.config['close_to_tray'] = self.chk_close_to_tray.get_active()
+            self.config['start_in_tray'] = self.chk_start_in_tray.get_active()
         else:
             self.config['close_to_tray'] = False
+            self.config['start_in_tray'] = False
         
         utils.save_config(self.config, self.configfile)
     
@@ -1799,7 +1864,13 @@ class ShowSearch(gtk.Window):
         
     def task_search(self):
         self.allow_buttons(False)
-        self.entries = self.engine.search(self.searchtext.get_text())
+
+        try:
+            self.entries = self.engine.search(self.searchtext.get_text())
+        except utils.APIError, e:
+            self.entries = []
+            self.error(e.message)
+
         self.showdict = dict()
 
         gtk.threads_enter()

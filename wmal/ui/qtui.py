@@ -107,46 +107,60 @@ class wmal(QtGui.QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
         
         # Build menus
+        action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Play &Next', self)
+        action_play_next.setStatusTip('Play the next unwatched episode.')
+        action_play_next.triggered.connect(lambda: self.s_play(True))
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
-        action_add = QtGui.QAction('Search/Add from Remote', self)
+        action_altname = QtGui.QAction('Change &alternate name...', self)
+        action_altname.setStatusTip('Set an alternate title for the tracker.')
+        action_altname.triggered.connect(self.s_altname)
+        action_add = QtGui.QAction(QtGui.QIcon.fromTheme('edit-find'), 'Search/Add from Remote', self)
         action_add.triggered.connect(self.s_add)
-        action_send = QtGui.QAction('&Send changes', self)
-        action_send.setStatusTip('Upload any changes made to the list immediately.')
-        action_send.triggered.connect(self.s_send)
-        action_quit = QtGui.QAction('&Quit', self)
+        action_delete = QtGui.QAction(QtGui.QIcon.fromTheme('edit-delete'), '&Delete', self)
+        action_delete.setStatusTip('Remove this show from your list.')
+        action_delete.triggered.connect(self.s_delete)
+        action_quit = QtGui.QAction(QtGui.QIcon.fromTheme('application-exit'), '&Quit', self)
         action_quit.setStatusTip('Exit wMAL.')
         action_quit.triggered.connect(self._exit)
 
-        action_reload = QtGui.QAction('Switch &Account', self)
-        action_reload.setStatusTip('Switch to a different account.')
-        action_reload.triggered.connect(self.s_switch_account)
+        action_send = QtGui.QAction('&Send changes', self)
+        action_send.setStatusTip('Upload any changes made to the list immediately.')
+        action_send.triggered.connect(self.s_send)
         action_retrieve = QtGui.QAction('&Redownload list', self)
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
+        
+        action_reload = QtGui.QAction('Switch &Account', self)
+        action_reload.setStatusTip('Switch to a different account.')
+        action_reload.triggered.connect(self.s_switch_account)
         action_settings = QtGui.QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
-        action_about = QtGui.QAction('About...', self)
+        action_about = QtGui.QAction(QtGui.QIcon.fromTheme('help-about'), 'About...', self)
         action_about.triggered.connect(self.s_about)
         action_about_qt = QtGui.QAction('About Qt...', self)
         action_about_qt.triggered.connect(self.s_about_qt)
 
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
+        self.menu_show.addAction(action_play_next)
         self.menu_show.addAction(action_details)
-        self.menu_show.addAction(action_add)
+        self.menu_show.addAction(action_altname)
         self.menu_show.addSeparator()
-        self.menu_show.addAction(action_send)
+        self.menu_show.addAction(action_add)
+        self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
+        menu_list = menubar.addMenu('&List')
+        menu_list.addAction(action_send)
+        menu_list.addAction(action_retrieve)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
-        menu_options.addAction(action_retrieve)
         menu_options.addSeparator()
         menu_options.addAction(action_settings)
         menu_help = menubar.addMenu('&Help')
@@ -187,9 +201,9 @@ class wmal(QtGui.QMainWindow):
         self.show_progress_btn = QtGui.QPushButton('Update')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QtGui.QPushButton('Play')
-        self.show_play_btn.clicked.connect(self.s_play, False)
+        self.show_play_btn.clicked.connect(lambda: self.s_play(False))
         self.show_play_next_btn = QtGui.QPushButton('Next')
-        self.show_play_next_btn.clicked.connect(self.s_play, True)
+        self.show_play_next_btn.clicked.connect(lambda: self.s_play(True))
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QDoubleSpinBox()
         self.show_score_btn = QtGui.QPushButton('Set')
@@ -243,7 +257,8 @@ class wmal(QtGui.QMainWindow):
         self.worker.playing_show.connect(self.ws_changed_show)
         
         # Show main window
-        self.show()
+        if not (self.config['show_tray'] and self.config['start_in_tray']):
+            self.show()
         
         # Start loading engine
         self.started = True
@@ -267,9 +282,9 @@ class wmal(QtGui.QMainWindow):
             event.ignore()
             self._exit()
             
-    def status(self, string):
-        self.status_text.setText(string)
-        print string
+    def status(self, message):
+        self.status_text.setText(message)
+        print message
     
     def error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
@@ -286,6 +301,7 @@ class wmal(QtGui.QMainWindow):
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
+        self.menuBar().setEnabled(enable)
 
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
@@ -315,7 +331,7 @@ class wmal(QtGui.QMainWindow):
         else:
             self._enable_widgets(True)
     
-    def _rebuild_lists(self, showlist):
+    def _rebuild_lists(self, showlist, altnames):
         """
         Using a full showlist, rebuilds every QTreeView
 
@@ -329,16 +345,19 @@ class wmal(QtGui.QMainWindow):
             filtered_list[show['my_status']].append(show)
 
         for status in statuses_nums:
-            self._rebuild_list(status, filtered_list[status])
+            self._rebuild_list(status, filtered_list[status], altnames)
 
 
-    def _rebuild_list(self, status, showlist=None):
+    def _rebuild_list(self, status, showlist=None, altnames=None):
         if not showlist:
             showlist = self.worker.engine.filter_list(status)
+        if not altnames:
+            altnames = self.worker.engine.altnames()
 
         widget = self.show_lists[status]
         columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
         widget.clear()
+        widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
         widget.setColumnCount(len(columns))
         widget.setHorizontalHeaderLabels(columns)
@@ -350,9 +369,10 @@ class wmal(QtGui.QMainWindow):
 
         i = 0
         for show in showlist:
-            self._update_row(widget, i, show)
+            self._update_row( widget, i, show, altnames.get(show['id']) )
             i += 1
-
+        
+        widget.setSortingEnabled(True)
         widget.sortByColumn(0, QtCore.Qt.AscendingOrder)
         
         # Update tab name with total
@@ -360,12 +380,15 @@ class wmal(QtGui.QMainWindow):
         tab_name = "%s (%d)" % (self.statuses_names[status], i)
         self.notebook.setTabText(tab_index, tab_name)
 
-    def _update_row(self, widget, row, show, is_playing=False):
+    def _update_row(self, widget, row, show, altname, is_playing=False):
         if is_playing:
             color = QtGui.QColor(150, 150, 250)
         else:
             color = self._get_color(show)
         
+        title_str = show['title']
+        if altname:
+            title_str += " [%s]" % altname
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = QtGui.QProgressBar()
         percent_widget.setRange(0, 100)
@@ -373,7 +396,7 @@ class wmal(QtGui.QMainWindow):
             percent_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
-        widget.setItem(row, 0, ShowItem( show['title'], color ))
+        widget.setItem(row, 0, ShowItem( title_str, color ))
         widget.setItem(row, 1, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_score'], str(show['my_score']), color ))
         widget.setCellWidget(row, 3, percent_widget )
@@ -446,17 +469,17 @@ class wmal(QtGui.QMainWindow):
         # Block signals
         self.show_status.blockSignals(True)
 
-        # Update information
-        self.show_title.setText(show['title'])
-        self.show_progress.setValue(show['my_progress'])
-        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
-        self.show_score.setValue(show['my_score'])
-        
         # Set proper ranges
         if show['total']:
             self.show_progress.setRange(0, show['total'])
         else:
             self.show_progress.setRange(0, 5000)
+
+        # Update information
+        self.show_title.setText(show['title'])
+        self.show_progress.setValue(show['my_progress'])
+        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
+        self.show_score.setValue(show['my_score'])
             
         # Enable relevant buttons
         self.show_progress.setEnabled(True)
@@ -526,20 +549,58 @@ class wmal(QtGui.QMainWindow):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            episode = None
+            episode = 0 # Engine plays next unwatched episode
             if not play_next:
                 episode = self.show_progress.value()
 
             self._busy(False)
-            self.worker_call('play_episode', self.r_generic_ready, show, episode)
+            self.worker_call('play_episode', self.r_played, show, episode)
+
+    def s_delete(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        reply = QtGui.QMessageBox.question(self, 'Confirmation',
+            'Are you sure you want to delete %s?' % show['title'],
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        
+        if reply == QtGui.QMessageBox.Yes:
+            self.worker_call('delete_show', self.r_generic, show)
+
+    def s_altname(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        current_altname = self.worker.engine.altname(self.selected_show_id)
+
+        new_altname, ok = QtGui.QInputDialog.getText(self, 'Alternative title',
+            'Set the new alternative title for %s (blank to remove):' % show['title'],
+            text=current_altname)
+
+        if ok:
+            self.worker.engine.altname(self.selected_show_id, str(new_altname))
+            self.ws_changed_show(show, altname=new_altname)
 
     def s_retrieve(self):
-        self._busy(False)
-        self.worker_call('list_download', self.r_list_retrieved)
+        queue = self.worker.engine.get_queue()
+
+        if queue:
+            reply = QtGui.QMessageBox.question(self, 'Confirmation',
+                'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No, QtGui.QMessageBox.Cancel)
+            
+            if reply == QtGui.QMessageBox.Yes:
+                self.s_send(True)
+            elif reply == QtGui.QMessageBox.No:
+                self._busy(True)
+                self.worker_call('list_download', self.r_list_retrieved)
+        else:
+            self._busy(True)
+            self.worker_call('list_download', self.r_list_retrieved)
+
     
-    def s_send(self):
+    def s_send(self, retrieve=False):
         self._busy(True)
-        self.worker_call('list_upload', self.r_generic_ready)
+        if retrieve:
+            self.worker_call('list_upload', self.s_retrieve)
+        else:
+            self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
         self.accountman_widget.setModal(True)
@@ -575,26 +636,27 @@ class wmal(QtGui.QMainWindow):
         dialog.exec_()
                     
     def s_about(self):
-        QtGui.QMessageBox.about(self, 'About wMAL-qt',
-            '<p><b>About wMAL-qt</b></p><p>wMAL is an open source client for media tracking websites.</p>'
+        QtGui.QMessageBox.about(self, 'About wMAL-qt %s' % utils.VERSION,
+            '<p><b>About wMAL-qt %s</b></p><p>wMAL is an open source client for media tracking websites.</p>'
             '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
             '<p>Copyright (C) z411 - Icon by shuuichi</p>'
-            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>')
+            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>' % utils.VERSION)
 
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
         
 
     ### Worker slots
-    def ws_changed_show(self, show, is_playing=False, episode=None):
+    def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
-            self._update_row(widget, row, show, is_playing)
+            self._update_row(widget, row, show, altname, is_playing)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
-                delay = self.worker.engine.get_config('tracker_update_wait')
-                self.tray.showMessage('wMAL Tracker', "%s will be updated to %d in %d minutes." % (show['title'], episode, delay))
+                if episode == (show['my_progress'] + 1):
+                    delay = self.worker.engine.get_config('tracker_update_wait')
+                    self.tray.showMessage('wMAL Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -619,6 +681,7 @@ class wmal(QtGui.QMainWindow):
     def r_engine_loaded(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
+            altnames = self.worker.engine.altnames()
             
             self.notebook.blockSignals(True)
             self.show_status.blockSignals(True)
@@ -649,7 +712,6 @@ class wmal(QtGui.QMainWindow):
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
                 self.show_lists[status].verticalHeader().hide()
-                self.show_lists[status].setSortingEnabled(True)
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
                 self.show_lists[status].doubleClicked.connect(self.s_show_details)
@@ -679,7 +741,7 @@ class wmal(QtGui.QMainWindow):
             self.setWindowTitle( "wMAL-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
             # Rebuild lists
-            self._rebuild_lists(showlist)
+            self._rebuild_lists(showlist, altnames)
             
             self.s_show_selected(None)
             self._update_queue_counter( len( self.worker.engine.get_queue() ) )
@@ -691,7 +753,8 @@ class wmal(QtGui.QMainWindow):
     def r_list_retrieved(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
-            self._rebuild_lists(showlist)
+            altnames = self.worker.engine.altnames()
+            self._rebuild_lists(showlist, altnames)
             
             self.status('Ready.')
             
@@ -700,6 +763,22 @@ class wmal(QtGui.QMainWindow):
     def r_engine_unloaded(self, result):
         if result['success']:
             self.close()
+
+    def r_played(self, result):
+        self._unbusy()
+        self.status('Ready.')
+
+        if result['success']:
+            show = result['show']
+            played_ep = result['played_ep']
+            
+            if played_ep == (show['my_progress'] + 1):
+                reply = QtGui.QMessageBox.question(self, 'Message',
+                    'Do you want to update the show to %d?' % result['played_ep'],
+                    QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+                if reply == QtGui.QMessageBox.Yes:
+                    self.worker_call('set_episode', self.r_generic, show['id'], played_ep)
 
 
 class DetailsDialog(QtGui.QDialog):
@@ -736,16 +815,17 @@ class DetailsDialog(QtGui.QDialog):
         info_area.setLayout(info_layout)
         
         scroll_area = QtGui.QScrollArea()
-        scroll_area.setBackgroundRole(QtGui.QPalette.Dark)
+        scroll_area.setBackgroundRole(QtGui.QPalette.Light)
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
         
-        done_button = QtGui.QPushButton('Done')
-        done_button.clicked.connect(self.close)
+        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
+        bottom_buttons.setCenterButtons(True)
+        bottom_buttons.rejected.connect(self.close)
 
         main_layout.addWidget(self.show_title)
         main_layout.addWidget(scroll_area)
-        main_layout.addWidget(done_button)
+        main_layout.addWidget(bottom_buttons)
 
         self.setLayout(main_layout)
     
@@ -756,6 +836,9 @@ class DetailsDialog(QtGui.QDialog):
         
     def load(self, show):
         self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], show['title']) )
+        self.show_title.setTextFormat(QtCore.Qt.RichText)
+        self.show_title.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.show_title.setOpenExternalLinks(True)
         
         # Load show info
         self.worker_call('get_show_details', self.r_details_loaded, show)
@@ -774,14 +857,18 @@ class DetailsDialog(QtGui.QDialog):
         self.show_image.setPixmap( QtGui.QPixmap( filename ) )
     
     def r_details_loaded(self, result):
-        details = result['details']
+        if result['success']:
+            details = result['details']
         
-        info_string = ""
-        for line in details['extra']:
-            if line[0] and line[1]:
-                info_string += "<h3>%s</h3><p>%s</p>" % (line[0], line[1])
-                
-        self.show_info.setText( info_string )
+            info_strings = []
+            for line in details['extra']:
+                if line[0] and line[1]:
+                    info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+        
+            info_string = ''.join(info_strings)
+            self.show_info.setText( info_string )
+        else:
+            self.show_info.setText( 'There was an error while getting details.' )
 
 class AddDialog(QtGui.QDialog):
     worker = None
@@ -798,8 +885,9 @@ class AddDialog(QtGui.QDialog):
         # Create top layout
         top_layout = QtGui.QHBoxLayout()
         search_lbl = QtGui.QLabel('Search terms:')
-        self.search_txt = QtGui.QLineEdit()
+        self.search_txt = QtGui.QLineEdit(self)
         self.search_txt.returnPressed.connect(self.s_search)
+        self.search_txt.setFocus()
         self.search_btn = QtGui.QPushButton('Search')
         self.search_btn.clicked.connect(self.s_search)
         top_layout.addWidget(search_lbl)
@@ -821,19 +909,16 @@ class AddDialog(QtGui.QDialog):
         self.table.currentItemChanged.connect(self.s_show_selected)
         self.table.doubleClicked.connect(self.s_show_details)
         
-        bottom_layout = QtGui.QHBoxLayout()
-        cancel_btn = QtGui.QPushButton('Cancel')
-        cancel_btn.clicked.connect(self.close)
-        self.select_btn = QtGui.QPushButton('Add')
-        self.select_btn.setEnabled(False)
-        self.select_btn.clicked.connect(self.s_add)
-        bottom_layout.addWidget(cancel_btn)
-        bottom_layout.addWidget(self.select_btn)
+        bottom_buttons = QtGui.QDialogButtonBox(self)
+        bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
+        self.select_btn = bottom_buttons.addButton("Add", QtGui.QDialogButtonBox.AcceptRole)
+        bottom_buttons.accepted.connect(self.s_add)
+        bottom_buttons.rejected.connect(self.close)
 
         # Finish layout
         layout.addLayout(top_layout)
         layout.addWidget(self.table)
-        layout.addLayout(bottom_layout)
+        layout.addWidget(bottom_buttons)
         self.setLayout(layout)
     
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -891,6 +976,11 @@ class AddDialog(QtGui.QDialog):
                 self.table.setItem(i, 2, ShowItem(str(res['total'])))
 
                 i += 1
+        else:
+            self.table.setRowCount(0)
+
+        self.search_btn.setEnabled(True)
+        self.table.setEnabled(True)
     
     def r_added(self, result):
         if result['success']:
@@ -916,12 +1006,9 @@ class SettingsDialog(QtGui.QDialog):
         
         # Categories
         self.category_list = QtGui.QListWidget()
-        category_media = QtGui.QListWidgetItem(self.category_list)
-        category_media.setText('Media')
-        category_sync = QtGui.QListWidgetItem(self.category_list)
-        category_sync.setText('Sync')
-        category_ui = QtGui.QListWidgetItem(self.category_list)
-        category_ui.setText('User Interface')
+        category_media = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('media-playback-start'), 'Media', self.category_list)
+        category_sync = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('view-refresh'), 'Sync', self.category_list)
+        category_ui = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('window-new'), 'User Interface', self.category_list)
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
@@ -987,11 +1074,16 @@ class SettingsDialog(QtGui.QDialog):
         g_autoretrieve.setFlat(True)
         self.autoretrieve_off = QtGui.QRadioButton('Disabled')
         self.autoretrieve_always = QtGui.QRadioButton('Always at start')
-        self.autoretrieve_days = QtGui.QRadioButton('After x days')
-        g_autoretrieve_layout = QtGui.QVBoxLayout()
-        g_autoretrieve_layout.addWidget(self.autoretrieve_off)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_always)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_days)
+        self.autoretrieve_days = QtGui.QRadioButton('After n days')
+        self.autoretrieve_days.toggled.connect(self.s_autoretrieve_days)
+        self.autoretrieve_days_n = QtGui.QSpinBox()
+        self.autoretrieve_days_n.setRange(1, 100)
+        g_autoretrieve_layout = QtGui.QGridLayout()
+        g_autoretrieve_layout.setColumnStretch(0, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_off,      0, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_always,   1, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days,     2, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days_n,   2, 1, 1, 1)
         g_autoretrieve.setLayout(g_autoretrieve_layout)
 
         # Group: Autosend
@@ -999,23 +1091,34 @@ class SettingsDialog(QtGui.QDialog):
         g_autosend.setFlat(True)
         self.autosend_off = QtGui.QRadioButton('Disabled')
         self.autosend_always = QtGui.QRadioButton('Immediately after every change')
-        self.autosend_hours = QtGui.QRadioButton('After x hours')
-        self.autosend_size = QtGui.QRadioButton('After the queue reaches x items')
+        self.autosend_hours = QtGui.QRadioButton('After n hours')
+        self.autosend_hours.toggled.connect(self.s_autosend_hours)
+        self.autosend_hours_n = QtGui.QSpinBox()
+        self.autosend_hours_n.setRange(1, 1000)
+        self.autosend_size = QtGui.QRadioButton('After the queue reaches n items')
+        self.autosend_size.toggled.connect(self.s_autosend_size)
+        self.autosend_size_n = QtGui.QSpinBox()
+        self.autosend_size_n.setRange(2, 20)
         self.autosend_at_exit = QtGui.QCheckBox('At exit')
-        g_autosend_layout = QtGui.QVBoxLayout()
-        g_autosend_layout.addWidget(self.autosend_off)
-        g_autosend_layout.addWidget(self.autosend_always)
-        g_autosend_layout.addWidget(self.autosend_hours)
-        g_autosend_layout.addWidget(self.autosend_size)
-        g_autosend_layout.addWidget(self.autosend_at_exit)
+        g_autosend_layout = QtGui.QGridLayout()
+        g_autosend_layout.setColumnStretch(0, 1)
+        g_autosend_layout.addWidget(self.autosend_off,      0, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_always,   1, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_hours,    2, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_hours_n,  2, 1, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_size,     3, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_size_n,   3, 1, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_at_exit,  4, 0, 1, 1)
         g_autosend.setLayout(g_autosend_layout)
 
         # Group: Extra
         g_extra = QtGui.QGroupBox('Additional options')
         g_extra.setFlat(True)
         self.auto_status_change = QtGui.QCheckBox('Change status automatically')
+        self.auto_date_change = QtGui.QCheckBox('Change start and finish dates automatically')
         g_extra_layout = QtGui.QVBoxLayout()
         g_extra_layout.addWidget(self.auto_status_change)
+        g_extra_layout.addWidget(self.auto_date_change)
         g_extra.setLayout(g_extra_layout)
         
         # Sync layout
@@ -1033,11 +1136,14 @@ class SettingsDialog(QtGui.QDialog):
         g_icon = QtGui.QGroupBox('Notification Icon')
         g_icon.setFlat(True)
         self.tray_icon = QtGui.QCheckBox('Show tray icon')
+        self.tray_icon.toggled.connect(self.s_tray_icon)
         self.close_to_tray = QtGui.QCheckBox('Close to tray')
+        self.start_in_tray = QtGui.QCheckBox('Start minimized to tray')
         self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
         g_icon_layout = QtGui.QVBoxLayout()
         g_icon_layout.addWidget(self.tray_icon)
         g_icon_layout.addWidget(self.close_to_tray)
+        g_icon_layout.addWidget(self.start_in_tray)
         g_icon_layout.addWidget(self.notifications)
         g_icon.setLayout(g_icon_layout)
 
@@ -1088,6 +1194,8 @@ class SettingsDialog(QtGui.QDialog):
         else:
             self.autoretrieve_off.setChecked(True)
 
+        self.autoretrieve_days_n.setValue(engine.get_config('autoretrieve_days'))
+
         if autosend == 'always':
             self.autosend_always.setChecked(True)
         elif autosend == 'hours':
@@ -1096,13 +1204,26 @@ class SettingsDialog(QtGui.QDialog):
             self.autosend_size.setChecked(True)
         else:
             self.autosend_off.setChecked(True)
+        
+        self.autosend_hours_n.setValue(engine.get_config('autosend_hours'))
+        self.autosend_size_n.setValue(engine.get_config('autosend_size'))
 
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
         self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
+        self.auto_date_change.setChecked(engine.get_config('auto_date_change'))
 
         self.tray_icon.setChecked(self.config['show_tray'])
         self.close_to_tray.setChecked(self.config['close_to_tray'])
+        self.start_in_tray.setChecked(self.config['start_in_tray'])
         self.notifications.setChecked(self.config['notifications'])
+
+        self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
+        self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
+        self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
+        self.close_to_tray.setEnabled(self.tray_icon.isChecked())
+        self.start_in_tray.setEnabled(self.tray_icon.isChecked())
+        self.notifications.setEnabled(self.tray_icon.isChecked())
+
 
     def _save(self):
         engine = self.worker.engine
@@ -1112,8 +1233,8 @@ class SettingsDialog(QtGui.QDialog):
         engine.set_config('tracker_process',     str(self.tracker_process.text()))
         engine.set_config('tracker_update_wait', self.tracker_update_wait.value())
 
-        engine.set_config('player',     str(self.player.text()))
-        engine.set_config('searchdir',  str(self.searchdir.text()))
+        engine.set_config('player',     unicode(self.player.text()))
+        engine.set_config('searchdir',  unicode(self.searchdir.text()))
 
         if self.autoretrieve_always.isChecked():
             engine.set_config('autoretrieve', 'always')
@@ -1121,6 +1242,8 @@ class SettingsDialog(QtGui.QDialog):
             engine.set_config('autoretrieve', 'days')
         else:
             engine.set_config('autoretrieve', 'off')
+
+        engine.set_config('autoretrieve_days',   self.autoretrieve_days_n.value())
 
         if self.autosend_always.isChecked():
             engine.set_config('autosend', 'always')
@@ -1131,13 +1254,18 @@ class SettingsDialog(QtGui.QDialog):
         else:
             engine.set_config('autosend', 'off')
         
+        engine.set_config('autosend_hours',   self.autosend_hours_n.value())
+        engine.set_config('autosend_size',   self.autosend_size_n.value())
+        
         engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
+        engine.set_config('auto_date_change',   self.auto_date_change.isChecked())
 
         engine.save_config()
 
         self.config['show_tray'] = self.tray_icon.isChecked()
         self.config['close_to_tray'] = self.close_to_tray.isChecked()
+        self.config['start_in_tray'] = self.start_in_tray.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
 
         utils.save_config(self.config, self.configfile)
@@ -1147,7 +1275,21 @@ class SettingsDialog(QtGui.QDialog):
     def s_save(self):
         self._save()
         self.accept()
-        
+    
+    def s_autoretrieve_days(self, checked):
+        self.autoretrieve_days_n.setEnabled(checked)
+
+    def s_autosend_hours(self, checked):
+        self.autosend_hours_n.setEnabled(checked)
+
+    def s_autosend_size(self, checked):
+        self.autosend_size_n.setEnabled(checked)
+
+    def s_tray_icon(self, checked):
+        self.close_to_tray.setEnabled(checked)
+        self.start_in_tray.setEnabled(checked)
+        self.notifications.setEnabled(checked)
+
     def s_player_browse(self):
         self.player.setText( QtGui.QFileDialog.getOpenFileName(caption='Choose player executable') )
 
@@ -1181,6 +1323,7 @@ class AccountDialog(QtGui.QDialog):
         self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.doubleClicked.connect(self.select)
         
         bottom_layout = QtGui.QHBoxLayout()
         self.remember_chk = QtGui.QCheckBox('Remember')
@@ -1441,6 +1584,7 @@ class Engine_Worker(QtCore.QThread):
             'get_show_details': self._get_show_details,
             'search': self._search,
             'add_show': self._add_show,
+            'delete_show': self._delete_show,
             'unload': self._unload,
         }
 
@@ -1493,11 +1637,12 @@ class Engine_Worker(QtCore.QThread):
     def _get_list(self):
         try:
             showlist = self.engine.get_list()
+            altnames = self.engine.altnames()
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
 
-        return {'success': True, 'showlist': showlist}
+        return {'success': True, 'showlist': showlist, 'altnames': altnames}
 
     def _set_episode(self, showid, episode):
         try:
@@ -1528,12 +1673,12 @@ class Engine_Worker(QtCore.QThread):
        
     def _play_episode(self, show, episode):
         try:
-            self.engine.play_episode(show, episode)
+            played_ep = self.engine.play_episode(show, episode)
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}
 
-        return {'success': True}
+        return {'success': True, 'show': show, 'played_ep': played_ep}
 
     def _list_download(self):
         try:
@@ -1574,6 +1719,15 @@ class Engine_Worker(QtCore.QThread):
     def _add_show(self, show):
         try:
             results = self.engine.add_show(show)
+        except utils.wmalError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _delete_show(self, show):
+        try:
+            results = self.engine.delete_show(show)
         except utils.wmalError, e:
             self._error(e.message)
             return {'success': False}

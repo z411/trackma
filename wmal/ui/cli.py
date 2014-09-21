@@ -33,6 +33,7 @@ _DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'
+_COLOR_TRACKER = '\033[0;35m'
 _COLOR_ERROR = '\033[0;31m'
 _COLOR_FATAL = '\033[1;31m'
 _COLOR_RESET = '\033[0m'
@@ -114,9 +115,9 @@ class wmal_cmd(cmd.Cmd):
         sort - Change sort
         
         Usage: sort <sort type>
-        Available types: id, title, my_progress, episodes
+        Available types: id, title, my_progress, total, my_score
         """
-        sorts = ('id', 'title', 'my_progress', 'total')
+        sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
         if arg in sorts:
             self.sort = arg
         else:
@@ -154,8 +155,13 @@ class wmal_cmd(cmd.Cmd):
     
     def do_info(self, arg):
         if(arg):
-            show = self.engine.get_show_info_title(arg)
-            details = self.engine.get_show_details(show)
+            try:
+                show = self.engine.get_show_info_title(arg)
+                details = self.engine.get_show_details(show)
+            except utils.wmalError, e:
+                self.display_error(e)
+                return
+
             print "Title: %s" % details['title']
             for line in details['extra']:
                 print "%s: %s" % line
@@ -184,7 +190,12 @@ class wmal_cmd(cmd.Cmd):
         
         """
         if(arg):
-            entries = self.engine.search(arg)
+            try:
+                entries = self.engine.search(arg)
+            except utils.wmalError, e:
+                self.display_error(e)
+                return
+            
             for i, entry in enumerate(entries, start=1):
                 print "%d: (%s) %s" % (i, entry['type'], entry['title'])
             do_update = raw_input("Choose show to add (blank to cancel): ")
@@ -410,6 +421,8 @@ class wmal_cmd(cmd.Cmd):
             color_escape = _COLOR_ENGINE
         elif classname == 'Data':
             color_escape = _COLOR_DATA
+        elif classname == 'Tracker':
+            color_escape = _COLOR_TRACKER
         elif classname.startswith('lib'):
             color_escape = _COLOR_API
         else:
@@ -436,11 +449,12 @@ class wmal_cmd(cmd.Cmd):
         col_id_length = 7
         col_title_length = 5
         col_episodes_length = 9
+        col_score_length = 6
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
-        max_title_length = width - col_id_length - col_episodes_length - 5
+        max_title_length = width - col_id_length - col_episodes_length - col_score_length - 5
         
         # Find the widest title so we can adjust the title column
         for show in showlist:
@@ -453,9 +467,10 @@ class wmal_cmd(cmd.Cmd):
                     col_title_length = len(show['title'])
             
         # Print header
-        print "| {0:{1}} {2:{3}}|".format(
+        print "| {0:{1}} {2:{3}} {4:{5}} |".format(
                 'Title',    col_title_length,
-                'Progress', col_episodes_length)
+                'Progress', col_episodes_length,
+                'Score',    col_score_length)
         
         # List shows
         for show in showlist:
@@ -474,11 +489,11 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}}|".format(
+            print "| {0}{1} {2:{3}} {4:^{5}} |".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
-                episodes_str,
-                col_episodes_length)
+                episodes_str, col_episodes_length,
+                show['my_score'], col_score_length)
         
         # Print result count
         print '%d results' % len(showlist)

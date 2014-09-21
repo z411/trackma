@@ -379,8 +379,13 @@ class wMAL_urwid(object):
         show = self.engine.get_show_info(showid)
 
         self.status("Getting show details...")
-        details = self.engine.get_show_details(show)
 
+        try:
+            details = self.engine.get_show_details(show)
+        except utils.wmalError, e:
+            self.error(e.message)
+            return
+ 
         title = urwid.Text( ('info_title', show['title']), 'center', 'any')
         widgets = []
         for line in details['extra']:
@@ -424,7 +429,12 @@ class wMAL_urwid(object):
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)
         if data:
-            shows = self.engine.search(data)
+            try:
+                shows = self.engine.search(data)
+            except utils.wmalError, e:
+                self.error(e.message)
+                return
+
             if len(shows) > 0:
                 self.status("Ready.")
                 self.dialog = AddDialog(self.mainloop, self.engine, showlist=shows, width=('relative', 80))

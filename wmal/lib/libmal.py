@@ -20,6 +20,7 @@ from wmal.lib.lib import lib
 import wmal.utils as utils
 
 import urllib, urllib2
+import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
@@ -53,6 +54,7 @@ class libmal(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'can_date': True,
         'status_start': 1,
         'status_finish': 2,
         'statuses':  [1, 2, 3, 4, 6],
@@ -68,6 +70,7 @@ class libmal(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+        'can_date': True,
         'status_start': 1,
         'status_finish': 2,
         'statuses': [1, 2, 3, 4, 6],
@@ -124,18 +127,19 @@ class libmal(lib):
         # to convert these entities correctly.
         parser = ET.XMLParser()
         parser.parser.UseForeignDTD(True)
-        parser.entity['aacute'] = 'á'
-        parser.entity['eacute'] = 'é'
-        parser.entity['iacute'] = 'í'
-        parser.entity['oacute'] = 'ó'
-        parser.entity['uacute'] = 'ú'
-        parser.entity['lsquo'] = '‘'
-        parser.entity['rsquo'] = '’'
-        parser.entity['ldquo'] = '“'
-        parser.entity['rdquo'] = '“'
-        parser.entity['ndash'] = '-'
-        parser.entity['mdash'] = '—'
-        parser.entity['hellip'] = '…'
+        parser.entity['aacute'] = u'á'
+        parser.entity['eacute'] = u'é'
+        parser.entity['iacute'] = u'í'
+        parser.entity['oacute'] = u'ó'
+        parser.entity['uacute'] = u'ú'
+        parser.entity['lsquo'] = u'‘'
+        parser.entity['rsquo'] = u'’'
+        parser.entity['ldquo'] = u'“'
+        parser.entity['rdquo'] = u'“'
+        parser.entity['ndash'] = u'-'
+        parser.entity['mdash'] = u'—'
+        parser.entity['hellip'] = u'…'
+        parser.entity['alpha'] = u'α'
         
         return parser
     
@@ -233,8 +237,8 @@ class libmal(lib):
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except (ET.ParseError, IOError):
-            return []
+        except (ET.ParseError, IOError), e:
+            raise utils.APIError("Search error: %s" % repr(e.message))
         
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':
@@ -296,7 +300,11 @@ class libmal(lib):
 
         itemids = [ show['id'] for show in itemlist ]
 
-        reslist = [ resultdict[itemid] for itemid in itemids ]
+        try:
+            reslist = [ resultdict[itemid] for itemid in itemids ]
+        except KeyError:
+            raise utils.APIError('There was a problem getting the show details.')
+
         return reslist
 
     def _parse_anime(self, root):
@@ -317,6 +325,8 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_watched_episodes').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
+                'my_start_date':  self._str2date( child.find('my_start_date').text ),
+                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
@@ -343,6 +353,8 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_read_chapters').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
+                'my_start_date':  self._str2date( child.find('my_start_date').text ),
+                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_chapters').text),
                 'status':       int(child.find('series_status').text),
                 'image':        child.find('series_image').text,
@@ -379,10 +391,31 @@ class libmal(lib):
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
         if 'my_score' in item.keys():
-            status = ET.SubElement(root, "score")
-            status.text = str(item['my_score'])
+            score = ET.SubElement(root, "score")
+            score.text = str(item['my_score'])
+        if 'my_start_date' in item.keys():
+            start_date = ET.SubElement(root, "date_start")
+            start_date.text = self._date2str(item['my_start_date'])
+        if 'my_finish_date' in item.keys():
+            finish_date = ET.SubElement(root, "date_finish")
+            finish_date.text = self._date2str(item['my_finish_date'])
             
         return ET.tostring(root)
+
+    def _date2str(self, date):
+        if date:
+            return date.strftime("%m%d%Y")
+        else:
+            return '0000-00-00'
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except ValueError:
+                return None # Ignore date if it's invalid
+        else:
+            return None
 
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""

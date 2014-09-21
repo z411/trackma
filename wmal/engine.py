@@ -19,10 +19,11 @@ import os
 import subprocess
 import atexit
 
-import difflib
 import threading
 import time
+import datetime
 import webbrowser
+import shlex
 
 import messenger
 import data
@@ -46,11 +47,11 @@ class Engine:
     to send to. Optional.
     """
     data_handler = None
+    tracker = None
     config = dict()
     msg = None
     loaded = False
     playing = False
-    last_show = None
     
     name = 'Engine'
     
@@ -108,6 +109,13 @@ class Engine:
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
         
+    def _tracker_playing(self, showid, playing, episode):
+        show = self.get_show_info(showid)
+        self._emit_signal('playing', show, playing, episode)
+
+    def _tracker_update(self, showid, episode):
+        self.set_episode(showid, episode)
+
     def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
@@ -115,6 +123,27 @@ class Engine:
         except KeyError:
             raise Exception("Call to undefined signal.")
 
+    def _get_tracker_list(self):
+        tracker_list = []
+        for show in self.get_list():
+            if self.data_handler.altname_get(show['id']):
+                titles = [ self.data_handler.altname_get(show['id']) ]
+            else:
+                titles = [show['title']] + show['aliases']
+            
+            tracker_list.append({'id': show['id'],
+                                 'title': show['title'], 
+                                 'my_progress': show['my_progress'],
+                                 'type': None,
+                                 'titles': titles,
+                                 }) # TODO types
+        
+        return tracker_list
+    
+    def _update_tracker(self):
+        if self.tracker:
+            self.tracker.update_list(self._get_tracker_list())
+        
     def _cleanup(self):
         # If the engine wasn't closed for whatever reason, do it
         if self.loaded:
@@ -150,15 +179,16 @@ class Engine:
         
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            tracker_args = (
-                            int(self.config['tracker_interval']),
-                            int(self.config['tracker_update_wait']),
-                           )
-            tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
-            tracker_t.daemon = True
-            self.msg.debug(self.name, 'Enabling tracker...')
-            tracker_t.start()
-        
+            import tracker
+            self.tracker = tracker.Tracker(self.msg,
+                                   self._get_tracker_list(),
+                                   self.config['tracker_process'],
+                                   int(self.config['tracker_interval']),
+                                   int(self.config['tracker_update_wait']),
+                                  )
+            self.tracker.connect_signal('playing', self._tracker_playing)
+            self.tracker.connect_signal('update', self._tracker_update)
+                        
         self.loaded = True
         return True
     
@@ -268,12 +298,6 @@ class Engine:
                     newlist.append(v['title'] + ' ')
                     
         return newlist
-    
-    def get_show_titles(self, show):
-        if self.data_handler.altname_get(show['id']):
-            return [ self.data_handler.altname_get(show['id']) ]
-        else:
-            return [show['title']] + show['aliases']
 
     def search(self, criteria):
         """
@@ -294,6 +318,9 @@ class Engine:
         
         # Add in data handler
         self.data_handler.queue_add(show)
+        
+        # Update the tracker with the new information
+        self._update_tracker()
         
         # Emit signal
         self._emit_signal('show_added', show)
@@ -325,22 +352,65 @@ class Engine:
         self.msg.info(self.name, "Updating show %s to episode %d..." % (show['title'], newep))
         self.data_handler.queue_update(show, 'my_progress', newep)
 
+        # Emit signal
+        self._emit_signal('episode_changed', show)
+        
         # Change status if required
-        if self.config['auto_status_change']:
-            if newep == 1 and self.mediainfo.get('status_start'):
-                self.set_status(show['id'], self.mediainfo['status_start'])
-            elif newep == show['total'] and self.mediainfo.get('status_finish'):
-                self.set_status(show['id'], self.mediainfo['status_finish'])
+        if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
+            try:
+                if newep == 1 and self.mediainfo.get('status_start'):
+                    self.set_status(show['id'], self.mediainfo['status_start'])
+                elif newep == show['total'] and self.mediainfo.get('status_finish'):
+                    self.set_status(show['id'], self.mediainfo['status_finish'])
+            except utils.EngineError, e:
+                # Only warn about engine errors since status change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
+
+        # Change dates if required
+        if self.config['auto_date_change'] and self.mediainfo.get('can_date'):
+            start_date = finish_date = None
+            
+            try:
+                if newep == 1:
+                    start_date = datetime.date.today()
+                elif newep == show['total']:
+                    finish_date = datetime.date.today()
+
+                self.set_dates(show['id'], start_date, finish_date)
+            except utils.EngineError, e:
+                # Only warn about engine errors since date change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
         
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
             self.data_handler.set_show_attr(show, 'neweps', False)
 
-        # Emit signal
-        self._emit_signal('episode_changed', show)
-        
+        # Update the tracker with the new information
+        self._update_tracker()
+                 
         return show
     
+    def set_dates(self, showid, start_date=None, finish_date=None):
+        """
+        Updates the start date and finish date of a show.
+        If any of the two are None, it won't be changed.
+        """
+        if not self.mediainfo.get('can_date'):
+            raise utils.EngineError('Operation not supported by API.')
+
+        show = self.get_show_info(showid)
+
+        # Change the start date if required
+        if start_date:
+            if not isinstance(start_date, datetime.date):
+                raise utils.EngineError('start_date must be a Date object.')
+            self.data_handler.queue_update(show, 'my_start_date', start_date)
+
+        if finish_date:
+            if not isinstance(finish_date, datetime.date):
+                raise utils.EngineError('finish_date must be a Date object.')
+            self.data_handler.queue_update(show, 'my_finish_date', finish_date)
+
     def set_score(self, showid, newscore):
         """
         Updates the score of the specified **showid** to **newscore**
@@ -386,14 +456,17 @@ class Engine:
         if not self.mediainfo.get('can_status'):
             raise utils.EngineError('Operation not supported by API.')
         
-        # Check for the correctness of the score
         try:
             newstatus = int(newstatus)
         except ValueError:
-            raise utils.EngineError('Status must be numeric.')
+            pass # It's not necessary for it to be an int
         
-        # Get the show and update it
+        # Check if the status is valid
         _statuses = self.mediainfo['statuses_dict']
+        if newstatus not in _statuses.keys():
+            raise utils.EngineError('Invalid status.')
+            
+        # Get the show and update it
         show = self.get_show_info(showid)
         # More checks
         if show['my_status'] == newstatus:
@@ -418,6 +491,9 @@ class Engine:
         
         # Add in data handler
         self.data_handler.queue_delete(show)
+        
+        # Update the tracker with the new information
+        self._update_tracker()
         
         # Emit signal
         self._emit_signal('show_deleted', show)
@@ -476,12 +552,16 @@ class Engine:
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by API.')
-
+        if not self.config['searchdir']:
+            raise utils.EngineError('Media directory is not set.')
+        if not utils.dir_exists(self.config['searchdir']):
+            raise utils.EngineError('The set media directory doesn\'t exist.')
+ 
         try:
             playep = int(playep)
         except ValueError:
             raise utils.EngineError('Episode must be numeric.')
-            
+           
         if show:
             playing_next = False
             if not playep:
@@ -499,8 +579,10 @@ class Engine:
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 self.playing = True
+                arg_list = shlex.split(self.config['player'])
+                arg_list.append(filename)
                 try:
-                    subprocess.call([self.config['player'], filename])
+                    subprocess.call(arg_list)
                 except OSError:
                     raise utils.EngineError('Player not found, check your config.json')
                 self.playing = False
@@ -527,6 +609,12 @@ class Engine:
         else:
             return self.data_handler.altname_get(showid)
 
+    def altnames(self):
+        """
+        Gets a dictionary of all set alternative names.
+        """
+        return self.data_handler.altnames_get()
+
     def filter_list(self, status_num):
         """
         Returns a show list with the shows in the specified **status_num** status.
@@ -535,124 +623,6 @@ class Engine:
         showlist = self.data_handler.get()
         return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
     
-    def tracker(self, interval, wait):
-        self.last_show = None
-        last_time = 0
-        last_updated = False
-        wait_s = wait * 60
-        
-        while True:
-            # This runs the tracker and returns the playing show, if any
-            result = self.track_process()
-            
-            if result:
-                (show, episode) = result
-                
-                if not self.last_show or show['id'] != self.last_show['id'] or episode != last_episode:
-                    # There's a new show detected, so
-                    # let's save the show information and
-                    # the time we detected it first
-                    
-                    # But if we're watching a new show, let's make sure turn off
-                    # the Playing flag on that one first
-                    if self.last_show and self.last_show != show:
-                        self._emit_signal('playing', self.last_show, False, 0)
- 
-
-                    self.last_show = show
-                    self._emit_signal('playing', show, True, episode)
- 
-                    last_episode = episode
-                    last_time = time.time()
-                    last_updated = False
-                
-                if not last_updated:
-                    # Check if we need to update the show yet
-                    if episode == (show['my_progress'] + 1):
-                        timedif = time.time() - last_time
-                        
-                        if timedif > wait_s:
-                            # Time has passed, let's update
-                            self.set_episode(show['id'], episode)
-                            
-                            last_updated = True
-                        else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (self.last_show['title'], episode, wait_s-timedif))
-                    else:
-                        # We shouldn't update to this episode!
-                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % self.last_show['title'])
-                        last_updated = True
-                else:
-                    # The episode was updated already. do nothing
-                    pass
-            else:
-                # There isn't any show playing right now
-                # Check if the player was closed
-                if self.last_show:
-                    if not last_updated:
-                        self.msg.info(self.name, 'Player was closed before update.')
-                    
-                    self._emit_signal('playing', self.last_show, False)
-                    self.last_show = None
-                    last_updated = False
-                    last_time = 0
-            
-            # Wait for the interval before running check again
-            time.sleep(interval)
-    
-    def track_process(self):
-        if self.playing:
-            # Don't do anything if the engine is busy playing a file
-            return None
-        
-        filename = self._playing_file(self.config['tracker_process'], self.config['searchdir'])
-        
-        if filename:
-            # Do a regex to the filename to get
-            # the show title and episode number
-            (show_title, show_ep) = utils.analyze(filename)
-            if not show_title:
-                self.msg.warn(self.name, 'Regex error. Check logs.')
-                utils.log_error("[Regex error] Tracker: %s / Dir: %s / Processed filename: %s\n" % (self.config['tracker_process'], self.config['searchdir'], show_raw))
-                return None
-            
-            # Use difflib to see if the show title is similar to
-            # one we have in the list
-            highest_ratio = (None, 0)
-            matcher = difflib.SequenceMatcher()
-            matcher.set_seq1(show_title.lower())
-            
-            # Compare to every show in our list to see which one
-            # has the most similar name
-            for show in self.get_list():
-                titles = self.get_show_titles(show)
-                # Make sure to search through all the aliases
-                for title in titles:
-                    matcher.set_seq2(title.lower())
-                    ratio = matcher.ratio()
-                    if ratio > highest_ratio[1]:
-                        highest_ratio = (show, ratio)
-            
-            playing_show = highest_ratio[0]
-            if highest_ratio[1] > 0.7:
-                return (playing_show, show_ep)
-            else:
-                self.msg.warn(self.name, 'Found player but show not in list.')
-        
-        return None
-    
-    def _playing_file(self, players, searchdir):
-        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
-        output = lsof.communicate()[0]
-        fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
-        
-        for line in output.splitlines():
-            match = fileregex.match(line)
-            if match is not None:
-                return os.path.basename(match.group(1))
-        
-        return False
-        
     def list_download(self):
         """Asks the data handler to download the remote list."""
         self.data_handler.download_data()

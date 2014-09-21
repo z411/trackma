@@ -15,9 +15,10 @@
 #
 
 import os, re, shutil, copy
+import subprocess
 import json
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 datadir = os.path.dirname(__file__)
 
@@ -29,9 +30,6 @@ available_libs = {
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
 }
 
-# Used in filename analysis
-_re_enclosers = re.compile(r"[\[\(].+?[\]\)]")
-_re_episode = re.compile(r"\b(EP)?(\d\d)(v\d)?\b")
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -57,7 +55,7 @@ def save_config(config_dict, filename):
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg)
+        logfile.write(msg.encode('utf-8'))
     
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -74,31 +72,6 @@ def regex_find_videos(extensions, subdirectory=''):
             match = __re.match(extension)
             if match:
                 yield ( os.path.join(root, filename), filename )
-
-def analyze(filename):
-    # Remove extension
-    string = os.path.splitext(filename)[0]
-    # Remove enclosed tags - we won't need them at this point
-    string = _re_enclosers.sub('', string)
-    # Use spaces always
-    string = string.replace('_', ' ')
-    string = string.replace('.', ' ')
-    # Get episode and remove it
-    m = _re_episode.search(string)
-    if m:
-        final_episode = int(m.group(2))
-        # Remove episode from our string
-        string = ''.join([ string[:m.start()], string[m.end():] ])
-    else:
-        return (None, None)
-    # Get title
-    first_separator = string.find('-')
-    if first_separator > 0:
-        final_title = string[:first_separator].strip()
-    else:
-        final_title = string.strip()
-
-    return (final_title, final_episode)
 
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
@@ -148,6 +121,8 @@ def show():
         'my_progress':  0,
         'my_status':    1,
         'my_score':     0,
+        'my_start_date':  None,
+        'my_finish_date': None,
         'type':         0,
         'status':       0,
         'total':        0,
@@ -199,6 +174,7 @@ config_defaults = {
     'autosend_at_exit': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
+    'auto_date_change': True,
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -230,10 +206,12 @@ keymap_defaults = {
 gtk_defaults = {
     'show_tray': True,
     'close_to_tray': True,
+    'start_in_tray': False,
 }
 
 qt_defaults = {
     'show_tray': True,
     'close_to_tray': True,
     'notifications': True,
+    'start_in_tray': False,
 }
