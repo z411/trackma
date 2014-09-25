@@ -296,7 +296,7 @@ class libvndb(lib):
         results = list()
         self.msg.info(self.name, 'Searching for %s...' % criteria)
         
-        (name, data) = self._sendcmd('get vn basic,details (title ~ "%s")' % criteria,
+        (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
             {'page': 1,
              'results': 25,
             })
