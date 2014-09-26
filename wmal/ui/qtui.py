@@ -49,6 +49,7 @@ class wmal(QtGui.QMainWindow):
     image_worker = None
     started = False
     selected_show_id = None
+    show_lists = None
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
@@ -649,8 +650,15 @@ class wmal(QtGui.QMainWindow):
     ### Worker slots
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
+            if not self.show_lists:
+                return # Lists not built yet; can be safely avoided
+
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
+            
+            if not row:
+                return # Row not in list yet; can be safely avoided
+
             self._update_row(widget, row, show, altname, is_playing)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
