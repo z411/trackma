@@ -285,7 +285,7 @@ class wmal(QtGui.QMainWindow):
             
     def status(self, message):
         self.status_text.setText(message)
-        print message
+        print unicode(message).encode('utf-8')
     
     def error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
