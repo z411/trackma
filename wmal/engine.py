@@ -349,7 +349,7 @@ class Engine:
             try:
                 if newep == 1:
                     start_date = datetime.date.today()
-                elif newep == show['total']:
+                if newep == show['total']:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
