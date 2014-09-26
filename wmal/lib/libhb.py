@@ -179,13 +179,17 @@ class libhb(lib):
             data = self._request("/search/anime", get=values)
             shows = json.load(data)
             
-            infolist = list()
+            infolist = []
             for show in shows:
                 info = self._parse_info(show)
                 info['my_status'] = 'currently-watching' # TODO : Default to watching; this should be changeable
                 infolist.append(info)
                 
             self._emit_signal('show_info_changed', infolist)
+
+            if not infolist:
+                raise utils.APIError('No results.')
+
             return infolist
         except urllib2.HTTPError, e:
             raise utils.APIError('Error searching: ' + str(e.code))

@@ -310,6 +310,10 @@ class libvndb(lib):
             results.append(self._parse_info(item))
         
         self._emit_signal('show_info_changed', results)
+        
+        if not results:
+            raise utils.APIError('No results.')
+
         return results
     
     def logout(self):
