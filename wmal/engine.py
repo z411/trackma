@@ -334,10 +334,10 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == 1 and self.mediainfo.get('status_start'):
-                    self.set_status(show['id'], self.mediainfo['status_start'])
-                elif newep == show['total'] and self.mediainfo.get('status_finish'):
+                if newep == show['total'] and self.mediainfo.get('status_finish'):
                     self.set_status(show['id'], self.mediainfo['status_finish'])
+                elif newep == 1 and self.mediainfo.get('status_start'):
+                    self.set_status(show['id'], self.mediainfo['status_start'])
             except utils.EngineError, e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
