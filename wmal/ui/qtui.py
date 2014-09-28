@@ -656,7 +656,7 @@ class wmal(QtGui.QMainWindow):
             widget = self.show_lists[show['my_status']]
             row = self._get_row_from_showid(widget, show['id'])
             
-            if not row:
+            if row is None:
                 return # Row not in list yet; can be safely avoided
 
             self._update_row(widget, row, show, altname, is_playing)
