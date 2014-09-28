@@ -120,14 +120,18 @@ class Data(object):
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
-        
+ 
+        # Load different caches
         if self._meta_exists():
             self._load_meta()
         
         if self._queue_exists():
             self._load_queue()
+
+        if self._info_exists():
+            self._load_info()
         
-        # If there is a cache, load the list from it
+        # If there is a list cache, load from it
         # otherwise query the API for a remote list
         if self._cache_exists():
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
@@ -155,9 +159,6 @@ class Data(object):
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
  
-        if self._info_exists():
-            self._load_info()
-        
         # Create autosend thread if needed
         if self.config['autosend'] == 'hours':
             self.autosend()
