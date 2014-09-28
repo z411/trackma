@@ -164,6 +164,7 @@ class wMAL_urwid(object):
         self.set_filter(0)
 
         self.status('Ready.')
+        self.started = True
     
     def _rebuild_all_lists(self):
         for status in self.lists.keys():
@@ -177,6 +178,8 @@ class wMAL_urwid(object):
     def start(self, account):
         """Starts the engine"""
         # Engine configuration
+        self.started = False
+
         self.status("Starting engine...")
         self.engine = Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
@@ -362,6 +365,7 @@ class wMAL_urwid(object):
         self.dialog.show()
     
     def do_reload_engine(self, account=None, mediatype=None):
+        self.started = False
         self.engine.reload(account, mediatype)
         self._rebuild()
     
@@ -546,7 +550,7 @@ class wMAL_urwid(object):
             self.status('Ready.')
     
     def changed_show(self, show):
-        if show:
+        if self.started and show:
             status = show['my_status']
             self.lists[status].body.update_show(show)
             self.mainloop.draw_screen()
