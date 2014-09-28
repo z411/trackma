@@ -334,9 +334,19 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == show['total'] and self.mediainfo.get('status_finish'):
+                if (
+                     newep == show['total'] and
+                     self.mediainfo.get('status_finish') and
+                     (
+                       not self.config['auto_status_change_if_scored'] or
+                       not self.mediainfo.get('can_score') or
+                       show['my_score']
+                     )
+                ):
+                    # Change to finished status
                     self.set_status(show['id'], self.mediainfo['status_finish'])
                 elif newep == 1 and self.mediainfo.get('status_start'):
+                    # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
             except utils.EngineError, e:
                 # Only warn about engine errors since status change here is not crtical
@@ -417,7 +427,18 @@ class Engine:
         
         # Emit signal
         self._emit_signal('score_changed', show)
-        
+
+        # Change status if required
+        if (
+            show['my_progress'] == show['total'] and
+            show['my_score'] and
+            self.mediainfo.get('can_status') and
+            self.config['auto_status_change'] and
+            self.config['auto_status_change_if_scored'] and
+            self.mediainfo.get('status_finish')
+        ):
+            self.set_status(show['id'], self.mediainfo['status_finish'])
+
         return show
     
     def set_status(self, showid, newstatus):
