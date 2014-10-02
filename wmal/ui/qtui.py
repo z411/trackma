@@ -658,8 +658,10 @@ class wmal(QtGui.QMainWindow):
             
             if row is None:
                 return # Row not in list yet; can be safely avoided
-
+            
+            widget.setSortingEnabled(False)
             self._update_row(widget, row, show, altname, is_playing)
+            widget.setSortingEnabled(True)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 if episode == (show['my_progress'] + 1):
@@ -992,7 +994,7 @@ class AddDialog(QtGui.QDialog):
     
     def r_added(self, result):
         if result['success']:
-            print "added"
+            pass
         
 
 class SettingsDialog(QtGui.QDialog):
