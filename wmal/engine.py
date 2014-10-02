@@ -437,7 +437,11 @@ class Engine:
             self.config['auto_status_change_if_scored'] and
             self.mediainfo.get('status_finish')
         ):
-            self.set_status(show['id'], self.mediainfo['status_finish'])
+            try:
+                self.set_status(show['id'], self.mediainfo['status_finish'])
+            except utils.EngineError, e:
+                # Only warn about engine errors since status change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
         return show
     
