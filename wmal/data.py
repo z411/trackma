@@ -318,9 +318,6 @@ class Data(object):
     
     def queue_clear(self):
         """Clears the queue completely."""
-        if len(self.queue) == 0:
-            raise utils.DataError('Queue is already empty.')
-        
         self.queue = []
         self._save_queue()
         self._emit_signal('queue_changed', len(self.queue))

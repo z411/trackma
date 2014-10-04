@@ -590,6 +590,7 @@ class wmal(QtGui.QMainWindow):
                 self.s_send(True)
             elif reply == QtGui.QMessageBox.No:
                 self._busy(True)
+                self.worker.engine.undoall()
                 self.worker_call('list_download', self.r_list_retrieved)
         else:
             self._busy(True)
