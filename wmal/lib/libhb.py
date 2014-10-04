@@ -63,8 +63,6 @@ class libhb(lib):
     
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
-        # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
-        # together with the urllib2 opener.
         super(libhb, self).__init__(messenger, account, userconfig)
         
         self.username = account['username']
@@ -106,18 +104,17 @@ class libhb(lib):
         self.msg.info(self.name, 'Downloading list...')
         
         try:
-            # Get an XML list from MyAnimeList API
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
             shows = json.load(data)
             
             showlist = dict()
             infolist = list()
             for show in shows:
-                slug = show['anime']['slug']
+                showid = show['anime']['id']
 
-                showlist[slug] = utils.show()
-                showlist[slug].update({
-                    'id': slug,
+                showlist[showid] = utils.show()
+                showlist[showid].update({
+                    'id': showid,
                     'title': show['anime']['title'],
                     'my_progress': show['episodes_watched'],
                     'my_status': show['status'],
@@ -197,7 +194,7 @@ class libhb(lib):
     def _parse_info(self, show):
         info = utils.show()
         info.update({
-            'id': show['slug'],
+            'id': show['id'],
             'title': show['title'],
             'image': show['cover_image'],
             'url': show['url'],
