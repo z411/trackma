@@ -61,6 +61,8 @@ class libhb(lib):
     url = "https://hummingbirdv1.p.mashape.com"
     mashape_auth = "DJO7uQdZPu1gNfQWWwVHtS7xt8JhJSDf"
     
+    status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not Yet Aired': 3}
+    
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         super(libhb, self).__init__(messenger, account, userconfig)
@@ -109,13 +111,17 @@ class libhb(lib):
             
             showlist = dict()
             infolist = list()
+            
             for show in shows:
                 showid = show['anime']['id']
+                status = show['anime']['status']
+                print status
 
                 showlist[showid] = utils.show()
                 showlist[showid].update({
                     'id': showid,
                     'title': show['anime']['title'],
+                    'status': self.status_translate[status],
                     'my_progress': show['episodes_watched'],
                     'my_status': show['status'],
                     'total': show['anime']['episode_count'],
@@ -196,6 +202,7 @@ class libhb(lib):
         info.update({
             'id': show['id'],
             'title': show['title'],
+            'status': self.status_translate[show['status']],
             'image': show['cover_image'],
             'url': show['url'],
             'extra': [
