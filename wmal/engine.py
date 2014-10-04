@@ -121,7 +121,9 @@ class Engine:
     def _cleanup(self):
         # If the engine wasn't closed for whatever reason, do it
         if self.loaded:
-            self.unload()
+            self.msg.info(self.name, "Forcing exit...")
+            self.data_handler.unload(True)
+            self.loaded = False
     
     def connect_signal(self, signal, callback):
         try:
@@ -173,14 +175,10 @@ class Engine:
         procedures to close the data handler cleanly and then itself.
         
         """
-        #if not self.loaded:
-        #    raise utils.wmalError("Engine is not loaded.")
-        
         self.msg.info(self.name, "Unloading...")
         self.data_handler.unload()
         
         # Save config file
-        #utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
         
         self.loaded = False

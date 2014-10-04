@@ -165,7 +165,7 @@ class Data(object):
 
         return (self.api.api_info, self.api.media_info())
     
-    def unload(self):
+    def unload(self, force=False):
         """
         Does unloading of the data handler
 
@@ -180,10 +180,12 @@ class Data(object):
             self.autosend_timer.cancel()
 
         # We push changes if specified on config file
-        if self.config['autosend_at_exit']:
-            self.process_queue()
+        if not force:
+            if self.config['autosend_at_exit']:
+                self.process_queue()
         
-        self._save_meta()
+            self._save_meta()
+            
         self._unlock()
     
     def get(self):
