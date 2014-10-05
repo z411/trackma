@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='wMAL',
-      version='0.2',
+      version='0.3',
       description='Open multi-site list manager',
       author='z411',
       url='https://github.com/z411/wmal-python',
