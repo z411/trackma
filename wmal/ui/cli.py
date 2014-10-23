@@ -240,12 +240,17 @@ class wmal_cmd(cmd.Cmd):
         
     def do_play(self, arg):
         try: # Attempt parsing as list index
-            numb = int(arg)
-            if numb < len(self.list_indexes):
-                self.do_play('"{}"'.format(self.list_indexes[numb]))
+            args = self.parse_args(arg)
+            index = int(args[0])
+            if index < len(self.list_indexes):
+                try:
+                    self.do_play('"{}" {}'.format(self.list_indexes[index],
+                                                  args[1]))
+                except IndexError: 
+                    self.do_play('"{}"'.format(self.list_indexes[index]))
                 return 0
         except (ValueError, AttributeError):
-            pass
+            args = None
         if self.parse_args(arg):
             try:
                 args = self.parse_args(arg)
