@@ -239,6 +239,13 @@ class wmal_cmd(cmd.Cmd):
             print show['title']
         
     def do_play(self, arg):
+        try: # Attempt parsing as list index
+            numb = int(arg)
+            if numb < len(self.list_numbers):
+                self.do_play('"{}"'.format(self.list_numbers[numb]))
+                return 0
+        except (ValueError, AttributeError):
+            pass
         if self.parse_args(arg):
             try:
                 args = self.parse_args(arg)
@@ -463,12 +470,15 @@ class wmal_cmd(cmd.Cmd):
                     col_title_length = len(show['title'])
             
         # Print header
-        print "| {0:{1}} {2:{3}} {4:{5}} |".format(
+        print "| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
                 'Title',    col_title_length,
                 'Progress', col_episodes_length,
-                'Score',    col_score_length)
+                'Score',    col_score_length,
+                'Index',       col_id_length)
         
         # List shows
+        enum=0
+        self.list_numbers = []    
         for show in showlist:
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
@@ -485,11 +495,14 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}} {4:^{5}} |".format(
+            print "| {0}{1} {2:{3}} {4:^{5}} {6} |".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
-                show['my_score'], col_score_length)
+                show['my_score'], col_score_length, enum)
+            # Track show list position
+            self.list_numbers.append(show['title'])
+            enum+=1
         
         # Print result count
         print '%d results' % len(showlist)
