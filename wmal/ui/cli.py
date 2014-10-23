@@ -241,8 +241,8 @@ class wmal_cmd(cmd.Cmd):
     def do_play(self, arg):
         try: # Attempt parsing as list index
             numb = int(arg)
-            if numb < len(self.list_numbers):
-                self.do_play('"{}"'.format(self.list_numbers[numb]))
+            if numb < len(self.list_indexes):
+                self.do_play('"{}"'.format(self.list_indexes[numb]))
                 return 0
         except (ValueError, AttributeError):
             pass
@@ -453,11 +453,12 @@ class wmal_cmd(cmd.Cmd):
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
+        col_index_length = 6
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
-        max_title_length = width - col_id_length - col_episodes_length - col_score_length - 5
+        max_title_length = width - col_id_length - col_episodes_length - col_score_length - col_index_length - 5
         
         # Find the widest title so we can adjust the title column
         for show in showlist:
@@ -474,11 +475,11 @@ class wmal_cmd(cmd.Cmd):
                 'Title',    col_title_length,
                 'Progress', col_episodes_length,
                 'Score',    col_score_length,
-                'Index',       col_id_length)
+                'Index',    col_index_length)
         
         # List shows
-        enum=0
-        self.list_numbers = []    
+        index = 0
+        self.list_indexes = []    
         for show in showlist:
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
@@ -495,14 +496,14 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}} {4:^{5}} {6} |".format(
+            print "| {0}{1} {2:{3}} {4:^{5}} {6:^{7}} |".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
-                show['my_score'], col_score_length, enum)
-            # Track show list position
-            self.list_numbers.append(show['title'])
-            enum+=1
+                show['my_score'], col_score_length, index, col_index_length)
+            # Track show list indexes 
+            self.list_indexes.append(show['title'])
+            index+=1
         
         # Print result count
         print '%d results' % len(showlist)
