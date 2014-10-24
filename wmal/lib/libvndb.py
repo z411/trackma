@@ -174,7 +174,7 @@ class libvndb(lib):
                 vns[vnid] = utils.show()
                 vns[vnid]['id']         = vnid
                 vns[vnid]['url'] = self._get_url(vnid)
-                vns[vnid]['my_status']  = item.get('status') or item.get('priority')
+                vns[vnid]['my_status']  = item.get('status', item.get('priority'))
             
             if not data['more']:
                 # No more VNs, finish
