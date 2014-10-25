@@ -249,7 +249,7 @@ class wmal_cmd(cmd.Cmd):
                 except IndexError: 
                     self.do_play('"{}"'.format(self.list_indexes[index]))
                 return 0
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, IndexError):
             args = None
         if self.parse_args(arg):
             try:
