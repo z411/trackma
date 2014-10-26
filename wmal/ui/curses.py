@@ -467,9 +467,9 @@ class wMAL_urwid(object):
             except utils.wmalError, e:
                 self.error(e.message)
         
-    def status_request(self, widget, data):
+    def status_request(self, widget, data=None):
         self.dialog.close()
-        if data:
+        if data is not None:
             item = self._get_selected_item()
             
             try:
@@ -557,7 +557,7 @@ class wMAL_urwid(object):
 
     def changed_show_status(self, show, old_status=None):
         self._rebuild_list(show['my_status'])
-        if old_status:
+        if old_status is not None:
             self._rebuild_list(old_status)
         
         go_filter = 0
