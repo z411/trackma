@@ -19,8 +19,8 @@ import os
 import subprocess
 import atexit
 
-import difflib
 import threading
+import difflib
 import time
 import datetime
 import webbrowser
@@ -28,6 +28,7 @@ import shlex
 
 import messenger
 import data
+import tracker
 import utils
 
 class Engine:
@@ -48,12 +49,11 @@ class Engine:
     to send to. Optional.
     """
     data_handler = None
+    tracker = None
     config = dict()
     msg = None
     loaded = False
     playing = False
-    last_show_tuple = None
-    last_filename = None
     
     name = 'Engine'
     
@@ -111,6 +111,13 @@ class Engine:
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
         
+    def _tracker_playing(self, showid, playing, episode):
+        show = self.get_show_info(showid)
+        self._emit_signal('playing', show, playing, episode)
+
+    def _tracker_update(self, showid, episode):
+        self.set_episode(showid, episode)
+
     def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
@@ -118,6 +125,23 @@ class Engine:
         except KeyError:
             raise Exception("Call to undefined signal.")
 
+    def _get_tracker_list(self):
+        tracker_list = []
+        for show in self.get_list():
+                        
+            tracker_list.append({'id': show['id'],
+                                 'title': show['title'], 
+                                 'my_progress': show['my_progress'],
+                                 'type': None,
+                                 'titles': self.get_show_titles(show),
+                                 }) # TODO types
+        
+        return tracker_list
+    
+    def _update_tracker(self):
+        if self.tracker:
+            self.tracker.update_list(self._get_tracker_list())
+        
     def _cleanup(self):
         # If the engine wasn't closed for whatever reason, do it
         if self.loaded:
@@ -135,7 +159,7 @@ class Engine:
         """Changes the message handler function on the fly."""
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
-        
+
     def start(self):
         """
         Starts the engine.
@@ -155,15 +179,15 @@ class Engine:
         
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            tracker_args = (
-                            int(self.config['tracker_interval']),
-                            int(self.config['tracker_update_wait']),
-                           )
-            tracker_t = threading.Thread(target=self.tracker, args=tracker_args)
-            tracker_t.daemon = True
-            self.msg.debug(self.name, 'Enabling tracker...')
-            tracker_t.start()
-        
+            self.tracker = tracker.Tracker(self.msg,
+                                   self._get_tracker_list(),
+                                   self.config['tracker_process'],
+                                   int(self.config['tracker_interval']),
+                                   int(self.config['tracker_update_wait']),
+                                  )
+            self.tracker.connect_signal('playing', self._tracker_playing)
+            self.tracker.connect_signal('update', self._tracker_update)
+                        
         self.loaded = True
         return True
     
@@ -242,6 +266,12 @@ class Engine:
             if show['title'] == pattern:
                 return show
         raise utils.EngineError("Show not found.")
+
+    def get_show_titles(self, show):
+        if self.data_handler.altname_get(show['id']):
+            return [ self.data_handler.altname_get(show['id']) ]
+        else:
+            return [show['title']] + show['aliases']
     
     def get_show_details(self, show):
         """
@@ -269,12 +299,6 @@ class Engine:
                     newlist.append(v['title'] + ' ')
                     
         return newlist
-    
-    def get_show_titles(self, show):
-        if self.data_handler.altname_get(show['id']):
-            return [ self.data_handler.altname_get(show['id']) ]
-        else:
-            return [show['title']] + show['aliases']
 
     def search(self, criteria):
         """
@@ -295,6 +319,9 @@ class Engine:
         
         # Add in data handler
         self.data_handler.queue_add(show)
+        
+        # Update the tracker with the new information
+        self._update_tracker()
         
         # Emit signal
         self._emit_signal('show_added', show)
@@ -368,7 +395,10 @@ class Engine:
         # Clear neweps flag
         if self.data_handler.get_show_attr(show, 'neweps'):
             self.data_handler.set_show_attr(show, 'neweps', False)
-                
+
+        # Update the tracker with the new information
+        self._update_tracker()
+                 
         return show
     
     def set_dates(self, showid, start_date=None, finish_date=None):
@@ -488,6 +518,9 @@ class Engine:
         # Add in data handler
         self.data_handler.queue_delete(show)
         
+        # Update the tracker with the new information
+        self._update_tracker()
+        
         # Emit signal
         self._emit_signal('show_deleted', show)
         
@@ -498,8 +531,9 @@ class Engine:
 
         # Check over video files and propose our best candidate
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            # Use our analyze function to see what's the title and episode of the file
-            (candidate_title, candidate_episode) = utils.analyze(filename)
+            # Analyze what's the title and episode of the file
+            aie = tracker.AnimeInfoExtractor(filename)
+            (candidate_title, candidate_episode) = (aie.getName(), aie.getEpisode())
 
             # Skip this file if we couldn't analyze it or it isn't the episode we want
             if not candidate_title or candidate_episode != episode:
@@ -615,124 +649,6 @@ class Engine:
         """
         showlist = self.data_handler.get()
         return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
-    
-    def tracker(self, interval, wait):
-        last_state = None
-        last_time = 0
-        last_updated = False
-        wait_s = wait * 60
-        
-        while True:
-            # This runs the tracker and returns the playing show, if any
-            (state, show_tuple) = self.track_process()
-
-            if show_tuple:
-                (show, episode) = show_tuple
-                
-                if not self.last_show_tuple or show['id'] != self.last_show_tuple[0]['id'] or episode != self.last_show_tuple[1]:
-                    # There's a new show detected, so
-                    # let's save the show information and
-                    # the time we detected it first
-                    
-                    # But if we're watching a new show, let's make sure turn off
-                    # the Playing flag on that one first
-                    if self.last_show_tuple and self.last_show_tuple[0] != show:
-                        self._emit_signal('playing', self.last_show_tuple[0], False, 0)
- 
-                    self.last_show_tuple = (show, episode)
-                    self._emit_signal('playing', show, True, episode)
- 
-                    last_time = time.time()
-                    last_updated = False
-                
-                if not last_updated:
-                    # Check if we need to update the show yet
-                    if episode == (show['my_progress'] + 1):
-                        timedif = time.time() - last_time
-                        
-                        if timedif > wait_s:
-                            # Time has passed, let's update
-                            self.set_episode(show['id'], episode)
-                            
-                            last_updated = True
-                        else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, wait_s-timedif))
-                    else:
-                        # We shouldn't update to this episode!
-                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
-                        last_updated = True
-                else:
-                    # The episode was updated already. do nothing
-                    pass
-            elif last_state != state:
-                # React depending on state
-                # 1 : No video is playing anymroe
-                # 2 : There's a new video playing but the regex didn't recognize the format
-                # 3 : There's a new video playing but an associated show wasn't found
-                if state == 1 and self.last_show_tuple and not last_updated:
-                    self.msg.info(self.name, 'Player was closed before update.')
-                elif state == 2:
-                    self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-                elif state == 3:
-                    self.msg.warn(self.name, 'Found player but show not in list.')
-                
-                # Clear any show previously playing
-                if self.last_show_tuple:
-                    self._emit_signal('playing', self.last_show_tuple[0], False, 0)
-                    last_updated = False
-                    last_time = 0
-                    self.last_show_tuple = None
-            
-            last_state = state
-            
-            # Wait for the interval before running check again
-            time.sleep(interval)
-    
-    def track_process(self):
-        if self.playing:
-            # Don't do anything if the engine is busy playing a file
-            return (1, None)
-        
-        filename = utils.get_playing_file(self.config['tracker_process'], self.config['searchdir'])
-        
-        if filename:
-            if filename == self.last_filename:
-                # It's the exact same filename, there's no need to do the processing again
-                return (4, self.last_show_tuple)
-            
-            self.last_filename = filename
-
-            # Do a regex to the filename to get
-            # the show title and episode number
-            (show_title, show_ep) = utils.analyze(filename)
-            if not show_title:
-                return (2, None) # Format not recognized
-            
-            # Use difflib to see if the show title is similar to
-            # one we have in the list
-            highest_ratio = (None, 0)
-            matcher = difflib.SequenceMatcher()
-            matcher.set_seq1(show_title.lower())
-            
-            # Compare to every show in our list to see which one
-            # has the most similar name
-            for show in self.get_list():
-                titles = self.get_show_titles(show)
-                # Make sure to search through all the aliases
-                for title in titles:
-                    matcher.set_seq2(title.lower())
-                    ratio = matcher.ratio()
-                    if ratio > highest_ratio[1]:
-                        highest_ratio = (show, ratio)
-            
-            playing_show = highest_ratio[0]
-            if highest_ratio[1] > 0.7:
-                return (0, (playing_show, show_ep))
-            else:
-                return (3, None) # Show not in list
-        else:
-            self.last_filename = None
-            return (1, None) # Not playing
     
     def list_download(self):
         """Asks the data handler to download the remote list."""

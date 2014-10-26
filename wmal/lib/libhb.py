@@ -115,22 +115,25 @@ class libhb(lib):
             for show in shows:
                 showid = show['anime']['id']
                 status = show['anime']['status']
-                print status
+                epCount = show['anime']['episode_count']
+                alt_titles = []
 
+                if show['anime']['alternate_title'] is not None:
+                    alt_titles.append(show['anime']['alternate_title'])
                 showlist[showid] = utils.show()
                 showlist[showid].update({
                     'id': showid,
                     'title': show['anime']['title'],
                     'status': self.status_translate[status],
                     'my_progress': show['episodes_watched'],
+                    'aliases': alt_titles,
                     'my_status': show['status'],
-                    'total': show['anime']['episode_count'],
+                    'total': int(epCount) if epCount is not None else 0,
                     'image': show['anime']['cover_image'],
                 })
-                
                 info = self._parse_info(show['anime'])
                 infolist.append(info)
-                
+
             self._emit_signal('show_info_changed', infolist)
             return showlist
         except urllib2.HTTPError, e:
@@ -199,12 +202,16 @@ class libhb(lib):
         
     def _parse_info(self, show):
         info = utils.show()
+        alt_titles = []
+        if show['alternate_title'] is not None:
+            alt_titles.append(show['alternate_title'])
         info.update({
             'id': show['id'],
             'title': show['title'],
             'status': self.status_translate[show['status']],
             'image': show['cover_image'],
             'url': show['url'],
+            'aliases': alt_titles,
             'extra': [
                 ('Alternate title', show['alternate_title']),
                 ('Show type',       show['show_type']),

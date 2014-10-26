@@ -30,9 +30,6 @@ available_libs = {
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
 }
 
-# Used in filename analysis
-_re_enclosers = re.compile(r"[\[\(].+?[\]\)]")
-_re_episode = re.compile(r"\b(?:(\d{2,3})|EP(\d{1,3}))(?:v\d)?\b", re.I)
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -75,43 +72,6 @@ def regex_find_videos(extensions, subdirectory=''):
             match = __re.match(extension)
             if match:
                 yield ( os.path.join(root, filename), filename )
-
-def get_playing_file(players, searchdir):
-    lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
-    output = lsof.communicate()[0].decode('utf-8')
-    fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
-    
-    for line in output.splitlines():
-        match = fileregex.match(line)
-        if match is not None:
-            return os.path.basename(match.group(1))
-    
-    return False
-
-def analyze(filename):
-    # Remove extension
-    string = os.path.splitext(filename)[0]
-    # Remove enclosed tags - we won't need them at this point
-    string = _re_enclosers.sub('', string)
-    # Use spaces always
-    string = string.replace('_', ' ')
-    string = string.replace('.', ' ')
-    # Get episode and remove it
-    m = _re_episode.search(string)
-    if m:
-        final_episode = int(m.group(1) or m.group(2))
-        # Remove episode from our string
-        string = ''.join([ string[:m.start()], string[m.end():] ])
-    else:
-        return (None, None)
-    # Get title
-    first_separator = string.rfind(' - ')
-    if first_separator > 0:
-        final_title = string[:first_separator].strip()
-    else:
-        final_title = string.strip()
-
-    return (final_title, final_episode)
 
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.wmal', directory))
