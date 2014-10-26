@@ -99,8 +99,7 @@ class wmal_cmd(cmd.Cmd):
         """
         # Query the engine for the available statuses
         # that the user can choose
-        
-        if arg:
+        if self.parse_args(arg):
             try:
                 args = self.parse_args(arg)
                 self.filter_num = self._guess_status(args[0].lower())
@@ -129,7 +128,7 @@ class wmal_cmd(cmd.Cmd):
         
         Usage: mediatype [mediatype]
         """
-        if arg:
+        if self.parse_args(arg):
             args = self.parse_args(arg)
             if args[0] in self.engine.api_info['supported_mediatypes']:
                 self.engine.reload(mediatype=args[0])
@@ -222,7 +221,7 @@ class wmal_cmd(cmd.Cmd):
         Usage: delete <show id or title>
         
         """
-        if(arg):
+        if self.parse_args(arg):
             args = self.parse_args(arg)
             
             try:
@@ -241,7 +240,19 @@ class wmal_cmd(cmd.Cmd):
             print show['title']
         
     def do_play(self, arg):
-        if arg:
+        try: # Attempt parsing as list index
+            args = self.parse_args(arg)
+            index = int(args[0])
+            if index < len(self.list_indexes):
+                try:
+                    self.do_play('"{}" {}'.format(self.list_indexes[index],
+                                                  args[1]))
+                except IndexError: 
+                    self.do_play('"{}"'.format(self.list_indexes[index]))
+                return 0
+        except (ValueError, AttributeError, IndexError):
+            args = None
+        if self.parse_args(arg):
             try:
                 args = self.parse_args(arg)
                 show = self.engine.get_show_info_title(args[0])
@@ -276,7 +287,7 @@ class wmal_cmd(cmd.Cmd):
         
         Usage: update <show id or name> <episode number>
         """
-        if arg:
+        if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
                 show = self.engine.get_show_info_title(args[0])
@@ -294,7 +305,7 @@ class wmal_cmd(cmd.Cmd):
         
         Usage: update <show id or name> <score>
         """
-        if arg:
+        if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
                 self.engine.set_score(args[0], args[1])
@@ -311,7 +322,7 @@ class wmal_cmd(cmd.Cmd):
         
         Usage: status <show id or name> <status name>
         """
-        if arg:
+        if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
                 _showname = args[0]
@@ -450,11 +461,12 @@ class wmal_cmd(cmd.Cmd):
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
+        col_index_length = 6
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
-        max_title_length = width - col_id_length - col_episodes_length - col_score_length - 5
+        max_title_length = width - col_id_length - col_episodes_length - col_score_length - col_index_length - 5
         
         # Find the widest title so we can adjust the title column
         for show in showlist:
@@ -467,12 +479,15 @@ class wmal_cmd(cmd.Cmd):
                     col_title_length = len(show['title'])
             
         # Print header
-        print "| {0:{1}} {2:{3}} {4:{5}} |".format(
+        print "| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
                 'Title',    col_title_length,
                 'Progress', col_episodes_length,
-                'Score',    col_score_length)
+                'Score',    col_score_length,
+                'Index',    col_index_length)
         
         # List shows
+        index = 0
+        self.list_indexes = []    
         for show in showlist:
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
@@ -489,11 +504,14 @@ class wmal_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}} {4:^{5}} |".format(
+            print "| {0}{1} {2:{3}} {4:^{5}} {6:^{7}} |".format(
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
-                show['my_score'], col_score_length)
+                show['my_score'], col_score_length, index, col_index_length)
+            # Track show list indexes 
+            self.list_indexes.append(show['title'])
+            index+=1
         
         # Print result count
         print '%d results' % len(showlist)

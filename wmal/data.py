@@ -120,14 +120,18 @@ class Data(object):
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
-        
+ 
+        # Load different caches
         if self._meta_exists():
             self._load_meta()
         
         if self._queue_exists():
             self._load_queue()
+
+        if self._info_exists():
+            self._load_info()
         
-        # If there is a cache, load the list from it
+        # If there is a list cache, load from it
         # otherwise query the API for a remote list
         if self._cache_exists():
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
@@ -155,16 +159,13 @@ class Data(object):
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
  
-        if self._info_exists():
-            self._load_info()
-        
         # Create autosend thread if needed
         if self.config['autosend'] == 'hours':
             self.autosend()
 
         return (self.api.api_info, self.api.media_info())
     
-    def unload(self):
+    def unload(self, force=False):
         """
         Does unloading of the data handler
 
@@ -179,10 +180,12 @@ class Data(object):
             self.autosend_timer.cancel()
 
         # We push changes if specified on config file
-        if self.config['autosend_at_exit']:
-            self.process_queue()
+        if not force:
+            if self.config['autosend_at_exit']:
+                self.process_queue()
         
-        self._save_meta()
+            self._save_meta()
+            
         self._unlock()
     
     def get(self):
@@ -317,9 +320,6 @@ class Data(object):
     
     def queue_clear(self):
         """Clears the queue completely."""
-        if len(self.queue) == 0:
-            raise utils.DataError('Queue is already empty.')
-        
         self.queue = []
         self._save_queue()
         self._emit_signal('queue_changed', len(self.queue))

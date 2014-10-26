@@ -61,10 +61,10 @@ class libhb(lib):
     url = "https://hummingbirdv1.p.mashape.com"
     mashape_auth = "DJO7uQdZPu1gNfQWWwVHtS7xt8JhJSDf"
     
+    status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not Yet Aired': 3}
+    
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
-        # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
-        # together with the urllib2 opener.
         super(libhb, self).__init__(messenger, account, userconfig)
         
         self.username = account['username']
@@ -106,23 +106,25 @@ class libhb(lib):
         self.msg.info(self.name, 'Downloading list...')
         
         try:
-            # Get an XML list from MyAnimeList API
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
             shows = json.load(data)
             
             showlist = dict()
             infolist = list()
+            
             for show in shows:
-                slug = show['anime']['slug']
+                showid = show['anime']['id']
+                status = show['anime']['status']
                 epCount = show['anime']['episode_count']
                 alt_titles = []
 
                 if show['anime']['alternate_title'] is not None:
                     alt_titles.append(show['anime']['alternate_title'])
-                showlist[slug] = utils.show()
-                showlist[slug].update({
-                    'id': slug,
+                showlist[showid] = utils.show()
+                showlist[showid].update({
+                    'id': showid,
                     'title': show['anime']['title'],
+                    'status': self.status_translate[status],
                     'my_progress': show['episodes_watched'],
                     'aliases': alt_titles,
                     'my_status': show['status'],
@@ -183,13 +185,17 @@ class libhb(lib):
             data = self._request("/search/anime", get=values)
             shows = json.load(data)
             
-            infolist = list()
+            infolist = []
             for show in shows:
                 info = self._parse_info(show)
                 info['my_status'] = 'currently-watching' # TODO : Default to watching; this should be changeable
                 infolist.append(info)
                 
             self._emit_signal('show_info_changed', infolist)
+
+            if not infolist:
+                raise utils.APIError('No results.')
+
             return infolist
         except urllib2.HTTPError, e:
             raise utils.APIError('Error searching: ' + str(e.code))
@@ -200,8 +206,9 @@ class libhb(lib):
         if show['alternate_title'] is not None:
             alt_titles.append(show['alternate_title'])
         info.update({
-            'id': show['slug'],
+            'id': show['id'],
             'title': show['title'],
+            'status': self.status_translate[show['status']],
             'image': show['cover_image'],
             'url': show['url'],
             'aliases': alt_titles,

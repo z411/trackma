@@ -174,7 +174,7 @@ class libvndb(lib):
                 vns[vnid] = utils.show()
                 vns[vnid]['id']         = vnid
                 vns[vnid]['url'] = self._get_url(vnid)
-                vns[vnid]['my_status']  = item.get('status') or item.get('priority')
+                vns[vnid]['my_status']  = item.get('status', item.get('priority'))
             
             if not data['more']:
                 # No more VNs, finish
@@ -296,7 +296,7 @@ class libvndb(lib):
         results = list()
         self.msg.info(self.name, 'Searching for %s...' % criteria)
         
-        (name, data) = self._sendcmd('get vn basic,details (title ~ "%s")' % criteria,
+        (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
             {'page': 1,
              'results': 25,
             })
@@ -310,6 +310,10 @@ class libvndb(lib):
             results.append(self._parse_info(item))
         
         self._emit_signal('show_info_changed', results)
+        
+        if not results:
+            raise utils.APIError('No results.')
+
         return results
     
     def logout(self):

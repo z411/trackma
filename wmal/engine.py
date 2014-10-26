@@ -147,7 +147,9 @@ class Engine:
     def _cleanup(self):
         # If the engine wasn't closed for whatever reason, do it
         if self.loaded:
-            self.unload()
+            self.msg.info(self.name, "Forcing exit...")
+            self.data_handler.unload(True)
+            self.loaded = False
     
     def connect_signal(self, signal, callback):
         try:
@@ -200,14 +202,10 @@ class Engine:
         procedures to close the data handler cleanly and then itself.
         
         """
-        #if not self.loaded:
-        #    raise utils.wmalError("Engine is not loaded.")
-        
         self.msg.info(self.name, "Unloading...")
         self.data_handler.unload()
         
         # Save config file
-        #utils.save_config(self.config, self.configfile)
         utils.save_config(self.userconfig, self.userconfigfile)
         
         self.loaded = False
@@ -358,10 +356,20 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == 1 and self.mediainfo.get('status_start'):
-                    self.set_status(show['id'], self.mediainfo['status_start'])
-                elif newep == show['total'] and self.mediainfo.get('status_finish'):
+                if (
+                     newep == show['total'] and
+                     self.mediainfo.get('status_finish') and
+                     (
+                       not self.config['auto_status_change_if_scored'] or
+                       not self.mediainfo.get('can_score') or
+                       show['my_score']
+                     )
+                ):
+                    # Change to finished status
                     self.set_status(show['id'], self.mediainfo['status_finish'])
+                elif newep == 1 and self.mediainfo.get('status_start'):
+                    # Change to watching status
+                    self.set_status(show['id'], self.mediainfo['status_start'])
             except utils.EngineError, e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
@@ -373,7 +381,7 @@ class Engine:
             try:
                 if newep == 1:
                     start_date = datetime.date.today()
-                elif newep == show['total']:
+                if newep == show['total']:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
@@ -444,7 +452,22 @@ class Engine:
         
         # Emit signal
         self._emit_signal('score_changed', show)
-        
+
+        # Change status if required
+        if (
+            show['my_progress'] == show['total'] and
+            show['my_score'] and
+            self.mediainfo.get('can_status') and
+            self.config['auto_status_change'] and
+            self.config['auto_status_change_if_scored'] and
+            self.mediainfo.get('status_finish')
+        ):
+            try:
+                self.set_status(show['id'], self.mediainfo['status_finish'])
+            except utils.EngineError, e:
+                # Only warn about engine errors since status change here is not crtical
+                self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
+
         return show
     
     def set_status(self, showid, newstatus):

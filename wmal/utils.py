@@ -174,6 +174,7 @@ config_defaults = {
     'autosend_at_exit': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
+    'auto_status_change_if_scored': True,
     'auto_date_change': True,
 }
 userconfig_defaults = {
