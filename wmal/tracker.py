@@ -57,6 +57,12 @@ class AnimeInfoExtractor(object):
     def getEpisodeNumbers(self):
         return self.episodeStart, self.episodeEnd
 
+    def getEpisode(self):
+        ep = self.episodeStart if self.episodeEnd == '' else self.episodeEnd
+        ep = ep if ep != '' else '1'
+
+        return int(ep)
+
     def __extractExtension(self, filename):
         m = re.search("\.(\w{3})$", filename)
         if m:
@@ -376,11 +382,7 @@ class Tracker(object):
 
     def _analyze(self, filename):
         aie = AnimeInfoExtractor(filename)
-        epStart, epEnd = aie.getEpisodeNumbers()
-        ep = epStart if epEnd == '' else epEnd
-        ep = ep if ep != '' else '1'
-
-        return (aie.getName(), int(ep))
+        return (aie.getName(), aie.getEpisode())
     
     def _tracker(self, interval, wait):
         last_state = None

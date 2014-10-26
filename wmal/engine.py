@@ -20,6 +20,7 @@ import subprocess
 import atexit
 
 import threading
+import difflib
 import time
 import datetime
 import webbrowser
@@ -27,6 +28,7 @@ import shlex
 
 import messenger
 import data
+import tracker
 import utils
 
 class Engine:
@@ -126,16 +128,12 @@ class Engine:
     def _get_tracker_list(self):
         tracker_list = []
         for show in self.get_list():
-            if self.data_handler.altname_get(show['id']):
-                titles = [ self.data_handler.altname_get(show['id']) ]
-            else:
-                titles = [show['title']] + show['aliases']
-            
+                        
             tracker_list.append({'id': show['id'],
                                  'title': show['title'], 
                                  'my_progress': show['my_progress'],
                                  'type': None,
-                                 'titles': titles,
+                                 'titles': self.get_show_titles(show),
                                  }) # TODO types
         
         return tracker_list
@@ -161,7 +159,7 @@ class Engine:
         """Changes the message handler function on the fly."""
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
-        
+
     def start(self):
         """
         Starts the engine.
@@ -181,7 +179,6 @@ class Engine:
         
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            import tracker
             self.tracker = tracker.Tracker(self.msg,
                                    self._get_tracker_list(),
                                    self.config['tracker_process'],
@@ -269,6 +266,12 @@ class Engine:
             if show['title'] == pattern:
                 return show
         raise utils.EngineError("Show not found.")
+
+    def get_show_titles(self, show):
+        if self.data_handler.altname_get(show['id']):
+            return [ self.data_handler.altname_get(show['id']) ]
+        else:
+            return [show['title']] + show['aliases']
     
     def get_show_details(self, show):
         """
@@ -528,8 +531,9 @@ class Engine:
 
         # Check over video files and propose our best candidate
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            # Use our analyze function to see what's the title and episode of the file
-            (candidate_title, candidate_episode) = utils.analyze(filename)
+            # Analyze what's the title and episode of the file
+            aie = tracker.AnimeInfoExtractor(filename)
+            (candidate_title, candidate_episode) = (aie.getName(), aie.getEpisode())
 
             # Skip this file if we couldn't analyze it or it isn't the episode we want
             if not candidate_title or candidate_episode != episode:
