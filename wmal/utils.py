@@ -126,6 +126,8 @@ def show():
         'type':         0,
         'status':       0,
         'total':        0,
+        'start_date':   None,
+        'end_date':  None,
         'image':        '',
         'queued':       False,
         'neweps':       False,

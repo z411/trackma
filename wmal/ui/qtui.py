@@ -356,17 +356,17 @@ class wmal(QtGui.QMainWindow):
             altnames = self.worker.engine.altnames()
 
         widget = self.show_lists[status]
-        columns = ['Title', 'Progress', 'Score', 'Percent', 'ID']
+        columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date']
         widget.clear()
         widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
         widget.setColumnCount(len(columns))
         widget.setHorizontalHeaderLabels(columns)
-        widget.setColumnHidden(4, True)
-        widget.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
-        widget.horizontalHeader().resizeSection(1, 70)
-        widget.horizontalHeader().resizeSection(2, 55)
-        widget.horizontalHeader().resizeSection(3, 100)
+        widget.setColumnHidden(0, True)
+        widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
+        widget.horizontalHeader().resizeSection(2, 70)
+        widget.horizontalHeader().resizeSection(3, 55)
+        widget.horizontalHeader().resizeSection(4, 100)
 
         i = 0
         for show in showlist:
@@ -397,11 +397,12 @@ class wmal(QtGui.QMainWindow):
             percent_widget.setValue( 100L * show['my_progress'] / show['total'] )
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
-        widget.setItem(row, 0, ShowItem( title_str, color ))
-        widget.setItem(row, 1, ShowItemNum( show['my_progress'], progress_str, color ))
-        widget.setItem(row, 2, ShowItemNum( show['my_score'], str(show['my_score']), color ))
-        widget.setCellWidget(row, 3, percent_widget )
-        widget.setItem(row, 4, ShowItem( str(show['id']), color ))
+        widget.setItem(row, 0, ShowItem( str(show['id']), color ))
+        widget.setItem(row, 1, ShowItem( title_str, color ))
+        widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
+        widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
+        widget.setCellWidget(row, 4, percent_widget )
+        widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
     def _get_color(self, show):
         if show.get('queued'):
@@ -1452,13 +1453,27 @@ class ShowItem(QtGui.QTableWidgetItem):
         if color:
             self.setBackgroundColor( color )
 
-class ShowItemNum(QtGui.QTableWidgetItem):
+class ShowItemNum(ShowItem):
     def __init__(self, num, text, color=None):
-        QtGui.QTableWidgetItem.__init__(self, text)
+        ShowItem.__init__(self, text, color) 
         self.num = num
         
     def __lt__(self, other):
         return self.num < other.num
+
+class ShowItemDate(ShowItem):
+    def __init__(self, date, color=None):
+        if date:
+            datestr = date.strftime("%Y-%m-%d")
+        else:
+            datestr = '-'
+
+        my.date = date
+
+        ShowItem.__init__(self, datestr, color)
+
+    def __lt__(self, other):
+        return self.date < other.date
 
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
