@@ -374,7 +374,7 @@ class wmal(QtGui.QMainWindow):
             i += 1
         
         widget.setSortingEnabled(True)
-        widget.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
         
         # Update tab name with total
         tab_index = self.statuses_nums.index(status)
@@ -458,7 +458,7 @@ class wmal(QtGui.QMainWindow):
             return
         
         index = new.row()
-        selected_id = self.notebook.currentWidget().item( index, 4 ).text()
+        selected_id = self.notebook.currentWidget().item( index, 0 ).text()
 
         # Attempt to convert to int if possible
         try:
@@ -1468,7 +1468,7 @@ class ShowItemDate(ShowItem):
         else:
             datestr = '-'
 
-        my.date = date
+        self.date = date
 
         ShowItem.__init__(self, datestr, color)
 

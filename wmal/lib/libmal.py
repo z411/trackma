@@ -331,8 +331,8 @@ class libmal(lib):
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
-                'start_date':   self._str2date( child.find('start_date').text ),
-                'end_date':     self._str2date( child.find('end_date').text ),
+                'start_date':   self._str2date( child.find('series_start').text ),
+                'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
                 'url':          "http://myanimelist.net/anime/%d" % show_id,
             })
@@ -361,8 +361,8 @@ class libmal(lib):
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_chapters').text),
                 'status':       int(child.find('series_status').text),
-                'start_date':   self._str2date( child.find('start_date').text ),
-                'end_date':     self._str2date( child.find('end_date').text ),
+                'start_date':   self._str2date( child.find('series_start').text ),
+                'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
                 'url':          "http://myanimelist.net/manga/%d" % manga_id,
             })
