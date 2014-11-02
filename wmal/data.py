@@ -38,6 +38,7 @@ class Data(object):
 
     """
     name = 'Data'
+    version = 1
     
     msg = None
     api = None
@@ -141,7 +142,7 @@ class Data(object):
             # Auto-retrieve: Redownload list if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
                (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
-                self.meta.get('version') != utils.VERSION):
+                self.meta.get('version') != self.version):
                 try:
                     # Make sure we process the queue first before overwriting the list
                     # We don't want users losing their changes
@@ -502,7 +503,7 @@ class Data(object):
         
         # Update last retrieved time
         self.meta['lastget'] = time.time()
-        self.meta['version'] = utils.VERSION
+        self.meta['version'] = self.version
         self._save_meta()
         
     def _cache_exists(self):
