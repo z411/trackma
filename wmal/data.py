@@ -485,9 +485,10 @@ class Data(object):
                 except KeyError:
                     missing.append(show)
                     continue
-                    
-                show['title'] = info['title']
-                show['image'] = info['image']
+                
+                self.api.merge(show, info)
+                #show['title'] = info['title']
+                #show['image'] = info['image']
             
             # Here we request the missing items and merge them
             # immedately with the list.
@@ -495,8 +496,10 @@ class Data(object):
                 infos = self.api.request_info(missing)
                 for info in infos:
                     showid = info['id']
-                    self.showlist[showid]['title'] = info['title']
-                    self.showlist[showid]['image'] = info['image']
+                    self.api.merge(self.showlist[showid], info)
+
+                    #self.showlist[showid]['title'] = info['title']
+                    #self.showlist[showid]['image'] = info['image']
         
         self._save_cache()
         self.api.logout()

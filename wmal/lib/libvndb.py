@@ -19,7 +19,7 @@ import wmal.utils as utils
 
 import socket
 import json
-
+import datetime
 
 class libvndb(lib):
     """
@@ -35,7 +35,7 @@ class libvndb(lib):
     
     api_info =  {
                   'name': 'VNDB',
-                  'version': 'v0.2',
+                  'version': 'v0.3',
                   'merge': True,
                 }
     
@@ -320,13 +320,27 @@ class libvndb(lib):
         self.msg.info(self.name, 'Disconnecting...')
         self._disconnect()
         self.logged_in = False
+
+    def merge(self, show, info):
+        show['title'] = info['title']
+        show['image'] = info['image']
+        show['status'] = info['status']
+        show['start_date'] = info['start_date']
     
     def _parse_info(self, item):
+        start_date = self._str2date(item['released'])
+        if start_date and start_date > datetime.datetime.now():
+            status = 3
+        else:
+            status = 2
+
         info = utils.show()
         info.update({'id': item['id'],
                 'title': item['title'],
                 'image': item['image'],
                 'url': self._get_url(item['id']),
+                'start_date': self._str2date(item['released']),
+                'status': status,
                 'extra': [
                     ('Original Name', item['original']),
                     ('Released',      item['released']),
@@ -343,4 +357,14 @@ class libvndb(lib):
 
     def _get_url(self, vnid):
         return "http://vndb.org/v%d" % vnid
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except ValueError:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+
         

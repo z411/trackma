@@ -1473,7 +1473,10 @@ class ShowItemDate(ShowItem):
         ShowItem.__init__(self, datestr, color)
 
     def __lt__(self, other):
-        return self.date < other.date
+        if self.date and other.date:
+            return self.date < other.date
+        else:
+            return True
 
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
