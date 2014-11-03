@@ -605,14 +605,16 @@ class Engine:
             filename = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
-                self.playing = True
+                if self.tracker:
+                    self.tracker.disable()
                 arg_list = shlex.split(self.config['player'])
                 arg_list.append(filename)
                 try:
                     subprocess.call(arg_list)
                 except OSError:
                     raise utils.EngineError('Player not found, check your config.json')
-                self.playing = False
+                if self.tracker:
+                    self.tracker.enable()
                 return playep
             else:
                 raise utils.EngineError('Episode file not found.')
