@@ -324,15 +324,14 @@ class libvndb(lib):
     def merge(self, show, info):
         show['title'] = info['title']
         show['image'] = info['image']
-        show['status'] = info['status']
         show['start_date'] = info['start_date']
+        if show['start_date'] and show['start_date'] > datetime.datetime.now():
+            show['status'] = 3
+        else:
+            show['status'] = 2
     
     def _parse_info(self, item):
         start_date = self._str2date(item['released'])
-        if start_date and start_date > datetime.datetime.now():
-            status = 3
-        else:
-            status = 2
 
         info = utils.show()
         info.update({'id': item['id'],
@@ -340,7 +339,6 @@ class libvndb(lib):
                 'image': item['image'],
                 'url': self._get_url(item['id']),
                 'start_date': self._str2date(item['released']),
-                'status': status,
                 'extra': [
                     ('Original Name', item['original']),
                     ('Released',      item['released']),
