@@ -1056,7 +1056,7 @@ class ShowView(gtk.TreeView):
         elif show['status'] == 3:
             return '#999900'
         else:
-            return 'black'
+            return None
 
     def append_start(self):
         self.freeze_child_notify()
@@ -1943,10 +1943,12 @@ class ShowSearchView(gtk.TreeView):
         self.store.clear()
         
     def append(self, show):
-        if show['status'] == 'Currently Airing':
-            color = 'blue'
+        if show['status'] == 1:
+            color = '#0099cc'
+        elif show['status'] == 3:
+            color = '#999900'
         else:
-            color = 'black'
+            color = None
         
         row = [show['id'], show['title'], show['type'], show['total'], color]
         self.store.append(row)
