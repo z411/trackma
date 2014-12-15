@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ def regex_find_videos(extensions, subdirectory=''):
                 yield ( os.path.join(root, filename), filename )
 
 def make_dir(directory):
-    path = os.path.expanduser(os.path.join('~', '.wmal', directory))
+    path = os.path.expanduser(os.path.join('~', '.trackma', directory))
     if not os.path.isdir(path):
         os.mkdir(path)
     
@@ -88,10 +88,10 @@ def copy_file(src, dest):
     shutil.copy(src, dest)
 
 def get_filename(subdir, filename):
-    return os.path.expanduser(os.path.join('~', '.wmal', subdir, filename))
+    return os.path.expanduser(os.path.join('~', '.trackma', subdir, filename))
     
 def get_root_filename(filename):
-    return os.path.expanduser(os.path.join('~', '.wmal', filename))
+    return os.path.expanduser(os.path.join('~', '.trackma', filename))
     
 def get_terminal_size(fd=1):
     """
@@ -133,31 +133,31 @@ def show():
         'neweps':       False,
     }
 
-class wmalError(Exception):
+class TrackmaError(Exception):
     pass
 
-class EngineError(wmalError):
+class EngineError(TrackmaError):
     pass
 
-class DataError(wmalError):
+class DataError(TrackmaError):
     pass
 
-class APIError(wmalError):
+class APIError(TrackmaError):
     pass
 
-class AccountError(wmalError):
+class AccountError(TrackmaError):
     pass
 
-class wmalFatal(Exception):
+class TrackmaFatal(Exception):
     pass
 
-class EngineFatal(wmalFatal):
+class EngineFatal(TrackmaFatal):
     pass
 
-class DataFatal(wmalFatal):
+class DataFatal(TrackmaFatal):
     pass
 
-class APIFatal(wmalFatal):
+class APIFatal(TrackmaFatal):
     pass
    
 # Configuration defaults

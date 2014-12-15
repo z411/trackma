@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,11 +23,11 @@ import cmd
 import re
 from operator import itemgetter # Used for sorting list
 
-from wmal.engine import Engine
-from wmal.accounts import AccountManager
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
 
-import wmal.messenger as messenger
-import wmal.utils as utils
+import trackma.messenger as messenger
+import trackma.utils as utils
 
 _DEBUG = False
 _COLOR_ENGINE = '\033[0;32m'
@@ -40,7 +40,7 @@ _COLOR_RESET = '\033[0m'
 
 _COLOR_AIRING = '\033[0;34m'
 
-class wmal_cmd(cmd.Cmd):
+class Trackma_cmd(cmd.Cmd):
     """
     Main program, inherits from the useful Cmd class
     for interactive console
@@ -55,13 +55,13 @@ class wmal_cmd(cmd.Cmd):
     __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
     def __init__(self):
-        print 'wMAL v'+utils.VERSION+'  Copyright (C) 2012  z411'
+        print 'Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
         print 'This is free software, and you are welcome to redistribute it'
         print 'under certain conditions; see the file COPYING for details.'
         print
 
-        self.accountman = wmal_accounts()
+        self.accountman = Trackma_accounts()
         self.account = self.accountman.select_account()
 
     def _update_prompt(self):
@@ -157,7 +157,7 @@ class wmal_cmd(cmd.Cmd):
             try:
                 show = self.engine.get_show_info_title(arg)
                 details = self.engine.get_show_details(show)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
                 return
 
@@ -191,7 +191,7 @@ class wmal_cmd(cmd.Cmd):
         if(arg):
             try:
                 entries = self.engine.search(arg)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
                 return
             
@@ -211,7 +211,7 @@ class wmal_cmd(cmd.Cmd):
                 # Tell the engine to add the show
                 try:
                     self.engine.add_show(show)
-                except utils.wmalError, e:
+                except utils.TrackmaError, e:
                     self.display_error(e)
     
     def do_delete(self, arg):
@@ -230,7 +230,7 @@ class wmal_cmd(cmd.Cmd):
                 do_delete = raw_input("Delete %s? [y/N] " % show['title'])
                 if do_delete.lower() == 'y':
                     self.engine.delete_show(show)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
         
     def do_neweps(self, arg):
@@ -276,7 +276,7 @@ class wmal_cmd(cmd.Cmd):
                     do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
                     if do_update.lower() == 'y':
                         self.engine.set_episode(show['id'], played_episode)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
         else:
             print "Missing arguments."
@@ -294,7 +294,7 @@ class wmal_cmd(cmd.Cmd):
                 self.engine.set_episode(show['id'], args[1])
             except IndexError:
                 print "Missing arguments."
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
         else:
             print "Missing arguments."
@@ -311,7 +311,7 @@ class wmal_cmd(cmd.Cmd):
                 self.engine.set_score(args[0], args[1])
             except IndexError:
                 print "Missing arguments."
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
         else:
             print "Missing arguments."
@@ -338,19 +338,19 @@ class wmal_cmd(cmd.Cmd):
             
             try:
                 self.engine.set_status(_showname, _filter_num)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.display_error(e)
         
     def do_send(self, arg):
         try:
             self.engine.list_upload()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.display_error(e)
     
     def do_retrieve(self, arg):
         try:
             self.engine.list_download()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.display_error(e)
     
     def do_undoall(self, arg):
@@ -361,7 +361,7 @@ class wmal_cmd(cmd.Cmd):
         """
         try:
             self.engine.undoall()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.display_error(e)
         
     def do_viewqueue(self, arg):
@@ -377,7 +377,7 @@ class wmal_cmd(cmd.Cmd):
         """Quits the program."""
         try:
             self.engine.unload()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.display_error(e)
         
         print 'Bye!'
@@ -517,7 +517,7 @@ class wmal_cmd(cmd.Cmd):
         print '%d results' % len(showlist)
         print
 
-class wmal_accounts(AccountManager):
+class Trackma_accounts(AccountManager):
     def select_account(self):
         while True:
             print '--- Accounts ---'
@@ -571,7 +571,7 @@ class wmal_accounts(AccountManager):
 
 
 def main():
-    main_cmd = wmal_cmd()
+    main_cmd = Trackma_cmd()
     try:
         main_cmd.start()
         print
@@ -579,6 +579,6 @@ def main():
         print "Press tab for autocompletion and up/down for command history."
         print
         main_cmd.cmdloop()
-    except utils.wmalFatal, e:
+    except utils.TrackmaFatal, e:
         print "%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET)
     

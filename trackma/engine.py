@@ -167,7 +167,7 @@ class Engine:
         as it initializes the data handler.
         """
         if self.loaded:
-            raise utils.wmalError("Already loaded.")
+            raise utils.TrackmaError("Already loaded.")
         
         # Start the data handler
         try:
@@ -210,7 +210,7 @@ class Engine:
     def reload(self, account=None, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
         if not self.loaded:
-            raise utils.wmalError("Engine is not loaded.")
+            raise utils.TrackmaError("Engine is not loaded.")
         
         self.unload()
         

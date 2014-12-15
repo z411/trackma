@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import wmal.utils as utils
+import trackma.utils as utils
 
 class lib(object):
     """
-    Base interface for creating API implementations for wMAL.
+    Base interface for creating API implementations for Trackma.
 
     messenger: Messenger object to send useful messages to
     mediatype: String containing the media type to be used

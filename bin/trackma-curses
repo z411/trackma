@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 try:
-    import wmal.ui.cli
+    import trackma.ui.curses
 except ImportError:
     import os, sys
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import wmal.ui.cli
+    import trackma.ui.curses
 
-wmal.ui.cli.main()
+trackma.ui.curses.main()

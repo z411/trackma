@@ -4,7 +4,7 @@ Getting Started
 
 Pre-requisites
 ==============
-To run wMAL you only need:
+To run Trackma you only need:
 
 * Python >= 2.6
 * lsof
@@ -23,23 +23,23 @@ Installation
 Generic install
 ---------------
 
-Installation is done by getting the dependencies, cloning the wMAL repository, navigating to the directory and running (as root) ``python setup.py install``.
-Then you can run the interface you like by using its respective command ``wmal-qt``, ``wmal-gtk``, ``wmal-curses`` or ``wmal``.
+Installation is done by getting the dependencies, cloning the Trackma repository, navigating to the directory and running (as root) ``python setup.py install``.
+Then you can run the interface you like by using its respective command ``trackma-qt``, ``trackma-gtk``, ``trackma-curses`` or ``trackma``.
 
-For example, installing wMAL with its GTK interface on Debian-based systems like Ubuntu can be done by entering the following commands:
+For example, installing Trackma with its GTK interface on Debian-based systems like Ubuntu can be done by entering the following commands:
 
 .. code-block:: bash
 
     sudo apt-get install git python python-gtk2 python-imaging
-    git clone https://github.com/z411/wmal-python.git
-    cd wmal-python
+    git clone https://github.com/z411/trackma.git
+    cd trackma
     sudo python2 setup.py install
 
-Then, you can run wMAL's GTK interface by running:
+Then, you can run Trackma's GTK interface by running:
 
 .. code-block:: bash
 
-    wmal-gtk
+    trackma-gtk
     
 Arch Linux and Gentoo Linux users
 ---------------------------------
@@ -52,7 +52,7 @@ Configuration
 =============
 After installing, you'll want to immediately make sure that the options pointing to the name of your player  and the directory of video files are correct.
 
-Currently the GTK interface provides an intuitive graphical way to edit wMAL's configuration.
+Currently the GTK interface provides an intuitive graphical way to edit Trackma's configuration.
 
 .. TODO : Image here
 
@@ -60,7 +60,7 @@ If you don't want to use the GTK interface you can also edit the configuration f
 
 Configuration file
 ==================
-wMAL's configuration is stored in a JSON file in ``~/.wmal/config.json``. This file can be edited freely, but make sure wMAL is closed,
+Trackma's configuration is stored in a JSON file in ``~/.trackma/config.json``. This file can be edited freely, but make sure Trackma is closed,
 otherwise your options will get overwritten.
 
 The configuration options are the following:
@@ -144,7 +144,7 @@ The configuration options are the following:
 
 * ``tracker_interval``
 
-  * Time **in seconds** for the tracker to re-check for a running player in the background. Decrease this value if you want wMAL to react quicker when you have a media player running.
+  * Time **in seconds** for the tracker to re-check for a running player in the background. Decrease this value if you want Trackma to react quicker when you have a media player running.
   * Type: Integer
   * Default value: ``120``
 

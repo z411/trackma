@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@ from PyQt4 import QtGui, QtCore
 from cStringIO import StringIO
 import urllib2 as urllib
 
-import wmal.messenger as messenger
-import wmal.utils as utils
+import trackma.messenger as messenger
+import trackma.utils as utils
 
-from wmal.engine import Engine
-from wmal.accounts import AccountManager
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
 
 try:
     import Image
@@ -37,7 +37,7 @@ except ImportError:
         print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
         imaging_available = False
 
-class wmal(QtGui.QMainWindow):
+class Trackma(QtGui.QMainWindow):
     """
     Main GUI class
 
@@ -55,12 +55,12 @@ class wmal(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self, None)
 
         # Load QT specific configuration
-        self.configfile = utils.get_root_filename('wmal-qt.json')
+        self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
          
         # Build UI
-        QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/wmal_icon.png'))
-        self.setWindowTitle('wMAL-qt')
+        QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
+        self.setWindowTitle('Trackma-qt')
         
         self.accountman = AccountManager()
         self.accountman_widget = AccountDialog(None, self.accountman)
@@ -123,7 +123,7 @@ class wmal(QtGui.QMainWindow):
         action_delete.setStatusTip('Remove this show from your list.')
         action_delete.triggered.connect(self.s_delete)
         action_quit = QtGui.QAction(QtGui.QIcon.fromTheme('application-exit'), '&Quit', self)
-        action_quit.setStatusTip('Exit wMAL.')
+        action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
         action_send = QtGui.QAction('&Send changes', self)
@@ -174,7 +174,7 @@ class wmal(QtGui.QMainWindow):
         main_hbox = QtGui.QHBoxLayout()
         left_box = QtGui.QFormLayout()
         
-        self.show_title = QtGui.QLabel('wMAL-qt')
+        self.show_title = QtGui.QLabel('Trackma-qt')
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
@@ -191,7 +191,7 @@ class wmal(QtGui.QMainWindow):
         self.notebook.currentChanged.connect(self.s_tab_changed)
         self.setMinimumSize(740, 480)
         
-        self.show_image = QtGui.QLabel('wMAL-qt')
+        self.show_image = QtGui.QLabel('Trackma-qt')
         self.show_image.setFixedHeight( 149 )
         self.show_image.setFixedWidth( 100 )
         self.show_image.setAlignment( QtCore.Qt.AlignCenter )
@@ -232,7 +232,7 @@ class wmal(QtGui.QMainWindow):
         self.setCentralWidget(self.main_widget)
         
         # Statusbar
-        self.status_text = QtGui.QLabel('wMAL-qt')
+        self.status_text = QtGui.QLabel('Trackma-qt')
         self.queue_text = QtGui.QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
         self.statusBar().addWidget(self.queue_text)
@@ -443,8 +443,8 @@ class wmal(QtGui.QMainWindow):
             # Unselect any show
             self.selected_show_id = None
 
-            self.show_title.setText('wMAL-qt')
-            self.show_image.setText('wMAL-qt')
+            self.show_title.setText('Trackma-qt')
+            self.show_image.setText('Trackma-qt')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
             self.show_progress.setEnabled(False)
@@ -639,11 +639,11 @@ class wmal(QtGui.QMainWindow):
         dialog.exec_()
                     
     def s_about(self):
-        QtGui.QMessageBox.about(self, 'About wMAL-qt %s' % utils.VERSION,
-            '<p><b>About wMAL-qt %s</b></p><p>wMAL is an open source client for media tracking websites.</p>'
+        QtGui.QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
+            '<p><b>About Trackma-qt %s</b></p><p>Trackma is an open source client for media tracking websites.</p>'
             '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
             '<p>Copyright (C) z411 - Icon by shuuichi</p>'
-            '<p><a href="http://github.com/z411/wmal-python">http://github.com/z411/wmal-python</a></p>' % utils.VERSION)
+            '<p><a href="http://github.com/z411/trackma">http://github.com/z411/trackma</a></p>' % utils.VERSION)
 
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
@@ -668,7 +668,7 @@ class wmal(QtGui.QMainWindow):
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 if episode == (show['my_progress'] + 1):
                     delay = self.worker.engine.get_config('tracker_update_wait')
-                    self.tray.showMessage('wMAL Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
+                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
         
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
@@ -750,7 +750,7 @@ class wmal(QtGui.QMainWindow):
             # Show API info
             self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
             self.api_user.setText( self.account['username'] )
-            self.setWindowTitle( "wMAL-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
+            self.setWindowTitle( "Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
             # Rebuild lists
             self._rebuild_lists(showlist, altnames)
@@ -1646,7 +1646,7 @@ class Engine_Worker(QtCore.QThread):
     def _start(self):
         try:
             self.engine.start()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
         
@@ -1655,7 +1655,7 @@ class Engine_Worker(QtCore.QThread):
     def _reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
         
@@ -1664,7 +1664,7 @@ class Engine_Worker(QtCore.QThread):
     def _unload(self):
         try:
             self.engine.unload()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1674,7 +1674,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             showlist = self.engine.get_list()
             altnames = self.engine.altnames()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1683,7 +1683,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_episode(self, showid, episode):
         try:
             self.engine.set_episode(showid, episode)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1692,7 +1692,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_score(self, showid, score):
         try:
             self.engine.set_score(showid, score)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1701,7 +1701,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1710,7 +1710,7 @@ class Engine_Worker(QtCore.QThread):
     def _play_episode(self, show, episode):
         try:
             played_ep = self.engine.play_episode(show, episode)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1719,7 +1719,7 @@ class Engine_Worker(QtCore.QThread):
     def _list_download(self):
         try:
             self.engine.list_download()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1728,7 +1728,7 @@ class Engine_Worker(QtCore.QThread):
     def _list_upload(self):
         try:
             self.engine.list_upload()
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1737,7 +1737,7 @@ class Engine_Worker(QtCore.QThread):
     def _get_show_details(self, show):
         try:
             details = self.engine.get_show_details(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1746,7 +1746,7 @@ class Engine_Worker(QtCore.QThread):
     def _search(self, terms):
         try:
             results = self.engine.search(terms)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1755,7 +1755,7 @@ class Engine_Worker(QtCore.QThread):
     def _add_show(self, show):
         try:
             results = self.engine.add_show(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1764,7 +1764,7 @@ class Engine_Worker(QtCore.QThread):
     def _delete_show(self, show):
         try:
             results = self.engine.delete_show(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
 
@@ -1794,5 +1794,5 @@ class Engine_Worker(QtCore.QThread):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    mainwindow = wmal()
+    mainwindow = Trackma()
     sys.exit(app.exec_())

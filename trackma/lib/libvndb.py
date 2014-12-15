@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from wmal.lib.lib import lib
-import wmal.utils as utils
+from trackma.lib.lib import lib
+import trackma.utils as utils
 
 import socket
 import json
@@ -136,7 +136,7 @@ class libvndb(lib):
         self.msg.info(self.name, 'Logging in...')
         (name, data) = self._sendcmd('login',
             {'protocol': 1,
-             'client': 'wMAL',
+             'client': 'Trackma',
              'clientver': self.api_info['version'],
              'username': self.username,
              'password': self.password,

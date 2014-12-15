@@ -1,7 +1,7 @@
-wMAL
-====
+Trackma
+=======
 
-wMAL aims to be a lightweight and simple but feature-rich program for Unix based systems
+Trackma aims to be a lightweight and simple but feature-rich program for Unix based systems
 for fetching, updating and using data from personal lists hosted in different
 media tracking websites like MyAnimeList, Melative or VNDB.
 
@@ -20,24 +20,24 @@ Screenshots
 
 Qt interface
 
-![Qt](https://z411.github.io/wmal-python/images/screen_qt.png)
+![Qt](https://z411.github.io/trackma/images/screen_qt.png)
 
 GTK interface
 
-![GTK](http://z411.github.com/wmal-python/images/screen_gtk.png)
+![GTK](http://z411.github.com/trackma/images/screen_gtk.png)
 
 Curses interface
 
-![Curses](http://z411.github.com/wmal-python/images/screen_curses.png)
+![Curses](http://z411.github.com/trackma/images/screen_curses.png)
 
 CLI
 
-![CLI](http://z411.github.com/wmal-python/images/screen_cli.png)
+![CLI](http://z411.github.com/trackma/images/screen_cli.png)
 
 Documentation
 -------------
 
-The documentation for wMAL is [available on ReadTheDocs](http://wmal.readthedocs.org).
+The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
 
 Requirements
 ------------
@@ -59,9 +59,9 @@ Like any Python program, run the setup.py installation script:
 Then you can run the program with the interface you like.
 
 <pre>
-$ wmal
-$ wmal-curses (requires urwid)
-$ wmal-gtk (requires pygtk)
+$ trackma
+$ trackma-curses (requires urwid)
+$ trackma-gtk (requires pygtk)
 </pre>
 
 Alternatively, you can just run the scripts directly from the bin/ folder.
@@ -69,10 +69,10 @@ Alternatively, you can just run the scripts directly from the bin/ folder.
 Configuration
 -------------
 
-A configuration file will be created in `~/.wmal/config.json`, make sure to fill in the directory
+A configuration file will be created in `~/.trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
-https://github.com/z411/wmal-python/wiki/Configuration-File
+https://github.com/z411/trackma/wiki/Configuration-File
 
 Alternatively, the GTK interface provides a Settings panel, found in Options -> Global Settings...
 
@@ -81,18 +81,18 @@ Development
 
 The code is hosted as a git repository in github:
 
-http://github.com/z411/wmal-python
+http://github.com/z411/trackma
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the github issue tracker:
 
-http://github.com/z411/wmal-python/issues
+http://github.com/z411/trackma/issues
 
 License
 -------
-wMAL is licensed under the GPLv3 license, please see LICENSE for details.
+Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-wMAL was written by z411 <electrik.persona@gmail.com>
+Trackma was written by z411 <electrik.persona@gmail.com>
 GTK icon designed by shuuichi

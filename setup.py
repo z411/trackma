@@ -2,13 +2,13 @@
 
 from distutils.core import setup
 
-setup(name='wMAL',
+setup(name='Trackma',
       version='0.3',
       description='Open multi-site list manager',
       author='z411',
-      url='https://github.com/z411/wmal-python',
-      packages=['wmal', 'wmal.lib', 'wmal.ui'],
-      package_data={'wmal': ['data/*']},
-      scripts=['bin/wmal', 'bin/wmal-curses', 'bin/wmal-gtk', 'bin/wmal-qt'],
+      url='https://github.com/z411/trackma',
+      packages=['trackma', 'trackma.lib', 'trackma.ui'],
+      package_data={'trackma': ['data/*']},
+      scripts=['bin/trackma', 'bin/trackma-curses', 'bin/trackma-gtk', 'bin/trackma-qt'],
       requires=[]
       )

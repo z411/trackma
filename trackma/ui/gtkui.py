@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,13 +40,13 @@ except ImportError:
         print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
         imaging_available = False
 
-import wmal.messenger as messenger
-import wmal.utils as utils
+import trackma.messenger as messenger
+import trackma.utils as utils
 
-from wmal.engine import Engine
-from wmal.accounts import AccountManager
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
     
-class wmal_gtk(object):
+class Trackma_gtk(object):
     engine = None
     config = None
     show_lists = dict()
@@ -57,7 +57,7 @@ class wmal_gtk(object):
     
     def main(self):
         """Start the Account Selector"""
-        self.configfile = utils.get_root_filename('wmal-gtk.json')
+        self.configfile = utils.get_root_filename('ui-gtk.json')
         self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
         
         manager = AccountManager()
@@ -107,8 +107,8 @@ class wmal_gtk(object):
         self.main.set_position(gtk.WIN_POS_CENTER)
         self.main.connect('delete_event', self.delete_event)
         self.main.connect('destroy', self.on_destroy)
-        self.main.set_title('wMAL-gtk ' + utils.VERSION)
-        gtk.window_set_default_icon_from_file(utils.datadir + '/data/wmal_icon.png')
+        self.main.set_title('Trackma-gtk ' + utils.VERSION)
+        gtk.window_set_default_icon_from_file(utils.datadir + '/data/icon.png')
         
         # Menus
         mb_list = gtk.Menu()
@@ -315,15 +315,15 @@ class wmal_gtk(object):
         vbox.pack_start(self.notebook, True, True, 0)
 
         self.statusbar = gtk.Statusbar()
-        self.statusbar.push(0, 'wMAL-gtk ' + utils.VERSION)
+        self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
         vbox.pack_start(self.statusbar, False, False, 0)
 
         vbox.show_all()
         
         # Status icon
         self.statusicon = gtk.StatusIcon()
-        self.statusicon.set_from_file(utils.datadir + '/data/wmal_icon.png')
-        self.statusicon.set_tooltip('wMAL-gtk ' + utils.VERSION)
+        self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
+        self.statusicon.set_tooltip('Trackma-gtk ' + utils.VERSION)
         self.statusicon.connect('activate', self.status_event)
         self.statusicon.connect('popup-menu', self.status_menu_event)
         if self.config['show_tray']:
@@ -356,14 +356,14 @@ class wmal_gtk(object):
         self.start_engine()
     
     def _clear_gui(self):
-        self.show_title.set_text('<span size="14000"><b>wMAL</b></span>')
+        self.show_title.set_text('<span size="14000"><b>Trackma</b></span>')
         self.show_title.set_use_markup(True)
-        self.show_image.pholder_show("wMAL")
+        self.show_image.pholder_show("Trackma")
         
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
         
-        self.main.set_title('wMAL-gtk %s [%s (%s)]' % (
+        self.main.set_title('Trackma-gtk %s [%s (%s)]' % (
             utils.VERSION,
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
@@ -489,7 +489,7 @@ class wmal_gtk(object):
         try:
             show = self.engine.get_show_info(self.selected_show)
             self.engine.delete_show(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
     
     def do_info(self, widget, d1=None, d2=None):
@@ -501,21 +501,21 @@ class wmal_gtk(object):
         try:
             show = self.engine.set_episode(self.selected_show, ep + 1)
             self.show_ep_num.set_value(show['my_progress'])
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
     
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
     
     def do_score(self, widget):
         score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
             
     def do_status(self, widget):
@@ -524,7 +524,7 @@ class wmal_gtk(object):
         
         try:
             show = self.engine.set_status(self.selected_show, status)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
     
     def do_update_next(self, show, played_ep):
@@ -573,7 +573,7 @@ class wmal_gtk(object):
                 show = self.engine.set_episode(show['id'], played_ep)
                 status = show['my_status']
                 self.show_lists[status].update(show)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
     
     def task_play(self, playnext):
@@ -591,7 +591,7 @@ class wmal_gtk(object):
             # Ask if we should update to the next episode
             if played_ep == (show['my_progress'] + 1):
                 self.do_update_next(show, played_ep)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
             print e.message
         
@@ -656,7 +656,7 @@ class wmal_gtk(object):
         if not self.engine.loaded:
             try:
                 self.engine.start()
-            except utils.wmalFatal, e:
+            except utils.TrackmaFatal, e:
                 self.status("Fatal engine error: %s" % e.message)
                 print("Fatal engine error: %s" % e.message)
                 return
@@ -688,7 +688,7 @@ class wmal_gtk(object):
     def task_reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
         
         if account:
@@ -777,10 +777,10 @@ class wmal_gtk(object):
         
     def on_about(self, widget):
         about = gtk.AboutDialog()
-        about.set_program_name("wMAL-gtk")
+        about.set_program_name("Trackma-gtk")
         about.set_version(utils.VERSION)
-        about.set_comments("wMAL is an open source client for media tracking websites.")
-        about.set_website("http://github.com/z411/wmal-python")
+        about.set_comments("Trackma is an open source client for media tracking websites.")
+        about.set_website("http://github.com/z411/trackma")
         about.set_copyright("(c) z411 - Icon by shuuichi")
         about.run()
         about.destroy()
@@ -1393,7 +1393,7 @@ class InfoDialog(gtk.Window):
         
         try:
             self.details = self.engine.get_show_details(self.show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.details = None
             self.details_e = e
  
@@ -1839,7 +1839,7 @@ class ShowSearch(gtk.Window):
             try:
                 self.engine.add_show(show)
                 #self.do_close()
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error_push(e.message)
     
     def do_info(self, widget):
@@ -1958,11 +1958,11 @@ class ShowSearchView(gtk.TreeView):
         self.store.set_sort_column_id(1, gtk.SORT_ASCENDING)
     
 def main():
-    app = wmal_gtk()
+    app = Trackma_gtk()
     try:
         gtk.gdk.threads_enter()
         app.main()
-    except utils.wmalFatal, e:
+    except utils.TrackmaFatal, e:
         md = gtk.MessageDialog(None, 
             gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, 
             gtk.BUTTONS_CLOSE, e.message)

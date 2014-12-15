@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ class Data(object):
         libbase = account['api']
         libname = "lib{0}".format(libbase)
         try:
-            modulename = "wmal.lib.{0}".format(libname)
+            modulename = "trackma.lib.{0}".format(libname)
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError, e:
@@ -530,7 +530,7 @@ class Data(object):
         if os.path.isfile(self.lock_file):
             raise utils.DataFatal("Database is locked by another process. "
                             "If you\'re sure there's no other process is using it, "
-                            "remove the file ~/.wmal/lock")
+                            "remove the file ~/.trackma/lock")
         
         f = open(self.lock_file, 'w')
         f.close()

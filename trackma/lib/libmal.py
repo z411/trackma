@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from wmal.lib.lib import lib
-import wmal.utils as utils
+from trackma.lib.lib import lib
+import trackma.utils as utils
 
 import urllib, urllib2
 import datetime
@@ -79,7 +78,7 @@ class libmal(lib):
         'score_decimals': 0,
     }
     
-    # Authorized User-Agent for wMAL
+    # Authorized User-Agent for Trackma
     url = 'http://myanimelist.net/api/'
     useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
 

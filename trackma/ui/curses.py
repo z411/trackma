@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,18 +24,18 @@ import re
 import sys
 import webbrowser
 
-from wmal.engine import Engine
-from wmal.accounts import AccountManager
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
 
-import wmal.messenger as messenger
-import wmal.utils as utils
+import trackma.messenger as messenger
+import trackma.utils as utils
 
 from operator import itemgetter
 from itertools import cycle
 
-class wMAL_urwid(object):
+class Trackma_urwid(object):
     """
-    Main class for the urwid version of wMAL
+    Main class for the urwid version of Trackma
     """
     
     """Main objects"""
@@ -77,8 +77,8 @@ class wMAL_urwid(object):
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
         self.keymapping = self.map_key_to_func(keymap)
         
-        sys.stdout.write("\x1b]0;wMAL-curses "+utils.VERSION+"\x07");
-        self.header_title = urwid.Text('wMAL-curses ' + utils.VERSION)
+        sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
+        self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
@@ -97,7 +97,7 @@ class wMAL_urwid(object):
             urwid.AttrMap(urwid.Text(top_text), 'status')
         ])
         
-        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+utils.VERSION), 'status')
+        self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
         
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -294,13 +294,13 @@ class wMAL_urwid(object):
             self.engine.list_download()
             self._rebuild_all_lists()
             self.status("Ready.")
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
     
     def do_help(self):
-        helptext = "wMAL-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
-        helptext += "wMAL is an open source client for media tracking websites.\n"
-        helptext += "http://github.com/z411/wmal-python\n\n"
+        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext += "Trackma is an open source client for media tracking websites.\n"
+        helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
         helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
@@ -386,7 +386,7 @@ class wMAL_urwid(object):
 
         try:
             details = self.engine.get_show_details(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
             return
  
@@ -423,7 +423,7 @@ class wMAL_urwid(object):
             self._rebuild()
 
             self.status("Ready.")
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
 
     def do_quit(self):
@@ -435,7 +435,7 @@ class wMAL_urwid(object):
         if data:
             try:
                 shows = self.engine.search(data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
@@ -453,7 +453,7 @@ class wMAL_urwid(object):
         show['my_status'] = self.filters_nums[self.cur_filter]
         try:
             self.engine.add_show(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
         
     def delete_request(self, data):
@@ -464,7 +464,7 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.delete_show(show)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
         
     def status_request(self, widget, data=None):
@@ -474,7 +474,7 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.set_status(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
     
@@ -490,7 +490,7 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.set_episode(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
     
@@ -501,7 +501,7 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.set_score(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
     
@@ -513,7 +513,7 @@ class wMAL_urwid(object):
             try:
                 self.engine.altname(item.showid, data)
                 item.update_altname(self.engine.altname(item.showid))
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
@@ -525,7 +525,7 @@ class wMAL_urwid(object):
             
             try:
                 played_episode = self.engine.play_episode(show, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
             
@@ -543,7 +543,7 @@ class wMAL_urwid(object):
             
             try:
                 show = self.engine.set_episode(item.showid, next_episode)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
         else:
@@ -1024,6 +1024,6 @@ class QuestionAsker(Asker):
     
 def main():
     try:
-        wMAL_urwid()
-    except utils.wmalFatal, e:
+        Trackma_urwid()
+    except utils.TrackmaFatal, e:
         print "Fatal error: %s" % e.message
