@@ -1350,7 +1350,6 @@ class InfoDialog(gtk.Window):
         sidebox.pack_start(self.w_content, padding=5)
 
         eventbox_sidebox.add(sidebox)
-        eventbox_sidebox.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse('white'))
 
         scrolled_sidebox.add_with_viewport(eventbox_sidebox)
         scrolled_sidebox.set_size_request(600, 500)
