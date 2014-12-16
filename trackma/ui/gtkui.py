@@ -998,17 +998,15 @@ class ShowView(gtk.TreeView):
         self.set_search_column(1)
         
         self.cols = dict()
-        i = 1
         if has_progress:
-            columns = ('Title', 'Progress', 'Score', 'Percent')
+            columns = (('Title', 1), ('Progress', 2), ('Score', 3), ('Percent', 4))
         else:
-            columns = ('Title', 'Score')
+            columns = (('Title', 1), ('Score', 3))
 
-        for name in columns:
+        for (name, sort) in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
-            self.cols[name].set_sort_column_id(i)
+            self.cols[name].set_sort_column_id(sort)
             self.append_column(self.cols[name])
-            i += 1
         
         #renderer_id = gtk.CellRendererText()
         #self.cols['ID'].pack_start(renderer_id, False)
@@ -1022,28 +1020,28 @@ class ShowView(gtk.TreeView):
         self.cols['Title'].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
-        self.cols['Title'].add_attribute(renderer_title, 'foreground', 5)
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 7)
         
         if has_progress:
             renderer_progress = gtk.CellRendererText()
             self.cols['Progress'].pack_start(renderer_progress, False)
-            self.cols['Progress'].add_attribute(renderer_progress, 'text', 2)
+            self.cols['Progress'].add_attribute(renderer_progress, 'text', 4)
             self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
             self.cols['Progress'].set_expand(False)
                 
             renderer_percent = gtk.CellRendererProgress()
             self.cols['Percent'].pack_start(renderer_percent, False)
-            self.cols['Percent'].add_attribute(renderer_percent, 'value', 4)
+            self.cols['Percent'].add_attribute(renderer_percent, 'value', 6)
             renderer_percent.set_fixed_size(100, -1)
         
         renderer_score = gtk.CellRendererText()
         self.cols['Score'].pack_start(renderer_score, False)
-        self.cols['Score'].add_attribute(renderer_score, 'text', 3)
+        self.cols['Score'].add_attribute(renderer_score, 'text', 5)
         self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
         self.cols['Score'].set_expand(False)
  
-        # ID, Title, Episodes, Score, Progress, Color
-        self.store = gtk.ListStore(str, str, str, str, int, str)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Progress, Color
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, str)
         self.set_model(self.store)
     
     def _get_color(self, show):
@@ -1079,7 +1077,7 @@ class ShowView(gtk.TreeView):
 
         score_str = "%0.*f" % (self.decimals, show['my_score'])
 
-        row = [show['id'], title_str, episodes_str, score_str, progress, self._get_color(show)]
+        row = [show['id'], title_str, show['my_progress'], show['my_score'], episodes_str, score_str, progress, self._get_color(show)]
         self.store.append(row)
         
     def append_finish(self):
