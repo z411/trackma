@@ -94,5 +94,5 @@ Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-Trackma was written by z411 <electrik.persona@gmail.com>
+Trackma was written by z411 <z411@krutt.org>
 GTK icon designed by shuuichi
