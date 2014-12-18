@@ -114,6 +114,7 @@ class libhb(lib):
             for show in shows:
                 showid = show['anime']['id']
                 status = show['anime']['status']
+                rating = show['rating']['value']
                 epCount = show['anime']['episode_count']
                 alt_titles = []
 
@@ -125,6 +126,7 @@ class libhb(lib):
                     'title': show['anime']['title'],
                     'status': self.status_translate[status],
                     'my_progress': show['episodes_watched'],
+                    'my_score': rating if rating is not None else 0.0,
                     'aliases': alt_titles,
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,
@@ -156,7 +158,7 @@ class libhb(lib):
         if 'my_status' in item.keys():
             values['status'] = item['my_status']
         if 'my_score' in item.keys():
-            values['rating'] = item['my_score']
+            values['sane_rating_update'] = item['my_score']
 
         try:
             response = self._request("/libraries/%s" % item['id'], post=values)
