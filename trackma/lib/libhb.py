@@ -53,8 +53,8 @@ class libhb(lib):
         'status_finish': 2,
         'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],
         'statuses_dict': { 'currently-watching': 'Watching', 'completed': 'Completed', 'on-hold': 'On Hold', 'dropped': 'Dropped', 'plan-to-watch': 'Plan to Watch' },
-        'score_max': 10,
-        'score_decimals': 1,
+        'score_max': 5,
+        'score_step': 0.5,
     }
     
     url = "https://hummingbirdv1.p.mashape.com"
@@ -126,7 +126,7 @@ class libhb(lib):
                     'title': show['anime']['title'],
                     'status': self.status_translate[status],
                     'my_progress': show['episodes_watched'],
-                    'my_score': rating if rating is not None else 0.0,
+                    'my_score': float(rating) if rating is not None else 0.0,
                     'aliases': alt_titles,
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,

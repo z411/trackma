@@ -52,7 +52,7 @@ class libvndb(lib):
         'statuses':  [1, 2, 3, 4, 0],
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     mediatypes['wishlist'] = {
         'has_progress': False,
@@ -65,7 +65,7 @@ class libvndb(lib):
         'statuses':  [0, 1, 2, 3],
         'statuses_dict': { 0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist' },
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     
     def __init__(self, messenger, account, userconfig):

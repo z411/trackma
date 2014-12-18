@@ -710,8 +710,13 @@ class Trackma(QtGui.QMainWindow):
             self.statuses_names = self.mediainfo['statuses_dict']
             
             # Set allowed ranges (this should be reported by the engine later)
+            decimal_places = 0
+            if isinstance( self.mediainfo['score_step'], float ):
+                decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
+
             self.show_score.setRange(0, self.mediainfo['score_max'])
-            self.show_score.setDecimals(self.mediainfo['score_decimals'])
+            self.show_score.setDecimals(decimal_places)
+            self.show_score.setSingleStep(self.mediainfo['score_step'])
             
             # Build notebook
             for status in self.statuses_nums:

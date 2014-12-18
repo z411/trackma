@@ -59,7 +59,7 @@ class libmal(lib):
         'statuses':  [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
         'score_max': 10,
-        'score_decimals': 0,
+        'score_step': 1,
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -75,7 +75,7 @@ class libmal(lib):
         'statuses': [1, 2, 3, 4, 6],
         'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
         'score_max': 10,
-        'score_decimals': 0,
+        'score_step': 1,
     }
     
     # Authorized User-Agent for Trackma

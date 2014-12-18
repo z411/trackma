@@ -18,6 +18,7 @@ import re
 import os
 import subprocess
 import atexit
+from decimal import Decimal
 
 import threading
 import difflib
@@ -432,15 +433,15 @@ class Engine:
             raise utils.EngineError('Operation not supported by API.')
         
         # Check for the correctness of the score
-        try:
-            # Use float if the mediainfo supports it
-            if self.mediainfo['score_decimals']:
-                newscore = float(newscore)
-            else:
-                newscore = int(newscore)
-        except ValueError:
+        if (Decimal(str(newscore)) % Decimal(str(self.mediainfo['score_step']))) != 0:
             raise utils.EngineError('Invalid score.')
-        
+
+        # Convert to proper type
+        if isinstance( self.mediainfo['score_step'], int ):
+            newscore = int(newscore)
+        else:
+            newscore = float(newscore)
+
         # Get the show and update it
         show = self.get_show_info(showid)
         # More checks

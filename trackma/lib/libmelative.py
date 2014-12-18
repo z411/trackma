@@ -48,7 +48,7 @@ class libmelative(lib):
         'statuses_dict': statuses_dict,
         'segment_type': 'Episode',
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -60,7 +60,7 @@ class libmelative(lib):
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     mediatypes['vn'] = {
         'has_progress': False,
@@ -72,7 +72,7 @@ class libmelative(lib):
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     mediatypes['lightnovel'] = {
         'has_progress': True,
@@ -84,7 +84,7 @@ class libmelative(lib):
         'statuses_dict': statuses_dict,
         'segment_type': 'Chapter',
         'score_max': 10,
-        'score_decimals': 1,
+        'score_step': 0.1,
     }
     
     def __init__(self, messenger, account, userconfig):

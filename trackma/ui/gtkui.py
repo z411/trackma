@@ -372,10 +372,14 @@ class Trackma_gtk(object):
             self.account['username'],
             self.engine.api_info['mediatype']))
 
+        self.score_decimal_places = 0
+        if isinstance( self.engine.mediainfo['score_step'], float ):
+            self.score_decimal_places = len(str(self.engine.mediainfo['score_step']).split('.')[1])
+ 
         self.show_score.set_value(0)
-        self.show_score.set_value(0)
-        self.show_score.set_digits(self.engine.mediainfo['score_decimals'])
+        self.show_score.set_digits(self.score_decimal_places)
         self.show_score.set_range(0, self.engine.mediainfo['score_max'])
+        self.show_score.get_adjustment().set_step_increment(self.engine.mediainfo['score_step'])
         
         can_play = self.engine.mediainfo['can_play']
         can_update = self.engine.mediainfo['can_update']
@@ -414,7 +418,7 @@ class Trackma_gtk(object):
             self.show_lists[status] = ShowView(
                     status,
                     self.engine.mediainfo['has_progress'],
-                    self.engine.mediainfo['score_decimals'])
+                    self.score_decimal_places)
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -1099,12 +1103,16 @@ class ShowView(gtk.TreeView):
                         progress = (float(show['my_progress']) / show['total']) * 100
                     else:
                         progress = 0
-                    episodes_str = "%d / %d" % (show['my_progress'], show['total'])                    
-                    row[2] = episodes_str
-                    row[4] = progress
+                    episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+                    row[2] = show['my_progress']
+                    row[4] = episodes_str
+                    row[6] = progress
+                
+                score_str = "%0.*f" % (self.decimals, show['my_score'])
                 
                 row[3] = show['my_score']
-                row[5] = self._get_color(show)
+                row[5] = score_str
+                row[7] = self._get_color(show)
                 return
         
         #print "Warning: Show ID not found in ShowView (%d)" % show['id']
