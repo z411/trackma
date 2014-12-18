@@ -240,24 +240,19 @@ class Trackma_cmd(cmd.Cmd):
             print show['title']
         
     def do_play(self, arg):
-        try: # Attempt parsing as list index
-            args = self.parse_args(arg)
-            index = int(args[0])
-            if index < len(self.list_indexes):
-                try:
-                    self.do_play('"{}" {}'.format(self.list_indexes[index],
-                                                  args[1]))
-                except IndexError: 
-                    self.do_play('"{}"'.format(self.list_indexes[index]))
-                return 0
-        except (ValueError, AttributeError, IndexError):
-            args = None
         if self.parse_args(arg):
             try:
                 args = self.parse_args(arg)
-                show = self.engine.get_show_info_title(args[0])
                 episode = 0
-                
+
+                # Attempt parsing list index
+                # otherwise use title
+                try:
+                    index = int(args[0])
+                    show = self.engine.get_show_info(self.list_indexes[index])
+                except (ValueError, AttributeError, IndexError):
+                    show = self.engine.get_show_info_title(args[0])
+
                 # If the user specified an episode, play it
                 # otherwise play the next episode not watched yet
                 try:
@@ -510,7 +505,7 @@ class Trackma_cmd(cmd.Cmd):
                 episodes_str, col_episodes_length,
                 show['my_score'], col_score_length, index, col_index_length)
             # Track show list indexes 
-            self.list_indexes.append(show['title'])
+            self.list_indexes.append(show['id'])
             index+=1
         
         # Print result count
