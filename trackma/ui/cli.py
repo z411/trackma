@@ -72,6 +72,15 @@ class Trackma_cmd(cmd.Cmd):
         showlist = self.engine.filter_list(self.filter_num)
         self.sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
 
+    def _get_show(self, title):
+        # Attempt parsing list index
+        # otherwise use title
+        try:
+            index = int(title)-1
+            return self.sortedlist[index]
+        except (ValueError, AttributeError, IndexError):
+            return self.engine.get_show_info_title(title)
+
     def start(self):
         """
         Initializes the engine
@@ -231,7 +240,7 @@ class Trackma_cmd(cmd.Cmd):
             args = self.parse_args(arg)
             
             try:
-                show = self.engine.get_show_info_title(args[0])
+                show = self._get_show(args[0])
                 
                 do_delete = raw_input("Delete %s? [y/N] " % show['title'])
                 if do_delete.lower() == 'y':
@@ -250,15 +259,8 @@ class Trackma_cmd(cmd.Cmd):
             try:
                 args = self.parse_args(arg)
                 episode = 0
-
-                # Attempt parsing list index
-                # otherwise use title
-                try:
-                    index = int(args[0])
-                    show = self.sortedlist[index]
-                except (ValueError, AttributeError, IndexError):
-                    show = self.engine.get_show_info_title(args[0])
-
+                show = self._get_show(args[0])
+                
                 # If the user specified an episode, play it
                 # otherwise play the next episode not watched yet
                 try:
@@ -291,7 +293,7 @@ class Trackma_cmd(cmd.Cmd):
         if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
-                show = self.engine.get_show_info_title(args[0])
+                show = self._get_show(args[0])
                 self.engine.set_episode(show['id'], args[1])
             except IndexError:
                 print "Missing arguments."
@@ -309,7 +311,8 @@ class Trackma_cmd(cmd.Cmd):
         if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
-                self.engine.set_score(args[0], args[1])
+                show = self._get_show(args[0])
+                self.engine.set_score(show['id'], args[1])
             except IndexError:
                 print "Missing arguments."
             except utils.TrackmaError, e:
@@ -326,7 +329,7 @@ class Trackma_cmd(cmd.Cmd):
         if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
-                _showname = args[0]
+                _show = self._get_show(args[0])
                 _filter = args[1]
             except IndexError:
                 print "Missing arguments."
@@ -338,7 +341,7 @@ class Trackma_cmd(cmd.Cmd):
                 return
             
             try:
-                self.engine.set_status(_showname, _filter_num)
+                self.engine.set_status(_show['id'], _filter_num)
             except utils.TrackmaError, e:
                 self.display_error(e)
         
@@ -459,10 +462,10 @@ class Trackma_cmd(cmd.Cmd):
         """
         # Fixed column widths
         col_id_length = 7
+        col_index_length = 6
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
-        col_index_length = 6
         
         # Calculate maximum width for the title column
         # based on the width of the terminal
@@ -481,13 +484,13 @@ class Trackma_cmd(cmd.Cmd):
             
         # Print header
         print "| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
+                'Index',    col_index_length,
                 'Title',    col_title_length,
                 'Progress', col_episodes_length,
-                'Score',    col_score_length,
-                'Index',    col_index_length)
+                'Score',    col_score_length)
         
         # List shows
-        for index, show in enumerate(showlist):
+        for index, show in enumerate(showlist, 1):
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
             else:
@@ -503,11 +506,12 @@ class Trackma_cmd(cmd.Cmd):
             else:
                 colored_title = title_str
             
-            print "| {0}{1} {2:{3}} {4:^{5}} {6:^{7}} |".format(
+            print "| {0:^{1}} {2}{3} {4:{5}} {6:^{7}} |".format(
+                index, col_index_length,
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
-                show['my_score'], col_score_length, index, col_index_length)
+                show['my_score'], col_score_length)
         
         # Print result count
         print '%d results' % len(showlist)
