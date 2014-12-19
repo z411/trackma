@@ -16,10 +16,10 @@ Features
 
 Currently supported websites
 ----------------------------
-- ![MyAnimeList](http://myanimelist.net/) (Anime, Manga)
-- ![Hummingbird](http://hummingbird.me/) (Anime)
-- ![VNDB](https://vndb.org/) (VNs)
-- ![Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
+- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [Hummingbird](http://hummingbird.me/) (Anime)
+- [VNDB](https://vndb.org/) (VNs)
+- [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
 
 Screenshots
 -----------
