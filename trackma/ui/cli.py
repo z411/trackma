@@ -51,6 +51,7 @@ class Trackma_cmd(cmd.Cmd):
     completekey = 'Tab'
     cmdqueue = []
     stdout = sys.stdout
+    sortedlist = []
     
     __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
@@ -67,6 +68,10 @@ class Trackma_cmd(cmd.Cmd):
     def _update_prompt(self):
         self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
 
+    def _load_list(self):
+        showlist = self.engine.filter_list(self.filter_num)
+        self.sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
+
     def start(self):
         """
         Initializes the engine
@@ -79,6 +84,7 @@ class Trackma_cmd(cmd.Cmd):
         
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
+        self._load_list()
         self._update_prompt()
     
     def do_account(self, arg):
@@ -103,6 +109,7 @@ class Trackma_cmd(cmd.Cmd):
             try:
                 args = self.parse_args(arg)
                 self.filter_num = self._guess_status(args[0].lower())
+                self._load_list()
                 self._update_prompt()
             except KeyError:
                 print "Invalid filter."
@@ -119,6 +126,7 @@ class Trackma_cmd(cmd.Cmd):
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
         if arg in sorts:
             self.sort = arg
+            self._load_list()
         else:
             print "Invalid sort."
     
@@ -136,6 +144,7 @@ class Trackma_cmd(cmd.Cmd):
                 # Start with default filter selected
                 self.filter_num = self.engine.mediainfo['statuses'][0]
                 self.prompt = "{0}({1}) {1}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+                self._load_list()
                 self._update_prompt()
             else:
                 print "Invalid mediatype."
@@ -146,11 +155,8 @@ class Trackma_cmd(cmd.Cmd):
         """
         list - Lists all shows available as a nice formatted list.
         """
-        # Queries the engine for a list and sorts it
-        # using the current sort
-        showlist = self.engine.filter_list(self.filter_num)
-        sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
-        self._make_list(sortedlist)
+        # Show the list in memory
+        self._make_list(self.sortedlist)
     
     def do_info(self, arg):
         if(arg):
@@ -249,7 +255,7 @@ class Trackma_cmd(cmd.Cmd):
                 # otherwise use title
                 try:
                     index = int(args[0])
-                    show = self.engine.get_show_info(self.list_indexes[index])
+                    show = self.sortedlist[index]
                 except (ValueError, AttributeError, IndexError):
                     show = self.engine.get_show_info_title(args[0])
 
@@ -481,9 +487,7 @@ class Trackma_cmd(cmd.Cmd):
                 'Index',    col_index_length)
         
         # List shows
-        index = 0
-        self.list_indexes = []    
-        for show in showlist:
+        for index, show in enumerate(showlist):
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
             else:
@@ -504,9 +508,6 @@ class Trackma_cmd(cmd.Cmd):
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
                 show['my_score'], col_score_length, index, col_index_length)
-            # Track show list indexes 
-            self.list_indexes.append(show['id'])
-            index+=1
         
         # Print result count
         print '%d results' % len(showlist)
