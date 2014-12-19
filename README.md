@@ -2,18 +2,24 @@ Trackma
 =======
 
 Trackma aims to be a lightweight and simple but feature-rich program for Unix based systems
-for fetching, updating and using data from personal lists hosted in different
-media tracking websites like MyAnimeList, Melative or VNDB.
+for fetching, updating and using data from personal lists hosted in several media tracking websites.
 
 Features
 --------
 - Manage local list and synchronize when necessary, useful when offline
-- Manage multiple accounts on different sites like MyAnimeList, Melative or VNDB.
-- Support for several mediatypes depending on the site (like VNs, anime, manga, LNs)
+- Manage multiple accounts on different media tracking sites
+- Support for several mediatypes (as supported by the site)
 - Multiple user interfaces (Qt, GTK, curses, command-line)
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
 - Highly scalable, easy to code new interfaces and support for other sites
+
+Currently supported websites
+----------------------------
+- ![MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- ![Hummingbird](http://hummingbird.me/) (Anime)
+- ![VNDB](https://vndb.org/) (VNs)
+- ![Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
 
 Screenshots
 -----------
@@ -62,6 +68,7 @@ Then you can run the program with the interface you like.
 $ trackma
 $ trackma-curses (requires urwid)
 $ trackma-gtk (requires pygtk)
+$ trackma-qt (requires PyQt)
 </pre>
 
 Alternatively, you can just run the scripts directly from the bin/ folder.
@@ -74,7 +81,7 @@ where you store your video files and other settings. Details about what each opt
 
 https://github.com/z411/trackma/wiki/Configuration-File
 
-Alternatively, the GTK interface provides a Settings panel, found in Options -> Global Settings...
+Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 
 Development
 -----------
