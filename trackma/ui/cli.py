@@ -68,7 +68,7 @@ class Trackma_cmd(cmd.Cmd):
     def _update_prompt(self):
         self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
 
-    def _load_list(self):
+    def _load_list(self, *args):
         showlist = self.engine.filter_list(self.filter_num)
         self.sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
 
@@ -89,6 +89,9 @@ class Trackma_cmd(cmd.Cmd):
         """
         print 'Initializing engine...'
         self.engine = Engine(self.account, self.messagehandler)
+        self.engine.connect_signal('show_added', self._load_list)
+        self.engine.connect_signal('show_deleted', self._load_list)
+        self.engine.connect_signal('status_changed', self._load_list)
         self.engine.start()
         
         # Start with default filter selected
@@ -105,7 +108,12 @@ class Trackma_cmd(cmd.Cmd):
 
         self.account = self.accountman.select_account()
         self.engine.reload(account=self.account)
-    
+
+        # Start with default filter selected
+        self.filter_num = self.engine.mediainfo['statuses'][0]
+        self._load_list()
+        self._update_prompt()
+
     def do_filter(self, arg):
         """
         filter - Changes the filtering of list by status; call with no arguments to see available filters
@@ -152,7 +160,6 @@ class Trackma_cmd(cmd.Cmd):
             
                 # Start with default filter selected
                 self.filter_num = self.engine.mediainfo['statuses'][0]
-                self.prompt = "{0}({1}) {1}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
                 self._load_list()
                 self._update_prompt()
             else:
@@ -329,10 +336,11 @@ class Trackma_cmd(cmd.Cmd):
         if self.parse_args(arg):
             args = self.parse_args(arg)
             try:
-                _show = self._get_show(args[0])
+                _showtitle = args[0]
                 _filter = args[1]
             except IndexError:
                 print "Missing arguments."
+                return
             
             try:
                 _filter_num = self._guess_status(_filter)
@@ -341,7 +349,8 @@ class Trackma_cmd(cmd.Cmd):
                 return
             
             try:
-                self.engine.set_status(_show['id'], _filter_num)
+                show = self._get_show(_showtitle)
+                self.engine.set_status(show['id'], _filter_num)
             except utils.TrackmaError, e:
                 self.display_error(e)
         
