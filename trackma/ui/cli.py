@@ -92,6 +92,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('show_added', self._load_list)
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
+        self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.start()
         
         # Start with default filter selected
