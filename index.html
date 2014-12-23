@@ -34,20 +34,33 @@
 <a id="trackma" class="anchor" href="#trackma" aria-hidden="true"><span class="octicon octicon-link"></span></a>Trackma</h1>
 
 <p>Trackma aims to be a lightweight and simple but feature-rich program for Unix based systems
-for fetching, updating and using data from personal lists hosted in different
-media tracking websites like MyAnimeList, Melative or VNDB.</p>
+for fetching, updating and using data from personal lists hosted in several media tracking websites.</p>
 
 <h2>
 <a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h2>
 
 <ul>
 <li>Manage local list and synchronize when necessary, useful when offline</li>
-<li>Manage multiple accounts on different sites like MyAnimeList, Melative or VNDB.</li>
-<li>Support for several mediatypes depending on the site (like VNs, anime, manga, LNs)</li>
+<li>Manage multiple accounts on different media tracking sites</li>
+<li>Support for several mediatypes (as supported by the site)</li>
 <li>Multiple user interfaces (Qt, GTK, curses, command-line)</li>
 <li>Detection of running media player, updates list if necessary</li>
 <li>Ability to launch media player for a requested media in the list and update list if necessary</li>
 <li>Highly scalable, easy to code new interfaces and support for other sites</li>
+</ul>
+
+<h2>
+<a id="currently-supported-websites" class="anchor" href="#currently-supported-websites" aria-hidden="true"><span class="octicon octicon-link"></span></a>Currently supported websites</h2>
+
+<ul>
+<li>
+<a href="http://myanimelist.net/">MyAnimeList</a> (Anime, Manga)</li>
+<li>
+<a href="http://hummingbird.me/">Hummingbird</a> (Anime)</li>
+<li>
+<a href="https://vndb.org/">VNDB</a> (VNs)</li>
+<li>
+<a href="http://melative.com/">Melative</a> (Partial; Anime, Manga, VNs, LNs)</li>
 </ul>
 
 <h2>
@@ -99,6 +112,7 @@ media tracking websites like MyAnimeList, Melative or VNDB.</p>
 $ trackma
 $ trackma-curses (requires urwid)
 $ trackma-gtk (requires pygtk)
+$ trackma-qt (requires PyQt)
 </pre>
 
 <p>Alternatively, you can just run the scripts directly from the bin/ folder.</p>
@@ -111,7 +125,7 @@ where you store your video files and other settings. Details about what each opt
 
 <p><a href="https://github.com/z411/trackma/wiki/Configuration-File">https://github.com/z411/trackma/wiki/Configuration-File</a></p>
 
-<p>Alternatively, the GTK interface provides a Settings panel, found in Options -&gt; Global Settings...</p>
+<p>Alternatively, the GTK and Qt interfaces provide a visual Settings panel.</p>
 
 <h2>
 <a id="development" class="anchor" href="#development" aria-hidden="true"><span class="octicon octicon-link"></span></a>Development</h2>
@@ -133,7 +147,7 @@ hesitate to submit an issue in the github issue tracker:</p>
 <h2>
 <a id="authors" class="anchor" href="#authors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authors</h2>
 
-<p>Trackma was written by z411 <a href="mailto:electrik.persona@gmail.com">electrik.persona@gmail.com</a>
+<p>Trackma was written by z411 <a href="mailto:z411@krutt.org">z411@krutt.org</a>
 GTK icon designed by shuuichi</p>
       </section>
       <footer>
