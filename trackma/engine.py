@@ -358,17 +358,16 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if (
-                     newep == show['total'] and
-                     self.mediainfo.get('status_finish') and
-                     (
-                       not self.config['auto_status_change_if_scored'] or
-                       not self.mediainfo.get('can_score') or
-                       show['my_score']
-                     )
-                ):
-                    # Change to finished status
-                    self.set_status(show['id'], self.mediainfo['status_finish'])
+                if newep == show['total'] and self.mediainfo.get('status_finish'):
+                    if (
+                        not self.config['auto_status_change_if_scored'] or
+                        not self.mediainfo.get('can_score') or
+                        show['my_score']
+                    ):
+                        # Change to finished status
+                        self.set_status(show['id'], self.mediainfo['status_finish'])
+                    else:
+                        self.msg.warn(self.name, "Updated episode but status won't be changed until a score is set.")
                 elif newep == 1 and self.mediainfo.get('status_start'):
                     # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
