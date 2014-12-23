@@ -210,10 +210,8 @@ class Engine:
     
     def reload(self, account=None, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
-        if not self.loaded:
-            raise utils.TrackmaError("Engine is not loaded.")
-        
-        self.unload()
+        if self.loaded:
+            self.unload()
         
         if account:
             self._load(account)

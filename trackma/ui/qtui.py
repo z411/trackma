@@ -277,6 +277,7 @@ class Trackma(QtGui.QMainWindow):
         if account:
             self.account = account
 
+        self.show()
         self._busy(False)
         self.worker_call('reload', self.r_engine_loaded, account, mediatype)
         
