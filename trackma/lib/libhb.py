@@ -17,6 +17,7 @@
 
 from trackma.lib.lib import lib
 import trackma.utils as utils
+import datetime
 
 import urllib, urllib2
 import json
@@ -124,6 +125,8 @@ class libhb(lib):
                     'id': showid,
                     'title': show['anime']['title'],
                     'status': self.status_translate[status],
+                    'start_date':   self._str2date( show['anime']['started_airing'] ),
+                    'end_date':     self._str2date( show['anime']['finished_airing'] ),
                     'my_progress': show['episodes_watched'],
                     'my_score': float(rating) if rating is not None else 0.0,
                     'aliases': alt_titles,
@@ -199,7 +202,16 @@ class libhb(lib):
             return infolist
         except urllib2.HTTPError, e:
             raise utils.APIError('Error searching: ' + str(e.code))
-        
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+  
     def _parse_info(self, show):
         info = utils.show()
         alt_titles = []
