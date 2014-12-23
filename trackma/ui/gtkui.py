@@ -111,7 +111,7 @@ class Trackma_gtk(object):
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/icon.png')
         
         # Menus
-        mb_list = gtk.Menu()
+        mb_show = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         self.mb_play.connect("activate", self.do_play, True)
         self.mb_info = gtk.MenuItem('Show details...')
@@ -129,58 +129,67 @@ class Trackma_gtk(object):
         gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
         self.mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
         self.mb_addsearch.connect("activate", self.do_addsearch)
-        gtk.stock_add([(gtk.STOCK_REFRESH, "Retrieve list", 0, 0, "")])
+       
+        mb_show.append(self.mb_addsearch)
+        mb_show.append(self.mb_play)
+        mb_show.append(self.mb_info)
+        mb_show.append(mb_web)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(mb_copy)
+        mb_show.append(mb_alt_title)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(self.mb_delete)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(self.mb_exit)
+        
+        mb_list = gtk.Menu()
+        gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
+        self.mb_sync = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
+        self.mb_sync.connect("activate", self.do_sync)
+        self.mb_retrieve = gtk.ImageMenuItem("Retrieve list")
+        self.mb_retrieve.connect("activate", self.do_retrieve_ask)
         self.mb_send = gtk.MenuItem('Send changes')
         self.mb_send.connect("activate", self.do_send)
-        
-        mb_list.append(self.mb_play)
-        mb_list.append(self.mb_info)
-        mb_list.append(mb_web)
+
+        mb_list.append(self.mb_sync)
         mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(mb_copy)
-        mb_list.append(mb_alt_title)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_delete)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_addsearch)
+        mb_list.append(self.mb_retrieve)
         mb_list.append(self.mb_send)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_exit)
-        
-        mb_account = gtk.Menu()
-        self.mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
-        self.mb_retrieve.connect("activate", self.do_retrieve_ask)
+
+        mb_options = gtk.Menu()
         self.mb_switch_account = gtk.MenuItem('Switch Account...')
         self.mb_switch_account.connect("activate", self.do_switch_account)
         self.mb_settings = gtk.MenuItem('Global Settings...')
         self.mb_settings.connect("activate", self.do_settings)
         
-        mb_account.append(self.mb_switch_account)
-        mb_account.append(self.mb_retrieve)
-        mb_account.append(gtk.SeparatorMenuItem())
-        mb_account.append(self.mb_settings)
+        mb_options.append(self.mb_switch_account)
+        mb_options.append(gtk.SeparatorMenuItem())
+        mb_options.append(self.mb_settings)
         
         self.mb_mediatype_menu = gtk.Menu()
         
-        mb_options = gtk.Menu()
+        mb_help = gtk.Menu()
         mb_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
         mb_about.connect("activate", self.on_about)
-        mb_options.append(mb_about)
+        mb_help.append(mb_about)
         
         # Root menubar
         root_menu1 = gtk.MenuItem("Show")
-        root_menu1.set_submenu(mb_list)
-        root_account = gtk.MenuItem("Options")
-        root_account.set_submenu(mb_account)
+        root_menu1.set_submenu(mb_show)
+        root_list = gtk.MenuItem("List")
+        root_list.set_submenu(mb_list)
+        root_options = gtk.MenuItem("Options")
+        root_options.set_submenu(mb_options)
         mb_mediatype = gtk.MenuItem("Mediatype")
         mb_mediatype.set_submenu(self.mb_mediatype_menu)
         root_menu2 = gtk.MenuItem("Help")
-        root_menu2.set_submenu(mb_options)
+        root_menu2.set_submenu(mb_help)
         
         mb = gtk.MenuBar()
         mb.append(root_menu1)
-        mb.append(root_account)
+        mb.append(root_list)
         mb.append(mb_mediatype)
+        mb.append(root_options)
         mb.append(root_menu2)
         
         # Create vertical box
@@ -645,17 +654,20 @@ class Trackma_gtk(object):
             widget.destroy()
 
         if response == gtk.RESPONSE_YES:
-            threading.Thread(target=self.task_sync, args=(False,)).start()
+            threading.Thread(target=self.task_sync, args=(False,True)).start()
     
     def do_send(self, widget):
-        threading.Thread(target=self.task_sync, args=(True,)).start()
+        threading.Thread(target=self.task_sync, args=(True,False)).start()
+
+    def do_sync(self, widget):
+        threading.Thread(target=self.task_sync, args=(True,True)).start()
     
-    def task_sync(self, send):
+    def task_sync(self, send, retrieve):
         self.allow_buttons(False)
         
         if send:
             self.engine.list_upload()
-        else:
+        if retrieve:
             self.engine.list_download()
         
         gtk.threads_enter()
