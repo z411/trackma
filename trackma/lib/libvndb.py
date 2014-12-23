@@ -323,8 +323,8 @@ class libvndb(lib):
 
     def merge(self, show, info):
         show['title'] = info['title']
-        show['image'] = info['image']
-        show['start_date'] = info['start_date']
+        show['image'] = info.get('image')
+        show['start_date'] = info.get('start_date')
         if show['start_date'] and show['start_date'] > datetime.datetime.now():
             show['status'] = 3
         else:
