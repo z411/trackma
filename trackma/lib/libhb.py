@@ -79,8 +79,11 @@ class libhb(lib):
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.URLError, e:
-            raise utils.APIError("Connection error: %s" % e) 
+        except urllib2.HTTPError, e:
+            if e.code == 401:
+                raise utils.APIError("Incorrect credentials.")
+            else:
+                raise utils.APIError("Connection error: %s" % e) 
    
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -88,13 +91,11 @@ class libhb(lib):
             return True     # Already logged in
         
         self.msg.info(self.name, 'Logging in...')
-        try:
-            response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
-            self.auth = response.strip('"')
-            self.logged_in = True
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError("Incorrect credentials.")
+        
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        self.auth = response.strip('"')
+        self.logged_in = True
+        return True
    
     def fetch_list(self):
         """Queries the full list from the remote server.
