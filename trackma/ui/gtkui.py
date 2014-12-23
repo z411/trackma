@@ -1352,16 +1352,56 @@ class InfoDialog(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Show Details')
         self.set_border_width(10)
-        
+
         fullbox = gtk.VBox()
+        
+        # Info box
+        info = InfoWidget(engine)
+        info.set_size(600, 500)
+
+        # Bottom line (buttons)
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        
+        web_button = gtk.Button('Open web')
+        web_button.connect("clicked", self.do_web)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        
+        bottombar.pack_start(web_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        fullbox.pack_start(info)
+        fullbox.pack_start(alignment)
+
+        self.add(fullbox)
+        self.show_all()
+
+        info.load(show)
+    
+    def do_close(self, widget):
+        self.destroy()
+
+    def do_web(self, widget):
+        if self.show['url']:
+            webbrowser.open(self.show['url'], 2, True)
+
+ 
+class InfoWidget(gtk.VBox):
+    def __init__(self, engine):
+        gtk.VBox.__init__(self)
+
+        self.engine = engine
 
         # Title line
-        self.w_title = gtk.Label('Loading...')
+        self.w_title = gtk.Label('')
+        self.w_title.set_ellipsize(pango.ELLIPSIZE_END)
         
         # Middle line (sidebox)
         eventbox_sidebox = gtk.EventBox()
-        scrolled_sidebox = gtk.ScrolledWindow()
-        scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolled_sidebox = gtk.ScrolledWindow()
+        self.scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sidebox = gtk.HBox()
 
         alignment_image = gtk.Alignment(yalign=0.0)
@@ -1375,28 +1415,16 @@ class InfoDialog(gtk.Window):
 
         eventbox_sidebox.add(sidebox)
 
-        scrolled_sidebox.add_with_viewport(eventbox_sidebox)
-        scrolled_sidebox.set_size_request(600, 500)
+        self.scrolled_sidebox.add_with_viewport(eventbox_sidebox)
        
-        # Bottom line (buttons)
-        alignment = gtk.Alignment(xalign=1.0)
-        bottombar = gtk.HBox(False, 5)
-        
-        web_button = gtk.Button('Open web')
-        web_button.connect("clicked", self.do_web)
-        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
-        close_button.connect("clicked", self.do_close)
-        
-        bottombar.pack_start(web_button, False, False, 0)
-        bottombar.pack_start(close_button, False, False, 0)
-        alignment.add(bottombar)
+        self.pack_start(self.w_title, False, False)
+        self.pack_start(self.scrolled_sidebox, padding=5)
 
-        fullbox.pack_start(self.w_title, False, False)
-        fullbox.pack_start(scrolled_sidebox, padding=5)
-        fullbox.pack_start(alignment)
-        
-        self.add(fullbox)
-        self.show_all()
+    def set_size(self, w, h):
+        self.scrolled_sidebox.set_size_request(w, h)
+
+    def load(self, show):
+        self.show = show
 
         # Load image
         imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
@@ -1438,7 +1466,6 @@ class InfoDialog(gtk.Window):
             self.w_content.set_size_request(340, -1)
     
             self.show_all()
-            self.set_position(gtk.WIN_POS_CENTER)
         else:
             self.w_title.set_text('Error while getting details.')
             if self.details_e:
@@ -1447,13 +1474,6 @@ class InfoDialog(gtk.Window):
         self.w_content.set_alignment(0, 0)
         self.w_content.set_line_wrap(True)
         self.w_content.set_size_request(340, -1)
-
-    def do_close(self, widget):
-        self.destroy()
-
-    def do_web(self, widget):
-        if self.show['url']:
-            webbrowser.open(self.show['url'], 2, True)
 
 class Settings(gtk.Window):
     def __init__(self, engine, config, configfile):
@@ -1803,7 +1823,9 @@ class ShowSearch(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         
         self.engine = engine
-        
+
+        fullbox = gtk.HBox(False, 5)
+
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Search')
         self.set_border_width(10)
@@ -1821,7 +1843,7 @@ class ShowSearch(gtk.Window):
         
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_size_request(550, 300)
+        sw.set_size_request(450, 350)
         
         alignment = gtk.Alignment(xalign=1.0)
         bottombar = gtk.HBox(False, 5)
@@ -1829,26 +1851,26 @@ class ShowSearch(gtk.Window):
         self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         self.add_button.connect("clicked", self.do_add)
         self.add_button.set_sensitive(False)
-        self.info_button = gtk.Button('Info')
-        self.info_button.connect("clicked", self.do_info)
-        self.info_button.set_sensitive(False)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.do_close)
         bottombar.pack_start(self.add_button, False, False, 0)
-        bottombar.pack_start(self.info_button, False, False, 0)
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
         
         self.showlist = ShowSearchView()
-        self.showlist.connect("row-activated", self.do_info)
         self.showlist.get_selection().connect("changed", self.select_show)
         
         sw.add(self.showlist)
         
+        self.info = InfoWidget(engine)
+        self.info.set_size(400, 350)
+ 
         vbox.pack_start(searchbar, False, False, 0)
         vbox.pack_start(sw, True, True, 0)
         vbox.pack_start(alignment, False, False, 0)
-        self.add(vbox)
+        fullbox.pack_start(vbox)
+        fullbox.pack_start(self.info)
+        self.add(fullbox)
     
     def do_add(self, widget, path=None, view_column=None):
         # Get show dictionary
@@ -1865,9 +1887,6 @@ class ShowSearch(gtk.Window):
             except utils.TrackmaError, e:
                 self.error_push(e.message)
     
-    def do_info(self, widget):
-        win = InfoDialog(self.engine, self.showdict[self.selected_show])
- 
     def do_search(self, widget):
         threading.Thread(target=self.task_search).start()
     
@@ -1882,8 +1901,8 @@ class ShowSearch(gtk.Window):
             return
         
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.info.load(self.showdict[self.selected_show])
         self.add_button.set_sensitive(True)
-        self.info_button.set_sensitive(True)
         
     def task_search(self):
         self.allow_buttons(False)

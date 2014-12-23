@@ -627,9 +627,8 @@ class Trackma(QtGui.QMainWindow):
             
         show = self.worker.engine.get_show_info(self.selected_show_id)
         
-        self.detailswindow = DetailsDialog(None, self.worker)
+        self.detailswindow = DetailsDialog(None, self.worker, show)
         self.detailswindow.setModal(True)
-        self.detailswindow.load(show)
         self.detailswindow.show()
     
     def s_add(self):
@@ -810,16 +809,34 @@ class Trackma(QtGui.QMainWindow):
 
 
 class DetailsDialog(QtGui.QDialog):
-    worker = None
-
-    def __init__(self, parent, worker):
-        QtGui.QMainWindow.__init__(self, parent)
+    def __init__(self, parent, worker, show):
+        QtGui.QDialog.__init__(self, parent)
         self.setMinimumSize(530, 550)
         self.setWindowTitle('Details')
         self.worker = worker
-    
+
+        main_layout = QtGui.QVBoxLayout()
+        details = DetailsWidget(self, worker)
+        
+        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
+        bottom_buttons.setCenterButtons(True)
+        bottom_buttons.rejected.connect(self.close)
+
+        main_layout.addWidget(details)
+        main_layout.addWidget(bottom_buttons)
+
+        self.setLayout(main_layout)
+        details.load(show)
+        
+class DetailsWidget(QtGui.QWidget):
+    def __init__(self, parent, worker):
+        self.worker = worker
+
+        QtGui.QWidget.__init__(self, parent)
+
         # Build layout
         main_layout = QtGui.QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
         self.show_title = QtGui.QLabel()
         show_title_font = QtGui.QFont()
@@ -831,9 +848,9 @@ class DetailsDialog(QtGui.QDialog):
         info_area = QtGui.QWidget()
         info_layout = QtGui.QHBoxLayout()
         
-        self.show_image = QtGui.QLabel('Downloading...')
+        self.show_image = QtGui.QLabel()
         self.show_image.setAlignment( QtCore.Qt.AlignTop )
-        self.show_info = QtGui.QLabel('Wait...')
+        self.show_info = QtGui.QLabel()
         self.show_info.setWordWrap(True)
         self.show_info.setAlignment( QtCore.Qt.AlignTop )
         
@@ -847,13 +864,8 @@ class DetailsDialog(QtGui.QDialog):
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
         
-        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
-        bottom_buttons.setCenterButtons(True)
-        bottom_buttons.rejected.connect(self.close)
-
         main_layout.addWidget(self.show_title)
         main_layout.addWidget(scroll_area)
-        main_layout.addWidget(bottom_buttons)
 
         self.setLayout(main_layout)
     
@@ -869,6 +881,7 @@ class DetailsDialog(QtGui.QDialog):
         self.show_title.setOpenExternalLinks(True)
         
         # Load show info
+        self.show_info.setText('Wait...')
         self.worker_call('get_show_details', self.r_details_loaded, show)
         
         # Load show image
@@ -877,6 +890,7 @@ class DetailsDialog(QtGui.QDialog):
         if os.path.isfile(filename):
             self.s_show_image(filename)
         else:
+            self.show_image.setText('Downloading...')
             self.image_worker = Image_Worker(show['image'], filename)
             self.image_worker.finished.connect(self.s_show_image)
             self.image_worker.start()
@@ -904,11 +918,11 @@ class AddDialog(QtGui.QDialog):
 
     def __init__(self, parent, worker):
         QtGui.QMainWindow.__init__(self, parent)
-        self.setMinimumSize(530, 550)
+        self.setMinimumSize(700, 500)
         self.setWindowTitle('Search/Add from Remote')
         self.worker = worker
     
-        layout = QtGui.QVBoxLayout()
+        layout = QtGui.QGridLayout()
         
         # Create top layout
         top_layout = QtGui.QHBoxLayout()
@@ -935,7 +949,7 @@ class AddDialog(QtGui.QDialog):
         self.table.setGridStyle(QtCore.Qt.NoPen)
         self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
         self.table.currentItemChanged.connect(self.s_show_selected)
-        self.table.doubleClicked.connect(self.s_show_details)
+        #self.table.doubleClicked.connect(self.s_show_details)
         
         bottom_buttons = QtGui.QDialogButtonBox(self)
         bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
@@ -943,10 +957,14 @@ class AddDialog(QtGui.QDialog):
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
+        # Info box
+        self.details = DetailsWidget(self, worker)
+
         # Finish layout
-        layout.addLayout(top_layout)
-        layout.addWidget(self.table)
-        layout.addWidget(bottom_buttons)
+        layout.addLayout(top_layout,     0, 0, 1, 2)
+        layout.addWidget(self.table,     1, 0, 1, 1)
+        layout.addWidget(self.details,   1, 1, 1, 1)
+        layout.addWidget(bottom_buttons, 2, 0, 1, 2)
         self.setLayout(layout)
     
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -972,16 +990,8 @@ class AddDialog(QtGui.QDialog):
         
         index = new.row()
         self.selected_show = self.results[index]
+        self.details.load(self.selected_show)
         self.select_btn.setEnabled(True)
-    
-    def s_show_details(self):
-        if not self.selected_show:
-            return
-            
-        self.detailswindow = DetailsDialog(None, self.worker)
-        self.detailswindow.setModal(True)
-        self.detailswindow.load(self.selected_show)
-        self.detailswindow.show()
     
     def s_add(self):
         if self.selected_show:
