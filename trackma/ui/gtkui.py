@@ -1293,7 +1293,10 @@ class AccountSelect(gtk.Window):
     
     def on_account_changed(self, widget):
         tree_model, tree_iter = self.get_selected()
-        is_selectable = tree_model.get_value(tree_iter, 4)
+        if tree_iter:
+            is_selectable = tree_model.get_value(tree_iter, 4)
+        else:
+            is_selectable = False
         
         self.use_button.set_sensitive(is_selectable)
         self.delete_button.set_sensitive(True)
