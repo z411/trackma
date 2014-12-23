@@ -445,10 +445,10 @@ class Engine:
         if newscore > self.mediainfo['score_max']:
             raise utils.EngineError('Score out of limits.')
         if show['my_score'] == newscore:
-            raise utils.EngineError("Score already at %d" % newscore)
+            raise utils.EngineError("Score already at %s" % newscore)
         
         # Change score
-        self.msg.info(self.name, "Updating show %s to score %d..." % (show['title'], newscore))
+        self.msg.info(self.name, "Updating show %s to score %s..." % (show['title'], newscore))
         self.data_handler.queue_update(show, 'my_score', newscore)
         
         # Emit signal

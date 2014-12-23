@@ -20,6 +20,7 @@ try:
 except ImportError:
     pass # readline is optional
 import cmd
+import shlex
 import re
 from operator import itemgetter # Used for sorting list
 
@@ -52,8 +53,6 @@ class Trackma_cmd(cmd.Cmd):
     cmdqueue = []
     stdout = sys.stdout
     sortedlist = []
-    
-    __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
     
     def __init__(self):
         print 'Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411'
@@ -429,7 +428,7 @@ class Trackma_cmd(cmd.Cmd):
     
     def parse_args(self, arg):
         if arg:
-            return list(v.strip('"') for v in self.__re_cmd.findall(arg))
+            return shlex.split(arg)
     
     def display_error(self, e):
         print "%s%s: %s%s" % (_COLOR_ERROR, type(e), e.message, _COLOR_RESET)
