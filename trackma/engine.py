@@ -456,6 +456,7 @@ class Engine:
 
         # Change status if required
         if (
+            show['total'] and
             show['my_progress'] == show['total'] and
             show['my_score'] and
             self.mediainfo.get('can_status') and
