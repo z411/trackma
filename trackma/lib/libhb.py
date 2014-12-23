@@ -57,8 +57,7 @@ class libhb(lib):
         'score_step': 0.5,
     }
     
-    url = "https://hummingbirdv1.p.mashape.com"
-    mashape_auth = "DJO7uQdZPu1gNfQWWwVHtS7xt8JhJSDf"
+    url = "http://hummingbird.me/api/v1"
     
     status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not Yet Aired': 3}
     
@@ -71,7 +70,6 @@ class libhb(lib):
 
         # Build opener with the mashape API key
         self.opener = urllib2.build_opener()
-        self.opener.addheaders = [('X-Mashape-Authorization', self.mashape_auth)]
         
     def _request(self, url, get=None, post=None):
         if get:
