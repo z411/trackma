@@ -52,8 +52,8 @@ class Trackma_gtk(object):
     show_lists = dict()
     image_thread = None
     close_thread = None
-    can_close = False
     hidden = False
+    quit = False
     
     def main(self):
         """Start the Account Selector"""
@@ -72,9 +72,9 @@ class Trackma_gtk(object):
         
         gtk.main()
     
-    def do_switch_account(self, widget):
+    def do_switch_account(self, widget, switch=True):
         manager = AccountManager()
-        self.accountsel = AccountSelect(manager = AccountManager(), switch=True)
+        self.accountsel = AccountSelect(manager = AccountManager(), switch=switch)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
         
@@ -92,7 +92,7 @@ class Trackma_gtk(object):
         
         # Reload the engine if already started,
         # start it otherwise
-        if self.engine:
+        if self.engine and self.engine.loaded:
             self.do_reload(None, account, None)
         else:
             self.start(account)
@@ -430,8 +430,24 @@ class Trackma_gtk(object):
 
         self.notebook.connect("switch-page", self.select_show)
     
+    def idle_destroy(self):
+        gobject.idle_add(self.idle_destroy_push)
+
+    def idle_destroy_push(self):
+        self.quit = True
+        self.main.destroy()
+
+    def idle_restart(self):
+        gobject.idle_add(self.idle_restart_push)
+
+    def idle_restart_push(self):
+        self.quit = False
+        self.main.destroy()
+        self.do_switch_account(None, False)
+
     def on_destroy(self, widget):
-        gtk.main_quit()
+        if self.quit:
+            gtk.main_quit()
     
     def status_event(self, widget):
         # Called when the tray icon is left-clicked
@@ -605,11 +621,8 @@ class Trackma_gtk(object):
     def task_unload(self):
         self.allow_buttons(False)
         self.engine.unload()
-        self.can_close = True
         
-        gtk.threads_enter()
-        self.main.destroy()
-        gtk.threads_leave()
+        self.idle_destroy()
         
     def do_retrieve_ask(self, widget):
         queue = self.engine.get_queue()
@@ -652,7 +665,6 @@ class Trackma_gtk(object):
         self.status("Ready.")
         self.allow_buttons(True)
     
-        
     def start_engine(self):
         threading.Thread(target=self.task_start_engine).start()
     
@@ -661,8 +673,9 @@ class Trackma_gtk(object):
             try:
                 self.engine.start()
             except utils.TrackmaFatal, e:
-                self.status("Fatal engine error: %s" % e.message)
                 print("Fatal engine error: %s" % e.message)
+                self.idle_restart()
+                self.error("Fatal engine error: %s" % e.message)
                 return
         
         gtk.threads_enter()
@@ -694,7 +707,12 @@ class Trackma_gtk(object):
             self.engine.reload(account, mediatype)
         except utils.TrackmaError, e:
             self.error(e.message)
-        
+        except utils.TrackmaFatal, e:
+            print("Fatal engine error: %s" % e.message)
+            self.idle_restart()
+            self.error("Fatal engine error: %s" % e.message)
+            return
+ 
         if account:
             self.account = account
         

@@ -50,6 +50,7 @@ class Trackma(QtGui.QMainWindow):
     started = False
     selected_show_id = None
     show_lists = None
+    finish = False
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
@@ -252,6 +253,7 @@ class Trackma(QtGui.QMainWindow):
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
         self.worker.raised_error.connect(self.error)
+        self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
@@ -290,6 +292,12 @@ class Trackma(QtGui.QMainWindow):
     def error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
 
+    def fatal(self, msg):
+        QtGui.QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QtGui.QMessageBox.Ok)
+        self._busy()
+        self.finish = False
+        self.worker_call('unload', self.r_engine_unloaded)
+
     def worker_call(self, function, ret_function, *args, **kwargs):
         # Run worker in a thread
         self.worker.set_function(function, ret_function, *args, **kwargs)
@@ -298,6 +306,7 @@ class Trackma(QtGui.QMainWindow):
     ### GUI Functions
     def _exit(self):
         self._busy()
+        self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
     def _enable_widgets(self, enable):
@@ -780,6 +789,8 @@ class Trackma(QtGui.QMainWindow):
     def r_engine_unloaded(self, result):
         if result['success']:
             self.close()
+            if not self.finish:
+                self.s_switch_account()
 
     def r_played(self, result):
         self._unbusy()
@@ -1593,6 +1604,7 @@ class Engine_Worker(QtCore.QThread):
     # Message handler signals
     changed_status = QtCore.pyqtSignal(str)
     raised_error = QtCore.pyqtSignal(str)
+    raised_fatal = QtCore.pyqtSignal(str)
 
     # Event handler signals
     changed_show = QtCore.pyqtSignal(dict)
@@ -1634,6 +1646,9 @@ class Engine_Worker(QtCore.QThread):
 
     def _error(self, msg):
         self.raised_error.emit(msg)
+
+    def _fatal(self, msg):
+        self.raised_fatal.emit(msg)
 
     def _changed_show(self, show):
         self.changed_show.emit(show)
@@ -1793,9 +1808,11 @@ class Engine_Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
-        ret = self.function(*self.args,**self.kwargs)
-        self.finished.emit(ret)
-
+        try:
+            ret = self.function(*self.args,**self.kwargs)
+            self.finished.emit(ret)
+        except utils.TrackmaFatal, e:
+            self._fatal(e.message)
 
 def main():
     app = QtGui.QApplication(sys.argv)
