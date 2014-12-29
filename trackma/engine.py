@@ -70,7 +70,6 @@ class Engine:
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
-        self.msg.info(self.name, 'Version '+utils.VERSION)
 
         # Register cleanup function when program exits
         atexit.register(self._cleanup)
@@ -90,6 +89,8 @@ class Engine:
         utils.make_dir(userfolder)
         self.userconfigfile = utils.get_filename(userfolder, 'user.json')
         
+        self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
+            utils.VERSION, account['username'], account['api']))
         self.msg.info(self.name, 'Reading config files...')
         try:
             self.config = utils.parse_config(self.configfile, utils.config_defaults)

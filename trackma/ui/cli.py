@@ -62,7 +62,7 @@ class Trackma_cmd(cmd.Cmd):
         print
 
         self.accountman = Trackma_accounts()
-        self.account = self.accountman.select_account()
+        self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
         self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
@@ -106,7 +106,7 @@ class Trackma_cmd(cmd.Cmd):
         Usage: account
         """
 
-        self.account = self.accountman.select_account()
+        self.account = self.accountman.select_account(True)
         self.engine.reload(account=self.account)
 
         # Start with default filter selected
@@ -527,11 +527,22 @@ class Trackma_cmd(cmd.Cmd):
         print
 
 class Trackma_accounts(AccountManager):
-    def select_account(self):
+    def _get_id(self, index):
+        if index < 1:
+            raise IndexError
+
+        return self.indexes[index-1]
+
+    def select_account(self, bypass):
+        if not bypass and self.get_default():
+            return self.get_default()
+        if self.get_default():
+            self.set_default(None)
+
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete, [q]uit): ")
+            key = raw_input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
@@ -550,17 +561,33 @@ class Trackma_accounts(AccountManager):
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')
-                num = int(num)
-                confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(num)['username']))
-                if confirm.lower() == 'y':
-                    self.delete_account(num)
-                    print 'Account %d deleted.' % num
+                try:
+                    num = int(num)
+                    account_id = self._get_id(num)
+                    confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(account_id)['username']))
+                    if confirm.lower() == 'y':
+                        self.delete_account(account_id)
+                        print 'Account %d deleted.' % num
+                except ValueError:
+                    print "Invalid value."
+                except IndexError:
+                    print "Account doesn't exist."
             elif key.lower() == 'q':
                 sys.exit(0)
             else:
                 try:
+                    if key[0] == 'r':
+                        key = key[1:]
+                        remember = True
+                    else:
+                        remember = False
+
                     num = int(key)
-                    return self.get_account(num)
+                    account_id = self._get_id(num)
+                    if remember:
+                        self.set_default(account_id)
+
+                    return self.get_account(account_id)
                 except ValueError:
                     print "Invalid value."
                 except IndexError:
@@ -568,14 +595,16 @@ class Trackma_accounts(AccountManager):
     
     def list_accounts(self):
         accounts = self.get_accounts()
+        self.indexes = []
 
         print "Available accounts:"
         i = 0
-        for k, account in accounts:
-            print "%d: %s (%s)" % (k, account['username'], account['api'])
-            i += 1
-
-        if i == 0:
+        if accounts:
+            for k, account in accounts:
+                print "%i: %s (%s)" % (i+1, account['username'], account['api'])
+                self.indexes.append(k)
+                i += 1
+        else:
             print "No accounts."
 
 
