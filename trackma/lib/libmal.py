@@ -98,12 +98,6 @@ class libmal(lib):
 		]
     
     def _request(self, url):
-        try:
-            return self.opener.open(url, timeout = 10)
-        except urllib2.URLError, e:
-            raise utils.APIError("Connection error: %s" % e) 
-
-    def _request_gzip(self, url):
         """
         Requests the page as gzip and uncompresses it
 
@@ -113,12 +107,16 @@ class libmal(lib):
         try:
             request = urllib2.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
-            compressed_data = self.opener.open(request)
+            response = self.opener.open(request, timeout = 10)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e)
 
-        compressed_stream = StringIO(compressed_data.read())
-        return gzip.GzipFile(fileobj=compressed_stream)
+        if response.info().get('content-encoding') == 'gzip':
+            compressed_stream = StringIO(response.read())
+            return gzip.GzipFile(fileobj=compressed_stream)
+        else:
+            # If the content is not gzipped return it as-is
+            return response
    
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -141,7 +139,7 @@ class libmal(lib):
         
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request_gzip("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
+            data = self._request("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
             
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
@@ -209,13 +207,19 @@ class libmal(lib):
         
         # Send the urlencoded query to the search API
         query = self._urlencode({'q': criteria})
-        data = self._request_gzip(self.url + self.mediatype + "/search.xml?" + query)
+        data = self._request(self.url + self.mediatype + "/search.xml?" + query)
         
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except (ET.ParseError, IOError), e:
-            raise utils.APIError("Search error: %s" % repr(e.message))
+        except ET.ParseError, e:
+            if e.code == 3:
+                # Empty document; no results
+                return []
+            else:
+                raise utils.APIError("Parser error: %s" % repr(e.message))
+        except IOError:
+            raise utils.APIError("IO error: %s" % repr(e.message))
         
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':

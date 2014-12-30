@@ -197,7 +197,10 @@ class Data(object):
         # Tell API to search
         results = self.api.search(criteria)
         self.api.logout()
-        return results
+        if results:
+            return results
+        else:
+            raise utils.DataError('No results.')
        
     def queue_add(self, show):
         """

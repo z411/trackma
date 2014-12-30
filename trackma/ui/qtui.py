@@ -296,6 +296,7 @@ class Trackma(QtGui.QMainWindow):
         print unicode(message).encode('utf-8')
     
     def error(self, msg):
+        self.status('Error: {}'.format(msg))
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
 
     def fatal(self, msg):

@@ -1924,7 +1924,7 @@ class ShowSearch(gtk.Window):
 
         try:
             self.entries = self.engine.search(self.searchtext.get_text())
-        except utils.APIError, e:
+        except utils.TrackmaError, e:
             self.entries = []
             self.error(e.message)
 
