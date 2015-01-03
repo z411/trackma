@@ -385,6 +385,7 @@ class Trackma_cmd(cmd.Cmd):
                     self.engine.list_download()
             else:
                 self.engine.list_download()
+            self._load_list()
         except utils.TrackmaError, e:
             self.display_error(e)
     
