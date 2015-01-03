@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-try:
-    import trackma.ui.gtkui
-except ImportError:
-    import os, sys
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import trackma.ui.gtkui
-
-trackma.ui.gtkui.main()
