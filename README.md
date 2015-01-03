@@ -64,7 +64,7 @@ following command:
 
 <pre># pip install Trackma</pre>
 
-If you've downloaded the source code:
+Or if you've downloaded the source code:
 
 <pre># python setup.py install</pre>
 
@@ -76,8 +76,6 @@ $ trackma-curses
 $ trackma-gtk
 $ trackma-qt
 </pre>
-
-Alternatively, you can just run the scripts directly from the bin/ folder.
 
 Configuration
 -------------
