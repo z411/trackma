@@ -3,10 +3,10 @@
 from setuptools import setup, find_packages
 from trackma import utils
 
-import os
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+try:
+    LONG_DESCRIPTION = open("README.rst").read()
+except IOError:
+    LONG_DESCRIPTION = __doc__
 
 NAME = "Trackma"
 REQUIREMENTS = []
@@ -28,7 +28,7 @@ setup(
     author='z411',
     author_email='z411@krutt.org',
     description='Open multi-site list manager',
-    long_description=read('README.md'),
+    long_description=LONG_DESCRIPTION,
     url='https://github.com/z411/trackma',
     keywords='list manager, curses, gtk, qt, myanimelist, hummingbird, vndb',
     license="GPL-3",
