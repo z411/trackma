@@ -54,7 +54,6 @@ class Trackma_cmd(cmd.Cmd):
     stdout = sys.stdout
     sortedlist = []
     needed_args = {
-        'help':         1,
         'filter':       (0, 1),
         'sort':         1,
         'mediatype':    (0, 1),
@@ -181,14 +180,14 @@ class Trackma_cmd(cmd.Cmd):
         
     def do_list(self, args):
         """
-        list - Lists all shows available as a nice formatted list.
+        list - Lists all shows available in the local list as a nice formatted list.
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
     
     def do_info(self, args):
         """
-        info - Gets detailed information about a show in the list.
+        info - Gets detailed information about a show in the local list.
 
         Usage: info <show index or title>
 
@@ -206,7 +205,7 @@ class Trackma_cmd(cmd.Cmd):
     
     def do_search(self, args):
         """
-        search - Does a regex search on shows and lists the matches.
+        search - Does a regex search on shows in the local lists and lists the matches.
         
         Usage: search <pattern>
         
@@ -217,7 +216,7 @@ class Trackma_cmd(cmd.Cmd):
     
     def do_add(self, args):
         """
-        add - Searches for a show and adds it
+        add - Searches for a show in the remote service and adds it to the local list.
         
         Usage: add <pattern>
         
@@ -249,7 +248,7 @@ class Trackma_cmd(cmd.Cmd):
     
     def do_delete(self, args):
         """
-        delete - Deltes a show from the list
+        delete - Deltes a show from the local list.
         
         Usage: delete <show index or title>
         
@@ -264,12 +263,23 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
         
     def do_neweps(self, args):
+        """
+        neweps - Searches for new episodes in the configured search directory.
+
+        Usage: neweps
+        """
         showlist = self.engine.filter_list(self.filter_num)
         results = self.engine.get_new_episodes(showlist)
         for show in results:
             print show['title']
         
     def do_play(self, args):
+        """
+        play - Starts the media player with the specified episode number.
+        If no episode is specified, the next will be played.
+
+        Usage: play <show index or title> [episode number]
+        """
         try:
             episode = 0
             show = self._get_show(args[0])
@@ -297,9 +307,9 @@ class Trackma_cmd(cmd.Cmd):
         
     def do_update(self, args):
         """
-        update - Updates the episode of a show.
+        update - Updates the progress of a show to the specified episode.
         
-        Usage: update <show id or name> <episode number>
+        Usage: update <show index or name> <episode number>
         """
         try:
             show = self._get_show(args[0])
@@ -311,7 +321,7 @@ class Trackma_cmd(cmd.Cmd):
     
     def do_score(self, args):
         """
-        score - Changes the given score of a show.
+        score - Changes the given score of a show to the specified score.
         
         Usage: update <show id or name> <score>
         """
@@ -325,7 +335,8 @@ class Trackma_cmd(cmd.Cmd):
     
     def do_status(self, args):
         """
-        status - Changes the status of a show.
+        status - Changes the status of a show. Use the command `filter`
+        withotu arguments to see the available statuses.
         
         Usage: status <show id or name> <status name>
         """
@@ -349,14 +360,31 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
         
     def do_send(self, args):
+        """
+        send - Sends any queued changes in the local list to the remote
+        service.
+
+        Usage: send
+        """
         try:
             self.engine.list_upload()
         except utils.TrackmaError, e:
             self.display_error(e)
     
     def do_retrieve(self, args):
+        """
+        retrieve - Retrieves the full remote list from the remove service
+        and overwrites the local list.
+
+        Usage: retrieve
+        """
         try:
-            self.engine.list_download()
+            if self.engine.get_queue():
+                answer = raw_input("There are unqueued changes. Overwrite local list? [y/N] ")
+                if answer.lower() == 'y':
+                    self.engine.list_download()
+            else:
+                self.engine.list_download()
         except utils.TrackmaError, e:
             self.display_error(e)
     
@@ -372,6 +400,11 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
         
     def do_viewqueue(self, args):
+        """
+        viewqueue - Shows the queued changes.
+
+        Usage: viewqueue
+        """
         queue = self.engine.get_queue()
         if len(queue):
             print "Queue:"
@@ -393,9 +426,6 @@ class Trackma_cmd(cmd.Cmd):
     def do_EOF(self, args):
         print
         self.do_quit(args)
-    
-    def do_track(self, args):
-        self.engine.track_process()
     
     def complete_update(self, text, line, begidx, endidx):
         if text:
