@@ -12,8 +12,8 @@ NAME = "Trackma"
 REQUIREMENTS = []
 EXTRA_REQUIREMENTS = {
     'curses': ['urwid'],
-    'GTK' : ['PyGTK', 'pil-or-pillow'],
-    'Qt': ['PyQt4', 'pil-or-pillow'],
+    'GTK' : ['PyGTK', 'Pillow'],
+    'Qt': ['Pillow'],
 }
 
 setup(

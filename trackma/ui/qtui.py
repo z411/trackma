@@ -14,9 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
+
 import sys
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt4 import QtGui, QtCore
+except ImportError:
+    print ("Couldn't import Qt dependencies. Make sure you "
+           "installed the PyQt4 package.")
+    sys.exit(-1)
+
+import os
 from cStringIO import StringIO
 import urllib2 as urllib
 

@@ -14,14 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-try:
-    import urwid.curses_display
-except ImportError:
-    pass
-
-import urwid
-import re
 import sys
+
+try:
+    import urwid
+except ImportError:
+    print ("urwid not found. Make sure you installed the "
+           "urwid package.")
+    sys.exit(-1)
+
+import re
+import urwid
 import webbrowser
 
 from trackma.engine import Engine

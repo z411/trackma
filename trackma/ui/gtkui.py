@@ -14,12 +14,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import gobject
-import pygtk
-pygtk.require('2.0')
-import gtk
+import sys
+try:
+    import gobject
+    import pygtk
+    pygtk.require('2.0')
+    import gtk
+    import pango
+except ImportError:
+    print ("Couldn't import GTK dependencies. Make sure you "
+           "installed the PyGTK package.")
+    sys.exit(-1)
+
 gtk.gdk.threads_init() # We'll use threads
-import pango
 
 import os
 import cgi
