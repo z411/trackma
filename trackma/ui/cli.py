@@ -53,7 +53,21 @@ class Trackma_cmd(cmd.Cmd):
     cmdqueue = []
     stdout = sys.stdout
     sortedlist = []
-    
+    needed_args = {
+        'help':         1,
+        'filter':       (0, 1),
+        'sort':         1,
+        'mediatype':    (0, 1),
+        'info':         1,
+        'search':       1,
+        'add':          1,
+        'delete':       1,
+        'play':         (1, 2),
+        'update':       2,
+        'score':        2,
+        'status':       2,
+    }
+ 
     def __init__(self):
         print 'Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
@@ -99,7 +113,7 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
     
-    def do_account(self, arg):
+    def do_account(self, args):
         """
         account - Switch to a different account
 
@@ -114,7 +128,7 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
 
-    def do_filter(self, arg):
+    def do_filter(self, args):
         """
         filter - Changes the filtering of list by status; call with no arguments to see available filters
         
@@ -122,9 +136,8 @@ class Trackma_cmd(cmd.Cmd):
         """
         # Query the engine for the available statuses
         # that the user can choose
-        if self.parse_args(arg):
+        if args:
             try:
-                args = self.parse_args(arg)
                 self.filter_num = self._guess_status(args[0].lower())
                 self._load_list()
                 self._update_prompt()
@@ -133,7 +146,7 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Available filters: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
     
-    def do_sort(self, arg):
+    def do_sort(self, args):
         """
         sort - Change sort
         
@@ -141,20 +154,19 @@ class Trackma_cmd(cmd.Cmd):
         Available types: id, title, my_progress, total, my_score
         """
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
-        if arg in sorts:
-            self.sort = arg
+        if arg[0] in sorts:
+            self.sort = arg[0]
             self._load_list()
         else:
             print "Invalid sort."
     
-    def do_mediatype(self, arg):
+    def do_mediatype(self, args):
         """
         mediatype - Reloads engine with different mediatype; call with no arguments to see supported mediatypes
         
         Usage: mediatype [mediatype]
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
+        if args:
             if args[0] in self.engine.api_info['supported_mediatypes']:
                 self.engine.reload(mediatype=args[0])
             
@@ -167,206 +179,188 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes'])
         
-    def do_list(self, arg):
+    def do_list(self, args):
         """
         list - Lists all shows available as a nice formatted list.
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
     
-    def do_info(self, arg):
-        if(arg):
-            try:
-                show = self.engine.get_show_info_title(arg)
-                details = self.engine.get_show_details(show)
-            except utils.TrackmaError, e:
-                self.display_error(e)
-                return
+    def do_info(self, args):
+        """
+        info - Gets detailed information about a show in the list.
 
-            print "Title: %s" % details['title']
-            for line in details['extra']:
-                print "%s: %s" % line
-        else:
-            print "Missing arguments."
+        Usage: info <show index or title>
+
+        """
+        try:
+            show = self._get_show(args[0])
+            details = self.engine.get_show_details(show)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+            return
+
+        print "Title: %s" % details['title']
+        for line in details['extra']:
+            print "%s: %s" % line
     
-    def do_search(self, arg):
+    def do_search(self, args):
         """
         search - Does a regex search on shows and lists the matches.
         
         Usage: search <pattern>
         
         """
-        if(arg):
-            showlist = self.engine.regex_list(arg)
-            sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
-            self._make_list(sortedlist)
-        else:
-            print "Missing arguments."
+        showlist = self.engine.regex_list(args[0])
+        sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
+        self._make_list(sortedlist)
     
-    def do_add(self, arg):
+    def do_add(self, args):
         """
         add - Searches for a show and adds it
         
         Usage: add <pattern>
         
         """
-        if(arg):
+        try:
+            entries = self.engine.search(args[0])
+        except utils.TrackmaError, e:
+            self.display_error(e)
+            return
+        
+        for i, entry in enumerate(entries, start=1):
+            print "%d: (%s) %s" % (i, entry['type'], entry['title'])
+        do_update = raw_input("Choose show to add (blank to cancel): ")
+        if do_update != '':
             try:
-                entries = self.engine.search(arg)
-            except utils.TrackmaError, e:
-                self.display_error(e)
+                show = entries[int(do_update)-1]
+            except ValueError:
+                print "Choice must be numeric."
+                return
+            except IndexError:
+                print "Invalid show."
                 return
             
-            for i, entry in enumerate(entries, start=1):
-                print "%d: (%s) %s" % (i, entry['type'], entry['title'])
-            do_update = raw_input("Choose show to add (blank to cancel): ")
-            if do_update != '':
-                try:
-                    show = entries[int(do_update)-1]
-                except ValueError:
-                    print "Choice must be numeric."
-                    return
-                except IndexError:
-                    print "Invalid show."
-                    return
-                
-                # Tell the engine to add the show
-                try:
-                    self.engine.add_show(show)
-                except utils.TrackmaError, e:
-                    self.display_error(e)
+            # Tell the engine to add the show
+            try:
+                self.engine.add_show(show)
+            except utils.TrackmaError, e:
+                self.display_error(e)
     
-    def do_delete(self, arg):
+    def do_delete(self, args):
         """
         delete - Deltes a show from the list
         
-        Usage: delete <show id or title>
+        Usage: delete <show index or title>
         
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
+        try:
+            show = self._get_show(args[0])
             
-            try:
-                show = self._get_show(args[0])
-                
-                do_delete = raw_input("Delete %s? [y/N] " % show['title'])
-                if do_delete.lower() == 'y':
-                    self.engine.delete_show(show)
-            except utils.TrackmaError, e:
-                self.display_error(e)
+            do_delete = raw_input("Delete %s? [y/N] " % show['title'])
+            if do_delete.lower() == 'y':
+                self.engine.delete_show(show)
+        except utils.TrackmaError, e:
+            self.display_error(e)
         
-    def do_neweps(self, arg):
+    def do_neweps(self, args):
         showlist = self.engine.filter_list(self.filter_num)
         results = self.engine.get_new_episodes(showlist)
         for show in results:
             print show['title']
         
-    def do_play(self, arg):
-        if self.parse_args(arg):
+    def do_play(self, args):
+        try:
+            episode = 0
+            show = self._get_show(args[0])
+            
+            # If the user specified an episode, play it
+            # otherwise play the next episode not watched yet
             try:
-                args = self.parse_args(arg)
-                episode = 0
-                show = self._get_show(args[0])
-                
-                # If the user specified an episode, play it
-                # otherwise play the next episode not watched yet
-                try:
-                    episode = args[1]
-                    if episode == (show['my_progress'] + 1):
-                        playing_next = True
-                    else:
-                        playing_next = False
-                except IndexError:
+                episode = args[1]
+                if episode == (show['my_progress'] + 1):
                     playing_next = True
-                
-                played_episode = self.engine.play_episode(show, episode)
-                
-                # Ask if we should update the show to the last episode
-                if played_episode and playing_next:
-                    do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
-                    if do_update.lower() == 'y':
-                        self.engine.set_episode(show['id'], played_episode)
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
-            print "Missing arguments."
+                else:
+                    playing_next = False
+            except IndexError:
+                playing_next = True
+            
+            played_episode = self.engine.play_episode(show, episode)
+            
+            # Ask if we should update the show to the last episode
+            if played_episode and playing_next:
+                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
+                if do_update.lower() == 'y':
+                    self.engine.set_episode(show['id'], played_episode)
+        except utils.TrackmaError, e:
+            self.display_error(e)
         
-    def do_update(self, arg):
+    def do_update(self, args):
         """
         update - Updates the episode of a show.
         
         Usage: update <show id or name> <episode number>
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                show = self._get_show(args[0])
-                self.engine.set_episode(show['id'], args[1])
-            except IndexError:
-                print "Missing arguments."
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
+        try:
+            show = self._get_show(args[0])
+            self.engine.set_episode(show['id'], args[1])
+        except IndexError:
             print "Missing arguments."
+        except utils.TrackmaError, e:
+            self.display_error(e)
     
-    def do_score(self, arg):
+    def do_score(self, args):
         """
         score - Changes the given score of a show.
         
         Usage: update <show id or name> <score>
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                show = self._get_show(args[0])
-                self.engine.set_score(show['id'], args[1])
-            except IndexError:
-                print "Missing arguments."
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
+        try:
+            show = self._get_show(args[0])
+            self.engine.set_score(show['id'], args[1])
+        except IndexError:
             print "Missing arguments."
+        except utils.TrackmaError, e:
+            self.display_error(e)
     
-    def do_status(self, arg):
+    def do_status(self, args):
         """
         status - Changes the status of a show.
         
         Usage: status <show id or name> <status name>
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                _showtitle = args[0]
-                _filter = args[1]
-            except IndexError:
-                print "Missing arguments."
-                return
-            
-            try:
-                _filter_num = self._guess_status(_filter)
-            except KeyError:
-                print "Invalid filter."
-                return
-            
-            try:
-                show = self._get_show(_showtitle)
-                self.engine.set_status(show['id'], _filter_num)
-            except utils.TrackmaError, e:
-                self.display_error(e)
+        try:
+            _showtitle = args[0]
+            _filter = args[1]
+        except IndexError:
+            print "Missing arguments."
+            return
         
-    def do_send(self, arg):
+        try:
+            _filter_num = self._guess_status(_filter)
+        except KeyError:
+            print "Invalid filter."
+            return
+        
+        try:
+            show = self._get_show(_showtitle)
+            self.engine.set_status(show['id'], _filter_num)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+        
+    def do_send(self, args):
         try:
             self.engine.list_upload()
         except utils.TrackmaError, e:
             self.display_error(e)
     
-    def do_retrieve(self, arg):
+    def do_retrieve(self, args):
         try:
             self.engine.list_download()
         except utils.TrackmaError, e:
             self.display_error(e)
     
-    def do_undoall(self, arg):
+    def do_undoall(self, args):
         """
         undo - Undo all changes
         
@@ -377,7 +371,7 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError, e:
             self.display_error(e)
         
-    def do_viewqueue(self, arg):
+    def do_viewqueue(self, args):
         queue = self.engine.get_queue()
         if len(queue):
             print "Queue:"
@@ -386,7 +380,7 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Queue is empty."
     
-    def do_quit(self, arg):
+    def do_quit(self, args):
         """Quits the program."""
         try:
             self.engine.unload()
@@ -396,11 +390,11 @@ class Trackma_cmd(cmd.Cmd):
         print 'Bye!'
         sys.exit(0)
     
-    def do_EOF(self, arg):
+    def do_EOF(self, args):
         print
-        self.do_quit(arg)
+        self.do_quit(args)
     
-    def do_track(self, arg):
+    def do_track(self, args):
         self.engine.track_process()
     
     def complete_update(self, text, line, begidx, endidx):
@@ -429,7 +423,47 @@ class Trackma_cmd(cmd.Cmd):
     def parse_args(self, arg):
         if arg:
             return shlex.split(arg)
+        else:
+            return []
     
+    def onecmd(self, line):
+        """ Override. """
+        cmd, arg, line = self.parseline(line)
+        if not line:
+            return self.emptyline()
+        if cmd is None:
+            return self.default(line)
+        self.lastcmd = line
+        if line == 'EOF' :
+            self.lastcmd = ''
+        if cmd == '':
+            return self.default(line)
+        elif cmd == 'help':
+            return self.do_help(arg)
+        else:
+            return self.execute(cmd, arg, line)
+
+    def execute(self, cmd, arg, line):
+        try:
+            func = getattr(self, 'do_' + cmd)
+        except AttributeError:
+            return self.default(line)
+
+        args = self.parse_args(arg)
+
+        try:
+            needed = self.needed_args[cmd]
+        except KeyError:
+            needed = 0
+
+        if isinstance(needed, int):
+            needed = (needed, needed)
+
+        if needed[0] <= len(args) <= needed[1]:
+            return func(args)
+        else:
+            print "Incorrent number of arguments. See `help %s`" % cmd
+
     def display_error(self, e):
         print "%s%s: %s%s" % (_COLOR_ERROR, type(e), e.message, _COLOR_RESET)
     
