@@ -401,6 +401,7 @@ class Tracker(object):
         return (aie.getName(), aie.getEpisode())
     
     def _observe_inotify(self, watch_dir):
+        self.msg.info(self.name, 'Using inotify.')
         fd = inotifyx.init()
         try:
             wd = inotifyx.add_watch(fd, watch_dir,
