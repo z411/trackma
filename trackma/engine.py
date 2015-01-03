@@ -184,6 +184,7 @@ class Engine:
             self.tracker = tracker.Tracker(self.msg,
                                    self._get_tracker_list(),
                                    self.config['tracker_process'],
+                                   self.config['searchdir'],
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait']),
                                   )

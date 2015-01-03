@@ -27,8 +27,6 @@ import utils
 
 inotify_available = False
 
-TYPE_INOTIFY = 1
-TYPE_POLL = 2
 STATE_PLAYING = 0
 STATE_NOVIDEO = 1
 STATE_UNRECOGNIZED = 2
@@ -340,22 +338,20 @@ class Tracker(object):
     last_state = None
     last_time = 0
     last_updated = False
-    type = None
-    observer = None
     
     name = 'Tracker'
 
     signals = { 'playing' : None,
                  'update': None, }
 
-    def __init__(self, messenger, tracker_list, process_name, interval, update_wait):
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
     
         self.list = tracker_list
         self.process_name = process_name
         
-        tracker_args = (interval,)
+        tracker_args = (watch_dir, interval)
         self.wait_s = update_wait * 60
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
@@ -404,10 +400,10 @@ class Tracker(object):
         aie = AnimeInfoExtractor(filename)
         return (aie.getName(), aie.getEpisode())
     
-    def _observe_inotify(self):
+    def _observe_inotify(self, watch_dir):
         fd = inotifyx.init()
         try:
-            wd = inotifyx.add_watch(fd, '/mnt/wing/Torrent/anime',
+            wd = inotifyx.add_watch(fd, watch_dir,
                  inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
             while True:
                 events = inotifyx.get_events(fd, 1)
@@ -433,9 +429,9 @@ class Tracker(object):
             # Wait for the interval before running check again
             time.sleep(interval)
         
-    def _tracker(self, interval):
+    def _tracker(self, watch_dir, interval):
         if inotify_available:
-            self._observe_inotify()
+            self._observe_inotify(watch_dir)
         else:
             self._observe_polling(interval)
     
