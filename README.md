@@ -94,6 +94,11 @@ The code is hosted as a git repository in github:
 
 http://github.com/z411/trackma
 
+If you plan to make changes to the code, I suggest using the following method to install Trackma
+instead of the normal way, so the changes you make get reflected immediately:
+
+<pre># python setup.py develop</pre>
+
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the github issue tracker:
 
