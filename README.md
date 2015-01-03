@@ -58,7 +58,13 @@ Requirements
 Installation
 ------------
 
-Like any Python program, run the setup.py installation script:
+Make sure you've installed the proper dependencies (listed above)
+according to the user interface you plan to use, and then run the
+following command:
+
+<pre># pip install Trackma</pre>
+
+If you've downloaded the source code:
 
 <pre># python setup.py install</pre>
 
@@ -66,9 +72,9 @@ Then you can run the program with the interface you like.
 
 <pre>
 $ trackma
-$ trackma-curses (requires urwid)
-$ trackma-gtk (requires pygtk)
-$ trackma-qt (requires PyQt)
+$ trackma-curses
+$ trackma-gtk
+$ trackma-qt
 </pre>
 
 Alternatively, you can just run the scripts directly from the bin/ folder.
