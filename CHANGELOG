@@ -1,4 +1,5 @@
 v0.3.1
+- New: Implemented inotify-based tracker for instant recognition under Linux
 - Improvement: Several improvements to the CLI including indexes
 - Improvement: Migrated to setuptools and registered on PyPI
 - Bugfix: libmal doesn't have problems with HTML entities anymore
