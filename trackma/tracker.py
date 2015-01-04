@@ -335,7 +335,7 @@ class Tracker(object):
     list = None
     last_show_tuple = None
     last_filename = None
-    last_state = None
+    last_state = STATE_NOVIDEO
     last_time = 0
     last_updated = False
     
@@ -402,17 +402,24 @@ class Tracker(object):
     
     def _observe_inotify(self, watch_dir):
         self.msg.info(self.name, 'Using inotify.')
+        timeout = -1
         fd = inotifyx.init()
         try:
             wd = inotifyx.add_watch(fd, watch_dir,
                  inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
             while True:
-                events = inotifyx.get_events(fd, 1)
+                events = inotifyx.get_events(fd, timeout)
                 if events:
                     for event in events:
                         if not event.mask & inotifyx.IN_ISDIR:
                             (state, show_tuple) = self._get_playing_show()
                             self.update_show_if_needed(state, show_tuple)
+
+                            if self.last_state == STATE_NOVIDEO:
+                                # Make get_events block indifinitely
+                                timeout = -1
+                            else:
+                                timeout = 1
                 else:
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
         except IOError:
@@ -423,7 +430,7 @@ class Tracker(object):
     def _observe_polling(self, interval):
         self.msg.warn(self.name, "inotifyx not available; using polling (slow).")
         while True:
-            # This runs the tracker and returns the playing show, if any
+            # This runs the tracker and update the playing show if necessary
             (state, show_tuple) = self._get_playing_show()
             self.update_show_if_needed(state, show_tuple)
             
