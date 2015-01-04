@@ -324,10 +324,11 @@ class Data(object):
     
     def queue_clear(self):
         """Clears the queue completely."""
-        self.queue = []
-        self._save_queue()
-        self._emit_signal('queue_changed', len(self.queue))
-        self.msg.info(self.name, "Cleared queue.")
+        if self.queue:
+            self.queue = []
+            self._save_queue()
+            self._emit_signal('queue_changed', len(self.queue))
+            self.msg.info(self.name, "Cleared queue.")
         
     def process_queue(self):
         """

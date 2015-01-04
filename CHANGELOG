@@ -1,18 +1,39 @@
-0.2
-===
-- New: Basic Hummingbird support
+v0.3.1
+- Improvement: Several improvements to the CLI including indexes
+- Improvement: Migrated to setuptools and registered on PyPI
+- Bugfix: libmal doesn't have problems with HTML entities anymore
+- Bugfix: Fixed situations where libmal had problems with non-gzipped responses
+- Several minor bugfixes
+
+v0.3
+
+- New: Qt interface
+- New: Hummingbird support
+- New: Using new code for media tracker (AIE)
+- New: Show details dialog
+- New: Track icon in Qt and GTK interfaces
+- New: Support for alternative titles for problematic show titles
+- Improvement: Right click context menu for GTK and alternate names
+- Improvement: Few GTK aesthetic changes
+- Improvement: CLI can now point to shows by index rather than title
+- Improvement: Decimal scores
+- Improvement: Various tracker and video search improvements
+- Improvement: Support for player arguments
+- Several minor improvements and bugfixes
+
+v0.2
+First public release, there are still many things to fix and implement but it seems to be stable and usable enough.
+
 - New: Implemented account switching and account manager
 - New: Support for viewing show details
 - New: GTK Settings window
 - New: GTK Tray icon
 - New: Aliases and manual alternative titles
 - New: Timed autosend and autoretrieve
+- New: Basic Hummingbird support
 - Improvement: libmal now uses gzipped requests
 - Improvement: Now config files are stored in JSON
 - Improvement: Shows get colored when queued or playing
 - Improvement: Better curses interface memory management
 - Several bugfixes
 
-0.1
-===
-- Initial release

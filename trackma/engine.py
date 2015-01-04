@@ -655,6 +655,7 @@ class Engine:
     
     def list_download(self):
         """Asks the data handler to download the remote list."""
+        self.undoall()
         self.data_handler.download_data()
     
     def list_upload(self):
