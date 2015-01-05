@@ -14,12 +14,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import gobject
-import pygtk
-pygtk.require('2.0')
-import gtk
+import sys
+try:
+    import gobject
+    import pygtk
+    pygtk.require('2.0')
+    import gtk
+    import pango
+except ImportError:
+    print ("Couldn't import GTK dependencies. Make sure you "
+           "installed the PyGTK package.")
+    sys.exit(-1)
+
 gtk.gdk.threads_init() # We'll use threads
-import pango
 
 import os
 import cgi
@@ -52,8 +59,8 @@ class Trackma_gtk(object):
     show_lists = dict()
     image_thread = None
     close_thread = None
-    can_close = False
     hidden = False
+    quit = False
     
     def main(self):
         """Start the Account Selector"""
@@ -72,9 +79,9 @@ class Trackma_gtk(object):
         
         gtk.main()
     
-    def do_switch_account(self, widget):
+    def do_switch_account(self, widget, switch=True):
         manager = AccountManager()
-        self.accountsel = AccountSelect(manager = AccountManager(), switch=True)
+        self.accountsel = AccountSelect(manager = AccountManager(), switch=switch)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
         
@@ -92,7 +99,7 @@ class Trackma_gtk(object):
         
         # Reload the engine if already started,
         # start it otherwise
-        if self.engine:
+        if self.engine and self.engine.loaded:
             self.do_reload(None, account, None)
         else:
             self.start(account)
@@ -111,7 +118,7 @@ class Trackma_gtk(object):
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/icon.png')
         
         # Menus
-        mb_list = gtk.Menu()
+        mb_show = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         self.mb_play.connect("activate", self.do_play, True)
         self.mb_info = gtk.MenuItem('Show details...')
@@ -129,58 +136,67 @@ class Trackma_gtk(object):
         gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
         self.mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
         self.mb_addsearch.connect("activate", self.do_addsearch)
-        gtk.stock_add([(gtk.STOCK_REFRESH, "Retrieve list", 0, 0, "")])
+       
+        mb_show.append(self.mb_addsearch)
+        mb_show.append(self.mb_play)
+        mb_show.append(self.mb_info)
+        mb_show.append(mb_web)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(mb_copy)
+        mb_show.append(mb_alt_title)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(self.mb_delete)
+        mb_show.append(gtk.SeparatorMenuItem())
+        mb_show.append(self.mb_exit)
+        
+        mb_list = gtk.Menu()
+        gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
+        self.mb_sync = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
+        self.mb_sync.connect("activate", self.do_sync)
+        self.mb_retrieve = gtk.ImageMenuItem("Retrieve list")
+        self.mb_retrieve.connect("activate", self.do_retrieve_ask)
         self.mb_send = gtk.MenuItem('Send changes')
         self.mb_send.connect("activate", self.do_send)
-        
-        mb_list.append(self.mb_play)
-        mb_list.append(self.mb_info)
-        mb_list.append(mb_web)
+
+        mb_list.append(self.mb_sync)
         mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(mb_copy)
-        mb_list.append(mb_alt_title)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_delete)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_addsearch)
+        mb_list.append(self.mb_retrieve)
         mb_list.append(self.mb_send)
-        mb_list.append(gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_exit)
-        
-        mb_account = gtk.Menu()
-        self.mb_retrieve = gtk.ImageMenuItem(gtk.STOCK_REFRESH)
-        self.mb_retrieve.connect("activate", self.do_retrieve_ask)
+
+        mb_options = gtk.Menu()
         self.mb_switch_account = gtk.MenuItem('Switch Account...')
         self.mb_switch_account.connect("activate", self.do_switch_account)
         self.mb_settings = gtk.MenuItem('Global Settings...')
         self.mb_settings.connect("activate", self.do_settings)
         
-        mb_account.append(self.mb_switch_account)
-        mb_account.append(self.mb_retrieve)
-        mb_account.append(gtk.SeparatorMenuItem())
-        mb_account.append(self.mb_settings)
+        mb_options.append(self.mb_switch_account)
+        mb_options.append(gtk.SeparatorMenuItem())
+        mb_options.append(self.mb_settings)
         
         self.mb_mediatype_menu = gtk.Menu()
         
-        mb_options = gtk.Menu()
+        mb_help = gtk.Menu()
         mb_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
         mb_about.connect("activate", self.on_about)
-        mb_options.append(mb_about)
+        mb_help.append(mb_about)
         
         # Root menubar
         root_menu1 = gtk.MenuItem("Show")
-        root_menu1.set_submenu(mb_list)
-        root_account = gtk.MenuItem("Options")
-        root_account.set_submenu(mb_account)
+        root_menu1.set_submenu(mb_show)
+        root_list = gtk.MenuItem("List")
+        root_list.set_submenu(mb_list)
+        root_options = gtk.MenuItem("Options")
+        root_options.set_submenu(mb_options)
         mb_mediatype = gtk.MenuItem("Mediatype")
         mb_mediatype.set_submenu(self.mb_mediatype_menu)
         root_menu2 = gtk.MenuItem("Help")
-        root_menu2.set_submenu(mb_options)
+        root_menu2.set_submenu(mb_help)
         
         mb = gtk.MenuBar()
         mb.append(root_menu1)
-        mb.append(root_account)
+        mb.append(root_list)
         mb.append(mb_mediatype)
+        mb.append(root_options)
         mb.append(root_menu2)
         
         # Create vertical box
@@ -430,8 +446,24 @@ class Trackma_gtk(object):
 
         self.notebook.connect("switch-page", self.select_show)
     
+    def idle_destroy(self):
+        gobject.idle_add(self.idle_destroy_push)
+
+    def idle_destroy_push(self):
+        self.quit = True
+        self.main.destroy()
+
+    def idle_restart(self):
+        gobject.idle_add(self.idle_restart_push)
+
+    def idle_restart_push(self):
+        self.quit = False
+        self.main.destroy()
+        self.do_switch_account(None, False)
+
     def on_destroy(self, widget):
-        gtk.main_quit()
+        if self.quit:
+            gtk.main_quit()
     
     def status_event(self, widget):
         # Called when the tray icon is left-clicked
@@ -605,11 +637,8 @@ class Trackma_gtk(object):
     def task_unload(self):
         self.allow_buttons(False)
         self.engine.unload()
-        self.can_close = True
         
-        gtk.threads_enter()
-        self.main.destroy()
-        gtk.threads_leave()
+        self.idle_destroy()
         
     def do_retrieve_ask(self, widget):
         queue = self.engine.get_queue()
@@ -632,17 +661,20 @@ class Trackma_gtk(object):
             widget.destroy()
 
         if response == gtk.RESPONSE_YES:
-            threading.Thread(target=self.task_sync, args=(False,)).start()
+            threading.Thread(target=self.task_sync, args=(False,True)).start()
     
     def do_send(self, widget):
-        threading.Thread(target=self.task_sync, args=(True,)).start()
+        threading.Thread(target=self.task_sync, args=(True,False)).start()
+
+    def do_sync(self, widget):
+        threading.Thread(target=self.task_sync, args=(True,True)).start()
     
-    def task_sync(self, send):
+    def task_sync(self, send, retrieve):
         self.allow_buttons(False)
         
         if send:
             self.engine.list_upload()
-        else:
+        if retrieve:
             self.engine.list_download()
         
         gtk.threads_enter()
@@ -652,7 +684,6 @@ class Trackma_gtk(object):
         self.status("Ready.")
         self.allow_buttons(True)
     
-        
     def start_engine(self):
         threading.Thread(target=self.task_start_engine).start()
     
@@ -661,8 +692,9 @@ class Trackma_gtk(object):
             try:
                 self.engine.start()
             except utils.TrackmaFatal, e:
-                self.status("Fatal engine error: %s" % e.message)
                 print("Fatal engine error: %s" % e.message)
+                self.idle_restart()
+                self.error("Fatal engine error: %s" % e.message)
                 return
         
         gtk.threads_enter()
@@ -694,7 +726,12 @@ class Trackma_gtk(object):
             self.engine.reload(account, mediatype)
         except utils.TrackmaError, e:
             self.error(e.message)
-        
+        except utils.TrackmaFatal, e:
+            print("Fatal engine error: %s" % e.message)
+            self.idle_restart()
+            self.error("Fatal engine error: %s" % e.message)
+            return
+ 
         if account:
             self.account = account
         
@@ -1133,9 +1170,9 @@ class ShowView(gtk.TreeView):
         for row in self.store:
             if int(row[0]) == show['id']:
                 if is_playing:
-                    row[5] = '#6C2DC7'
+                    row[7] = '#6C2DC7'
                 else:
-                    row[5] = self._get_color(show)
+                    row[7] = self._get_color(show)
                 return
     
     def select(self, show):
@@ -1263,7 +1300,10 @@ class AccountSelect(gtk.Window):
     
     def on_account_changed(self, widget):
         tree_model, tree_iter = self.get_selected()
-        is_selectable = tree_model.get_value(tree_iter, 4)
+        if tree_iter:
+            is_selectable = tree_model.get_value(tree_iter, 4)
+        else:
+            is_selectable = False
         
         self.use_button.set_sensitive(is_selectable)
         self.delete_button.set_sensitive(True)
@@ -1334,16 +1374,56 @@ class InfoDialog(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Show Details')
         self.set_border_width(10)
-        
+
         fullbox = gtk.VBox()
+        
+        # Info box
+        info = InfoWidget(engine)
+        info.set_size(600, 500)
+
+        # Bottom line (buttons)
+        alignment = gtk.Alignment(xalign=1.0)
+        bottombar = gtk.HBox(False, 5)
+        
+        web_button = gtk.Button('Open web')
+        web_button.connect("clicked", self.do_web)
+        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
+        close_button.connect("clicked", self.do_close)
+        
+        bottombar.pack_start(web_button, False, False, 0)
+        bottombar.pack_start(close_button, False, False, 0)
+        alignment.add(bottombar)
+        
+        fullbox.pack_start(info)
+        fullbox.pack_start(alignment)
+
+        self.add(fullbox)
+        self.show_all()
+
+        info.load(show)
+    
+    def do_close(self, widget):
+        self.destroy()
+
+    def do_web(self, widget):
+        if self.show['url']:
+            webbrowser.open(self.show['url'], 2, True)
+
+ 
+class InfoWidget(gtk.VBox):
+    def __init__(self, engine):
+        gtk.VBox.__init__(self)
+
+        self.engine = engine
 
         # Title line
-        self.w_title = gtk.Label('Loading...')
+        self.w_title = gtk.Label('')
+        self.w_title.set_ellipsize(pango.ELLIPSIZE_END)
         
         # Middle line (sidebox)
         eventbox_sidebox = gtk.EventBox()
-        scrolled_sidebox = gtk.ScrolledWindow()
-        scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolled_sidebox = gtk.ScrolledWindow()
+        self.scrolled_sidebox.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sidebox = gtk.HBox()
 
         alignment_image = gtk.Alignment(yalign=0.0)
@@ -1357,28 +1437,16 @@ class InfoDialog(gtk.Window):
 
         eventbox_sidebox.add(sidebox)
 
-        scrolled_sidebox.add_with_viewport(eventbox_sidebox)
-        scrolled_sidebox.set_size_request(600, 500)
+        self.scrolled_sidebox.add_with_viewport(eventbox_sidebox)
        
-        # Bottom line (buttons)
-        alignment = gtk.Alignment(xalign=1.0)
-        bottombar = gtk.HBox(False, 5)
-        
-        web_button = gtk.Button('Open web')
-        web_button.connect("clicked", self.do_web)
-        close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
-        close_button.connect("clicked", self.do_close)
-        
-        bottombar.pack_start(web_button, False, False, 0)
-        bottombar.pack_start(close_button, False, False, 0)
-        alignment.add(bottombar)
+        self.pack_start(self.w_title, False, False)
+        self.pack_start(self.scrolled_sidebox, padding=5)
 
-        fullbox.pack_start(self.w_title, False, False)
-        fullbox.pack_start(scrolled_sidebox, padding=5)
-        fullbox.pack_start(alignment)
-        
-        self.add(fullbox)
-        self.show_all()
+    def set_size(self, w, h):
+        self.scrolled_sidebox.set_size_request(w, h)
+
+    def load(self, show):
+        self.show = show
 
         # Load image
         imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
@@ -1420,7 +1488,6 @@ class InfoDialog(gtk.Window):
             self.w_content.set_size_request(340, -1)
     
             self.show_all()
-            self.set_position(gtk.WIN_POS_CENTER)
         else:
             self.w_title.set_text('Error while getting details.')
             if self.details_e:
@@ -1429,13 +1496,6 @@ class InfoDialog(gtk.Window):
         self.w_content.set_alignment(0, 0)
         self.w_content.set_line_wrap(True)
         self.w_content.set_size_request(340, -1)
-
-    def do_close(self, widget):
-        self.destroy()
-
-    def do_web(self, widget):
-        if self.show['url']:
-            webbrowser.open(self.show['url'], 2, True)
 
 class Settings(gtk.Window):
     def __init__(self, engine, config, configfile):
@@ -1785,7 +1845,9 @@ class ShowSearch(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         
         self.engine = engine
-        
+
+        fullbox = gtk.HBox(False, 5)
+
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Search')
         self.set_border_width(10)
@@ -1803,7 +1865,7 @@ class ShowSearch(gtk.Window):
         
         sw = gtk.ScrolledWindow()
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        sw.set_size_request(550, 300)
+        sw.set_size_request(450, 350)
         
         alignment = gtk.Alignment(xalign=1.0)
         bottombar = gtk.HBox(False, 5)
@@ -1811,26 +1873,26 @@ class ShowSearch(gtk.Window):
         self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
         self.add_button.connect("clicked", self.do_add)
         self.add_button.set_sensitive(False)
-        self.info_button = gtk.Button('Info')
-        self.info_button.connect("clicked", self.do_info)
-        self.info_button.set_sensitive(False)
         close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.do_close)
         bottombar.pack_start(self.add_button, False, False, 0)
-        bottombar.pack_start(self.info_button, False, False, 0)
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
         
         self.showlist = ShowSearchView()
-        self.showlist.connect("row-activated", self.do_info)
         self.showlist.get_selection().connect("changed", self.select_show)
         
         sw.add(self.showlist)
         
+        self.info = InfoWidget(engine)
+        self.info.set_size(400, 350)
+ 
         vbox.pack_start(searchbar, False, False, 0)
         vbox.pack_start(sw, True, True, 0)
         vbox.pack_start(alignment, False, False, 0)
-        self.add(vbox)
+        fullbox.pack_start(vbox)
+        fullbox.pack_start(self.info)
+        self.add(fullbox)
     
     def do_add(self, widget, path=None, view_column=None):
         # Get show dictionary
@@ -1847,9 +1909,6 @@ class ShowSearch(gtk.Window):
             except utils.TrackmaError, e:
                 self.error_push(e.message)
     
-    def do_info(self, widget):
-        win = InfoDialog(self.engine, self.showdict[self.selected_show])
- 
     def do_search(self, widget):
         threading.Thread(target=self.task_search).start()
     
@@ -1864,15 +1923,15 @@ class ShowSearch(gtk.Window):
             return
         
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
+        self.info.load(self.showdict[self.selected_show])
         self.add_button.set_sensitive(True)
-        self.info_button.set_sensitive(True)
         
     def task_search(self):
         self.allow_buttons(False)
 
         try:
             self.entries = self.engine.search(self.searchtext.get_text())
-        except utils.APIError, e:
+        except utils.TrackmaError, e:
             self.entries = []
             self.error(e.message)
 

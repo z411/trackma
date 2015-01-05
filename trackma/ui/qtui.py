@@ -14,9 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
+
 import sys
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt4 import QtGui, QtCore
+except ImportError:
+    print ("Couldn't import Qt dependencies. Make sure you "
+           "installed the PyQt4 package.")
+    sys.exit(-1)
+
+import os
 from cStringIO import StringIO
 import urllib2 as urllib
 
@@ -50,6 +57,7 @@ class Trackma(QtGui.QMainWindow):
     started = False
     selected_show_id = None
     show_lists = None
+    finish = False
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
@@ -126,7 +134,10 @@ class Trackma(QtGui.QMainWindow):
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
-        action_send = QtGui.QAction('&Send changes', self)
+        action_sync = QtGui.QAction('&Sync', self)
+        action_sync.setStatusTip('Send changes and then retrieve remote list')
+        action_sync.triggered.connect(lambda: self.s_send(True))
+        action_send = QtGui.QAction('Sen&d changes', self)
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
         action_retrieve = QtGui.QAction('&Redownload list', self)
@@ -155,6 +166,8 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
         menu_list = menubar.addMenu('&List')
+        menu_list.addAction(action_sync)
+        menu_list.addSeparator()
         menu_list.addAction(action_send)
         menu_list.addAction(action_retrieve)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
@@ -252,6 +265,7 @@ class Trackma(QtGui.QMainWindow):
         # Connect worker signals
         self.worker.changed_status.connect(self.status)
         self.worker.raised_error.connect(self.error)
+        self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
@@ -270,6 +284,7 @@ class Trackma(QtGui.QMainWindow):
         if account:
             self.account = account
 
+        self.show()
         self._busy(False)
         self.worker_call('reload', self.r_engine_loaded, account, mediatype)
         
@@ -288,7 +303,14 @@ class Trackma(QtGui.QMainWindow):
         print unicode(message).encode('utf-8')
     
     def error(self, msg):
+        self.status('Error: {}'.format(msg))
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
+
+    def fatal(self, msg):
+        QtGui.QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QtGui.QMessageBox.Ok)
+        self._busy()
+        self.finish = False
+        self.worker_call('unload', self.r_engine_unloaded)
 
     def worker_call(self, function, ret_function, *args, **kwargs):
         # Run worker in a thread
@@ -298,6 +320,7 @@ class Trackma(QtGui.QMainWindow):
     ### GUI Functions
     def _exit(self):
         self._busy()
+        self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
     def _enable_widgets(self, enable):
@@ -591,7 +614,6 @@ class Trackma(QtGui.QMainWindow):
                 self.s_send(True)
             elif reply == QtGui.QMessageBox.No:
                 self._busy(True)
-                self.worker.engine.undoall()
                 self.worker_call('list_download', self.r_list_retrieved)
         else:
             self._busy(True)
@@ -618,9 +640,8 @@ class Trackma(QtGui.QMainWindow):
             
         show = self.worker.engine.get_show_info(self.selected_show_id)
         
-        self.detailswindow = DetailsDialog(None, self.worker)
+        self.detailswindow = DetailsDialog(None, self.worker, show)
         self.detailswindow.setModal(True)
-        self.detailswindow.load(show)
         self.detailswindow.show()
     
     def s_add(self):
@@ -780,6 +801,8 @@ class Trackma(QtGui.QMainWindow):
     def r_engine_unloaded(self, result):
         if result['success']:
             self.close()
+            if not self.finish:
+                self.s_switch_account()
 
     def r_played(self, result):
         self._unbusy()
@@ -799,16 +822,34 @@ class Trackma(QtGui.QMainWindow):
 
 
 class DetailsDialog(QtGui.QDialog):
-    worker = None
-
-    def __init__(self, parent, worker):
-        QtGui.QMainWindow.__init__(self, parent)
+    def __init__(self, parent, worker, show):
+        QtGui.QDialog.__init__(self, parent)
         self.setMinimumSize(530, 550)
         self.setWindowTitle('Details')
         self.worker = worker
-    
+
+        main_layout = QtGui.QVBoxLayout()
+        details = DetailsWidget(self, worker)
+        
+        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
+        bottom_buttons.setCenterButtons(True)
+        bottom_buttons.rejected.connect(self.close)
+
+        main_layout.addWidget(details)
+        main_layout.addWidget(bottom_buttons)
+
+        self.setLayout(main_layout)
+        details.load(show)
+        
+class DetailsWidget(QtGui.QWidget):
+    def __init__(self, parent, worker):
+        self.worker = worker
+
+        QtGui.QWidget.__init__(self, parent)
+
         # Build layout
         main_layout = QtGui.QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
         self.show_title = QtGui.QLabel()
         show_title_font = QtGui.QFont()
@@ -820,9 +861,9 @@ class DetailsDialog(QtGui.QDialog):
         info_area = QtGui.QWidget()
         info_layout = QtGui.QHBoxLayout()
         
-        self.show_image = QtGui.QLabel('Downloading...')
+        self.show_image = QtGui.QLabel()
         self.show_image.setAlignment( QtCore.Qt.AlignTop )
-        self.show_info = QtGui.QLabel('Wait...')
+        self.show_info = QtGui.QLabel()
         self.show_info.setWordWrap(True)
         self.show_info.setAlignment( QtCore.Qt.AlignTop )
         
@@ -836,13 +877,8 @@ class DetailsDialog(QtGui.QDialog):
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
         
-        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
-        bottom_buttons.setCenterButtons(True)
-        bottom_buttons.rejected.connect(self.close)
-
         main_layout.addWidget(self.show_title)
         main_layout.addWidget(scroll_area)
-        main_layout.addWidget(bottom_buttons)
 
         self.setLayout(main_layout)
     
@@ -858,6 +894,7 @@ class DetailsDialog(QtGui.QDialog):
         self.show_title.setOpenExternalLinks(True)
         
         # Load show info
+        self.show_info.setText('Wait...')
         self.worker_call('get_show_details', self.r_details_loaded, show)
         
         # Load show image
@@ -866,6 +903,7 @@ class DetailsDialog(QtGui.QDialog):
         if os.path.isfile(filename):
             self.s_show_image(filename)
         else:
+            self.show_image.setText('Downloading...')
             self.image_worker = Image_Worker(show['image'], filename)
             self.image_worker.finished.connect(self.s_show_image)
             self.image_worker.start()
@@ -893,11 +931,11 @@ class AddDialog(QtGui.QDialog):
 
     def __init__(self, parent, worker):
         QtGui.QMainWindow.__init__(self, parent)
-        self.setMinimumSize(530, 550)
+        self.setMinimumSize(700, 500)
         self.setWindowTitle('Search/Add from Remote')
         self.worker = worker
     
-        layout = QtGui.QVBoxLayout()
+        layout = QtGui.QGridLayout()
         
         # Create top layout
         top_layout = QtGui.QHBoxLayout()
@@ -924,7 +962,7 @@ class AddDialog(QtGui.QDialog):
         self.table.setGridStyle(QtCore.Qt.NoPen)
         self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
         self.table.currentItemChanged.connect(self.s_show_selected)
-        self.table.doubleClicked.connect(self.s_show_details)
+        #self.table.doubleClicked.connect(self.s_show_details)
         
         bottom_buttons = QtGui.QDialogButtonBox(self)
         bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
@@ -932,10 +970,14 @@ class AddDialog(QtGui.QDialog):
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
+        # Info box
+        self.details = DetailsWidget(self, worker)
+
         # Finish layout
-        layout.addLayout(top_layout)
-        layout.addWidget(self.table)
-        layout.addWidget(bottom_buttons)
+        layout.addLayout(top_layout,     0, 0, 1, 2)
+        layout.addWidget(self.table,     1, 0, 1, 1)
+        layout.addWidget(self.details,   1, 1, 1, 1)
+        layout.addWidget(bottom_buttons, 2, 0, 1, 2)
         self.setLayout(layout)
     
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -961,16 +1003,8 @@ class AddDialog(QtGui.QDialog):
         
         index = new.row()
         self.selected_show = self.results[index]
+        self.details.load(self.selected_show)
         self.select_btn.setEnabled(True)
-    
-    def s_show_details(self):
-        if not self.selected_show:
-            return
-            
-        self.detailswindow = DetailsDialog(None, self.worker)
-        self.detailswindow.setModal(True)
-        self.detailswindow.load(self.selected_show)
-        self.detailswindow.show()
     
     def s_add(self):
         if self.selected_show:
@@ -1593,6 +1627,7 @@ class Engine_Worker(QtCore.QThread):
     # Message handler signals
     changed_status = QtCore.pyqtSignal(str)
     raised_error = QtCore.pyqtSignal(str)
+    raised_fatal = QtCore.pyqtSignal(str)
 
     # Event handler signals
     changed_show = QtCore.pyqtSignal(dict)
@@ -1634,6 +1669,9 @@ class Engine_Worker(QtCore.QThread):
 
     def _error(self, msg):
         self.raised_error.emit(msg)
+
+    def _fatal(self, msg):
+        self.raised_fatal.emit(msg)
 
     def _changed_show(self, show):
         self.changed_show.emit(show)
@@ -1793,9 +1831,11 @@ class Engine_Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
-        ret = self.function(*self.args,**self.kwargs)
-        self.finished.emit(ret)
-
+        try:
+            ret = self.function(*self.args,**self.kwargs)
+            self.finished.emit(ret)
+        except utils.TrackmaFatal, e:
+            self._fatal(e.message)
 
 def main():
     app = QtGui.QApplication(sys.argv)

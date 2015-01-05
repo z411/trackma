@@ -58,7 +58,13 @@ Requirements
 Installation
 ------------
 
-Like any Python program, run the setup.py installation script:
+Make sure you've installed the proper dependencies (listed above)
+according to the user interface you plan to use, and then run the
+following command:
+
+<pre># pip install Trackma</pre>
+
+Or if you've downloaded the source code:
 
 <pre># python setup.py install</pre>
 
@@ -66,12 +72,16 @@ Then you can run the program with the interface you like.
 
 <pre>
 $ trackma
-$ trackma-curses (requires urwid)
-$ trackma-gtk (requires pygtk)
-$ trackma-qt (requires PyQt)
+$ trackma-curses
+$ trackma-gtk
+$ trackma-qt
 </pre>
 
-Alternatively, you can just run the scripts directly from the bin/ folder.
+Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUSE.
+
+- **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
+- **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
+- **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
 
 Configuration
 -------------
@@ -89,6 +99,11 @@ Development
 The code is hosted as a git repository in github:
 
 http://github.com/z411/trackma
+
+If you plan to make changes to the code, I suggest using the following method to install Trackma
+instead of the normal way, so the changes you make get reflected immediately:
+
+<pre># python setup.py develop</pre>
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the github issue tracker:

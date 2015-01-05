@@ -20,6 +20,7 @@ try:
 except ImportError:
     pass # readline is optional
 import cmd
+import shlex
 import re
 from operator import itemgetter # Used for sorting list
 
@@ -52,9 +53,20 @@ class Trackma_cmd(cmd.Cmd):
     cmdqueue = []
     stdout = sys.stdout
     sortedlist = []
-    
-    __re_cmd = re.compile(r"([-\w]+|\".*\")")   # Args parser
-    
+    needed_args = {
+        'filter':       (0, 1),
+        'sort':         1,
+        'mediatype':    (0, 1),
+        'info':         1,
+        'search':       1,
+        'add':          1,
+        'delete':       1,
+        'play':         (1, 2),
+        'update':       2,
+        'score':        2,
+        'status':       2,
+    }
+ 
     def __init__(self):
         print 'Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
@@ -63,7 +75,7 @@ class Trackma_cmd(cmd.Cmd):
         print
 
         self.accountman = Trackma_accounts()
-        self.account = self.accountman.select_account()
+        self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
         self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
@@ -92,6 +104,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('show_added', self._load_list)
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
+        self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.start()
         
         # Start with default filter selected
@@ -99,14 +112,14 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
     
-    def do_account(self, arg):
+    def do_account(self, args):
         """
         account - Switch to a different account
 
         Usage: account
         """
 
-        self.account = self.accountman.select_account()
+        self.account = self.accountman.select_account(True)
         self.engine.reload(account=self.account)
 
         # Start with default filter selected
@@ -114,7 +127,7 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
 
-    def do_filter(self, arg):
+    def do_filter(self, args):
         """
         filter - Changes the filtering of list by status; call with no arguments to see available filters
         
@@ -122,9 +135,8 @@ class Trackma_cmd(cmd.Cmd):
         """
         # Query the engine for the available statuses
         # that the user can choose
-        if self.parse_args(arg):
+        if args:
             try:
-                args = self.parse_args(arg)
                 self.filter_num = self._guess_status(args[0].lower())
                 self._load_list()
                 self._update_prompt()
@@ -133,7 +145,7 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Available filters: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
     
-    def do_sort(self, arg):
+    def do_sort(self, args):
         """
         sort - Change sort
         
@@ -141,20 +153,19 @@ class Trackma_cmd(cmd.Cmd):
         Available types: id, title, my_progress, total, my_score
         """
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
-        if arg in sorts:
-            self.sort = arg
+        if arg[0] in sorts:
+            self.sort = arg[0]
             self._load_list()
         else:
             print "Invalid sort."
     
-    def do_mediatype(self, arg):
+    def do_mediatype(self, args):
         """
         mediatype - Reloads engine with different mediatype; call with no arguments to see supported mediatypes
         
         Usage: mediatype [mediatype]
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
+        if args:
             if args[0] in self.engine.api_info['supported_mediatypes']:
                 self.engine.reload(mediatype=args[0])
             
@@ -167,206 +178,218 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes'])
         
-    def do_list(self, arg):
+    def do_list(self, args):
         """
-        list - Lists all shows available as a nice formatted list.
+        list - Lists all shows available in the local list as a nice formatted list.
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
     
-    def do_info(self, arg):
-        if(arg):
-            try:
-                show = self.engine.get_show_info_title(arg)
-                details = self.engine.get_show_details(show)
-            except utils.TrackmaError, e:
-                self.display_error(e)
-                return
-
-            print "Title: %s" % details['title']
-            for line in details['extra']:
-                print "%s: %s" % line
-        else:
-            print "Missing arguments."
-    
-    def do_search(self, arg):
+    def do_info(self, args):
         """
-        search - Does a regex search on shows and lists the matches.
+        info - Gets detailed information about a show in the local list.
+
+        Usage: info <show index or title>
+
+        """
+        try:
+            show = self._get_show(args[0])
+            details = self.engine.get_show_details(show)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+            return
+
+        print "Title: %s" % details['title']
+        for line in details['extra']:
+            print "%s: %s" % line
+    
+    def do_search(self, args):
+        """
+        search - Does a regex search on shows in the local lists and lists the matches.
         
         Usage: search <pattern>
         
         """
-        if(arg):
-            showlist = self.engine.regex_list(arg)
-            sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
-            self._make_list(sortedlist)
-        else:
-            print "Missing arguments."
+        showlist = self.engine.regex_list(args[0])
+        sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
+        self._make_list(sortedlist)
     
-    def do_add(self, arg):
+    def do_add(self, args):
         """
-        add - Searches for a show and adds it
+        add - Searches for a show in the remote service and adds it to the local list.
         
         Usage: add <pattern>
         
         """
-        if(arg):
+        try:
+            entries = self.engine.search(args[0])
+        except utils.TrackmaError, e:
+            self.display_error(e)
+            return
+        
+        for i, entry in enumerate(entries, start=1):
+            print "%d: (%s) %s" % (i, entry['type'], entry['title'])
+        do_update = raw_input("Choose show to add (blank to cancel): ")
+        if do_update != '':
             try:
-                entries = self.engine.search(arg)
-            except utils.TrackmaError, e:
-                self.display_error(e)
+                show = entries[int(do_update)-1]
+            except ValueError:
+                print "Choice must be numeric."
+                return
+            except IndexError:
+                print "Invalid show."
                 return
             
-            for i, entry in enumerate(entries, start=1):
-                print "%d: (%s) %s" % (i, entry['type'], entry['title'])
-            do_update = raw_input("Choose show to add (blank to cancel): ")
-            if do_update != '':
-                try:
-                    show = entries[int(do_update)-1]
-                except ValueError:
-                    print "Choice must be numeric."
-                    return
-                except IndexError:
-                    print "Invalid show."
-                    return
-                
-                # Tell the engine to add the show
-                try:
-                    self.engine.add_show(show)
-                except utils.TrackmaError, e:
-                    self.display_error(e)
-    
-    def do_delete(self, arg):
-        """
-        delete - Deltes a show from the list
-        
-        Usage: delete <show id or title>
-        
-        """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            
+            # Tell the engine to add the show
             try:
-                show = self._get_show(args[0])
-                
-                do_delete = raw_input("Delete %s? [y/N] " % show['title'])
-                if do_delete.lower() == 'y':
-                    self.engine.delete_show(show)
+                self.engine.add_show(show)
             except utils.TrackmaError, e:
                 self.display_error(e)
+    
+    def do_delete(self, args):
+        """
+        delete - Deltes a show from the local list.
         
-    def do_neweps(self, arg):
+        Usage: delete <show index or title>
+        
+        """
+        try:
+            show = self._get_show(args[0])
+            
+            do_delete = raw_input("Delete %s? [y/N] " % show['title'])
+            if do_delete.lower() == 'y':
+                self.engine.delete_show(show)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+        
+    def do_neweps(self, args):
+        """
+        neweps - Searches for new episodes in the configured search directory.
+
+        Usage: neweps
+        """
         showlist = self.engine.filter_list(self.filter_num)
         results = self.engine.get_new_episodes(showlist)
         for show in results:
             print show['title']
         
-    def do_play(self, arg):
-        if self.parse_args(arg):
+    def do_play(self, args):
+        """
+        play - Starts the media player with the specified episode number.
+        If no episode is specified, the next will be played.
+
+        Usage: play <show index or title> [episode number]
+        """
+        try:
+            episode = 0
+            show = self._get_show(args[0])
+            
+            # If the user specified an episode, play it
+            # otherwise play the next episode not watched yet
             try:
-                args = self.parse_args(arg)
-                episode = 0
-                show = self._get_show(args[0])
-                
-                # If the user specified an episode, play it
-                # otherwise play the next episode not watched yet
-                try:
-                    episode = args[1]
-                    if episode == (show['my_progress'] + 1):
-                        playing_next = True
-                    else:
-                        playing_next = False
-                except IndexError:
+                episode = args[1]
+                if episode == (show['my_progress'] + 1):
                     playing_next = True
-                
-                played_episode = self.engine.play_episode(show, episode)
-                
-                # Ask if we should update the show to the last episode
-                if played_episode and playing_next:
-                    do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
-                    if do_update.lower() == 'y':
-                        self.engine.set_episode(show['id'], played_episode)
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
-            print "Missing arguments."
-        
-    def do_update(self, arg):
-        """
-        update - Updates the episode of a show.
-        
-        Usage: update <show id or name> <episode number>
-        """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                show = self._get_show(args[0])
-                self.engine.set_episode(show['id'], args[1])
+                else:
+                    playing_next = False
             except IndexError:
-                print "Missing arguments."
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
-            print "Missing arguments."
-    
-    def do_score(self, arg):
+                playing_next = True
+            
+            played_episode = self.engine.play_episode(show, episode)
+            
+            # Ask if we should update the show to the last episode
+            if played_episode and playing_next:
+                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
+                if do_update.lower() == 'y':
+                    self.engine.set_episode(show['id'], played_episode)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+        
+    def do_update(self, args):
         """
-        score - Changes the given score of a show.
+        update - Updates the progress of a show to the specified episode.
+        
+        Usage: update <show index or name> <episode number>
+        """
+        try:
+            show = self._get_show(args[0])
+            self.engine.set_episode(show['id'], args[1])
+        except IndexError:
+            print "Missing arguments."
+        except utils.TrackmaError, e:
+            self.display_error(e)
+    
+    def do_score(self, args):
+        """
+        score - Changes the given score of a show to the specified score.
         
         Usage: update <show id or name> <score>
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                show = self._get_show(args[0])
-                self.engine.set_score(show['id'], args[1])
-            except IndexError:
-                print "Missing arguments."
-            except utils.TrackmaError, e:
-                self.display_error(e)
-        else:
+        try:
+            show = self._get_show(args[0])
+            self.engine.set_score(show['id'], args[1])
+        except IndexError:
             print "Missing arguments."
+        except utils.TrackmaError, e:
+            self.display_error(e)
     
-    def do_status(self, arg):
+    def do_status(self, args):
         """
-        status - Changes the status of a show.
+        status - Changes the status of a show. Use the command `filter`
+        withotu arguments to see the available statuses.
         
         Usage: status <show id or name> <status name>
         """
-        if self.parse_args(arg):
-            args = self.parse_args(arg)
-            try:
-                _showtitle = args[0]
-                _filter = args[1]
-            except IndexError:
-                print "Missing arguments."
-                return
-            
-            try:
-                _filter_num = self._guess_status(_filter)
-            except KeyError:
-                print "Invalid filter."
-                return
-            
-            try:
-                show = self._get_show(_showtitle)
-                self.engine.set_status(show['id'], _filter_num)
-            except utils.TrackmaError, e:
-                self.display_error(e)
+        try:
+            _showtitle = args[0]
+            _filter = args[1]
+        except IndexError:
+            print "Missing arguments."
+            return
         
-    def do_send(self, arg):
+        try:
+            _filter_num = self._guess_status(_filter)
+        except KeyError:
+            print "Invalid filter."
+            return
+        
+        try:
+            show = self._get_show(_showtitle)
+            self.engine.set_status(show['id'], _filter_num)
+        except utils.TrackmaError, e:
+            self.display_error(e)
+        
+    def do_send(self, args):
+        """
+        send - Sends any queued changes in the local list to the remote
+        service.
+
+        Usage: send
+        """
         try:
             self.engine.list_upload()
         except utils.TrackmaError, e:
             self.display_error(e)
     
-    def do_retrieve(self, arg):
+    def do_retrieve(self, args):
+        """
+        retrieve - Retrieves the full remote list from the remove service
+        and overwrites the local list.
+
+        Usage: retrieve
+        """
         try:
-            self.engine.list_download()
+            if self.engine.get_queue():
+                answer = raw_input("There are unqueued changes. Overwrite local list? [y/N] ")
+                if answer.lower() == 'y':
+                    self.engine.list_download()
+            else:
+                self.engine.list_download()
+            self._load_list()
         except utils.TrackmaError, e:
             self.display_error(e)
     
-    def do_undoall(self, arg):
+    def do_undoall(self, args):
         """
         undo - Undo all changes
         
@@ -377,7 +400,12 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError, e:
             self.display_error(e)
         
-    def do_viewqueue(self, arg):
+    def do_viewqueue(self, args):
+        """
+        viewqueue - Shows the queued changes.
+
+        Usage: viewqueue
+        """
         queue = self.engine.get_queue()
         if len(queue):
             print "Queue:"
@@ -386,7 +414,7 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Queue is empty."
     
-    def do_quit(self, arg):
+    def do_quit(self, args):
         """Quits the program."""
         try:
             self.engine.unload()
@@ -396,12 +424,9 @@ class Trackma_cmd(cmd.Cmd):
         print 'Bye!'
         sys.exit(0)
     
-    def do_EOF(self, arg):
+    def do_EOF(self, args):
         print
-        self.do_quit(arg)
-    
-    def do_track(self, arg):
-        self.engine.track_process()
+        self.do_quit(args)
     
     def complete_update(self, text, line, begidx, endidx):
         if text:
@@ -428,8 +453,48 @@ class Trackma_cmd(cmd.Cmd):
     
     def parse_args(self, arg):
         if arg:
-            return list(v.strip('"') for v in self.__re_cmd.findall(arg))
+            return shlex.split(arg)
+        else:
+            return []
     
+    def onecmd(self, line):
+        """ Override. """
+        cmd, arg, line = self.parseline(line)
+        if not line:
+            return self.emptyline()
+        if cmd is None:
+            return self.default(line)
+        self.lastcmd = line
+        if line == 'EOF' :
+            self.lastcmd = ''
+        if cmd == '':
+            return self.default(line)
+        elif cmd == 'help':
+            return self.do_help(arg)
+        else:
+            return self.execute(cmd, arg, line)
+
+    def execute(self, cmd, arg, line):
+        try:
+            func = getattr(self, 'do_' + cmd)
+        except AttributeError:
+            return self.default(line)
+
+        args = self.parse_args(arg)
+
+        try:
+            needed = self.needed_args[cmd]
+        except KeyError:
+            needed = 0
+
+        if isinstance(needed, int):
+            needed = (needed, needed)
+
+        if needed[0] <= len(args) <= needed[1]:
+            return func(args)
+        else:
+            print "Incorrent number of arguments. See `help %s`" % cmd
+
     def display_error(self, e):
         print "%s%s: %s%s" % (_COLOR_ERROR, type(e), e.message, _COLOR_RESET)
     
@@ -527,11 +592,22 @@ class Trackma_cmd(cmd.Cmd):
         print
 
 class Trackma_accounts(AccountManager):
-    def select_account(self):
+    def _get_id(self, index):
+        if index < 1:
+            raise IndexError
+
+        return self.indexes[index-1]
+
+    def select_account(self, bypass):
+        if not bypass and self.get_default():
+            return self.get_default()
+        if self.get_default():
+            self.set_default(None)
+
         while True:
             print '--- Accounts ---'
             self.list_accounts()
-            key = raw_input("Input account number ([a]dd, [c]ancel, [d]elete, [q]uit): ")
+            key = raw_input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
@@ -550,17 +626,33 @@ class Trackma_accounts(AccountManager):
             elif key.lower() == 'd':
                 print "--- Delete account ---"
                 num = raw_input('Account number to delete: ')
-                num = int(num)
-                confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(num)['username']))
-                if confirm.lower() == 'y':
-                    self.delete_account(num)
-                    print 'Account %d deleted.' % num
+                try:
+                    num = int(num)
+                    account_id = self._get_id(num)
+                    confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(account_id)['username']))
+                    if confirm.lower() == 'y':
+                        self.delete_account(account_id)
+                        print 'Account %d deleted.' % num
+                except ValueError:
+                    print "Invalid value."
+                except IndexError:
+                    print "Account doesn't exist."
             elif key.lower() == 'q':
                 sys.exit(0)
             else:
                 try:
+                    if key[0] == 'r':
+                        key = key[1:]
+                        remember = True
+                    else:
+                        remember = False
+
                     num = int(key)
-                    return self.get_account(num)
+                    account_id = self._get_id(num)
+                    if remember:
+                        self.set_default(account_id)
+
+                    return self.get_account(account_id)
                 except ValueError:
                     print "Invalid value."
                 except IndexError:
@@ -568,14 +660,16 @@ class Trackma_accounts(AccountManager):
     
     def list_accounts(self):
         accounts = self.get_accounts()
+        self.indexes = []
 
         print "Available accounts:"
         i = 0
-        for k, account in accounts:
-            print "%d: %s (%s)" % (k, account['username'], account['api'])
-            i += 1
-
-        if i == 0:
+        if accounts:
+            for k, account in accounts:
+                print "%i: %s (%s)" % (i+1, account['username'], account['api'])
+                self.indexes.append(k)
+                i += 1
+        else:
             print "No accounts."
 
 

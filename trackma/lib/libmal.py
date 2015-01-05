@@ -98,12 +98,6 @@ class libmal(lib):
 		]
     
     def _request(self, url):
-        try:
-            return self.opener.open(url, timeout = 10)
-        except urllib2.URLError, e:
-            raise utils.APIError("Connection error: %s" % e) 
-
-    def _request_gzip(self, url):
         """
         Requests the page as gzip and uncompresses it
 
@@ -113,35 +107,17 @@ class libmal(lib):
         try:
             request = urllib2.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
-            compressed_data = self.opener.open(request)
+            response = self.opener.open(request, timeout = 10)
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e)
 
-        compressed_stream = StringIO(compressed_data.read())
-        return gzip.GzipFile(fileobj=compressed_stream)
-
-    def _make_parser(self):
-        # For some reason MAL returns an XML file with HTML exclusive
-        # entities like &aacute;, so we have to create a custom XMLParser
-        # to convert these entities correctly.
-        parser = ET.XMLParser()
-        parser.parser.UseForeignDTD(True)
-        parser.entity['aacute'] = u'á'
-        parser.entity['eacute'] = u'é'
-        parser.entity['iacute'] = u'í'
-        parser.entity['oacute'] = u'ó'
-        parser.entity['uacute'] = u'ú'
-        parser.entity['lsquo'] = u'‘'
-        parser.entity['rsquo'] = u'’'
-        parser.entity['ldquo'] = u'“'
-        parser.entity['rdquo'] = u'“'
-        parser.entity['ndash'] = u'-'
-        parser.entity['mdash'] = u'—'
-        parser.entity['hellip'] = u'…'
-        parser.entity['alpha'] = u'α'
-        
-        return parser
-    
+        if response.info().get('content-encoding') == 'gzip':
+            compressed_stream = StringIO(response.read())
+            return gzip.GzipFile(fileobj=compressed_stream)
+        else:
+            # If the content is not gzipped return it as-is
+            return response
+   
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
         if self.logged_in:
@@ -163,7 +139,7 @@ class libmal(lib):
         
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request_gzip("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
+            data = self._request("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
             
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
@@ -231,13 +207,19 @@ class libmal(lib):
         
         # Send the urlencoded query to the search API
         query = self._urlencode({'q': criteria})
-        data = self._request_gzip(self.url + self.mediatype + "/search.xml?" + query)
+        data = self._request(self.url + self.mediatype + "/search.xml?" + query)
         
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except (ET.ParseError, IOError), e:
-            raise utils.APIError("Search error: %s" % repr(e.message))
+        except ET.ParseError, e:
+            if e.code == 3:
+                # Empty document; no results
+                return []
+            else:
+                raise utils.APIError("Parser error: %s" % repr(e.message))
+        except IOError:
+            raise utils.APIError("IO error: %s" % repr(e.message))
         
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':
@@ -432,3 +414,268 @@ class libmal(lib):
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
         return urllib.urlencode(out_dict)
+
+    def _make_parser(self):
+        # For some reason MAL returns an XML file with HTML exclusive
+        # entities like &aacute;, so we have to create a custom XMLParser
+        # to convert these entities correctly.
+        parser = ET.XMLParser()
+        parser.parser.UseForeignDTD(True)
+
+        entities = dict()
+        entities["nbsp"] =     u'\u00A0'
+        entities["iexcl"] =    u'\u00A1'
+        entities["cent"] =     u'\u00A2'
+        entities["pound"] =    u'\u00A3'
+        entities["curren"] =   u'\u00A4'
+        entities["yen"] =      u'\u00A5'
+        entities["brvbar"] =   u'\u00A6'
+        entities["sect"] =     u'\u00A7'
+        entities["uml"] =      u'\u00A8'
+        entities["copy"] =     u'\u00A9'
+        entities["ordf"] =     u'\u00AA'
+        entities["laquo"] =    u'\u00AB'
+        entities["not"] =      u'\u00AC'
+        entities["shy"] =      u'\u00AD'
+        entities["reg"] =      u'\u00AE'
+        entities["macr"] =     u'\u00AF'
+        entities["deg"] =      u'\u00B0'
+        entities["plusmn"] =   u'\u00B1'
+        entities["sup2"] =     u'\u00B2'
+        entities["sup3"] =     u'\u00B3'
+        entities["acute"] =    u'\u00B4'
+        entities["micro"] =    u'\u00B5'
+        entities["para"] =     u'\u00B6'
+        entities["middot"] =   u'\u00B7'
+        entities["cedil"] =    u'\u00B8'
+        entities["sup1"] =     u'\u00B9'
+        entities["ordm"] =     u'\u00BA'
+        entities["raquo"] =    u'\u00BB'
+        entities["frac14"] =   u'\u00BC'
+        entities["frac12"] =   u'\u00BD'
+        entities["frac34"] =   u'\u00BE'
+        entities["iquest"] =   u'\u00BF'
+        entities["Agrave"] =   u'\u00C0'
+        entities["Aacute"] =   u'\u00C1'
+        entities["Acirc"] =    u'\u00C2'
+        entities["Atilde"] =   u'\u00C3'
+        entities["Auml"] =     u'\u00C4'
+        entities["Aring"] =    u'\u00C5'
+        entities["AElig"] =    u'\u00C6'
+        entities["Ccedil"] =   u'\u00C7'
+        entities["Egrave"] =   u'\u00C8'
+        entities["Eacute"] =   u'\u00C9'
+        entities["Ecirc"] =    u'\u00CA'
+        entities["Euml"] =     u'\u00CB'
+        entities["Igrave"] =   u'\u00CC'
+        entities["Iacute"] =   u'\u00CD'
+        entities["Icirc"] =    u'\u00CE'
+        entities["Iuml"] =     u'\u00CF'
+        entities["ETH"] =      u'\u00D0'
+        entities["Ntilde"] =   u'\u00D1'
+        entities["Ograve"] =   u'\u00D2'
+        entities["Oacute"] =   u'\u00D3'
+        entities["Ocirc"] =    u'\u00D4'
+        entities["Otilde"] =   u'\u00D5'
+        entities["Ouml"] =     u'\u00D6'
+        entities["times"] =    u'\u00D7'
+        entities["Oslash"] =   u'\u00D8'
+        entities["Ugrave"] =   u'\u00D9'
+        entities["Uacute"] =   u'\u00DA'
+        entities["Ucirc"] =    u'\u00DB'
+        entities["Uuml"] =     u'\u00DC'
+        entities["Yacute"] =   u'\u00DD'
+        entities["THORN"] =    u'\u00DE'
+        entities["szlig"] =    u'\u00DF'
+        entities["agrave"] =   u'\u00E0'
+        entities["aacute"] =   u'\u00E1'
+        entities["acirc"] =    u'\u00E2'
+        entities["atilde"] =   u'\u00E3'
+        entities["auml"] =     u'\u00E4'
+        entities["aring"] =    u'\u00E5'
+        entities["aelig"] =    u'\u00E6'
+        entities["ccedil"] =   u'\u00E7'
+        entities["egrave"] =   u'\u00E8'
+        entities["eacute"] =   u'\u00E9'
+        entities["ecirc"] =    u'\u00EA'
+        entities["euml"] =     u'\u00EB'
+        entities["igrave"] =   u'\u00EC'
+        entities["iacute"] =   u'\u00ED'
+        entities["icirc"] =    u'\u00EE'
+        entities["iuml"] =     u'\u00EF'
+        entities["eth"] =      u'\u00F0'
+        entities["ntilde"] =   u'\u00F1'
+        entities["ograve"] =   u'\u00F2'
+        entities["oacute"] =   u'\u00F3'
+        entities["ocirc"] =    u'\u00F4'
+        entities["otilde"] =   u'\u00F5'
+        entities["ouml"] =     u'\u00F6'
+        entities["divide"] =   u'\u00F7'
+        entities["oslash"] =   u'\u00F8'
+        entities["ugrave"] =   u'\u00F9'
+        entities["uacute"] =   u'\u00FA'
+        entities["ucirc"] =    u'\u00FB'
+        entities["uuml"] =     u'\u00FC'
+        entities["yacute"] =   u'\u00FD'
+        entities["thorn"] =    u'\u00FE'
+        entities["yuml"] =     u'\u00FF'
+        entities["fnof"] =     u'\u0192'
+        entities["Alpha"] =    u'\u0391'
+        entities["Beta"] =     u'\u0392'
+        entities["Gamma"] =    u'\u0393'
+        entities["Delta"] =    u'\u0394'
+        entities["Epsilon"] =  u'\u0395'
+        entities["Zeta"] =     u'\u0396'
+        entities["Eta"] =      u'\u0397'
+        entities["Theta"] =    u'\u0398'
+        entities["Iota"] =     u'\u0399'
+        entities["Kappa"] =    u'\u039A'
+        entities["Lambda"] =   u'\u039B'
+        entities["Mu"] =       u'\u039C'
+        entities["Nu"] =       u'\u039D'
+        entities["Xi"] =       u'\u039E'
+        entities["Omicron"] =  u'\u039F'
+        entities["Pi"] =       u'\u03A0'
+        entities["Rho"] =      u'\u03A1'
+        entities["Sigma"] =    u'\u03A3'
+        entities["Tau"] =      u'\u03A4'
+        entities["Upsilon"] =  u'\u03A5'
+        entities["Phi"] =      u'\u03A6'
+        entities["Chi"] =      u'\u03A7'
+        entities["Psi"] =      u'\u03A8'
+        entities["Omega"] =    u'\u03A9'
+        entities["alpha"] =    u'\u03B1'
+        entities["beta"] =     u'\u03B2'
+        entities["gamma"] =    u'\u03B3'
+        entities["delta"] =    u'\u03B4'
+        entities["epsilon"] =  u'\u03B5'
+        entities["zeta"] =     u'\u03B6'
+        entities["eta"] =      u'\u03B7'
+        entities["theta"] =    u'\u03B8'
+        entities["iota"] =     u'\u03B9'
+        entities["kappa"] =    u'\u03BA'
+        entities["lambda"] =   u'\u03BB'
+        entities["mu"] =       u'\u03BC'
+        entities["nu"] =       u'\u03BD'
+        entities["xi"] =       u'\u03BE'
+        entities["omicron"] =  u'\u03BF'
+        entities["pi"] =       u'\u03C0'
+        entities["rho"] =      u'\u03C1'
+        entities["sigmaf"] =   u'\u03C2'
+        entities["sigma"] =    u'\u03C3'
+        entities["tau"] =      u'\u03C4'
+        entities["upsilon"] =  u'\u03C5'
+        entities["phi"] =      u'\u03C6'
+        entities["chi"] =      u'\u03C7'
+        entities["psi"] =      u'\u03C8'
+        entities["omega"] =    u'\u03C9'
+        entities["thetasym"] = u'\u03D1'
+        entities["upsih"] =    u'\u03D2'
+        entities["piv"] =      u'\u03D6'
+        entities["bull"] =     u'\u2022'
+        entities["hellip"] =   u'\u2026'
+        entities["prime"] =    u'\u2032'
+        entities["Prime"] =    u'\u2033'
+        entities["oline"] =    u'\u203E'
+        entities["frasl"] =    u'\u2044'
+        entities["weierp"] =   u'\u2118'
+        entities["image"] =    u'\u2111'
+        entities["real"] =     u'\u211C'
+        entities["trade"] =    u'\u2122'
+        entities["alefsym"] =  u'\u2135'
+        entities["larr"] =     u'\u2190'
+        entities["uarr"] =     u'\u2191'
+        entities["rarr"] =     u'\u2192'
+        entities["darr"] =     u'\u2193'
+        entities["harr"] =     u'\u2194'
+        entities["crarr"] =    u'\u21B5'
+        entities["lArr"] =     u'\u21D0'
+        entities["uArr"] =     u'\u21D1'
+        entities["rArr"] =     u'\u21D2'
+        entities["dArr"] =     u'\u21D3'
+        entities["hArr"] =     u'\u21D4'
+        entities["forall"] =   u'\u2200'
+        entities["part"] =     u'\u2202'
+        entities["exist"] =    u'\u2203'
+        entities["empty"] =    u'\u2205'
+        entities["nabla"] =    u'\u2207'
+        entities["isin"] =     u'\u2208'
+        entities["notin"] =    u'\u2209'
+        entities["ni"] =       u'\u220B'
+        entities["prod"] =     u'\u220F'
+        entities["sum"] =      u'\u2211'
+        entities["minus"] =    u'\u2212'
+        entities["lowast"] =   u'\u2217'
+        entities["radic"] =    u'\u221A'
+        entities["prop"] =     u'\u221D'
+        entities["infin"] =    u'\u221E'
+        entities["ang"] =      u'\u2220'
+        entities["and"] =      u'\u2227'
+        entities["or"] =       u'\u2228'
+        entities["cap"] =      u'\u2229'
+        entities["cup"] =      u'\u222A'
+        entities["int"] =      u'\u222B'
+        entities["there4"] =   u'\u2234'
+        entities["sim"] =      u'\u223C'
+        entities["cong"] =     u'\u2245'
+        entities["asymp"] =    u'\u2248'
+        entities["ne"] =       u'\u2260'
+        entities["equiv"] =    u'\u2261'
+        entities["le"] =       u'\u2264'
+        entities["ge"] =       u'\u2265'
+        entities["sub"] =      u'\u2282'
+        entities["sup"] =      u'\u2283'
+        entities["nsub"] =     u'\u2284'
+        entities["sube"] =     u'\u2286'
+        entities["supe"] =     u'\u2287'
+        entities["oplus"] =    u'\u2295'
+        entities["otimes"] =   u'\u2297'
+        entities["perp"] =     u'\u22A5'
+        entities["sdot"] =     u'\u22C5'
+        entities["lceil"] =    u'\u2308'
+        entities["rceil"] =    u'\u2309'
+        entities["lfloor"] =   u'\u230A'
+        entities["rfloor"] =   u'\u230B'
+        entities["lang"] =     u'\u2329'
+        entities["rang"] =     u'\u232A'
+        entities["loz"] =      u'\u25CA'
+        entities["spades"] =   u'\u2660'
+        entities["clubs"] =    u'\u2663'
+        entities["hearts"] =   u'\u2665'
+        entities["diams"] =    u'\u2666'
+        entities["quot"] =     u'\"'
+        entities["amp"] =      u'&'
+        entities["lt"] =       u'<'
+        entities["gt"] =       u'>'
+        entities["OElig"] =    u'\u0152'
+        entities["oelig"] =    u'\u0153'
+        entities["Scaron"] =   u'\u0160'
+        entities["scaron"] =   u'\u0161'
+        entities["Yuml"] =     u'\u0178'
+        entities["circ"] =     u'\u02C6'
+        entities["tilde"] =    u'\u02DC'
+        entities["ensp"] =     u'\u2002'
+        entities["emsp"] =     u'\u2003'
+        entities["thinsp"] =   u'\u2009'
+        entities["zwnj"] =     u'\u200C'
+        entities["zwj"] =      u'\u200D'
+        entities["lrm"] =      u'\u200E'
+        entities["rlm"] =      u'\u200F'
+        entities["ndash"] =    u'\u2013'
+        entities["mdash"] =    u'\u2014'
+        entities["lsquo"] =    u'\u2018'
+        entities["rsquo"] =    u'\u2019'
+        entities["sbquo"] =    u'\u201A'
+        entities["ldquo"] =    u'\u201C'
+        entities["rdquo"] =    u'\u201D'
+        entities["bdquo"] =    u'\u201E'
+        entities["dagger"] =   u'\u2020'
+        entities["Dagger"] =   u'\u2021'
+        entities["permil"] =   u'\u2030'
+        entities["lsaquo"] =   u'\u2039'
+        entities["rsaquo"] =   u'\u203A'
+        entities["euro"] =     u'\u20AC'
+        parser.entity.update(entities)
+        
+        return parser
+ 

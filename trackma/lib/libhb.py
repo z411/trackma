@@ -17,6 +17,7 @@
 
 from trackma.lib.lib import lib
 import trackma.utils as utils
+import datetime
 
 import urllib, urllib2
 import json
@@ -49,16 +50,15 @@ class libhb(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'status_start': 1,
-        'status_finish': 2,
+        'status_start': 'currently-watching',
+        'status_finish': 'completed',
         'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],
         'statuses_dict': { 'currently-watching': 'Watching', 'completed': 'Completed', 'on-hold': 'On Hold', 'dropped': 'Dropped', 'plan-to-watch': 'Plan to Watch' },
         'score_max': 5,
         'score_step': 0.5,
     }
     
-    url = "https://hummingbirdv1.p.mashape.com"
-    mashape_auth = "DJO7uQdZPu1gNfQWWwVHtS7xt8JhJSDf"
+    url = "http://hummingbird.me/api/v1"
     
     status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not Yet Aired': 3}
     
@@ -71,7 +71,6 @@ class libhb(lib):
 
         # Build opener with the mashape API key
         self.opener = urllib2.build_opener()
-        self.opener.addheaders = [('X-Mashape-Authorization', self.mashape_auth)]
         
     def _request(self, url, get=None, post=None):
         if get:
@@ -81,8 +80,11 @@ class libhb(lib):
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.URLError, e:
-            raise utils.APIError("Connection error: %s" % e) 
+        except urllib2.HTTPError, e:
+            if e.code == 401:
+                raise utils.APIError("Incorrect credentials.")
+            else:
+                raise utils.APIError("Connection error: %s" % e) 
    
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -90,13 +92,11 @@ class libhb(lib):
             return True     # Already logged in
         
         self.msg.info(self.name, 'Logging in...')
-        try:
-            response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
-            self.auth = response.strip('"')
-            self.logged_in = True
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError("Incorrect credentials.")
+        
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        self.auth = response.strip('"')
+        self.logged_in = True
+        return True
    
     def fetch_list(self):
         """Queries the full list from the remote server.
@@ -125,6 +125,8 @@ class libhb(lib):
                     'id': showid,
                     'title': show['anime']['title'],
                     'status': self.status_translate[status],
+                    'start_date':   self._str2date( show['anime']['started_airing'] ),
+                    'end_date':     self._str2date( show['anime']['finished_airing'] ),
                     'my_progress': show['episodes_watched'],
                     'my_score': float(rating) if rating is not None else 0.0,
                     'aliases': alt_titles,
@@ -200,7 +202,16 @@ class libhb(lib):
             return infolist
         except urllib2.HTTPError, e:
             raise utils.APIError('Error searching: ' + str(e.code))
-        
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+  
     def _parse_info(self, show):
         info = utils.show()
         alt_titles = []

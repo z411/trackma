@@ -70,7 +70,6 @@ class Engine:
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
-        self.msg.info(self.name, 'Version '+utils.VERSION)
 
         # Register cleanup function when program exits
         atexit.register(self._cleanup)
@@ -90,6 +89,8 @@ class Engine:
         utils.make_dir(userfolder)
         self.userconfigfile = utils.get_filename(userfolder, 'user.json')
         
+        self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
+            utils.VERSION, account['username'], account['api']))
         self.msg.info(self.name, 'Reading config files...')
         try:
             self.config = utils.parse_config(self.configfile, utils.config_defaults)
@@ -210,10 +211,8 @@ class Engine:
     
     def reload(self, account=None, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
-        if not self.loaded:
-            raise utils.TrackmaError("Engine is not loaded.")
-        
-        self.unload()
+        if self.loaded:
+            self.unload()
         
         if account:
             self._load(account)
@@ -360,17 +359,16 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if (
-                     newep == show['total'] and
-                     self.mediainfo.get('status_finish') and
-                     (
-                       not self.config['auto_status_change_if_scored'] or
-                       not self.mediainfo.get('can_score') or
-                       show['my_score']
-                     )
-                ):
-                    # Change to finished status
-                    self.set_status(show['id'], self.mediainfo['status_finish'])
+                if newep == show['total'] and self.mediainfo.get('status_finish'):
+                    if (
+                        not self.config['auto_status_change_if_scored'] or
+                        not self.mediainfo.get('can_score') or
+                        show['my_score']
+                    ):
+                        # Change to finished status
+                        self.set_status(show['id'], self.mediainfo['status_finish'])
+                    else:
+                        self.msg.warn(self.name, "Updated episode but status won't be changed until a score is set.")
                 elif newep == 1 and self.mediainfo.get('status_start'):
                     # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
@@ -448,10 +446,10 @@ class Engine:
         if newscore > self.mediainfo['score_max']:
             raise utils.EngineError('Score out of limits.')
         if show['my_score'] == newscore:
-            raise utils.EngineError("Score already at %d" % newscore)
+            raise utils.EngineError("Score already at %s" % newscore)
         
         # Change score
-        self.msg.info(self.name, "Updating show %s to score %d..." % (show['title'], newscore))
+        self.msg.info(self.name, "Updating show %s to score %s..." % (show['title'], newscore))
         self.data_handler.queue_update(show, 'my_score', newscore)
         
         # Emit signal
@@ -459,6 +457,7 @@ class Engine:
 
         # Change status if required
         if (
+            show['total'] and
             show['my_progress'] == show['total'] and
             show['my_score'] and
             self.mediainfo.get('can_status') and
@@ -655,6 +654,7 @@ class Engine:
     
     def list_download(self):
         """Asks the data handler to download the remote list."""
+        self.undoall()
         self.data_handler.download_data()
     
     def list_upload(self):
