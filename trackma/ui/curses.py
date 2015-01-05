@@ -764,7 +764,7 @@ class AccountDialog(Dialog):
             if key == 'enter':
                 self.do_select(False)
             elif key == 'a':
-                self.do_add_username()
+                self.do_add_api()
             elif key == 'r':
                 self.do_select(True)
             elif key == 'D':
@@ -776,27 +776,41 @@ class AccountDialog(Dialog):
             else:
                 self.widget.keypress(size, key)
     
-    def do_add_username(self):
+    def do_add_api(self):
         self.adding = True
-        ask = Asker("Username: ")
+        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+        ask = Asker("API (%s): " % available_libs)
         self.frame.footer = ask
         self.frame.set_focus('footer')
+        urwid.connect_signal(ask, 'done', self.do_add_username)
+
+    def do_add_username(self, data):
+        self.adding_data['apiname'] = data
+        try:
+            self.adding_data['api'] = api = utils.available_libs[data]
+        except IndexError:
+            self.adding = False
+            self.frame.footer = urwid.Text("Error: Invalid API.")
+            self.frame.set_focus('body')
+            return
+
+        if api[2] == utils.LOGIN_OAUTH:
+            ask = Asker("Account name: ")
+        else:
+            ask = Asker("Username: ")
+        self.frame.footer = ask
         urwid.connect_signal(ask, 'done', self.do_add_password)
 
     def do_add_password(self, data):
         self.adding_data['username'] = data
-        ask = Asker("Password: ")
-        self.frame.footer = ask
-        urwid.connect_signal(ask, 'done', self.do_add_api)
-
-    def do_add_api(self, data):
-        self.adding_data['password'] = data
-
-        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
-        ask = Asker("API (%s): " % available_libs)
+        if self.adding_data['api'][2] == utils.LOGIN_OAUTH:
+            ask = Asker("Please go to the following URL and paste the auth code.\n"
+                        "http://trackma.omaera.org/auth.py\nAuth code: ")
+        else:
+            ask = Asker("Password: ")
         self.frame.footer = ask
         urwid.connect_signal(ask, 'done', self.do_add)
-    
+   
     def do_delete_ask(self):
         self.adding = True
         ask = QuestionAsker("Do you want to delete this account? [y/n] ")
@@ -814,8 +828,8 @@ class AccountDialog(Dialog):
 
     def do_add(self, data):
         username = self.adding_data['username']
-        password = self.adding_data['password']
-        api = data
+        password = data
+        api = self.adding_data['apiname']
 
         try:
             self.manager.add_account(username, password, api)

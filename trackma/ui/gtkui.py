@@ -1315,7 +1315,6 @@ class AccountSelect(gtk.Window):
         """Create Add Account window"""
         self.add_win = AccountSelectAdd(self.pixbufs)
         self.add_win.add_button.connect("clicked", self.add_account)
-        self.add_win.show_all()
         
     def add_account(self, widget):
         """Closes Add Account window and tells the manager to add
@@ -1778,10 +1777,10 @@ class AccountSelectAdd(gtk.Window):
         self.set_border_width(10)
         
         # Labels
-        lbl_user = gtk.Label('Username')
-        lbl_user.set_size_request(70, -1)
-        lbl_passwd = gtk.Label('Password')
-        lbl_passwd.set_size_request(70, -1)
+        self.lbl_user = gtk.Label('Username')
+        self.lbl_user.set_size_request(70, -1)
+        self.lbl_passwd = gtk.Label('Password')
+        self.lbl_passwd.set_size_request(70, -1)
         lbl_api = gtk.Label('Website')
         lbl_api.set_size_request(70, -1)
         
@@ -1803,8 +1802,12 @@ class AccountSelectAdd(gtk.Window):
         self.cmb_api.pack_start(cell_name, True)
         self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
         self.cmb_api.add_attribute(cell_name, 'text', 1)
+        self.cmb_api.connect("changed", self._refresh)
         
         # Buttons
+        self.btn_auth = gtk.Button("Request")
+        self.btn_auth.connect("clicked", self.do_auth)
+
         alignment = gtk.Alignment(xalign=0.5)
         bottombar = gtk.HBox(False, 5)
         self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
@@ -1816,12 +1819,13 @@ class AccountSelectAdd(gtk.Window):
         
         # HBoxes
         line1 = gtk.HBox(False, 5)
-        line1.pack_start(lbl_user, False, False, 0)
+        line1.pack_start(self.lbl_user, False, False, 0)
         line1.pack_start(self.txt_user, True, True, 0)
         
         line2 = gtk.HBox(False, 5)
-        line2.pack_start(lbl_passwd, False, False, 0)
+        line2.pack_start(self.lbl_passwd, False, False, 0)
         line2.pack_start(self.txt_passwd, True, True, 0)
+        line2.pack_start(self.btn_auth, False, False, 0)
         
         line3 = gtk.HBox(False, 5)
         line3.pack_start(lbl_api, False, False, 0)
@@ -1829,13 +1833,34 @@ class AccountSelectAdd(gtk.Window):
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
+        vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(line1, False, False, 0)
         vbox.pack_start(line2, False, False, 0)
-        vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(alignment, False, False, 0)
         
         self.add(vbox)
+        self.show_all()
+        self.btn_auth.hide()
     
+    def _refresh(self, widget):
+        apiiter = self.cmb_api.get_active_iter()
+        api = self.model_api.get(apiiter, 0)[0]
+        if utils.available_libs[api][2] == utils.LOGIN_OAUTH:
+            self.lbl_user.set_text("Name")
+            self.lbl_passwd.set_text("Auth code")
+            self.btn_auth.show()
+        else:
+            self.lbl_user.set_text("Username")
+            self.lbl_passwd.set_text("Password")
+            self.btn_auth.hide()
+
+    def do_auth(self, widget):
+        apiiter = self.cmb_api.get_active_iter()
+        api = self.model_api.get(apiiter, 0)[0]
+
+        url = "http://omaera.org/trackma/{0}.html".format(api)
+        webbrowser.open(url, 2, True)
+
     def do_close(self, widget):
         self.destroy()
     

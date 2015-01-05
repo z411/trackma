@@ -21,14 +21,16 @@ import json
 VERSION = '0.3'
 
 datadir = os.path.dirname(__file__)
+LOGIN_PASSWD = 1
+LOGIN_OAUTH = 2
 
 # Put the available APIs here
 available_libs = {
-    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg'),
-    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg'),
-    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg'),
-    'melative': ('Melative',     datadir + '/data/melative.jpg'),
-    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
+    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH),
+    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg',          LOGIN_PASSWD),
+    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
+    'melative': ('Melative',     datadir + '/data/melative.jpg',    LOGIN_PASSWD),
+    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
 
 

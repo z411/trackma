@@ -614,9 +614,27 @@ class Trackma_accounts(AccountManager):
                 
                 print "--- Add account ---"
                 import getpass
-                username = raw_input('Enter username: ')
-                password = getpass.getpass('Enter password (no echo): ')
                 api = raw_input('Enter API (%s): ' % available_libs)
+                try:
+                    selected_api = utils.available_libs[api]
+                except KeyError:
+                    print "Invalid API."
+                    continue
+
+                if selected_api[2] == utils.LOGIN_PASSWD:
+                    username = raw_input('Enter username: ')
+                    password = getpass.getpass('Enter password (no echo): ')
+                elif selected_api[2] == utils.LOGIN_OAUTH:
+                    username = raw_input('Enter account name: ')
+                    print 'OAuth Authentication'
+                    print '--------------------'
+                    print 'This website requires OAuth authentication.'
+                    print 'Please go to the following URL with your browser,'
+                    print 'follow the steps and paste the given auth code here.'
+                    print
+                    print '  http://trackma.omaera.org/auth.py'
+                    print
+                    password = raw_input('Auth code: ')
                 
                 try:
                     self.add_account(username, password, api)
