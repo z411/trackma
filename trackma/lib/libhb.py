@@ -95,6 +95,7 @@ class libhb(lib):
         
         response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
         self.auth = response.strip('"')
+        self._set_userconfig('username', self.username)
         self.logged_in = True
         return True
    
