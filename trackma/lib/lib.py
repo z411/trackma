@@ -63,6 +63,7 @@ class lib(object):
     
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
+        self.userconfig = userconfig
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
         
@@ -83,6 +84,9 @@ class lib(object):
                 self.signals[signal](args)
         except KeyError:
             raise Exception("Call to undefined signal.")
+
+    def _set_userconfig(self, key, value):
+        self.userconfig[key] = value
 
     def connect_signal(self, signal, callback):
         try:

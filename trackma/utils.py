@@ -187,6 +187,8 @@ config_defaults = {
 }
 userconfig_defaults = {
     'mediatype': '',
+    'userid': 0,
+    'username': '',
 }
 keymap_defaults = {
     'help': 'f1',

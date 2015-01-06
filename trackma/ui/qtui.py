@@ -775,7 +775,7 @@ class Trackma(QtGui.QMainWindow):
             
             # Show API info
             self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
-            self.api_user.setText( self.account['username'] )
+            self.api_user.setText( self.worker.engine.get_userconfig('username') )
             self.setWindowTitle( "Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
             # Rebuild lists

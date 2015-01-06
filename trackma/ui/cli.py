@@ -78,7 +78,12 @@ class Trackma_cmd(cmd.Cmd):
         self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
-        self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+        self.prompt = "{0}@{1}({2}) {3}> ".format(
+                self.engine.get_userconfig('username'),
+                self.engine.api_info['name'],
+                self.engine.api_info['mediatype'],
+                self.engine.mediainfo['statuses_dict'][self.filter_num]
+        )
 
     def _load_list(self, *args):
         showlist = self.engine.filter_list(self.filter_num)

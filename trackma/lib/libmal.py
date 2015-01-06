@@ -88,9 +88,9 @@ class libmal(lib):
         # together with the urllib2 opener.
         super(libmal, self).__init__(messenger, account, userconfig)
 
-        self.username = account['username']
         auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
 
+        self.username = userconfig['username']
         self.opener = urllib2.build_opener()
         self.opener.addheaders = [
 			('User-Agent', self.useragent),
@@ -126,6 +126,13 @@ class libmal(lib):
         self.msg.info(self.name, 'Logging in...')
         try:
             response = self._request(self.url + "account/verify_credentials.xml")
+            root = ET.ElementTree().parse(response, parser=self._make_parser())
+            (userid, username) = self._parse_credentials(root)
+            self.username = username
+
+            self._set_userconfig('userid', userid)
+            self._set_userconfig('username', username)
+
             self.logged_in = True
             return True
         except urllib2.HTTPError, e:
@@ -289,6 +296,12 @@ class libmal(lib):
             raise utils.APIError('There was a problem getting the show details.')
 
         return reslist
+
+    def _parse_credentials(self, root):
+        if root is not None:
+            userid = int(root.find('id').text)
+            username = root.find('username').text
+            return (userid, username)
 
     def _parse_anime(self, root):
         """Converts an XML anime list to a dictionary"""

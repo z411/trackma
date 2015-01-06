@@ -385,7 +385,7 @@ class Trackma_gtk(object):
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
-            self.account['username'],
+            self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
 
         self.score_decimal_places = 0

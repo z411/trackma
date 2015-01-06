@@ -222,6 +222,10 @@ class Engine:
         self._init_data_handler()
         self.start()
     
+    def get_userconfig(self, key):
+        """Returns the specified key from the user-specific configuration."""
+        return self.userconfig[key]
+
     def get_config(self, key):
         """Returns the specified key from the configuration."""
         return self.config[key]
