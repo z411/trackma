@@ -804,8 +804,8 @@ class AccountDialog(Dialog):
     def do_add_password(self, data):
         self.adding_data['username'] = data
         if self.adding_data['api'][2] == utils.LOGIN_OAUTH:
-            ask = Asker("Please go to the following URL and paste the auth code.\n"
-                        "http://trackma.omaera.org/auth.py\nAuth code: ")
+            ask = Asker("Please go to the following URL and paste the PIN.\n"
+                        "{0}\nPIN: ".format(self.adding_data['api'][3]))
         else:
             ask = Asker("Password: ")
         self.frame.footer = ask

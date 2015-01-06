@@ -1525,14 +1525,22 @@ class AccountAddDialog(QtGui.QDialog):
         layout = QtGui.QVBoxLayout()
         
         formlayout = QtGui.QFormLayout()
+        self.lbl_username = QtGui.QLabel('Username:')
         self.username = QtGui.QLineEdit()
+
+        pin_layout = QtGui.QHBoxLayout()
+        self.lbl_password = QtGui.QLabel('Password:')
         self.password = QtGui.QLineEdit()
         self.password.setEchoMode(QtGui.QLineEdit.Password)
         self.api = QtGui.QComboBox()
+        self.api.currentIndexChanged.connect(self.s_refresh)
+        self.api_auth = QtGui.QPushButton('Request PIN')
+        pin_layout.addWidget(self.password)
+        pin_layout.addWidget(self.api_auth)
         
-        formlayout.addRow( QtGui.QLabel('Username:'), self.username )
-        formlayout.addRow( QtGui.QLabel('Password:'), self.password )
         formlayout.addRow( QtGui.QLabel('Site:'), self.api )
+        formlayout.addRow( self.lbl_username, self.username )
+        formlayout.addRow( self.lbl_password, pin_layout )
         
         bottombox = QtGui.QDialogButtonBox()
         bottombox.addButton(QtGui.QDialogButtonBox.Save)
@@ -1541,7 +1549,7 @@ class AccountAddDialog(QtGui.QDialog):
         bottombox.rejected.connect(self.reject)
         
         # Populate APIs
-        for libname, lib in utils.available_libs.iteritems():
+        for libname, lib in sorted(utils.available_libs.iteritems()):
             self.api.addItem(icons[libname], lib[0], libname)
         
         # Finish layouts
@@ -1555,7 +1563,19 @@ class AccountAddDialog(QtGui.QDialog):
             self.accept()
         else:
             self._error('Please fill all the fields.')
-        
+    
+    def s_refresh(self, index):
+        apiname = str(self.api.itemData(index).toString())
+        api = utils.available_libs[apiname]
+        if api[2] == utils.LOGIN_OAUTH:
+            self.api_auth.show()
+            self.lbl_username.setText('Name:')
+            self.lbl_password.setText('PIN:')
+        else:
+            self.lbl_username.setText('Username:')
+            self.lbl_password.setText('Password:')
+            self.api_auth.hide()
+
     def _error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
         

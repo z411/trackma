@@ -1805,7 +1805,7 @@ class AccountSelectAdd(gtk.Window):
         self.cmb_api.connect("changed", self._refresh)
         
         # Buttons
-        self.btn_auth = gtk.Button("Request")
+        self.btn_auth = gtk.Button("Request PIN")
         self.btn_auth.connect("clicked", self.do_auth)
 
         alignment = gtk.Alignment(xalign=0.5)
@@ -1847,7 +1847,7 @@ class AccountSelectAdd(gtk.Window):
         api = self.model_api.get(apiiter, 0)[0]
         if utils.available_libs[api][2] == utils.LOGIN_OAUTH:
             self.lbl_user.set_text("Name")
-            self.lbl_passwd.set_text("Auth code")
+            self.lbl_passwd.set_text("PIN")
             self.btn_auth.show()
         else:
             self.lbl_user.set_text("Username")
@@ -1857,8 +1857,8 @@ class AccountSelectAdd(gtk.Window):
     def do_auth(self, widget):
         apiiter = self.cmb_api.get_active_iter()
         api = self.model_api.get(apiiter, 0)[0]
+        url = utils.available_libs[api][4]
 
-        url = "http://omaera.org/trackma/{0}.html".format(api)
         webbrowser.open(url, 2, True)
 
     def do_close(self, widget):

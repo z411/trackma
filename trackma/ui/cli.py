@@ -630,11 +630,11 @@ class Trackma_accounts(AccountManager):
                     print '--------------------'
                     print 'This website requires OAuth authentication.'
                     print 'Please go to the following URL with your browser,'
-                    print 'follow the steps and paste the given auth code here.'
+                    print 'follow the steps and paste the given PIN code here.'
                     print
-                    print '  http://trackma.omaera.org/auth.py'
+                    print selected_api[3]
                     print
-                    password = raw_input('Auth code: ')
+                    password = raw_input('PIN: ')
                 
                 try:
                     self.add_account(username, password, api)
