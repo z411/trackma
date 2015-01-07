@@ -38,12 +38,12 @@ class libanilist(lib):
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
-        'can_add': False,
-        'can_delete': False,
-        'can_score': False,
-        'can_status': False,
-        'can_update': False,
-        'can_play': False,
+        'can_add': True,
+        'can_delete': True,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
+        'can_play': True,
         'status_start': 'watching',
         'status_finish': 'completed',
         'statuses':  ['watching', 'completed', 'on-hold', 'dropped', 'plan to watch'],
@@ -93,7 +93,7 @@ class libanilist(lib):
         if auth:
             request.add_header('Content-Type', 'application/x-www-form-urlencoded')
             request.add_header('Authorization', '{0} {1}'.format(
-                self._get_userconfig('token_type'),
+                self._get_userconfig('token_type').capitalize(),
                 self._get_userconfig('access_token'),
             ))
         
@@ -200,27 +200,13 @@ class libanilist(lib):
         return showlist
     
     def add_show(self, item):
-        """
-        Adds the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
-        """
-        raise NotImplementedError
+        return self._update_entry(item, "POST")
     
     def update_show(self, item):
-        """
-        Sends the updates of a show to the remote site.
+        return self._update_entry(item, "PUT")
 
-        This function gets called every time a show should be updated remotely,
-        and in a queue it may be called many times consecutively, so you should
-        use a boolean (or other method) to login only once.
-
-        """
-        raise NotImplementedError
-    
     def delete_show(self, item):
-        """
-        Deletes the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
-        """
-        raise NotImplementedError
+        data = self._request("DELETE", "animelist/{}".format(item['id']), auth=True)
         
     def search(self, criteria):
         """
@@ -237,6 +223,21 @@ class libanilist(lib):
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
+
+    def _update_entry(self, item, method):
+        self.check_credentials()
+        self.msg.info(self.name, "Updating show %s..." % item['title'])
+
+        values = { 'id': item['id'] }
+        if 'my_progress' in item.keys():
+            values['episodes_watched'] = item['my_progress']
+        if 'my_status' in item.keys():
+            values['list_status'] = item['my_status']
+        if 'my_score' in item.keys():
+            values['score'] = item['my_score']
+
+        data = self._request(method, "animelist", post=values, auth=True)
+        return True
 
     def _parse_info(self, item):
         info = utils.show()
