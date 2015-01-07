@@ -707,4 +707,3 @@ def main():
         main_cmd.cmdloop()
     except utils.TrackmaFatal, e:
         print "%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET)
-    

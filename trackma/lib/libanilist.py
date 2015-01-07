@@ -44,10 +44,16 @@ class libanilist(lib):
         'can_status': False,
         'can_update': False,
         'can_play': False,
-        'status_start': 1,
-        'status_finish': 2,
-        'statuses':  [1, 2, 3, 4, 6],
-        'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
+        'status_start': 'watching',
+        'status_finish': 'completed',
+        'statuses':  ['watching', 'completed', 'on-hold', 'dropped', 'plan to watch'],
+        'statuses_dict': {
+            'watching': 'Watching',
+            'completed': 'Completed',
+            'on-hold': 'On Hold',
+            'dropped': 'Dropped',
+            'plan to watch': 'Plan to Watch'
+        },
     }
     default_mediatype = 'anime'
 
@@ -63,22 +69,26 @@ class libanilist(lib):
         super(libanilist, self).__init__(messenger, account, userconfig)
 
         self.pin = account['password'].strip()
+        self.userid = userconfig['userid']
         
         if len(self.pin) != 40:
             raise utils.APIFatal("Invalid PIN.")
         
-        handler=urllib2.HTTPHandler(debuglevel=1)
-        self.opener = urllib2.build_opener(handler)
-        #self.opener = urllib2.build_opener()
+        #handler=urllib2.HTTPHandler(debuglevel=1)
+        #self.opener = urllib2.build_opener(handler)
+        self.opener = urllib2.build_opener()
+        self.opener.addheaders = [('User-agent', 'TestClient/0.1')]
         
-    def _request(self, method, url, post=None):
+    def _request(self, method, url, get=None, post=None, auth=False):
+        if get:
+            url = "{}?{}".format(url, urllib.urlencode(get))
         if post:
             post = urllib.urlencode(post)
 
         request = urllib2.Request(self.url + url, post)
         request.get_method = lambda: method
         
-        if self.logged_in:
+        if auth:
             request.add_header('Content-Type', 'application/x-www-form-urlencoded')
             request.add_header('Authorization', '{0} {1}'.format(
                 self._get_userconfig('token_type'),
@@ -86,7 +96,6 @@ class libanilist(lib):
             ))
         
         try:
-            print request
             response = self.opener.open(request, timeout = 10)
             return json.load(response)
         except urllib2.HTTPError, e:
@@ -100,13 +109,7 @@ class libanilist(lib):
             'client_secret': self._client_secret,
             'code': self.pin,
         }
-        urlparam = urllib.urlencode(param)
-        data = self._request("POST", "auth/access_token?{}".format(urlparam))
-        
-        #url = ('auth/access_token?grant_type=authorization_code'
-        #    '&client_id={0}&client_secret={1}&redirect_uri={2}'
-        #    '&code={3}').format(self.client_id,param['client_secret'],param['redirect_uri'],param['code'])
-        #data = self._request("POST", url)
+        data = self._request("POST", "auth/access_token", get=param)
         
         self._set_userconfig('access_token', data['access_token'])
         self._set_userconfig('token_type', data['token_type'])
@@ -118,13 +121,13 @@ class libanilist(lib):
     
     def _refresh_access_token(self):
         self.msg.info(self.name, 'Refreshing access token...')
-        post = {
+        param = {
             'grant_type': 'refresh_token',
             'client_id': self.client_id,
             'client_secret': self._client_secret,
             'refresh_token': self._get_userconfig('refresh_token'),
         }
-        data = self._request("POST", "auth/access_token", post)
+        data = self._request("POST", "auth/access_token", get=param)
         
         self._set_userconfig('access_token', data['access_token'])
         self._set_userconfig('token_type', data['token_type'])
@@ -135,7 +138,9 @@ class libanilist(lib):
     
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
-        data = self._request("GET", "user")
+        param = {'access_token': self._get_userconfig('access_token')}
+
+        data = self._request("GET", "user", get=param)
         
         self._set_userconfig('userid', data['id'])
         self._set_userconfig('username', data['display_name'])
@@ -160,9 +165,28 @@ class libanilist(lib):
     def fetch_list(self):
         self.check_credentials()
         
-        data = self._request("GET", "user/{0}/animelist/raw".format(self.userid))
-        
-        print data
+        param = {'access_token': self._get_userconfig('access_token')}
+        data = self._request("GET", "user/{0}/animelist".format(self.userid), get=param)
+
+        showlist = {}
+        for remotelist in data["lists"].itervalues():
+            for item in remotelist:
+                show = utils.show()
+                showid = item['anime']['id']
+                show.update({
+                    'id': showid,
+                    'title': item['anime']['title_romaji'],
+                    #'aliases': item['anime']['synonyms'],
+                    'my_progress': item['episodes_watched'],
+                    'my_status': item['list_status'],
+                    'my_score': item['score'],
+                    'total': item['anime']['total_episodes'],
+                    'image': item['anime']['image_url_med'],
+                })
+
+                showlist[showid] = show
+
+        return showlist
     
     def add_show(self, item):
         """

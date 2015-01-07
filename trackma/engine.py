@@ -201,13 +201,14 @@ class Engine:
         procedures to close the data handler cleanly and then itself.
         
         """
-        self.msg.info(self.name, "Unloading...")
-        self.data_handler.unload()
+        if self.loaded:
+            self.msg.info(self.name, "Unloading...")
+            self.data_handler.unload()
         
-        # Save config file
-        utils.save_config(self.userconfig, self.userconfigfile)
+            # Save config file
+            utils.save_config(self.userconfig, self.userconfigfile)
         
-        self.loaded = False
+            self.loaded = False
     
     def reload(self, account=None, mediatype=None):
         """Changes the API and/or mediatype and reloads itself."""
