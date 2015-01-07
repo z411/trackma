@@ -166,7 +166,7 @@ config_defaults = {
     'searchdir': '/home/user/Videos',
     'tracker_enabled': True,
     'tracker_update_wait': 5,
-    'tracker_interval': 60,
+    'tracker_interval': 30,
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',
     'autoretrieve_days': 3,
