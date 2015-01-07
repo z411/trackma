@@ -90,7 +90,7 @@ class libmal(lib):
 
         auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
 
-        self.username = userconfig['username']
+        self.username = self._get_userconfig('username')
         self.opener = urllib2.build_opener()
         self.opener.addheaders = [
 			('User-Agent', self.useragent),

@@ -85,6 +85,9 @@ class lib(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
+    def _get_userconfig(self, key):
+        self.userconfig.get(key)
+
     def _set_userconfig(self, key, value):
         self.userconfig[key] = value
 
