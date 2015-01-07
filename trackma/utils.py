@@ -38,6 +38,7 @@ available_libs = {
 
 
 def parse_config(filename, default):
+    print filename
     config = copy.copy(default)
 
     try:

@@ -54,6 +54,8 @@ class libanilist(lib):
             'dropped': 'Dropped',
             'plan to watch': 'Plan to Watch'
         },
+        'score_max': 100,
+        'score_step': 1,
     }
     default_mediatype = 'anime'
 
@@ -118,7 +120,8 @@ class libanilist(lib):
         
         self.logged_in = True
         self._refresh_user_info()
-    
+        self._emit_signal('userconfig_changed')
+
     def _refresh_access_token(self):
         self.msg.info(self.name, 'Refreshing access token...')
         param = {
@@ -135,6 +138,7 @@ class libanilist(lib):
         
         self.logged_in = True
         self._refresh_user_info()
+        self._emit_signal('userconfig_changed')
     
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
@@ -164,6 +168,7 @@ class libanilist(lib):
     
     def fetch_list(self):
         self.check_credentials()
+        self.msg.info(self.name, 'Downloading list...')
         
         param = {'access_token': self._get_userconfig('access_token')}
         data = self._request("GET", "user/{0}/animelist".format(self.userid), get=param)
@@ -179,7 +184,7 @@ class libanilist(lib):
                     #'aliases': item['anime']['synonyms'],
                     'my_progress': item['episodes_watched'],
                     'my_status': item['list_status'],
-                    'my_score': item['score'],
+                    'my_score': self._score(item['score']),
                     'total': item['anime']['total_episodes'],
                     'image': item['anime']['image_url_med'],
                 })
@@ -226,4 +231,7 @@ class libanilist(lib):
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
+
+    def _score(self, s):
+        return 0 if s is None else s
         

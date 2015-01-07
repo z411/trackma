@@ -132,6 +132,7 @@ class libmal(lib):
 
             self._set_userconfig('userid', userid)
             self._set_userconfig('username', username)
+            self._emit_signal('userconfig_changed')
 
             self.logged_in = True
             return True

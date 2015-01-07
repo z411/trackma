@@ -55,15 +55,23 @@ class Data(object):
                 'queue_changed':     None,
               }
     
-    def __init__(self, messenger, config, account, userconfig):
+    def __init__(self, messenger, config, account, mediatype):
         """Checks if the config is correct and creates an API object."""
         self.msg = messenger
         self.config = config
-        self.userconfig = userconfig
         self.msg.info(self.name, "Initializing...")
-        
+ 
+        # Get filenames
+        userfolder = "%s.%s" % (account['username'], account['api'])
+        self.userconfig_file =  utils.get_filename(userfolder, 'user.json') 
+
+        # Handle userconfig and media type to load
+        self._load_userconfig()
+        if mediatype:
+            self.userconfig['mediatype'] = mediatype
+            self._save_userconfig()
+
         # Import the API
-        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libbase = account['api']
         libname = "lib{0}".format(libbase)
         try:
@@ -74,7 +82,6 @@ class Data(object):
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
         
         # Instance API
-        # TODO : Dangerous stuff, we should do an alphanumeric test or something.
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, account, self.userconfig)
         
@@ -82,8 +89,7 @@ class Data(object):
         mediatype = self.userconfig.get('mediatype')
         self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
         
-        # Get files
-        userfolder = "%s.%s" % (account['username'], account['api'])
+        # Get filenames
         self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
         self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
         self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
@@ -92,6 +98,7 @@ class Data(object):
         
         # Connect signals
         self.api.connect_signal('show_info_changed', self.info_update)
+        self.api.connect_signal('userconfig_changed', self.userconfig_update)
     
     def _emit_signal(self, signal, *args):
         try:
@@ -406,6 +413,9 @@ class Data(object):
             self.infocache[showid] = show
         
         self._save_info()
+
+    def userconfig_update(self):
+        self._save_userconfig()
     
     def altname_get(self, showid):
         return self.meta['altnames'].get(showid, '')
@@ -451,6 +461,14 @@ class Data(object):
     def _save_info(self):
         self.msg.debug(self.name, "Saving info DB...")
         cPickle.dump(self.infocache, open( self.info_file , "wb" ) )
+
+    def _load_userconfig(self):
+        self.msg.debug(self.name, "Reading userconfig...")
+        self.userconfig = utils.parse_config(self.userconfig_file, utils.userconfig_defaults)
+
+    def _save_userconfig(self):
+        self.msg.debug(self.name, "Saving userconfig...")
+        utils.save_config(self.userconfig, self.userconfig_file)
 
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")

@@ -87,20 +87,18 @@ class Engine:
         # Create user directory
         userfolder = "%s.%s" % (account['username'], account['api'])
         utils.make_dir(userfolder)
-        self.userconfigfile = utils.get_filename(userfolder, 'user.json')
         
         self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
             utils.VERSION, account['username'], account['api']))
         self.msg.info(self.name, 'Reading config files...')
         try:
             self.config = utils.parse_config(self.configfile, utils.config_defaults)
-            self.userconfig = utils.parse_config(self.userconfigfile, utils.userconfig_defaults)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
         
-    def _init_data_handler(self):
+    def _init_data_handler(self, mediatype=None):
         # Create data handler
-        self.data_handler = data.Data(self.msg, self.config, self.account, self.userconfig)
+        self.data_handler = data.Data(self.msg, self.config, self.account, mediatype)
         self.data_handler.connect_signal('show_synced', self._data_show_synced)
         self.data_handler.connect_signal('queue_changed', self._data_queue_changed)
         
@@ -205,9 +203,6 @@ class Engine:
             self.msg.info(self.name, "Unloading...")
             self.data_handler.unload()
         
-            # Save config file
-            utils.save_config(self.userconfig, self.userconfigfile)
-        
             self.loaded = False
     
     def reload(self, account=None, mediatype=None):
@@ -217,20 +212,17 @@ class Engine:
         
         if account:
             self._load(account)
-        if mediatype:
-            self.userconfig['mediatype'] = mediatype
         
-        self._init_data_handler()
+        self._init_data_handler(mediatype)
         self.start()
     
-    def get_userconfig(self, key):
-        """Returns the specified key from the user-specific configuration."""
-        return self.userconfig[key]
-
     def get_config(self, key):
         """Returns the specified key from the configuration."""
         return self.config[key]
     
+    def get_userconfig(self, key):
+        return self.data_handler.userconfig[key]
+
     def set_config(self, key, value):
         """
         Writes the defined key to the configuration.
@@ -244,7 +236,6 @@ class Engine:
         
         # Save config file
         utils.save_config(self.config, self.configfile)
-        utils.save_config(self.userconfig, self.userconfigfile)
         
     def get_list(self):
         """
