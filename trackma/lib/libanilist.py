@@ -28,7 +28,6 @@ class libanilist(lib):
     Website: http://anilist.co
 
     messenger: Messenger object to send useful messages to
-    mediatype: String containing the media type to be used
     """
     name = 'libanilist'
     msg = None
@@ -57,6 +56,27 @@ class libanilist(lib):
         'score_max': 100,
         'score_step': 1,
     }
+    mediatypes['manga'] = {
+        'has_progress': True,
+        'can_add': True,
+        'can_delete': True,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
+        'can_play': False,
+        'status_start': 'reading',
+        'status_finish': 'completed',
+        'statuses':  ['reading', 'completed', 'on-hold', 'dropped', 'plan to read'],
+        'statuses_dict': {
+            'reading': 'Watching',
+            'completed': 'Completed',
+            'on-hold': 'On Hold',
+            'dropped': 'Dropped',
+            'plan to read': 'Plan to Read'
+        },
+        'score_max': 100,
+        'score_step': 1,
+    }
     default_mediatype = 'anime'
 
     # Supported signals for the data handler
@@ -75,6 +95,13 @@ class libanilist(lib):
         
         if len(self.pin) != 40:
             raise utils.APIFatal("Invalid PIN.")
+        
+        if self.mediatype == 'manga':
+            self.total_str = "total_chapters"
+            self.watched_str = "chapters_read"
+        else:
+            self.total_str = "total_episodes"
+            self.watched_str = "episodes_watched"
         
         #handler=urllib2.HTTPHandler(debuglevel=1)
         #self.opener = urllib2.build_opener(handler)
@@ -171,29 +198,34 @@ class libanilist(lib):
         self.msg.info(self.name, 'Downloading list...')
         
         param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "user/{0}/animelist".format(self.userid), get=param)
+        data = self._request("GET", "user/{0}/{1}list".format(self.userid, self.mediatype), get=param)
 
         showlist = {}
         infolist = []
+
+        if not data["lists"]:
+            # No lists returned so no need to continue
+            return showlist
+
         for remotelist in data["lists"].itervalues():
             for item in remotelist:
                 show = utils.show()
-                showid = item['anime']['id']
+                showid = item[self.mediatype]['id']
                 show.update({
                     'id': showid,
-                    'title': item['anime']['title_romaji'],
-                    #'aliases': item['anime']['synonyms'],
-                    'my_progress': item['episodes_watched'],
+                    'title': item[self.mediatype]['title_romaji'],
+                    #'aliases': item[self.mediatype]['synonyms'],
+                    'my_progress': item[self.watched_str],
                     'my_status': item['list_status'],
                     'my_score': self._score(item['score']),
-                    'total': item['anime']['total_episodes'],
-                    'image': item['anime']['image_url_lge'],
-                    'image_thumb': item['anime']['image_url_med'],
+                    'total': item[self.mediatype][self.total_str],
+                    'image': item[self.mediatype]['image_url_lge'],
+                    'image_thumb': item[self.mediatype]['image_url_med'],
                 })
 
                 showlist[showid] = show
 
-                info = self._parse_info(item['anime'])
+                info = self._parse_info(item[self.mediatype])
                 infolist.append(info)
 
         self._emit_signal('show_info_changed', infolist)
@@ -230,7 +262,7 @@ class libanilist(lib):
 
         values = { 'id': item['id'] }
         if 'my_progress' in item.keys():
-            values['episodes_watched'] = item['my_progress']
+            values[self.watched_str] = item['my_progress']
         if 'my_status' in item.keys():
             values['list_status'] = item['my_status']
         if 'my_score' in item.keys():
