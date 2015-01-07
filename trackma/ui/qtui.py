@@ -25,7 +25,7 @@ except ImportError:
 
 import os
 from cStringIO import StringIO
-import urllib2 as urllib
+import urllib2
 
 import trackma.messenger as messenger
 import trackma.utils as utils
@@ -106,7 +106,7 @@ class Trackma(QtGui.QMainWindow):
 
         # Timers
         self.image_timer = QtCore.QTimer()
-        self.image_timer.setInterval(1000)
+        self.image_timer.setInterval(500)
         self.image_timer.setSingleShot(True)
         self.image_timer.timeout.connect(self.s_download_image)
         
@@ -1614,9 +1614,12 @@ class Image_Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
+        print self.remote
         self.cancelled = False
 
-        img_file = StringIO(urllib.urlopen(self.remote).read())
+        req = urllib2.Request(self.remote)
+        req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
+        img_file = StringIO(urllib2.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)

@@ -33,7 +33,7 @@ import cgi
 import time
 import threading
 import webbrowser
-import urllib2 as urllib
+import urllib2
 from cStringIO import StringIO
 
 try:
@@ -976,7 +976,9 @@ class ImageTask(threading.Thread):
 
         # If there's a size specified, thumbnail with PIL library
         # otherwise download and save it as it is
-        img_file = StringIO(urllib.urlopen(self.remote).read())
+        req = urllib2.Request(self.remote)
+        req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
+        img_file = StringIO(urllib2.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
