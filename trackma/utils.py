@@ -134,8 +134,9 @@ def show():
         'status':       0,
         'total':        0,
         'start_date':   None,
-        'end_date':  None,
+        'end_date':     None,
         'image':        '',
+        'image_thumb':  '',
         'queued':       False,
         'neweps':       False,
     }

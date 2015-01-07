@@ -516,7 +516,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_status.setEnabled(True)
  
         # Download image or use cache
-        if show.get('image'):
+        if show.get('image_thumb') or show.get('image'):
             if self.image_worker is not None:
                 self.image_worker.cancel()
 
@@ -548,7 +548,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_image.setText('Downloading...')
         filename = utils.get_filename('cache', "%s.jpg" % show['id'])
     
-        self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+        self.image_worker = Image_Worker(show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)
         self.image_worker.start()
     

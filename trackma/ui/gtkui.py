@@ -788,7 +788,7 @@ class Trackma_gtk(object):
         self.show_score.set_value(show['my_score'])
         
         # Image
-        if show.get('image'):
+        if show.get('image_thumb') or show.get('image'):
             utils.make_dir('cache')
             filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
             
@@ -797,7 +797,7 @@ class Trackma_gtk(object):
             else:
                 if imaging_available:
                     self.show_image.pholder_show('Loading...')
-                    self.image_thread = ImageTask(self.show_image, show['image'], filename, (100, 149))
+                    self.image_thread = ImageTask(self.show_image, show.get('image_thumb') or show['image'], filename, (100, 149))
                     self.image_thread.start()
                 else:
                     self.show_image.pholder_show("PIL library\nnot available")

@@ -186,7 +186,8 @@ class libanilist(lib):
                     'my_status': item['list_status'],
                     'my_score': self._score(item['score']),
                     'total': item['anime']['total_episodes'],
-                    'image': item['anime']['image_url_med'],
+                    'image': item['anime']['image_url_lge'],
+                    'image_thumb': item['anime']['image_url_med'],
                 })
 
                 showlist[showid] = show
