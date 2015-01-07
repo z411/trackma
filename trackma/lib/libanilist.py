@@ -174,6 +174,7 @@ class libanilist(lib):
         data = self._request("GET", "user/{0}/animelist".format(self.userid), get=param)
 
         showlist = {}
+        infolist = []
         for remotelist in data["lists"].itervalues():
             for item in remotelist:
                 show = utils.show()
@@ -192,6 +193,10 @@ class libanilist(lib):
 
                 showlist[showid] = show
 
+                info = self._parse_info(item['anime'])
+                infolist.append(info)
+
+        self._emit_signal('show_info_changed', infolist)
         return showlist
     
     def add_show(self, item):
@@ -232,6 +237,28 @@ class libanilist(lib):
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
+
+    def _parse_info(self, item):
+        info = utils.show()
+        info.update({
+            'id': item['id'],
+            'title': item['title_romaji'],
+            'status': self.status_translate(item['airing_status']),
+            'image': item['image_url_lge'],
+            'extra': [
+                ('Description',     item.get('description')),
+                ('Genres',          item.get('genres')),
+                ('Classification',  item.get('classification')),
+                ('Status',          item.get('airing_status')),
+                ('Average score',   item.get('average_score')),
+                ('Japanese title',  item.get('title_japanese')),
+                ('English title',   item.get('title_english')),
+            ]
+        })
+        return info
+    
+    def status_translate(self, status):
+        return None
 
     def _score(self, s):
         return 0 if s is None else s
