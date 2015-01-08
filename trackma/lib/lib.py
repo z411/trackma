@@ -144,7 +144,7 @@ class lib(object):
         """
         raise NotImplementedError
     
-    def request_info(self, ids):
+    def request_info(self, items):
         # Request detailed information for requested shows
         raise NotImplementedError
     

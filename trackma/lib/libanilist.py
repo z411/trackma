@@ -99,9 +99,11 @@ class libanilist(lib):
         if self.mediatype == 'manga':
             self.total_str = "total_chapters"
             self.watched_str = "chapters_read"
+            self.airing_str = "publishing_status"
         else:
             self.total_str = "total_episodes"
             self.watched_str = "episodes_watched"
+            self.airing_str = "airing_status"
         
         #handler=urllib2.HTTPHandler(debuglevel=1)
         #self.opener = urllib2.build_opener(handler)
@@ -128,7 +130,10 @@ class libanilist(lib):
             response = self.opener.open(request, timeout = 10)
             return json.load(response)
         except urllib2.HTTPError, e:
-            raise utils.APIError("Connection error: %s" % e)
+            if e.code == 400:
+                raise utils.APIError("Invalid PIN. It is either probably expired or meant for another application.")
+            else:
+                raise utils.APIError("Connection error: %s" % e)
     
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
@@ -201,7 +206,9 @@ class libanilist(lib):
         data = self._request("GET", "user/{0}/{1}list".format(self.userid, self.mediatype), get=param)
 
         showlist = {}
-        infolist = []
+
+        with open('mangalist', 'w') as f:
+            json.dump(data, f, indent=2)
 
         if not data["lists"]:
             # No lists returned so no need to continue
@@ -215,6 +222,7 @@ class libanilist(lib):
                     'id': showid,
                     'title': item[self.mediatype]['title_romaji'],
                     #'aliases': item[self.mediatype]['synonyms'],
+                    'status': item[self.mediatype][self.airing_str],
                     'my_progress': item[self.watched_str],
                     'my_status': item['list_status'],
                     'my_score': self._score(item['score']),
@@ -225,10 +233,6 @@ class libanilist(lib):
 
                 showlist[showid] = show
 
-                info = self._parse_info(item[self.mediatype])
-                infolist.append(info)
-
-        self._emit_signal('show_info_changed', infolist)
         return showlist
     
     def add_show(self, item):
@@ -248,9 +252,18 @@ class libanilist(lib):
         """
         raise NotImplementedError
     
-    def request_info(self, ids):
-        # Request detailed information for requested shows
-        raise NotImplementedError
+    def request_info(self, itemlist):
+        self.check_credentials()
+        
+        param = {'access_token': self._get_userconfig('access_token')}
+        infolist = []
+
+        for show in itemlist:
+            data = self._request("GET", "{0}/{1}".format(self.mediatype, show['id']), get=param)
+            infolist.append( self._parse_info(data) )
+
+        self._emit_signal('show_info_changed', infolist)
+        return infolist
     
     def media_info(self):
         """Return information about the currently selected mediatype."""
@@ -276,7 +289,7 @@ class libanilist(lib):
         info.update({
             'id': item['id'],
             'title': item['title_romaji'],
-            'status': self.status_translate(item['airing_status']),
+            'status': self.status_translate(item[self.airing_str]),
             'image': item['image_url_lge'],
             'extra': [
                 ('Description',     item.get('description')),
