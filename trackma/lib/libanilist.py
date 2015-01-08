@@ -222,6 +222,7 @@ class libanilist(lib):
                     'id': showid,
                     'title': item[self.mediatype]['title_romaji'],
                     #'aliases': item[self.mediatype]['synonyms'],
+                    'type': item[self.mediatype]['type'],
                     'status': item[self.mediatype][self.airing_str],
                     'my_progress': item[self.watched_str],
                     'my_status': item['list_status'],
@@ -245,16 +246,35 @@ class libanilist(lib):
         data = self._request("DELETE", "animelist/{}".format(item['id']), auth=True)
         
     def search(self, criteria):
-        """
-        Called when the data handler needs a detailed list of shows from the remote server.
-        It should return a list of show dictionaries with the additional 'extra' key (which is a list of tuples)
-        containing any additional detailed information about the show.
-        """
-        raise NotImplementedError
-    
+        self.check_credentials()
+        criteria = str(criteria)
+
+        self.msg.info(self.name, "Searching for {}...".format(criteria))
+        param = {'access_token': self._get_userconfig('access_token')}
+        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, urllib.quote_plus(criteria)), get=param)
+
+        showlist = []
+
+        for item in data:
+            show = utils.show()
+            showid = item['id']
+            show.update({
+                'id': showid,
+                'title': item['title_romaji'],
+                #'aliases': item['synonyms'],
+                'type': item['type'],
+                'status': item[self.airing_str],
+                'total': item[self.total_str],
+                'image': item['image_url_lge'],
+                'image_thumb': item['image_url_med'],
+            })
+
+            showlist.append( show )
+
+        return showlist
+
     def request_info(self, itemlist):
         self.check_credentials()
-        
         param = {'access_token': self._get_userconfig('access_token')}
         infolist = []
 
