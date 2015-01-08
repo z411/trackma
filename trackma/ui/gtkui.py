@@ -1845,15 +1845,20 @@ class AccountSelectAdd(gtk.Window):
         self.btn_auth.hide()
     
     def _refresh(self, widget):
+        self.txt_user.set_text("")
+        self.txt_passwd.set_text("")
+
         apiiter = self.cmb_api.get_active_iter()
         api = self.model_api.get(apiiter, 0)[0]
         if utils.available_libs[api][2] == utils.LOGIN_OAUTH:
             self.lbl_user.set_text("Name")
             self.lbl_passwd.set_text("PIN")
+            self.txt_passwd.set_visibility(True)
             self.btn_auth.show()
         else:
             self.lbl_user.set_text("Username")
             self.lbl_passwd.set_text("Password")
+            self.txt_passwd.set_visibility(False)
             self.btn_auth.hide()
 
     def do_auth(self, widget):

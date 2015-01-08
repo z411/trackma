@@ -1531,10 +1531,12 @@ class AccountAddDialog(QtGui.QDialog):
         pin_layout = QtGui.QHBoxLayout()
         self.lbl_password = QtGui.QLabel('Password:')
         self.password = QtGui.QLineEdit()
-        self.password.setEchoMode(QtGui.QLineEdit.Password)
         self.api = QtGui.QComboBox()
         self.api.currentIndexChanged.connect(self.s_refresh)
-        self.api_auth = QtGui.QPushButton('Request PIN')
+        self.api_auth = QtGui.QLabel('Request PIN')
+        self.api_auth.setTextFormat(QtCore.Qt.RichText)
+        self.api_auth.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.api_auth.setOpenExternalLinks(True)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
         
@@ -1565,15 +1567,24 @@ class AccountAddDialog(QtGui.QDialog):
             self._error('Please fill all the fields.')
     
     def s_refresh(self, index):
+        self.username.setText("")
+        self.password.setText("")
+
         apiname = str(self.api.itemData(index).toString())
         api = utils.available_libs[apiname]
         if api[2] == utils.LOGIN_OAUTH:
+            apiname = str(self.api.itemData(index).toString())
+            url = utils.available_libs[apiname][4]
+            self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
             self.api_auth.show()
+
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
+            self.password.setEchoMode(QtGui.QLineEdit.Normal)
         else:
             self.lbl_username.setText('Username:')
             self.lbl_password.setText('Password:')
+            self.password.setEchoMode(QtGui.QLineEdit.Password)
             self.api_auth.hide()
 
     def _error(self, msg):
@@ -1614,7 +1625,6 @@ class Image_Worker(QtCore.QThread):
         self.wait()
 
     def run(self):
-        print self.remote
         self.cancelled = False
 
         req = urllib2.Request(self.remote)
