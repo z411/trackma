@@ -21,13 +21,19 @@ import json
 VERSION = '0.3'
 
 datadir = os.path.dirname(__file__)
+LOGIN_PASSWD = 1
+LOGIN_OAUTH = 2
 
 # Put the available APIs here
 available_libs = {
-    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg'),
-    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg'),
-    'melative': ('Melative',     datadir + '/data/melative.jpg'),
-    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg'),
+    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
+            "http://omaera.org/trackma/anilist.html",
+            "https://anilist.co/api/auth/authorize?grant_type=authorization_pin&client_id=z411-gdjc3&response_type=pin"
+                ),
+    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg',          LOGIN_PASSWD),
+    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
+    'melative': ('Melative',     datadir + '/data/melative.jpg',    LOGIN_PASSWD),
+    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
 
 
@@ -127,8 +133,9 @@ def show():
         'status':       0,
         'total':        0,
         'start_date':   None,
-        'end_date':  None,
+        'end_date':     None,
         'image':        '',
+        'image_thumb':  '',
         'queued':       False,
         'neweps':       False,
     }
@@ -181,6 +188,8 @@ config_defaults = {
 }
 userconfig_defaults = {
     'mediatype': '',
+    'userid': 0,
+    'username': '',
 }
 keymap_defaults = {
     'help': 'f1',

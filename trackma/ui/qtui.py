@@ -25,7 +25,7 @@ except ImportError:
 
 import os
 from cStringIO import StringIO
-import urllib2 as urllib
+import urllib2
 
 import trackma.messenger as messenger
 import trackma.utils as utils
@@ -106,7 +106,7 @@ class Trackma(QtGui.QMainWindow):
 
         # Timers
         self.image_timer = QtCore.QTimer()
-        self.image_timer.setInterval(1000)
+        self.image_timer.setInterval(500)
         self.image_timer.setSingleShot(True)
         self.image_timer.timeout.connect(self.s_download_image)
         
@@ -516,7 +516,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_status.setEnabled(True)
  
         # Download image or use cache
-        if show.get('image'):
+        if show.get('image_thumb') or show.get('image'):
             if self.image_worker is not None:
                 self.image_worker.cancel()
 
@@ -548,7 +548,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_image.setText('Downloading...')
         filename = utils.get_filename('cache', "%s.jpg" % show['id'])
     
-        self.image_worker = Image_Worker(show['image'], filename, (100, 140))
+        self.image_worker = Image_Worker(show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)
         self.image_worker.start()
     
@@ -775,7 +775,7 @@ class Trackma(QtGui.QMainWindow):
             
             # Show API info
             self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
-            self.api_user.setText( self.account['username'] )
+            self.api_user.setText( self.worker.engine.get_userconfig('username') )
             self.setWindowTitle( "Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
             # Rebuild lists
@@ -1525,14 +1525,24 @@ class AccountAddDialog(QtGui.QDialog):
         layout = QtGui.QVBoxLayout()
         
         formlayout = QtGui.QFormLayout()
+        self.lbl_username = QtGui.QLabel('Username:')
         self.username = QtGui.QLineEdit()
+
+        pin_layout = QtGui.QHBoxLayout()
+        self.lbl_password = QtGui.QLabel('Password:')
         self.password = QtGui.QLineEdit()
-        self.password.setEchoMode(QtGui.QLineEdit.Password)
         self.api = QtGui.QComboBox()
+        self.api.currentIndexChanged.connect(self.s_refresh)
+        self.api_auth = QtGui.QLabel('Request PIN')
+        self.api_auth.setTextFormat(QtCore.Qt.RichText)
+        self.api_auth.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.api_auth.setOpenExternalLinks(True)
+        pin_layout.addWidget(self.password)
+        pin_layout.addWidget(self.api_auth)
         
-        formlayout.addRow( QtGui.QLabel('Username:'), self.username )
-        formlayout.addRow( QtGui.QLabel('Password:'), self.password )
         formlayout.addRow( QtGui.QLabel('Site:'), self.api )
+        formlayout.addRow( self.lbl_username, self.username )
+        formlayout.addRow( self.lbl_password, pin_layout )
         
         bottombox = QtGui.QDialogButtonBox()
         bottombox.addButton(QtGui.QDialogButtonBox.Save)
@@ -1541,7 +1551,7 @@ class AccountAddDialog(QtGui.QDialog):
         bottombox.rejected.connect(self.reject)
         
         # Populate APIs
-        for libname, lib in utils.available_libs.iteritems():
+        for libname, lib in sorted(utils.available_libs.iteritems()):
             self.api.addItem(icons[libname], lib[0], libname)
         
         # Finish layouts
@@ -1555,7 +1565,28 @@ class AccountAddDialog(QtGui.QDialog):
             self.accept()
         else:
             self._error('Please fill all the fields.')
-        
+    
+    def s_refresh(self, index):
+        self.username.setText("")
+        self.password.setText("")
+
+        apiname = str(self.api.itemData(index).toString())
+        api = utils.available_libs[apiname]
+        if api[2] == utils.LOGIN_OAUTH:
+            apiname = str(self.api.itemData(index).toString())
+            url = utils.available_libs[apiname][4]
+            self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
+            self.api_auth.show()
+
+            self.lbl_username.setText('Name:')
+            self.lbl_password.setText('PIN:')
+            self.password.setEchoMode(QtGui.QLineEdit.Normal)
+        else:
+            self.lbl_username.setText('Username:')
+            self.lbl_password.setText('Password:')
+            self.password.setEchoMode(QtGui.QLineEdit.Password)
+            self.api_auth.hide()
+
     def _error(self, msg):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
         
@@ -1596,7 +1627,9 @@ class Image_Worker(QtCore.QThread):
     def run(self):
         self.cancelled = False
 
-        img_file = StringIO(urllib.urlopen(self.remote).read())
+        req = urllib2.Request(self.remote)
+        req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
+        img_file = StringIO(urllib2.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)

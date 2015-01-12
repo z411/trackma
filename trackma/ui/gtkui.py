@@ -33,7 +33,7 @@ import cgi
 import time
 import threading
 import webbrowser
-import urllib2 as urllib
+import urllib2
 from cStringIO import StringIO
 
 try:
@@ -385,7 +385,7 @@ class Trackma_gtk(object):
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
-            self.account['username'],
+            self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
 
         self.score_decimal_places = 0
@@ -788,7 +788,7 @@ class Trackma_gtk(object):
         self.show_score.set_value(show['my_score'])
         
         # Image
-        if show.get('image'):
+        if show.get('image_thumb') or show.get('image'):
             utils.make_dir('cache')
             filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
             
@@ -797,7 +797,7 @@ class Trackma_gtk(object):
             else:
                 if imaging_available:
                     self.show_image.pholder_show('Loading...')
-                    self.image_thread = ImageTask(self.show_image, show['image'], filename, (100, 149))
+                    self.image_thread = ImageTask(self.show_image, show.get('image_thumb') or show['image'], filename, (100, 149))
                     self.image_thread.start()
                 else:
                     self.show_image.pholder_show("PIL library\nnot available")
@@ -976,7 +976,9 @@ class ImageTask(threading.Thread):
 
         # If there's a size specified, thumbnail with PIL library
         # otherwise download and save it as it is
-        img_file = StringIO(urllib.urlopen(self.remote).read())
+        req = urllib2.Request(self.remote)
+        req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
+        img_file = StringIO(urllib2.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
@@ -1315,7 +1317,6 @@ class AccountSelect(gtk.Window):
         """Create Add Account window"""
         self.add_win = AccountSelectAdd(self.pixbufs)
         self.add_win.add_button.connect("clicked", self.add_account)
-        self.add_win.show_all()
         
     def add_account(self, widget):
         """Closes Add Account window and tells the manager to add
@@ -1778,10 +1779,10 @@ class AccountSelectAdd(gtk.Window):
         self.set_border_width(10)
         
         # Labels
-        lbl_user = gtk.Label('Username')
-        lbl_user.set_size_request(70, -1)
-        lbl_passwd = gtk.Label('Password')
-        lbl_passwd.set_size_request(70, -1)
+        self.lbl_user = gtk.Label('Username')
+        self.lbl_user.set_size_request(70, -1)
+        self.lbl_passwd = gtk.Label('Password')
+        self.lbl_passwd.set_size_request(70, -1)
         lbl_api = gtk.Label('Website')
         lbl_api.set_size_request(70, -1)
         
@@ -1803,8 +1804,12 @@ class AccountSelectAdd(gtk.Window):
         self.cmb_api.pack_start(cell_name, True)
         self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
         self.cmb_api.add_attribute(cell_name, 'text', 1)
+        self.cmb_api.connect("changed", self._refresh)
         
         # Buttons
+        self.btn_auth = gtk.Button("Request PIN")
+        self.btn_auth.connect("clicked", self.do_auth)
+
         alignment = gtk.Alignment(xalign=0.5)
         bottombar = gtk.HBox(False, 5)
         self.add_button = gtk.Button(stock=gtk.STOCK_APPLY)
@@ -1816,12 +1821,13 @@ class AccountSelectAdd(gtk.Window):
         
         # HBoxes
         line1 = gtk.HBox(False, 5)
-        line1.pack_start(lbl_user, False, False, 0)
+        line1.pack_start(self.lbl_user, False, False, 0)
         line1.pack_start(self.txt_user, True, True, 0)
         
         line2 = gtk.HBox(False, 5)
-        line2.pack_start(lbl_passwd, False, False, 0)
+        line2.pack_start(self.lbl_passwd, False, False, 0)
         line2.pack_start(self.txt_passwd, True, True, 0)
+        line2.pack_start(self.btn_auth, False, False, 0)
         
         line3 = gtk.HBox(False, 5)
         line3.pack_start(lbl_api, False, False, 0)
@@ -1829,13 +1835,39 @@ class AccountSelectAdd(gtk.Window):
         
         # Join HBoxes
         vbox = gtk.VBox(False, 10)
+        vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(line1, False, False, 0)
         vbox.pack_start(line2, False, False, 0)
-        vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(alignment, False, False, 0)
         
         self.add(vbox)
+        self.show_all()
+        self.btn_auth.hide()
     
+    def _refresh(self, widget):
+        self.txt_user.set_text("")
+        self.txt_passwd.set_text("")
+
+        apiiter = self.cmb_api.get_active_iter()
+        api = self.model_api.get(apiiter, 0)[0]
+        if utils.available_libs[api][2] == utils.LOGIN_OAUTH:
+            self.lbl_user.set_text("Name")
+            self.lbl_passwd.set_text("PIN")
+            self.txt_passwd.set_visibility(True)
+            self.btn_auth.show()
+        else:
+            self.lbl_user.set_text("Username")
+            self.lbl_passwd.set_text("Password")
+            self.txt_passwd.set_visibility(False)
+            self.btn_auth.hide()
+
+    def do_auth(self, widget):
+        apiiter = self.cmb_api.get_active_iter()
+        api = self.model_api.get(apiiter, 0)[0]
+        url = utils.available_libs[api][4]
+
+        webbrowser.open(url, 2, True)
+
     def do_close(self, widget):
         self.destroy()
     

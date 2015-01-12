@@ -59,10 +59,14 @@ class lib(object):
     default_mediatype = None
 
     # Supported signals for the data handler
-    signals = { 'show_info_changed': None, }
+    signals = {
+            'show_info_changed': None,
+            'userconfig_changed': None,
+    }
     
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
+        self.userconfig = userconfig
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
         
@@ -77,12 +81,18 @@ class lib(object):
         self.api_info['mediatype'] = self.mediatype
         self.api_info['supported_mediatypes'] = self.mediatypes.keys()
 
-    def _emit_signal(self, signal, args=None):
+    def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
-                self.signals[signal](args)
+                self.signals[signal](*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
+
+    def _get_userconfig(self, key):
+        return self.userconfig.get(key)
+
+    def _set_userconfig(self, key, value):
+        self.userconfig[key] = value
 
     def connect_signal(self, signal, callback):
         try:
@@ -134,7 +144,7 @@ class lib(object):
         """
         raise NotImplementedError
     
-    def request_info(self, ids):
+    def request_info(self, items):
         # Request detailed information for requested shows
         raise NotImplementedError
     

@@ -144,6 +144,7 @@ class libvndb(lib):
         
         if name == 'ok':
             self.logged_in = True
+            self._set_userconfig('username', self.username)
             return True
         else:
             return False

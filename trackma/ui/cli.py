@@ -78,7 +78,12 @@ class Trackma_cmd(cmd.Cmd):
         self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
-        self.prompt = "{0}({1}) {2}> ".format(self.engine.api_info['name'], self.engine.api_info['mediatype'], self.engine.mediainfo['statuses_dict'][self.filter_num])
+        self.prompt = "{0}@{1}({2}) {3}> ".format(
+                self.engine.get_userconfig('username'),
+                self.engine.api_info['name'],
+                self.engine.api_info['mediatype'],
+                self.engine.mediainfo['statuses_dict'][self.filter_num]
+        )
 
     def _load_list(self, *args):
         showlist = self.engine.filter_list(self.filter_num)
@@ -614,9 +619,27 @@ class Trackma_accounts(AccountManager):
                 
                 print "--- Add account ---"
                 import getpass
-                username = raw_input('Enter username: ')
-                password = getpass.getpass('Enter password (no echo): ')
                 api = raw_input('Enter API (%s): ' % available_libs)
+                try:
+                    selected_api = utils.available_libs[api]
+                except KeyError:
+                    print "Invalid API."
+                    continue
+
+                if selected_api[2] == utils.LOGIN_PASSWD:
+                    username = raw_input('Enter username: ')
+                    password = getpass.getpass('Enter password (no echo): ')
+                elif selected_api[2] == utils.LOGIN_OAUTH:
+                    username = raw_input('Enter account name: ')
+                    print 'OAuth Authentication'
+                    print '--------------------'
+                    print 'This website requires OAuth authentication.'
+                    print 'Please go to the following URL with your browser,'
+                    print 'follow the steps and paste the given PIN code here.'
+                    print
+                    print selected_api[3]
+                    print
+                    password = raw_input('PIN: ')
                 
                 try:
                     self.add_account(username, password, api)
@@ -684,4 +707,3 @@ def main():
         main_cmd.cmdloop()
     except utils.TrackmaFatal, e:
         print "%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET)
-    
