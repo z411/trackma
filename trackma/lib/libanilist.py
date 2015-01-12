@@ -18,7 +18,7 @@ from trackma.lib.lib import lib
 import trackma.utils as utils
 
 import json
-import urllib, urllib2
+import urllib, urllib2, socket
 import time
 
 class libanilist(lib):
@@ -100,11 +100,20 @@ class libanilist(lib):
             self.total_str = "total_chapters"
             self.watched_str = "chapters_read"
             self.airing_str = "publishing_status"
+            self.status_translate = {
+                'publishing': 1,
+                'not yet published': 2,
+            }
         else:
             self.total_str = "total_episodes"
             self.watched_str = "episodes_watched"
             self.airing_str = "airing_status"
-        
+            self.status_translate = {
+                'currently airing': 1,
+                'finished airing': 2,
+                'not yet aired': 3,
+            }
+       
         #handler=urllib2.HTTPHandler(debuglevel=1)
         #self.opener = urllib2.build_opener(handler)
         self.opener = urllib2.build_opener()
@@ -134,6 +143,8 @@ class libanilist(lib):
                 raise utils.APIError("Invalid PIN. It is either probably expired or meant for another application.")
             else:
                 raise utils.APIError("Connection error: %s" % e)
+        except socket.timeout:
+            raise utils.APIError("Connection timed out.")
     
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
@@ -221,9 +232,9 @@ class libanilist(lib):
                 show.update({
                     'id': showid,
                     'title': item[self.mediatype]['title_romaji'],
-                    #'aliases': item[self.mediatype]['synonyms'],
+                    'aliases': [item[self.mediatype]['title_english']],
                     'type': item[self.mediatype]['type'],
-                    'status': item[self.mediatype][self.airing_str],
+                    'status': self.status_translate[item[self.mediatype][self.airing_str]],
                     'my_progress': item[self.watched_str],
                     'my_status': item['list_status'],
                     'my_score': self._score(item['score']),
@@ -237,13 +248,21 @@ class libanilist(lib):
         return showlist
     
     def add_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Adding item %s..." % item['title'])
         return self._update_entry(item, "POST")
     
     def update_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Updating item %s..." % item['title'])
         return self._update_entry(item, "PUT")
 
     def delete_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Deleting item %s..." % item['title'])
+
         data = self._request("DELETE", "animelist/{}".format(item['id']), auth=True)
+        return True
         
     def search(self, criteria):
         self.check_credentials()
@@ -251,7 +270,7 @@ class libanilist(lib):
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, urllib.quote_plus(criteria)), get=param)
+        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
 
         showlist = []
 
@@ -261,7 +280,7 @@ class libanilist(lib):
             show.update({
                 'id': showid,
                 'title': item['title_romaji'],
-                #'aliases': item['synonyms'],
+                'aliases': [item['title_english']],
                 'type': item['type'],
                 'status': item[self.airing_str],
                 'total': item[self.total_str],
@@ -290,9 +309,6 @@ class libanilist(lib):
         return self.mediatypes[self.mediatype]
 
     def _update_entry(self, item, method):
-        self.check_credentials()
-        self.msg.info(self.name, "Updating show %s..." % item['title'])
-
         values = { 'id': item['id'] }
         if 'my_progress' in item.keys():
             values[self.watched_str] = item['my_progress']
@@ -309,7 +325,7 @@ class libanilist(lib):
         info.update({
             'id': item['id'],
             'title': item['title_romaji'],
-            'status': self.status_translate(item[self.airing_str]),
+            'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
             'extra': [
                 ('Description',     item.get('description')),
@@ -323,9 +339,6 @@ class libanilist(lib):
         })
         return info
     
-    def status_translate(self, status):
-        return None
-
     def _score(self, s):
         return 0 if s is None else s
         

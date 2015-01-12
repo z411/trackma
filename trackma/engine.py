@@ -302,7 +302,7 @@ class Engine:
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        return self.data_handler.search(criteria)
+        return self.data_handler.search(str(criteria).strip())
     
     def add_show(self, show):
         """
