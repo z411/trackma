@@ -58,6 +58,7 @@ class Trackma(QtGui.QMainWindow):
     selected_show_id = None
     show_lists = None
     finish = False
+    was_maximized = False
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
@@ -450,9 +451,14 @@ class Trackma(QtGui.QMainWindow):
     ### Slots
     def s_hide(self):
         if self.isVisible():
+            self.was_maximized = self.isMaximized()
             self.hide()
         else:
-            self.show()
+            self.setGeometry(self.geometry())
+            if self.was_maximized:
+                self.showMaximized()
+            else:
+                self.show()
     
     def s_tray_clicked(self, reason):
         if reason == QtGui.QSystemTrayIcon.Trigger:
