@@ -117,7 +117,7 @@ class libanilist(lib):
         #handler=urllib2.HTTPHandler(debuglevel=1)
         #self.opener = urllib2.build_opener(handler)
         self.opener = urllib2.build_opener()
-        self.opener.addheaders = [('User-agent', 'TestClient/0.1')]
+        self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
         
     def _request(self, method, url, get=None, post=None, auth=False):
         if get:
