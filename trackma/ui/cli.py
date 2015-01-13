@@ -247,7 +247,7 @@ class Trackma_cmd(cmd.Cmd):
             
             # Tell the engine to add the show
             try:
-                self.engine.add_show(show)
+                self.engine.add_show(show, self.filter_num)
             except utils.TrackmaError, e:
                 self.display_error(e)
     

@@ -305,7 +305,7 @@ class Engine:
         """
         return self.data_handler.search(str(criteria).strip())
     
-    def add_show(self, show):
+    def add_show(self, show, status=None):
         """
         Adds **show** to the list and queues the list update
         for the next sync.
@@ -314,6 +314,13 @@ class Engine:
         if not self.mediainfo.get('can_add'):
             raise utils.EngineError('Operation not supported by API.')
         
+        # Set to the requested status
+        if status:
+            if status not in self.mediainfo['statuses']:
+                raise utils.EngineError('Invalid status.')
+            
+            show['my_status'] = status
+
         # Add in data handler
         self.data_handler.queue_add(show)
         

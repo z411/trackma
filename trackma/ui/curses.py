@@ -453,9 +453,9 @@ class Trackma_urwid(object):
     def addsearch_do(self, show):
         self.dialog.close()
         # Add show as current status
-        show['my_status'] = self.filters_nums[self.cur_filter]
+        _filter = self.filters_nums[self.cur_filter]
         try:
-            self.engine.add_show(show)
+            self.engine.add_show(show, _filter)
         except utils.TrackmaError, e:
             self.error(e.message)
         

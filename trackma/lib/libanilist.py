@@ -68,7 +68,7 @@ class libanilist(lib):
         'status_finish': 'completed',
         'statuses':  ['reading', 'completed', 'on-hold', 'dropped', 'plan to read'],
         'statuses_dict': {
-            'reading': 'Watching',
+            'reading': 'Reading',
             'completed': 'Completed',
             'on-hold': 'On Hold',
             'dropped': 'Dropped',
