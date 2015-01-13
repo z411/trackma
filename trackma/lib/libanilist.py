@@ -239,9 +239,9 @@ class libanilist(lib):
                     'aliases': [item[self.mediatype]['title_english']],
                     'type': item[self.mediatype]['type'],
                     'status': self.status_translate[item[self.mediatype][self.airing_str]],
-                    'my_progress': item[self.watched_str],
+                    'my_progress': self._c(item[self.watched_str]),
                     'my_status': item['list_status'],
-                    'my_score': self._score(item['score']),
+                    'my_score': self._c(item['score']),
                     'total': item[self.mediatype][self.total_str],
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
@@ -344,6 +344,6 @@ class libanilist(lib):
         })
         return info
     
-    def _score(self, s):
+    def _c(self, s):
         return 0 if s is None else s
         
