@@ -242,7 +242,7 @@ class libanilist(lib):
                     'my_progress': self._c(item[self.watched_str]),
                     'my_status': item['list_status'],
                     'my_score': self._c(item['score']),
-                    'total': item[self.mediatype][self.total_str],
+                    'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
                 })
