@@ -228,6 +228,9 @@ class libanilist(lib):
 
         for remotelist in data["lists"].itervalues():
             for item in remotelist:
+                if item['list_status'] not in self.media_info()['statuses']:
+                    continue
+
                 show = utils.show()
                 showid = item[self.mediatype]['id']
                 show.update({
