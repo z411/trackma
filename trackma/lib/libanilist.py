@@ -102,7 +102,8 @@ class libanilist(lib):
             self.airing_str = "publishing_status"
             self.status_translate = {
                 'publishing': 1,
-                'not yet published': 2,
+                'finished': 2,
+                'not yet published': 3,
             }
         else:
             self.total_str = "total_episodes"
@@ -218,8 +219,8 @@ class libanilist(lib):
 
         showlist = {}
 
-        with open('mangalist', 'w') as f:
-            json.dump(data, f, indent=2)
+        #with open('list', 'w') as f:
+        #    json.dump(data, f, indent=2)
 
         if not data["lists"]:
             # No lists returned so no need to continue
@@ -261,7 +262,7 @@ class libanilist(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
 
-        data = self._request("DELETE", "animelist/{}".format(item['id']), auth=True)
+        data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
         return True
         
     def search(self, criteria):
@@ -283,6 +284,7 @@ class libanilist(lib):
                 'aliases': [item['title_english']],
                 'type': item['type'],
                 'status': item[self.airing_str],
+                'my_status': self.media_info()['status_start'],
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
@@ -317,7 +319,7 @@ class libanilist(lib):
         if 'my_score' in item.keys():
             values['score'] = item['my_score']
 
-        data = self._request(method, "animelist", post=values, auth=True)
+        data = self._request(method, "{}list".format(self.mediatype), post=values, auth=True)
         return True
 
     def _parse_info(self, item):
