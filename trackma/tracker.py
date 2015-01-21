@@ -399,14 +399,22 @@ class Tracker(object):
     def _analyze(self, filename):
         aie = AnimeInfoExtractor(filename)
         return (aie.getName(), aie.getEpisode())
+
+    def _inotify_watch_recursive(self, fd, watch_dir):
+        self.msg.debug(self.name, 'inotify: Watching %s' % watch_dir)
+        inotifyx.add_watch(fd, watch_dir.encode('utf-8'), inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
+        
+        for root, dirs, files in os.walk(watch_dir):
+            for dir_ in dirs:
+                self._inotify_watch_recursive(fd, os.path.join(root, dir_))
     
     def _observe_inotify(self, watch_dir):
         self.msg.info(self.name, 'Using inotify.')
+
         timeout = -1
         fd = inotifyx.init()
         try:
-            wd = inotifyx.add_watch(fd, watch_dir,
-                 inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
+            self._inotify_watch_recursive(fd, watch_dir)
             while True:
                 events = inotifyx.get_events(fd, timeout)
                 if events:
