@@ -185,6 +185,9 @@ config_defaults = {
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
     'auto_date_change': True,
+    'tracker_type': "local",
+    'plex_host': "localhost",
+    'plex_port': "32400",
 }
 userconfig_defaults = {
     'mediatype': '',
