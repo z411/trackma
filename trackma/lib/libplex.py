@@ -14,7 +14,12 @@ def get_config():
 
 	plex_host_port = config['plex_host']+":"+config['plex_port']
 
-	return [config['plex_enabled'], plex_host_port]
+	if config['tracker_type'] == "plex":
+		enabled = True
+	else:
+		enabled = False
+
+	return [enabled, plex_host_port]
 
 def last_watched():
 	hostnport = get_config()[1]
