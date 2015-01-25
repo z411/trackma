@@ -22,6 +22,7 @@ import os
 from decimal import Decimal
 import difflib
 
+import trackma.lib.libplex as libplex
 import messenger
 import utils
 
@@ -338,6 +339,8 @@ class Tracker(object):
     last_state = STATE_NOVIDEO
     last_time = 0
     last_updated = False
+    plex_enabled = False
+    plex_log = [None, None]
     
     name = 'Tracker'
 
@@ -350,6 +353,7 @@ class Tracker(object):
     
         self.list = tracker_list
         self.process_name = process_name
+        self.plex_enabled = libplex.get_config()[0]
         
         tracker_args = (watch_dir, interval)
         self.wait_s = update_wait * 60
@@ -407,6 +411,10 @@ class Tracker(object):
         
         return False
 
+    def _get_plex_file(self):
+        last_watched = libplex.last_watched()
+        return last_watched
+
     def _analyze(self, filename):
         aie = AnimeInfoExtractor(filename)
         return (aie.getName(), aie.getEpisode())
@@ -453,6 +461,27 @@ class Tracker(object):
             (state, show_tuple) = self._get_playing_show()
             self.update_show_if_needed(state, show_tuple)
             
+            # Wait for the interval before running check again
+            time.sleep(interval)
+
+    def _observe_plex(self, interval):
+        self.msg.info(self.name, "Tracking Plex.")
+        plex_state = [None, None]
+
+        while True:
+            # This stores the last two states of the plex server and only
+            # updates if it changes from ACTIVE(playing/paused/buffering) 
+            # to IDLE.
+            plex_status = libplex.status()
+            plex_state.append(plex_status)
+
+            if (plex_state[-2] == "ACTIVE" and plex_state[-1] == "IDLE"):
+                (state, show_tuple) = self._get_playing_show()
+                self.update_show_if_needed(state, show_tuple)
+            elif plex_state[-1] == "NOT_RUNNING":
+                self.msg.warn(self.name, "Plex Media Server is not running.")
+
+            del plex_state[0]
             # Wait for the interval before running check again
             time.sleep(interval)
         
@@ -527,7 +556,10 @@ class Tracker(object):
             # Don't do anything if the Tracker is disabled
             return (STATE_NOVIDEO, None)
         
-        filename = self._get_playing_file(self.process_name)
+        if self.plex_enabled:
+            filename = self._get_plex_file()
+        else:
+            filename = self._get_playing_file(self.process_name)
         
         if filename:
             if filename == self.last_filename:
