@@ -1536,13 +1536,25 @@ class Settings(gtk.Window):
         lbl_searchdir.set_size_request(120, -1)
         lbl_tracker_enabled = gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
-        
+        lbl_tracker_plex_host_port = gtk.Label('Host and Port')
+        lbl_tracker_plex_host_port.set_size_request(120, -1)
+
         # Entries
         self.txt_process = gtk.Entry(4096)
         self.txt_searchdir = gtk.Entry(4096)
-        browse_button = gtk.Button('Browse...')
-        browse_button.connect("clicked", self.do_browse, 'Select search directory', self.txt_searchdir, True)
+        self.browse_button = gtk.Button('Browse...')
+        self.browse_button.connect("clicked", self.do_browse, 'Select search directory', self.txt_searchdir, True)
         self.chk_tracker_enabled = gtk.CheckButton()
+        self.txt_plex_host = gtk.Entry(4096)
+        self.txt_plex_port = gtk.Entry(5)
+        self.txt_plex_port.set_width_chars(5)
+        self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
+
+        # Radio buttons
+        self.rbtn_tracker_local = gtk.RadioButton(None, 'Local')
+        self.rbtn_tracker_plex = gtk.RadioButton(self.rbtn_tracker_local, 'Plex Media Server')
+        self.rbtn_tracker_plex.connect("toggled", self.tracker_type_sensitive)
+        self.rbtn_tracker_local.connect("toggled", self.tracker_type_sensitive)
         
         # Buttons
         alignment = gtk.Alignment(xalign=0.5)
@@ -1567,12 +1579,19 @@ class Settings(gtk.Window):
         line2 = gtk.HBox(False, 5)
         line2.pack_start(lbl_searchdir, False, False, 0)
         line2.pack_start(self.txt_searchdir, True, True, 0)
-        line2.pack_start(browse_button, False, False, 0)
+        line2.pack_start(self.browse_button, False, False, 0)
+
+        line7 = gtk.HBox(False, 5)
+        line7.pack_start(lbl_tracker_plex_host_port, False, False, 0)
+        line7.pack_start(self.txt_plex_host, True, True, 0)
+        line7.pack_start(self.txt_plex_port, True, True, 0)
         
         line3 = gtk.HBox(False, 5)
         line3.pack_start(lbl_tracker_enabled, False, False, 0)
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
-        
+        line3.pack_start(self.rbtn_tracker_local, False, False, 0)
+        line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
+
         ### Auto-retrieve ###
         header2 = gtk.Label()
         header2.set_text('<span size="10000"><b>Auto-retrieve</b></span>')
@@ -1660,6 +1679,7 @@ class Settings(gtk.Window):
         vbox.pack_start(line3, False, False, 0)
         vbox.pack_start(line1, False, False, 0)
         vbox.pack_start(line2, False, False, 0)
+        vbox.pack_start(line7, False, False, 0)
         vbox.pack_start(header2, False, False, 0)
         vbox.pack_start(line4, False, False, 0)
         vbox.pack_start(header3, False, False, 0)
@@ -1676,8 +1696,20 @@ class Settings(gtk.Window):
         self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
+        self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
+        self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
+
+        if self.engine.get_config('tracker_type') == 'local':
+            self.rbtn_tracker_local.set_active(True)
+            self.txt_plex_host.set_sensitive(False)
+            self.txt_plex_port.set_sensitive(False)
+        elif self.engine.get_config('tracker_type') == 'plex':
+            self.rbtn_tracker_plex.set_active(True)
+            self.txt_process.set_sensitive(False)
+            self.txt_searchdir.set_sensitive(False)
+            self.browse_button.set_sensitive(False)
         
         if self.engine.get_config('autoretrieve') == 'always':
             self.rbtn_autoret_always.set_active(True)
@@ -1705,9 +1737,17 @@ class Settings(gtk.Window):
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
+        self.engine.set_config('plex_host', self.txt_plex_host.get_text())
+        self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
         
+        # Tracker type
+        if self.rbtn_tracker_local.get_active():
+            self.engine.set_config('tracker_type', 'local')
+        elif self.rbtn_tracker_plex.get_active():
+            self.engine.set_config('tracker_type', 'plex')
+
         # Auto-retrieve
         if self.rbtn_autoret_always.get_active():
             self.engine.set_config('autoretrieve', 'always')
@@ -1746,6 +1786,27 @@ class Settings(gtk.Window):
     
     def radio_toggled(self, widget, spin):
         spin.set_sensitive(widget.get_active())
+
+    def tracker_type_sensitive(self, widget):
+        if self.chk_tracker_enabled.get_active():
+            if self.rbtn_tracker_local.get_active():
+                self.txt_process.set_sensitive(True)
+                self.txt_searchdir.set_sensitive(True)
+                self.browse_button.set_sensitive(True)
+                self.txt_plex_host.set_sensitive(False)
+                self.txt_plex_port.set_sensitive(False)
+            elif self.rbtn_tracker_plex.get_active():
+                self.txt_plex_host.set_sensitive(True)
+                self.txt_plex_port.set_sensitive(True)
+                self.txt_process.set_sensitive(False)
+                self.txt_searchdir.set_sensitive(False)
+                self.browse_button.set_sensitive(False)
+        else:
+            self.txt_process.set_sensitive(False)
+            self.txt_searchdir.set_sensitive(False)
+            self.browse_button.set_sensitive(False)
+            self.txt_plex_host.set_sensitive(False)
+            self.txt_plex_port.set_sensitive(False)
         
     def do_browse(self, widget, title, entry, dironly=False):
         browsew = gtk.FileChooserDialog(title,
