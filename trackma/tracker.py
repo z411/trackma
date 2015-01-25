@@ -467,7 +467,7 @@ class Tracker(object):
             if (plex_state[-2] == "ACTIVE" and plex_state[-1] == "IDLE"):
                 (state, show_tuple) = self._get_playing_show()
                 self.update_show_if_needed(state, show_tuple)
-            elif plex_state[-1] == "NOT_RUNNING":
+            elif (plex_state[-2] != "NOT_RUNNING" and plex_state[-1] == "NOT_RUNNING"):
                 self.msg.warn(self.name, "Plex Media Server is not running.")
 
             del plex_state[0]
