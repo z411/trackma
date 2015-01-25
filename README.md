@@ -16,10 +16,11 @@ Features
 
 Currently supported websites
 ----------------------------
-- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [Anilist](http://anilist.co/) (Anime, Manga)
 - [Hummingbird](http://hummingbird.me/) (Anime)
-- [VNDB](https://vndb.org/) (VNs)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
+- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [VNDB](https://vndb.org/) (VNs)
 
 Screenshots
 -----------
@@ -117,5 +118,6 @@ Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-Trackma was written by z411 <z411@krutt.org>
+Trackma was originally written by z411 <z411@krutt.org>
+For other authors see AUTHORS file
 GTK icon designed by shuuichi
