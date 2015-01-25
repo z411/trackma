@@ -385,14 +385,25 @@ class Tracker(object):
             raise Exception("Call to undefined signal.")
 
     def _get_playing_file(self, players):
-        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
-        output = lsof.communicate()[0].decode('utf-8')
-        fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
+        players_re = re.compile(players)
+        file_re = re.compile("(.*(\.mkv|\.mp4|\.avi))")
         
-        for line in output.splitlines():
-            match = fileregex.match(line)
-            if match is not None:
-                return os.path.basename(match.group(1))
+        pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
+        for pid in pids:
+            try:
+                with open(os.path.join('/proc', pid, 'cmdline'), 'rb') as f:
+                    pname = f.read()
+                
+                if players_re.search(pname):
+                    for fd in os.listdir(os.path.join('/proc', pid, 'fd')):
+                        try:
+                            fname = os.path.basename(os.readlink(os.path.join('/proc', pid, 'fd', fd)))
+                            if file_re.match(fname):
+                                return fname
+                        except OSError: # file has already been closed
+                            continue
+            except IOError: # process has already terminated
+                continue
         
         return False
 
