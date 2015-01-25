@@ -486,10 +486,13 @@ class Tracker(object):
             time.sleep(interval)
         
     def _tracker(self, watch_dir, interval):
-        if inotify_available:
-            self._observe_inotify(watch_dir)
+        if self.plex_enabled:
+            self._observe_plex(interval)
         else:
-            self._observe_polling(interval)
+            if inotify_available:
+                self._observe_inotify(watch_dir)
+            else:
+                self._observe_polling(interval)
     
     def update_show_if_needed(self, state, show_tuple):
         if show_tuple:
