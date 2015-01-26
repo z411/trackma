@@ -45,7 +45,7 @@ def last_watched():
 	return fname
 
 def status():
-	enabled, hostnport = get_config()
+	hostnport = get_config()[1]
 
 	try: 
 		session_url = u"http://"+hostnport+u"/status/sessions"
@@ -62,6 +62,9 @@ def status():
 
 def playing_file():
 	hostnport = get_config()[1]
+
+	if status() == "IDLE":
+		return False
 
 	session_url = u"http://"+hostnport+u"/status/sessions"
 	sdoc = xdmd.parse(urllib2.urlopen(session_url))

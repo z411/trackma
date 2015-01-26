@@ -401,7 +401,7 @@ class Tracker(object):
         return False
 
     def _get_plex_file(self):
-        last_watched = libplex.last_watched()
+        last_watched = libplex.playing_file()
         return last_watched
 
     def _analyze(self, filename):
@@ -455,22 +455,20 @@ class Tracker(object):
 
     def _observe_plex(self, interval):
         self.msg.info(self.name, "Tracking Plex.")
-        plex_state = [None, None]
 
         while True:
             # This stores the last two states of the plex server and only
-            # updates if it changes from ACTIVE(playing/paused/buffering) 
-            # to IDLE.
+            # updates if it's ACTIVE.
             plex_status = libplex.status()
-            plex_state.append(plex_status)
+            self.plex_log.append(plex_status)
 
-            if (plex_state[-2] == "ACTIVE" and plex_state[-1] == "IDLE"):
+            if self.plex_log[-1] == "ACTIVE" or self.plex_log[-1] == "IDLE":
                 (state, show_tuple) = self._get_playing_show()
                 self.update_show_if_needed(state, show_tuple)
-            elif (plex_state[-2] != "NOT_RUNNING" and plex_state[-1] == "NOT_RUNNING"):
+            elif (self.plex_log[-2] != "NOT_RUNNING" and self.plex_log[-1] == "NOT_RUNNING"):
                 self.msg.warn(self.name, "Plex Media Server is not running.")
 
-            del plex_state[0]
+            del self.plex_log[0]
             # Wait for the interval before running check again
             time.sleep(interval)
         
