@@ -1708,8 +1708,6 @@ class Settings(gtk.Window):
         elif self.engine.get_config('tracker_type') == 'plex':
             self.rbtn_tracker_plex.set_active(True)
             self.txt_process.set_sensitive(False)
-            self.txt_searchdir.set_sensitive(False)
-            self.browse_button.set_sensitive(False)
         
         if self.engine.get_config('autoretrieve') == 'always':
             self.rbtn_autoret_always.set_active(True)
@@ -1791,20 +1789,14 @@ class Settings(gtk.Window):
         if self.chk_tracker_enabled.get_active():
             if self.rbtn_tracker_local.get_active():
                 self.txt_process.set_sensitive(True)
-                self.txt_searchdir.set_sensitive(True)
-                self.browse_button.set_sensitive(True)
                 self.txt_plex_host.set_sensitive(False)
                 self.txt_plex_port.set_sensitive(False)
             elif self.rbtn_tracker_plex.get_active():
                 self.txt_plex_host.set_sensitive(True)
                 self.txt_plex_port.set_sensitive(True)
                 self.txt_process.set_sensitive(False)
-                self.txt_searchdir.set_sensitive(False)
-                self.browse_button.set_sensitive(False)
         else:
             self.txt_process.set_sensitive(False)
-            self.txt_searchdir.set_sensitive(False)
-            self.browse_button.set_sensitive(False)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
         
