@@ -401,8 +401,8 @@ class Tracker(object):
         return False
 
     def _get_plex_file(self):
-        last_watched = libplex.playing_file()
-        return last_watched
+        playing_file = libplex.playing_file()
+        return playing_file
 
     def _analyze(self, filename):
         aie = AnimeInfoExtractor(filename)
