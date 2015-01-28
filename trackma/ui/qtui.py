@@ -1371,6 +1371,8 @@ class SettingsDialog(QtGui.QDialog):
         if self.tracker_enabled.isChecked():
             self.tracker_interval.setEnabled(True)
             self.tracker_update_wait.setEnabled(True)
+            self.tracker_type_local.setEnabled(True)
+            self.tracker_type_plex.setEnabled(True)
             if self.tracker_type_local.isChecked():
                 self.tracker_process.setEnabled(True)
                 self.plex_host.setEnabled(False)
@@ -1380,6 +1382,8 @@ class SettingsDialog(QtGui.QDialog):
                 self.plex_port.setEnabled(True)
                 self.tracker_process.setEnabled(False)
         else:
+            self.tracker_type_local.setEnabled(False)
+            self.tracker_type_plex.setEnabled(False)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
             self.tracker_process.setEnabled(False)
