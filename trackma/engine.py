@@ -17,7 +17,6 @@
 import re
 import os
 import subprocess
-import atexit
 from decimal import Decimal
 
 import threading
@@ -71,9 +70,6 @@ class Engine:
         """Reads configuration file and asks the data handler for the API info."""
         self.msg = messenger.Messenger(message_handler)
 
-        # Register cleanup function when program exits
-        atexit.register(self._cleanup)
-        
         self._load(account)
         self._init_data_handler()
     
