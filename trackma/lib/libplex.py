@@ -29,23 +29,23 @@ def get_config():
 def last_watched():
     # returns the last watched file in plex (deprecated, playing_file() is used now)
     hostnport = get_config()[1]
-    sections = u"http://"+hostnport+u"/library/sections"
+    sections = "http://"+hostnport+"/library/sections"
     sedoc = xdmd.parse(urllib2.urlopen(sections))
 
-    leng = int(sedoc.getElementsByTagName(u"MediaContainer")[0].getAttribute(u"size"))
+    leng = int(sedoc.getElementsByTagName("MediaContainer")[0].getAttribute("size"))
 
     # compare timestamps in the sections to get the filename
     tstamps = []
     for item in xrange(leng):
-        key = sedoc.getElementsByTagName(u"Directory")[item].getAttribute(u"key")
-        xd = xdmd.parse(urllib2.urlopen(sections+u"/"+key+u"/recentlyViewed"))
-        tstamps.append(xd.getElementsByTagName(u"Video")[0].getAttribute(u"lastViewedAt"))
+        key = sedoc.getElementsByTagName("Directory")[item].getAttribute("key")
+        xd = xdmd.parse(urllib2.urlopen(sections+"/"+key+"/recentlyViewed"))
+        tstamps.append(xd.getElementsByTagName("Video")[0].getAttribute("lastViewedAt"))
 
-    key = sedoc.getElementsByTagName(u"Directory")[tstamps.index(max(tstamps))].getAttribute(u"key")
-    url = sections+u"/"+key+u"/recentlyViewed"
+    key = sedoc.getElementsByTagName("Directory")[tstamps.index(max(tstamps))].getAttribute("key")
+    url = sections+"/"+key+"/recentlyViewed"
 
     doc = xdmd.parse(urllib2.urlopen(url))
-    attr = doc.getElementsByTagName(u"Part")[0].getAttribute(u"file")
+    attr = doc.getElementsByTagName("Part")[0].getAttribute("file")
     fname = urllib2.unquote(ntpath.basename(attr)[:-4])
 
     return fname
@@ -56,17 +56,17 @@ def status():
     hostnport = get_config()[1]
 
     try:
-        session_url = u"http://"+hostnport+u"/status/sessions"
+        session_url = "http://"+hostnport+"/status/sessions"
         sdoc = xdmd.parse(urllib2.urlopen(session_url))
     except urllib2.URLError:
-        return u"NOT_RUNNING"
+        return "NOT_RUNNING"
 
-    active = int(sdoc.getElementsByTagName(u"MediaContainer")[0].getAttribute(u"size"))
+    active = int(sdoc.getElementsByTagName("MediaContainer")[0].getAttribute("size"))
 
     if active:
-        return u"ACTIVE"
+        return "ACTIVE"
     else:
-        return u"IDLE"
+        return "IDLE"
 
 
 def playing_file():
@@ -76,10 +76,10 @@ def playing_file():
     if status() == "IDLE":
         return False
 
-    session_url = u"http://"+hostnport+u"/status/sessions"
+    session_url = "http://"+hostnport+"/status/sessions"
     sdoc = xdmd.parse(urllib2.urlopen(session_url))
 
-    attr = sdoc.getElementsByTagName(u"Part")[0].getAttribute(u"file")
+    attr = sdoc.getElementsByTagName("Part")[0].getAttribute("file")
     name = urllib2.unquote(ntpath.basename(attr)[:-4])
 
     return name
