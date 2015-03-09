@@ -270,7 +270,6 @@ class libanilist(lib):
         
     def search(self, criteria):
         self.check_credentials()
-        criteria = str(criteria)
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}

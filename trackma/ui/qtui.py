@@ -1891,7 +1891,7 @@ class Engine_Worker(QtCore.QThread):
 
     def _search(self, terms):
         try:
-            results = self.engine.search(terms)
+            results = self.engine.search(unicode(terms).encode('utf-8'))
         except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
