@@ -261,7 +261,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(args[0])
             
-            do_delete = raw_input("Delete %s? [y/N] " % show['title'])
+            do_delete = raw_input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
             if do_delete.lower() == 'y':
                 self.engine.delete_show(show)
         except utils.TrackmaError, e:
@@ -304,7 +304,7 @@ class Trackma_cmd(cmd.Cmd):
             
             # Ask if we should update the show to the last episode
             if played_episode and playing_next:
-                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'], played_episode))
+                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), played_episode))
                 if do_update.lower() == 'y':
                     self.engine.set_episode(show['id'], played_episode)
         except utils.TrackmaError, e:
@@ -415,7 +415,7 @@ class Trackma_cmd(cmd.Cmd):
         if len(queue):
             print "Queue:"
             for show in queue:
-                print "- %s" % show['title']
+                print "- %s" % show['title'].encode('utf-8')
         else:
             print "Queue is empty."
     
