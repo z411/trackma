@@ -274,7 +274,12 @@ class libanilist(lib):
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
+        try:
+            data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
+        except ValueError:
+            # An empty document, without any JSON, is returned
+            # when there are no results.
+            return []
 
         showlist = []
 
