@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import cPickle
 import os.path
 
 import messenger
@@ -448,19 +447,19 @@ class Data(object):
 
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
-        self.showlist = cPickle.load( open( self.cache_file , "rb" ) )
+        self.showlist = utils.load_data(self.cache_file)
     
     def _save_cache(self):
         self.msg.debug(self.name, "Saving cache...")
-        cPickle.dump(self.showlist, open( self.cache_file , "wb" ) )
+        utils.save_data(self.showlist, self.cache_file)
     
     def _load_info(self):
         self.msg.debug(self.name, "Reading info DB...")
-        self.infocache = cPickle.load( open( self.info_file , "rb" ) )
+        self.infocache = utils.load_data(self.info_file)
     
     def _save_info(self):
         self.msg.debug(self.name, "Saving info DB...")
-        cPickle.dump(self.infocache, open( self.info_file , "wb" ) )
+        utils.save_data(self.infocache, self.info_file)
 
     def _load_userconfig(self):
         self.msg.debug(self.name, "Reading userconfig...")
@@ -472,20 +471,20 @@ class Data(object):
 
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")
-        self.queue = cPickle.load( open( self.queue_file , "rb" ) )
+        self.queue = utils.load_data(self.queue_file)
     
     def _save_queue(self):
         self.msg.debug(self.name, "Saving queue...")
-        cPickle.dump(self.queue, open( self.queue_file , "wb" ) )
+        utils.save_data(self.queue, self.queue_file)
 
     def _load_meta(self):
         self.msg.debug(self.name, "Reading metadata...")
-        loadedmeta = cPickle.load( open( self.meta_file , "rb" ) )
+        loadedmeta = utils.load_data(self.meta_file)
         self.meta.update(loadedmeta)
     
     def _save_meta(self):
         self.msg.debug(self.name, "Saving metadata...")
-        cPickle.dump(self.meta, open( self.meta_file , "wb" ) )
+        utils.save_data(self.meta, self.meta_file)
         
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""

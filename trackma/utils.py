@@ -17,6 +17,7 @@
 import os, re, shutil, copy
 import subprocess
 import json
+import cPickle as pickle
 
 VERSION = '0.3'
 
@@ -58,6 +59,14 @@ def save_config(config_dict, filename):
     with open(filename, 'wb') as configfile:
         json.dump(config_dict, configfile, sort_keys=True,
                   indent=4, separators=(',', ': '))
+
+def load_data(filename):
+    with open(filename, 'rb') as datafile:
+        return pickle.load(datafile)
+
+def save_data(data, filename):
+    with open(filename, 'wb') as datafile:
+        pickle.dump(data, datafile)
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
