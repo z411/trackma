@@ -788,7 +788,7 @@ class AccountDialog(Dialog):
         self.adding_data['apiname'] = data
         try:
             self.adding_data['api'] = api = utils.available_libs[data]
-        except IndexError:
+        except KeyError:
             self.adding = False
             self.frame.footer = urwid.Text("Error: Invalid API.")
             self.frame.set_focus('body')
