@@ -216,7 +216,6 @@ class Trackma(QtGui.QMainWindow):
         self.show_progress_bar = QtGui.QProgressBar()
         self.show_progress_btn = QtGui.QPushButton('Update')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
-        self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QtGui.QPushButton('Play')
         self.show_plus_btn = QtGui.QPushButton('+')
         self.show_plus_btn.clicked.connect(self.s_plus_episode)
