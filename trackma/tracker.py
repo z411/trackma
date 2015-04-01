@@ -389,7 +389,13 @@ class Tracker(object):
             raise Exception("Call to undefined signal.")
 
     def _get_playing_file(self, players):
-        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+        try:
+            lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+        except OSError:
+            self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
+            self.disable()
+            return False
+
         output = lsof.communicate()[0].decode('utf-8')
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
         
