@@ -525,7 +525,7 @@ class Engine:
         self._emit_signal('show_deleted', show)
         
     def _search_video(self, titles, episode):
-        best_candidate = (None, 0)
+        best_candidate = (None, 0, None)
 
         matcher = difflib.SequenceMatcher()
 
@@ -533,10 +533,11 @@ class Engine:
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
             # Analyze what's the title and episode of the file
             aie = tracker.AnimeInfoExtractor(filename)
-            (candidate_title, candidate_episode) = (aie.getName(), aie.getEpisode())
+            candidate_title = aie.getName()
+            candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
             # Skip this file if we couldn't analyze it or it isn't the episode we want
-            if not candidate_title or candidate_episode != episode:
+            if not candidate_title or not (episode >= candidate_episode_start and (candidate_episode_end == '' or episode <= candidate_episode_end)):
                 continue
             
             matcher.set_seq1(candidate_title.lower())
@@ -550,9 +551,9 @@ class Engine:
                 # better than threshold and it's better than
                 # what we've seen yet
                 if ratio > 0.7 and ratio > best_candidate[1]:
-                    best_candidate = (fullpath, ratio)
+                    best_candidate = (fullpath, ratio, aie.getEpisode())
 
-        return best_candidate[0]
+        return best_candidate[0], best_candidate[2]
     
     def get_new_episodes(self, showlist):
         results = list()
@@ -602,7 +603,7 @@ class Engine:
             
             titles = self.get_show_titles(show)
 
-            filename = self._search_video(titles, playep)
+            filename, endep = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 if self.tracker:
@@ -615,7 +616,7 @@ class Engine:
                     raise utils.EngineError('Player not found, check your config.json')
                 if self.tracker:
                     self.tracker.enable()
-                return playep
+                return endep
             else:
                 raise utils.EngineError('Episode file not found.')
     
