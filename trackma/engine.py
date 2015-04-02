@@ -537,7 +537,11 @@ class Engine:
             candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
             # Skip this file if we couldn't analyze it or it isn't the episode we want
-            if not candidate_title or not (episode >= candidate_episode_start and (candidate_episode_end == '' or episode <= candidate_episode_end)):
+            if (
+                not candidate_title or
+                not (episode >= candidate_episode_start and episode <= candidate_episode_end) or
+                (candidate_episode_end == '' and episode != candidate_episode_start)
+               ):
                 continue
             
             matcher.set_seq1(candidate_title.lower())
@@ -564,7 +568,7 @@ class Engine:
 
             titles = self.get_show_titles(show)
 
-            filename = self._search_video(titles, show['my_progress']+1)
+            (filename, ep) = self._search_video(titles, show['my_progress']+1)
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
