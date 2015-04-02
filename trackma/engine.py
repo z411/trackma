@@ -568,7 +568,7 @@ class Engine:
 
             titles = self.get_show_titles(show)
 
-            filename = self._search_video(titles, show['my_progress']+1)
+            (filename, ep) = self._search_video(titles, show['my_progress']+1)
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
