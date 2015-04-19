@@ -238,4 +238,8 @@ qt_defaults = {
     'close_to_tray': True,
     'notifications': True,
     'start_in_tray': False,
+    'last_x': 0,
+    'last_y': 0,
+    'last_width': 740,
+    'last_height': 480,
 }

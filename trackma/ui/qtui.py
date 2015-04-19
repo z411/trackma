@@ -205,6 +205,8 @@ class Trackma(QtGui.QMainWindow):
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
         self.setMinimumSize(740, 480)
+        self.setGeometry(self.config['last_x'], self.config['last_y'],
+                         self.config['last_width'], self.config['last_height'])
         
         self.show_image = QtGui.QLabel('Trackma-qt')
         self.show_image.setFixedHeight( 149 )
@@ -325,8 +327,16 @@ class Trackma(QtGui.QMainWindow):
     ### GUI Functions
     def _exit(self):
         self._busy()
+        self._store_geometry()
         self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
+
+    def _store_geometry(self):
+        self.config['last_x'] = self.x()
+        self.config['last_y'] = self.y()
+        self.config['last_width'] = self.width()
+        self.config['last_height'] = self.height()
+        utils.save_config(self.config, self.configfile)
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
@@ -569,9 +579,9 @@ class Trackma(QtGui.QMainWindow):
             self.s_show_selected(item)
 
     def s_plus_episode(self):
-		self._busy(True)
-		self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()+1)
-		self.show_progress.setValue(self.show_progress.value()+1)
+        self._busy(True)
+        self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()+1)
+        self.show_progress.setValue(self.show_progress.value()+1)
 		
     def s_set_episode(self):
         self._busy(True)
