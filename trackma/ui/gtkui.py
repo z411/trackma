@@ -1931,7 +1931,7 @@ class ShowSearch(gtk.Window):
         
         self.engine = engine
 
-        fullbox = gtk.HBox(False, 5)
+        fullbox = gtk.HPaned()
 
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_title('Search')
@@ -1975,8 +1975,8 @@ class ShowSearch(gtk.Window):
         vbox.pack_start(searchbar, False, False, 0)
         vbox.pack_start(sw, True, True, 0)
         vbox.pack_start(alignment, False, False, 0)
-        fullbox.pack_start(vbox)
-        fullbox.pack_start(self.info)
+        fullbox.pack1(vbox)
+        fullbox.pack2(self.info)
         self.add(fullbox)
     
     def do_add(self, widget, path=None, view_column=None):
