@@ -205,8 +205,9 @@ class Trackma(QtGui.QMainWindow):
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
         self.setMinimumSize(740, 480)
-        self.setGeometry(self.config['last_x'], self.config['last_y'],
-                         self.config['last_width'], self.config['last_height'])
+        if self.config['remember_geometry']:
+            self.setGeometry(self.config['last_x'], self.config['last_y'],
+                             self.config['last_width'], self.config['last_height'])
         
         self.show_image = QtGui.QLabel('Trackma-qt')
         self.show_image.setFixedHeight( 149 )
@@ -327,7 +328,8 @@ class Trackma(QtGui.QMainWindow):
     ### GUI Functions
     def _exit(self):
         self._busy()
-        self._store_geometry()
+        if self.config['remember_geometry']:
+            self._store_geometry()
         self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
@@ -1239,8 +1241,17 @@ class SettingsDialog(QtGui.QDialog):
         g_icon_layout.addWidget(self.notifications)
         g_icon.setLayout(g_icon_layout)
 
+        # Group: Window
+        g_window = QtGui.QGroupBox('Window')
+        g_window.setFlat(True)
+        self.remember_geometry = QtGui.QCheckBox('Remember window size and position')
+        g_window_layout = QtGui.QVBoxLayout()
+        g_window_layout.addWidget(self.remember_geometry)
+        g_window.setLayout(g_window_layout)
+
         # UI layout
         page_ui_layout.addWidget(g_icon)
+        page_ui_layout.addWidget(g_window)
         page_ui.setLayout(page_ui_layout)
         
         # Content
@@ -1320,6 +1331,7 @@ class SettingsDialog(QtGui.QDialog):
         self.close_to_tray.setChecked(self.config['close_to_tray'])
         self.start_in_tray.setChecked(self.config['start_in_tray'])
         self.notifications.setChecked(self.config['notifications'])
+        self.remember_geometry.setChecked(self.config['remember_geometry'])
 
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
         self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
@@ -1378,6 +1390,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['close_to_tray'] = self.close_to_tray.isChecked()
         self.config['start_in_tray'] = self.start_in_tray.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
+        self.config['remember_geometry'] = self.remember_geometry.isChecked()
 
         utils.save_config(self.config, self.configfile)
 
