@@ -63,9 +63,9 @@ class Trackma_urwid(object):
         ('focus','standout', ''),
         ('head','light red', 'black'),
         ('header','bold', ''),
-        ('status', 'yellow', 'dark blue'),
+        ('status', 'white', 'dark blue'),
         ('error', 'light red', 'dark blue'),
-        ('window', 'yellow', 'dark blue'),
+        ('window', 'white', 'dark blue'),
         ('button', 'black', 'light gray'),
         ('button hilight', 'white', 'dark red'),
         ('item_airing', 'dark blue', ''),
@@ -305,7 +305,7 @@ class Trackma_urwid(object):
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
-        helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
+        helptext += "More controls:\n  Left/Right:Change Filter\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
         helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
