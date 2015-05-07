@@ -121,6 +121,8 @@ class Trackma_gtk(object):
         mb_show = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         self.mb_play.connect("activate", self.do_play, True)
+        mb_neweps = gtk.MenuItem('Scan new episodes')
+        mb_neweps.connect("activate", self.do_neweps)
         self.mb_info = gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.do_info)
         mb_web = gtk.MenuItem("Open web site")
@@ -138,6 +140,8 @@ class Trackma_gtk(object):
         self.mb_addsearch.connect("activate", self.do_addsearch)
        
         mb_show.append(self.mb_addsearch)
+        mb_show.append(mb_neweps)
+        mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
         mb_show.append(mb_web)
@@ -521,6 +525,9 @@ class Trackma_gtk(object):
     def do_play(self, widget, playnext):
         threading.Thread(target=self.task_play, args=(playnext,)).start()
     
+    def do_neweps(self, widget):
+        threading.Thread(target=self.task_neweps).start()
+
     def do_delete(self, widget):
         try:
             show = self.engine.get_show_info(self.selected_show)
@@ -631,6 +638,21 @@ class Trackma_gtk(object):
             self.error(e.message)
             print e.message
         
+        self.status("Ready.")
+        self.allow_buttons(True)
+
+    def task_neweps(self):
+        self.allow_buttons(False)
+        _filter = self.engine.mediainfo['status_start']
+        filtered = self.engine.filter_list(_filter)
+
+        try:
+            result = self.engine.get_new_episodes(filtered)
+            for show in result:
+                self.changed_show(show)
+        except utils.TrackmaError, e:
+            self.error(e.message)
+
         self.status("Ready.")
         self.allow_buttons(True)
     
