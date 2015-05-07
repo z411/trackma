@@ -943,6 +943,8 @@ class Trackma_gtk(object):
                 mb_copy.connect("activate", self.do_copytoclip)
                 mb_alt_title = gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.do_altname)
+                mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+                mb_delete.connect("activate", self.do_delete)
 
                 menu.append(mb_play)
                 menu.append(mb_info)
@@ -950,6 +952,8 @@ class Trackma_gtk(object):
                 menu.append(gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
+                menu.append(gtk.SeparatorMenuItem())
+                menu.append(mb_delete)
 
                 menu.show_all()
                 menu.popup(None, None, None, event.button, event.time)
