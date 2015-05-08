@@ -467,6 +467,7 @@ class Tracker(object):
             # updates if it's ACTIVE.
             plex_status = libplex.status()
             self.plex_log.append(plex_status)
+            self.wait_s = libplex.timer_from_file()
 
             if self.plex_log[-1] == "ACTIVE" or self.plex_log[-1] == "IDLE":
                 (state, show_tuple) = self._get_playing_show()
@@ -476,7 +477,7 @@ class Tracker(object):
 
             del self.plex_log[0]
             # Wait for the interval before running check again
-            time.sleep(interval)
+            time.sleep(30)
         
     def _tracker(self, watch_dir, interval):
         if self.plex_enabled:

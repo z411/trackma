@@ -69,6 +69,21 @@ def status():
         return "IDLE"
 
 
+def timer_from_file():
+    # returns 80% of video duration for the update timer
+    hostnport = get_config()[1]
+    session_url = "http://"+hostnport+"/status/sessions"
+    sdoc = xdmd.parse(urllib2.urlopen(session_url))
+
+    if status() == "IDLE":
+        return 20
+
+    duration = int(sdoc.getElementsByTagName("Video")[0].getAttribute("duration"))
+    # voffset = int(sdoc.getElementsByTagName("Video")[0].getAttribute("viewOffset"))
+
+    return round((duration*0.80)/60000)*60
+
+
 def playing_file():
     # returns the filename of the currently playing file
     hostnport = get_config()[1]
