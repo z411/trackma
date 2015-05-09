@@ -467,9 +467,9 @@ class Tracker(object):
             # updates if it's ACTIVE.
             plex_status = libplex.status()
             self.plex_log.append(plex_status)
-            self.wait_s = libplex.timer_from_file()
 
             if self.plex_log[-1] == "ACTIVE" or self.plex_log[-1] == "IDLE":
+                self.wait_s = libplex.timer_from_file()
                 (state, show_tuple) = self._get_playing_show()
                 self.update_show_if_needed(state, show_tuple)
             elif (self.plex_log[-2] != "NOT_RUNNING" and self.plex_log[-1] == "NOT_RUNNING"):
