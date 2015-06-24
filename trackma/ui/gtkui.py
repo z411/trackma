@@ -258,7 +258,12 @@ class Trackma_gtk(object):
         self.add_epp_button.connect("clicked", self.do_add_epp)
         self.add_epp_button.set_sensitive(False)
         line2.pack_start(self.add_epp_button, False, False, 0)
-        
+
+        self.rem_epp_button = gtk.Button('-')
+        self.rem_epp_button.connect("clicked", self.do_rem_epp)
+        self.rem_epp_button.set_sensitive(False)
+        line2.pack_start(self.rem_epp_button, False, False, 0)
+
         self.update_button = gtk.Button('Update')
         self.update_button.connect("clicked", self.do_update)
         self.update_button.set_sensitive(False)
@@ -546,7 +551,17 @@ class Trackma_gtk(object):
             self.show_ep_num.set_value(show['my_progress'])
         except utils.TrackmaError, e:
             self.error(e.message)
-    
+
+    def do_rem_epp(self, widget):
+        ep = self.show_ep_num.get_value_as_int()
+        try:
+            if(ep > 0):
+                    show = self.engine.set_episode(self.selected_show, ep - 1)
+                    self.show_ep_num.set_value(show['my_progress'])
+
+        except utils.TrackmaError, e:
+            self.error(e.message)
+
     def do_update(self, widget):
         ep = self.show_ep_num.get_value_as_int()
         try:
@@ -893,6 +908,7 @@ class Trackma_gtk(object):
                 self.update_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
                 self.add_epp_button.set_sensitive(boolean)
+                self.rem_epp_button.set_sensitive(boolean)
             
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
