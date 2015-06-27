@@ -221,6 +221,8 @@ class Trackma(QtGui.QMainWindow):
         self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QtGui.QPushButton('Play')
         self.show_plus_btn = QtGui.QPushButton('+')
+        self.show_rem_btn = QtGui.QPushButton('-')
+        self.show_rem_btn.clicked.connect(self.s_rem_episode)
         self.show_plus_btn.clicked.connect(self.s_plus_episode)
         self.show_play_btn.clicked.connect(lambda: self.s_play(False))
         self.show_play_next_btn = QtGui.QPushButton('Next')
@@ -236,6 +238,7 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(self.show_progress_bar)
         left_box.addRow(show_progress_label, self.show_progress)
         left_box.addRow(self.show_plus_btn)
+        left_box.addRow(self.show_rem_btn)
         left_box.addRow(self.show_progress_btn)
         left_box.addRow(self.show_play_btn)
         left_box.addRow(show_score_label, self.show_score)
@@ -534,6 +537,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
         self.show_plus_btn.setEnabled(True)
+        self.show_plus_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
         self.show_play_next_btn.setEnabled(True)
         self.show_status.setEnabled(True)
@@ -584,7 +588,13 @@ class Trackma(QtGui.QMainWindow):
         self._busy(True)
         self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()+1)
         self.show_progress.setValue(self.show_progress.value()+1)
-		
+
+    def s_rem_episode(self):
+        ##self._busy(True)
+        if not self.show_progress.value() <= 0:
+            self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()-1)
+            self.show_progress.setValue(self.show_progress.value()-1)
+
     def s_set_episode(self):
         self._busy(True)
         self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value())
