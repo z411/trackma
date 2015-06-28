@@ -25,18 +25,18 @@ class libmelative(lib):
     API class to communiate with Melative.
 
     http://www.melative.com
-    
+
     """
     name = 'libmelative'
-    
+
     api_info =  { 'name': 'Melative', 'version': 'v0.1', 'merge': False }
-    
+
     mediatypes = dict()
-    
+
     # All mediatypes share the same statuses so we'll reuse them
     statuses = [1, 2, 3, 4, 6]
     statuses_dict = { 1: 'Current', 2: 'Complete', 3: 'Hold', 4: 'Dropped', 6: 'Wishlisted' }
-    
+
     default_mediatype = 'anime'
     mediatypes['anime'] = {
         'has_progress': True,
@@ -86,46 +86,46 @@ class libmelative(lib):
         'score_max': 10,
         'score_step': 0.1,
     }
-    
+
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         super(libmelative, self).__init__(messenger, account, userconfig)
-        
+
         self.username = account['username']
-        
+
         self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("Melative", "melative.com:80", account['username'], account['password']);
-        
+
         self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
         self.opener = urllib2.build_opener(self.handler)
-        
+
         urllib2.install_opener(self.opener)
-        
+
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
-        
+
         try:
             response = self.opener.open("http://melative.com/api/account/verify_credentials.json")
             self.logged_in = True
-            
+
             # Parse user information
             data = json.load(response)
-            
+
             self.username = data['name']
             self.userid = data['id']
 
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError("Incorrect credentials.")
-    
+
     def fetch_list(self):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
-        
+
         # Get a JSON list from API
         response = self.opener.open("http://melative.com/api/library.json?user={0}&context_type={1}".format(self.username, self.mediatype))
         data = json.load(response)
-        
+
         # Load data from the JSON stream into a parsed dictionary
         statuses = self.media_info()['statuses_dict']
         itemlist = dict()
@@ -133,25 +133,25 @@ class libmelative(lib):
             entity = record['entity']
             segment = record['segment']
             itemid = int(entity['id'])
-            
+
             # use appropiate number for the show state
             _status = 0
             for k, v in statuses.items():
                 if v.lower() == record['state']:
                     _status = k
-            
+
             # use show length if available
             try:
                 _total = int(entity['length'])
             except TypeError:
                 _total = 0
-            
+
             # use show progress if needed
             if self.mediatypes[self.mediatype]['has_progress']:
                 _progress = int(segment['name'])
             else:
                 _progress = 0
-                
+
             show = utils.show()
             show['id'] = itemid
             show['title'] = entity['aliases'][0].encode('utf-8')
@@ -163,16 +163,16 @@ class libmelative(lib):
             show['status'] = 0 #placeholder
 
             itemlist[itemid] = show
-        
+
         return itemlist
-            
+
         #except urllib2.HTTPError, e:
         #    raise utils.APIError("Error getting list. %s" % e.message)
 
     def update_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, 'Updating show %s...' % item['title'])
-        
+
         changes = dict()
         if self.media_info()['has_progress'] and 'my_progress' in item.keys():
             # We need to update the segment, so we call api/scrobble
@@ -192,14 +192,14 @@ class libmelative(lib):
 
         if 'my_score' in item.keys():
             changes['rating'] = item['my_score']
-        
+
         data = self._urlencode(changes)
 
         try:
             response = self.opener.open("http://melative.com/api/scrobble.json", data)
         except urllib2.HTTPError, e:
             raise utils.APIError("Error updating: " + str(e.code))
-        
+
         return True
 
     def _urlencode(self, in_dict):
