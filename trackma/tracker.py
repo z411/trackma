@@ -329,7 +329,7 @@ class AnimeInfoExtractor(object):
         filename = filename.rstrip('([{')
         self.__extractShowName(filename)
 
-    
+
 class Tracker(object):
     msg = None
     active = True
@@ -341,7 +341,7 @@ class Tracker(object):
     last_updated = False
     plex_enabled = False
     plex_log = [None, None]
-    
+
     name = 'Tracker'
 
     signals = { 'playing' : None,
@@ -350,31 +350,31 @@ class Tracker(object):
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
-    
+
         self.list = tracker_list
         self.process_name = process_name
         self.plex_enabled = libplex.get_config()[0]
-        
+
         tracker_args = (watch_dir, interval)
         self.wait_s = update_wait * 60
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
         self.msg.debug(self.name, 'Enabling tracker...')
         tracker_t.start()
-    
+
     def set_message_handler(self, message_handler):
         """Changes the message handler function on the fly."""
         self.msg = message_handler
-     
+
     def disable(self):
         self.active = False
-    
+
     def enable(self):
         self.active = True
-        
+
     def update_list(self, tracker_list):
         self.list = tracker_list
-    
+
     def connect_signal(self, signal, callback):
         try:
             self.signals[signal] = callback
@@ -398,12 +398,12 @@ class Tracker(object):
 
         output = lsof.communicate()[0].decode('utf-8')
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
-        
+
         for line in output.splitlines():
             match = fileregex.match(line)
             if match is not None:
                 return os.path.basename(match.group(1))
-        
+
         return False
 
     def _get_plex_file(self):
@@ -417,11 +417,11 @@ class Tracker(object):
     def _inotify_watch_recursive(self, fd, watch_dir):
         self.msg.debug(self.name, 'inotify: Watching %s' % watch_dir)
         inotifyx.add_watch(fd, watch_dir.encode('utf-8'), inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
-        
+
         for root, dirs, files in os.walk(watch_dir):
             for dir_ in dirs:
                 self._inotify_watch_recursive(fd, os.path.join(root, dir_))
-    
+
     def _observe_inotify(self, watch_dir):
         self.msg.info(self.name, 'Using inotify.')
 
@@ -448,14 +448,14 @@ class Tracker(object):
             self.msg.warn(self.name, 'Watch directory not found! Tracker will stop.')
         finally:
             os.close(fd)
-        
+
     def _observe_polling(self, interval):
         self.msg.warn(self.name, "inotifyx not available; using polling (slow).")
         while True:
             # This runs the tracker and update the playing show if necessary
             (state, show_tuple) = self._get_playing_show()
             self.update_show_if_needed(state, show_tuple)
-            
+
             # Wait for the interval before running check again
             time.sleep(interval)
 
@@ -478,7 +478,7 @@ class Tracker(object):
             del self.plex_log[0]
             # Wait for the interval before running check again
             time.sleep(30)
-        
+
     def _tracker(self, watch_dir, interval):
         if self.plex_enabled:
             self._observe_plex(interval)
@@ -487,16 +487,16 @@ class Tracker(object):
                 self._observe_inotify(watch_dir)
             else:
                 self._observe_polling(interval)
-    
+
     def update_show_if_needed(self, state, show_tuple):
         if show_tuple:
             (show, episode) = show_tuple
-            
+
             if not self.last_show_tuple or show['id'] != self.last_show_tuple[0]['id'] or episode != self.last_show_tuple[1]:
                 # There's a new show detected, so
                 # let's save the show information and
                 # the time we detected it first
-                
+
                 # But if we're watching a new show, let's make sure turn off
                 # the Playing flag on that one first
                 if self.last_show_tuple and self.last_show_tuple[0] != show:
@@ -507,16 +507,16 @@ class Tracker(object):
 
                 self.last_time = time.time()
                 self.last_updated = False
-            
+
             if not self.last_updated:
                 # Check if we need to update the show yet
                 if episode == (show['my_progress'] + 1):
                     timedif = time.time() - self.last_time
-                    
+
                     if timedif > self.wait_s:
                         # Time has passed, let's update
                         self._emit_signal('update', show['id'], episode)
-                        
+
                         self.last_updated = True
                     else:
                         self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s-timedif))
@@ -538,31 +538,31 @@ class Tracker(object):
                 self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
             elif state == STATE_NOT_FOUND:
                 self.msg.warn(self.name, 'Found player but show not in list.')
-            
+
             # Clear any show previously playing
             if self.last_show_tuple:
                 self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
                 self.last_updated = False
                 self.last_time = 0
                 self.last_show_tuple = None
-        
+
         self.last_state = state
-            
+
     def _get_playing_show(self):
         if not self.active:
             # Don't do anything if the Tracker is disabled
             return (STATE_NOVIDEO, None)
-        
+
         if self.plex_enabled:
             filename = self._get_plex_file()
         else:
             filename = self._get_playing_file(self.process_name)
-        
+
         if filename:
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
                 return (4, self.last_show_tuple)
-            
+
             self.last_filename = filename
 
             # Do a regex to the filename to get
@@ -570,13 +570,13 @@ class Tracker(object):
             (show_title, show_ep) = self._analyze(filename)
             if not show_title:
                 return (STATE_UNRECOGNIZED, None) # Format not recognized
-            
+
             # Use difflib to see if the show title is similar to
             # one we have in the list
             highest_ratio = (None, 0)
             matcher = difflib.SequenceMatcher()
             matcher.set_seq1(show_title.lower())
-            
+
             # Compare to every show in our list to see which one
             # has the most similar name
             for item in self.list:
@@ -586,7 +586,7 @@ class Tracker(object):
                     ratio = matcher.ratio()
                     if ratio > highest_ratio[1]:
                         highest_ratio = (item, ratio)
-            
+
             playing_show = highest_ratio[0]
             if highest_ratio[1] > 0.7:
                 return (STATE_PLAYING, (playing_show, show_ep))

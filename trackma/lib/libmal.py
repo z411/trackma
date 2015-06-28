@@ -36,13 +36,13 @@ class libmal(lib):
 
     """
     name = 'libmal'
-    
+
     username = '' # TODO Must be filled by check_credentials
     logged_in = False
     opener = None
-    
+
     api_info =  { 'name': 'MyAnimeList', 'version': 'v0.3', 'merge': False }
-    
+
     default_mediatype = 'anime'
     mediatypes = dict()
     mediatypes['anime'] = {
@@ -77,7 +77,7 @@ class libmal(lib):
         'score_max': 10,
         'score_step': 1,
     }
-    
+
     # Authorized User-Agent for Trackma
     url = 'http://myanimelist.net/api/'
     useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
@@ -96,7 +96,7 @@ class libmal(lib):
 			('User-Agent', self.useragent),
 			('Authorization', auth_string),
 		]
-    
+
     def _request(self, url):
         """
         Requests the page as gzip and uncompresses it
@@ -117,12 +117,12 @@ class libmal(lib):
         else:
             # If the content is not gzipped return it as-is
             return response
-   
+
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
         if self.logged_in:
             return True     # Already logged in
-        
+
         self.msg.info(self.name, 'Logging in...')
         try:
             response = self._request(self.url + "account/verify_credentials.xml")
@@ -138,21 +138,21 @@ class libmal(lib):
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError("Incorrect credentials.")
-   
+
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
-        
+
         try:
             # Get an XML list from MyAnimeList API
             data = self._request("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
-            
+
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-            
+
             if self.mediatype == 'anime':
                 self.msg.info(self.name, 'Parsing anime list...')
                 return self._parse_anime(root)
@@ -165,14 +165,14 @@ class libmal(lib):
             raise utils.APIError("Error getting list.")
         except IOError, e:
             raise utils.APIError("Error reading list: %s" % e.message)
-    
+
     def add_show(self, item):
         """Adds a new show in the server"""
         self.check_credentials()
         self.msg.info(self.name, "Adding show %s..." % item['title'])
-        
+
         xml = self._build_xml(item)
-        
+
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
         data = self._urlencode(values)
@@ -181,14 +181,14 @@ class libmal(lib):
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error adding: ' + str(e.code))
-        
+
     def update_show(self, item):
         """Sends a show update to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
-        
+
         xml = self._build_xml(item)
-        
+
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
         data = self._urlencode(values)
@@ -197,26 +197,26 @@ class libmal(lib):
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
-    
+
     def delete_show(self, item):
         """Sends a show delete to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
-        
+
         try:
             response = self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
             return True
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
-        
+
     def search(self, criteria):
         """Searches MyAnimeList database for the queried show"""
         self.msg.info(self.name, "Searching for %s..." % criteria)
-        
+
         # Send the urlencoded query to the search API
         query = self._urlencode({'q': criteria})
         data = self._request(self.url + self.mediatype + "/search.xml?" + query)
-        
+
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
@@ -228,20 +228,20 @@ class libmal(lib):
                 raise utils.APIError("Parser error: %s" % repr(e.message))
         except IOError:
             raise utils.APIError("IO error: %s" % repr(e.message))
-        
+
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':
             episodes_str = 'chapters'
         else:
             episodes_str = 'episodes'
-                
+
         # Since the MAL API returns the status as a string, and
         # we handle statuses as integers, we need to convert them
         if self.mediatype == 'anime':
             status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
         elif self.mediatype == 'manga':
             status_translate = {'Publishing': 1, 'Finished': 2}
-        
+
         entries = list()
         for child in root.iter('entry'):
             show = utils.show()
@@ -269,10 +269,10 @@ class libmal(lib):
                     ]
             })
             entries.append(show)
-        
+
         self._emit_signal('show_info_changed', entries)
         return entries
-    
+
     def _translate_synopsis(self, string):
         if string is None:
             return None
@@ -313,7 +313,7 @@ class libmal(lib):
                 aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
-            
+
             show = utils.show()
             show.update({
                 'id':           show_id,
@@ -333,7 +333,7 @@ class libmal(lib):
             })
             showlist[show_id] = show
         return showlist
-    
+
     def _parse_manga(self, root):
         """Converts an XML manga list to a dictionary"""
         mangalist = dict()
@@ -343,7 +343,7 @@ class libmal(lib):
                 aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
-            
+
             show = utils.show()
             show.update({
                 'id':           manga_id,
@@ -363,27 +363,27 @@ class libmal(lib):
             })
             mangalist[manga_id] = show
         return mangalist
-    
+
     def _build_xml(self, item):
         """
         Creates an "anime|manga data" XML to be used in the
         add, update and delete methods.
-        
-        More information: 
+
+        More information:
           http://myanimelist.net/modules.php?go=api#animevalues
           http://myanimelist.net/modules.php?go=api#mangavalues
-        
+
         """
-        
+
         # Start building XML
         root = ET.Element("entry")
-        
+
         # Use the correct name depending on mediatype
         if self.mediatype == 'anime':
             progressname = 'episode'
         else:
             progressname = 'chapter'
-        
+
         # Update necessary keys
         if 'my_progress' in item.keys():
             episode = ET.SubElement(root, progressname)
@@ -400,7 +400,7 @@ class libmal(lib):
         if 'my_finish_date' in item.keys():
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
-            
+
         return ET.tostring(root)
 
     def _date2str(self, date):
@@ -690,6 +690,6 @@ class libmal(lib):
         entities["rsaquo"] =   u'\u203A'
         entities["euro"] =     u'\u20AC'
         parser.entity.update(entities)
-        
+
         return parser
- 
+

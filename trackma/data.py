@@ -26,7 +26,7 @@ import time
 class Data(object):
     """
     Data Handler Class
-    
+
     Class for keeping data in memory, handling list cache and
     update queues. This module cares about keeping the data
     safe and up to date, and it handles commands given by the engine,
@@ -38,7 +38,7 @@ class Data(object):
     """
     name = 'Data'
     version = 1
-    
+
     msg = None
     api = None
     showlist = None
@@ -48,21 +48,21 @@ class Data(object):
     meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': dict() }
 
     autosend_timer = None
-    
+
     signals = {
                 'show_synced':       None,
                 'queue_changed':     None,
               }
-    
+
     def __init__(self, messenger, config, account, mediatype):
         """Checks if the config is correct and creates an API object."""
         self.msg = messenger
         self.config = config
         self.msg.info(self.name, "Initializing...")
- 
+
         # Get filenames
         userfolder = "%s.%s" % (account['username'], account['api'])
-        self.userconfig_file =  utils.get_filename(userfolder, 'user.json') 
+        self.userconfig_file =  utils.get_filename(userfolder, 'user.json')
 
         # Handle userconfig and media type to load
         self._load_userconfig()
@@ -79,47 +79,47 @@ class Data(object):
             apimodule = sys.modules[modulename]
         except ImportError, e:
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
-        
+
         # Instance API
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, account, self.userconfig)
-        
+
         # Set mediatype
         mediatype = self.userconfig.get('mediatype')
         self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
-        
+
         # Get filenames
         self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
         self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
         self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
         self.meta_file = utils.get_filename(userfolder, '%s.meta' % mediatype)
         self.lock_file = utils.get_filename(userfolder,  'lock')
-        
+
         # Connect signals
         self.api.connect_signal('show_info_changed', self.info_update)
         self.api.connect_signal('userconfig_changed', self.userconfig_update)
-    
+
     def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
                 self.signals[signal](*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
-            
+
     def connect_signal(self, signal, callback):
         try:
             self.signals[signal] = callback
         except KeyError:
             raise utils.DataFatal("Invalid signal.")
-        
+
     def set_message_handler(self, message_handler):
         self.msg = message_handler
         self.api.set_message_handler(self.msg)
-        
+
     def start(self):
         """
         Does all necessary tasks to start the data handler
-        
+
         This should be called before doing any other operation with the data handler,
         as it loads the list cache (or downloads it if necessary) and queue.
 
@@ -127,17 +127,17 @@ class Data(object):
         # Lock the database
         self.msg.debug(self.name, "Locking database...")
         self._lock()
- 
+
         # Load different caches
         if self._meta_exists():
             self._load_meta()
-        
+
         if self._queue_exists():
             self._load_queue()
 
         if self._info_exists():
             self._load_info()
-        
+
         # If there is a list cache, load from it
         # otherwise query the API for a remote list
         if self._cache_exists():
@@ -165,13 +165,13 @@ class Data(object):
                 self.download_data()
             except utils.APIError, e:
                 raise utils.APIFatal(e.message)
- 
+
         # Create autosend thread if needed
         if self.config['autosend'] == 'hours':
             self.autosend()
 
         return (self.api.api_info, self.api.media_info())
-    
+
     def unload(self, force=False):
         """
         Does unloading of the data handler
@@ -180,7 +180,7 @@ class Data(object):
         as it does necessary operations to close the API and the data handler itself.
 
         """
-        self.msg.debug(self.name, "Unloading...") 
+        self.msg.debug(self.name, "Unloading...")
 
         # Cancel autosend thread
         if self.autosend_timer:
@@ -190,15 +190,15 @@ class Data(object):
         if not force:
             if self.config['autosend_at_exit']:
                 self.process_queue()
-        
+
             self._save_meta()
-            
+
         self._unlock()
-    
+
     def get(self):
         """Get list from memory"""
         return self.showlist
-    
+
     def search(self, criteria):
         # Tell API to search
         results = self.api.search(criteria)
@@ -207,49 +207,49 @@ class Data(object):
             return results
         else:
             raise utils.DataError('No results.')
-       
+
     def queue_add(self, show):
         """
         Queues a show add
-        
+
         Calls this to add a show to the list, and the remote add
         will be queued.
-        
+
         show: Show dictionary
-        
+
         """
         showid = show['id']
-        
+
         # Add to the list
         if self.showlist.get(showid):
             raise utils.DataError("Show already in the list.")
-        
+
         self.showlist[showid] = show
-        
+
         # Check if the show add is already in queue
         exists = False
         for q in self.queue:
             if q['id'] == showid and q['action'] == 'add':
                 # This shouldn't happen
                 raise utils.DataError("Show already in the queue.")
-        
+
         if not exists:
             # Use the whole show as a queue item
             item = show
             item['action'] = 'add'
             self.queue.append(item)
-        
+
         show['queued'] = True
-        
+
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued add for %s" % show['title'])
-        
+
     def queue_update(self, show, key, value):
         """
         Queues a show update
-        
+
         Call this to change anything of an item in the list, as it will be
         modified locally and queued for update in the next remote sync.
 
@@ -259,10 +259,10 @@ class Data(object):
         """
         if key not in show.keys():
             raise utils.DataError('Invalid key for queue update.')
-        
+
         # Do update on memory
         show[key] = value
-        
+
         # Check if the show update is already in queue
         exists = False
         for q in self.queue:
@@ -271,63 +271,63 @@ class Data(object):
                 q[key] = value
                 exists = True
                 break
-            
+
         if not exists:
             # Create queue item and append it
             item = {'id': show['id'], 'action': 'update', 'title': show['title']}
             item[key] = value
             self.queue.append(item)
-        
+
         show['queued'] = True
-        
+
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued update for %s" % show['title'])
-        
+
         # Immediately process the action if necessary
         if (self.config['autosend'] == 'always' or
            (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
            (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size'])):
             self.process_queue()
-    
+
     def queue_delete(self, show):
         """
         Queues a show delete
-        
+
         Calls this to delete a show from the list, and the remote delete
         will be queued.
-        
+
         show: Show dictionary
-        
+
         """
         showid = show['id']
-        
+
         # Delete from the list
         if not self.showlist.get(showid):
             raise utils.DataError("Show not in the list.")
-        
+
         item = self.showlist.pop(showid)
-        
+
         # Check if the show add is already in queue
         exists = False
         for q in self.queue:
             if q['id'] == showid and q['action'] == 'delete':
                 # This shouldn't happen
                 raise utils.DataError("Show delete already in the queue.")
-        
+
         if not exists:
             # Use the whole show as a queue item
             item['action'] = 'delete'
             self.queue.append(item)
-        
+
         show['queued'] = True
-        
+
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', len(self.queue))
         self.msg.info(self.name, "Queued delete for %s" % item['title'])
-    
+
     def queue_clear(self):
         """Clears the queue completely."""
         if self.queue:
@@ -335,11 +335,11 @@ class Data(object):
             self._save_queue()
             self._emit_signal('queue_changed', len(self.queue))
             self.msg.info(self.name, "Cleared queue.")
-        
+
     def process_queue(self):
         """
         Send updates in queue to the API
-        
+
         It starts sending all the queued updates to the API for it to update
         the remote list. Any successful updates get removed from the queue,
         and failed updates stay there to be processed the next time.
@@ -347,22 +347,22 @@ class Data(object):
         """
         if len(self.queue):
             self.msg.info(self.name, 'Processing queue...')
-            
+
             # Load the cache if it wasn't loaded for some reason
             if not self.showlist:
                 self._load_cache()
-            
+
             # Check log-in TODO
             #try:
             #    self.api.check_credentials()
             #except utils.APIError, e:
             #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
-            
+
             # Run through queue
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
                 showid = show['id']
-                
+
                 try:
                     # Call the API to do the requested operation
                     operation = show.get('action')
@@ -374,11 +374,11 @@ class Data(object):
                         self.api.delete_show(show)
                     else:
                         self.msg.warn(self.name, "Unknown operation in queue, skipping...")
-                    
+
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
                         self._emit_signal('show_synced', self.showlist[showid])
-                    
+
                     self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
@@ -389,16 +389,16 @@ class Data(object):
                     self.queue.append(show)
                 #except TypeError:
                 #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
-            
+
             self.api.logout()
             self._save_cache()
             self._save_queue()
-            
+
         else:
             self.msg.debug(self.name, 'No items in queue.')
 
         self.meta['lastsend'] = time.time()
-    
+
     def info_get(self, show):
         try:
             showid = show['id']
@@ -410,12 +410,12 @@ class Data(object):
         for show in shows:
             showid = show['id']
             self.infocache[showid] = show
-        
+
         self._save_info()
 
     def userconfig_update(self):
         self._save_userconfig()
-    
+
     def altname_get(self, showid):
         return self.meta['altnames'].get(showid, '')
 
@@ -427,18 +427,18 @@ class Data(object):
 
     def altnames_get(self):
         return self.meta['altnames']
-    
+
     def get_show_attr(self, show, key):
         return show.get(key)
 
     def set_show_attr(self, show, key, value):
         show[key] = value
-        
+
     def autosend(self):
         # Check if we should autosend now
         if time.time() - self.meta['lastsend'] >= self.config['autosend_hours'] * 3600:
             self.process_queue()
-        
+
         # Repeat check only if the settings are still on 'hours'
         if self.config['autosend'] == 'hours':
             self.autosend_timer = threading.Timer(3600, self.autosend)
@@ -448,15 +448,15 @@ class Data(object):
     def _load_cache(self):
         self.msg.debug(self.name, "Reading cache...")
         self.showlist = utils.load_data(self.cache_file)
-    
+
     def _save_cache(self):
         self.msg.debug(self.name, "Saving cache...")
         utils.save_data(self.showlist, self.cache_file)
-    
+
     def _load_info(self):
         self.msg.debug(self.name, "Reading info DB...")
         self.infocache = utils.load_data(self.info_file)
-    
+
     def _save_info(self):
         self.msg.debug(self.name, "Saving info DB...")
         utils.save_data(self.infocache, self.info_file)
@@ -472,7 +472,7 @@ class Data(object):
     def _load_queue(self):
         self.msg.debug(self.name, "Reading queue...")
         self.queue = utils.load_data(self.queue_file)
-    
+
     def _save_queue(self):
         self.msg.debug(self.name, "Saving queue...")
         utils.save_data(self.queue, self.queue_file)
@@ -481,15 +481,15 @@ class Data(object):
         self.msg.debug(self.name, "Reading metadata...")
         loadedmeta = utils.load_data(self.meta_file)
         self.meta.update(loadedmeta)
-    
+
     def _save_meta(self):
         self.msg.debug(self.name, "Saving metadata...")
         utils.save_data(self.meta, self.meta_file)
-        
+
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""
         self.showlist = self.api.fetch_list()
-        
+
         if self.api.api_info['merge']:
             # The API needs information to be merged from the
             # info database
@@ -500,17 +500,17 @@ class Data(object):
                 # to the missing list for them to be requested
                 # to the API later.
                 showid = show['id']
-                
+
                 try:
                     info = self.infocache[showid]
                 except KeyError:
                     missing.append(show)
                     continue
-                
+
                 self.api.merge(show, info)
                 #show['title'] = info['title']
                 #show['image'] = info['image']
-            
+
             # Here we request the missing items and merge them
             # immedately with the list.
             if len(missing) > 0:
@@ -521,18 +521,18 @@ class Data(object):
 
                     #self.showlist[showid]['title'] = info['title']
                     #self.showlist[showid]['image'] = info['image']
-        
+
         self._save_cache()
         self.api.logout()
-        
+
         # Update last retrieved time
         self.meta['lastget'] = time.time()
         self.meta['version'] = self.version
         self._save_meta()
-        
+
     def _cache_exists(self):
         return os.path.isfile(self.cache_file)
-    
+
     def _info_exists(self):
         return os.path.isfile(self.info_file)
 
@@ -541,7 +541,7 @@ class Data(object):
 
     def _meta_exists(self):
         return os.path.isfile(self.meta_file)
-    
+
     def _lock(self):
         """Creates the database lock, returns an exception if it
         already exists"""
@@ -552,16 +552,16 @@ class Data(object):
             raise utils.DataFatal("Database is locked by another process. "
                             "If you\'re sure there's no other process is using it, "
                             "remove the file ~/.trackma/lock")
-        
+
         f = open(self.lock_file, 'w')
         f.close()
-    
+
     def _unlock(self):
         """Removes the database lock"""
         if self.config['debug_disable_lock']:
             return
 
         os.unlink(self.lock_file)
-    
+
     def get_api_info(self):
         return (self.api.api_info, self.api.media_info())
