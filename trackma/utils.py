@@ -48,7 +48,7 @@ def parse_config(filename, default):
         # Will just use the default config
         # and create the file for manual editing
         save_config(config, filename)
-    
+
     return config
 
 def save_config(config_dict, filename):
@@ -71,10 +71,10 @@ def save_data(data, filename):
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
         logfile.write(msg.encode('utf-8'))
-    
+
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
-    
+
     if subdirectory:
         path = os.path.expanduser(subdirectory)
     else:
@@ -82,7 +82,7 @@ def regex_find_videos(extensions, subdirectory=''):
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
             # Filename manipulation
-            
+
             extension = os.path.splitext(filename)[1][1:]
             match = __re.match(extension)
             if match:
@@ -92,7 +92,7 @@ def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.trackma', directory))
     if not os.path.isdir(path):
         os.mkdir(path)
-    
+
 def dir_exists(dirname):
     return os.path.isdir(dirname)
 
@@ -104,16 +104,16 @@ def copy_file(src, dest):
 
 def get_filename(subdir, filename):
     return os.path.expanduser(os.path.join('~', '.trackma', subdir, filename))
-    
+
 def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.trackma', filename))
-    
+
 def get_terminal_size(fd=1):
     """
     Returns height and width of current terminal. First tries to get
     size via termios.TIOCGWINSZ, then from environment. Defaults to 25
     lines x 80 columns if both methods fail.
- 
+
     :param fd: file descriptor (default: 1=stdout)
     """
     try:
@@ -122,9 +122,9 @@ def get_terminal_size(fd=1):
     except:
         try:
             hw = (os.environ['LINES'], os.environ['COLUMNS'])
-        except:  
+        except:
             hw = (25, 80)
- 
+
     return hw
 
 def show():
@@ -175,7 +175,7 @@ class DataFatal(TrackmaFatal):
 
 class APIFatal(TrackmaFatal):
     pass
-   
+
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',

@@ -32,7 +32,7 @@ class libanilist(lib):
     name = 'libanilist'
     msg = None
     logged_in = False
-    
+
     api_info = { 'name': 'Anilist', 'version': '1', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
@@ -81,21 +81,21 @@ class libanilist(lib):
 
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
-    
+
     url = "http://anilist.co/api/"
     client_id = "z411-gdjc3"
     _client_secret = "MyzwuYoMqPPglXwCTcexG1i"
-    
+
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
         super(libanilist, self).__init__(messenger, account, userconfig)
 
         self.pin = account['password'].strip()
         self.userid = userconfig['userid']
-        
+
         if len(self.pin) != 40:
             raise utils.APIFatal("Invalid PIN.")
-        
+
         if self.mediatype == 'manga':
             self.total_str = "total_chapters"
             self.watched_str = "chapters_read"
@@ -114,12 +114,12 @@ class libanilist(lib):
                 'finished airing': 2,
                 'not yet aired': 3,
             }
-       
+
         #handler=urllib2.HTTPHandler(debuglevel=1)
         #self.opener = urllib2.build_opener(handler)
         self.opener = urllib2.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
-        
+
     def _request(self, method, url, get=None, post=None, auth=False):
         if get:
             url = "{}?{}".format(url, urllib.urlencode(get))
@@ -128,14 +128,14 @@ class libanilist(lib):
 
         request = urllib2.Request(self.url + url, post)
         request.get_method = lambda: method
-        
+
         if auth:
             request.add_header('Content-Type', 'application/x-www-form-urlencoded')
             request.add_header('Authorization', '{0} {1}'.format(
                 self._get_userconfig('token_type').capitalize(),
                 self._get_userconfig('access_token'),
             ))
-        
+
         try:
             response = self.opener.open(request, timeout = 10)
             return json.load(response)
@@ -146,7 +146,7 @@ class libanilist(lib):
                 raise utils.APIError("Connection error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
-    
+
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
         param = {
@@ -156,12 +156,12 @@ class libanilist(lib):
             'code': self.pin,
         }
         data = self._request("POST", "auth/access_token", get=param)
-        
+
         self._set_userconfig('access_token', data['access_token'])
         self._set_userconfig('token_type', data['token_type'])
         self._set_userconfig('expires', data['expires'])
         self._set_userconfig('refresh_token', data['refresh_token'])
-        
+
         self.logged_in = True
         self._refresh_user_info()
         self._emit_signal('userconfig_changed')
@@ -175,33 +175,33 @@ class libanilist(lib):
             'refresh_token': self._get_userconfig('refresh_token'),
         }
         data = self._request("POST", "auth/access_token", get=param)
-        
+
         self._set_userconfig('access_token', data['access_token'])
         self._set_userconfig('token_type', data['token_type'])
         self._set_userconfig('expires', data['expires'])
-        
+
         self.logged_in = True
         self._refresh_user_info()
         self._emit_signal('userconfig_changed')
-    
+
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
         param = {'access_token': self._get_userconfig('access_token')}
 
         data = self._request("GET", "user", get=param)
-        
+
         self._set_userconfig('userid', data['id'])
         self._set_userconfig('username', data['display_name'])
-        
+
         self.userid = data['id']
-        
+
     def check_credentials(self):
         """
         Log into Anilist. Since it uses OAuth, we either request an access token
         or refresh the current one. If neither is necessary, just continue.
         """
         timestamp = int(time.time())
-        
+
         if not self._get_userconfig('access_token'):
             self._request_access_token()
         elif (timestamp+60) > self._get_userconfig('expires'):
@@ -209,11 +209,11 @@ class libanilist(lib):
         else:
             self.logged_in = True
         return True
-    
+
     def fetch_list(self):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
-        
+
         param = {'access_token': self._get_userconfig('access_token')}
         data = self._request("GET", "user/{0}/{1}list".format(self.userid, self.mediatype), get=param)
 
@@ -250,12 +250,12 @@ class libanilist(lib):
                 showlist[showid] = show
 
         return showlist
-    
+
     def add_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Adding item %s..." % item['title'])
         return self._update_entry(item, "POST")
-    
+
     def update_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Updating item %s..." % item['title'])
@@ -267,7 +267,7 @@ class libanilist(lib):
 
         data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
         return True
-        
+
     def search(self, criteria):
         self.check_credentials()
 
@@ -312,7 +312,7 @@ class libanilist(lib):
 
         self._emit_signal('show_info_changed', infolist)
         return infolist
-    
+
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
@@ -347,7 +347,7 @@ class libanilist(lib):
             ]
         })
         return info
-    
+
     def _c(self, s):
         return 0 if s is None else s
-        
+

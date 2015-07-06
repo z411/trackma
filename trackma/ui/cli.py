@@ -66,7 +66,7 @@ class Trackma_cmd(cmd.Cmd):
         'score':        2,
         'status':       2,
     }
- 
+
     def __init__(self):
         print 'Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411'
         print 'This program comes with ABSOLUTELY NO WARRANTY; for details type `info\''
@@ -87,7 +87,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def _load_list(self, *args):
         showlist = self.engine.filter_list(self.filter_num)
-        self.sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
+        self.sortedlist = sorted(showlist, key=itemgetter(self.sort))
 
     def _get_show(self, title):
         # Attempt parsing list index
@@ -101,7 +101,7 @@ class Trackma_cmd(cmd.Cmd):
     def start(self):
         """
         Initializes the engine
-        
+
         Creates an Engine object and starts it.
         """
         print 'Initializing engine...'
@@ -111,12 +111,12 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.start()
-        
+
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
         self._load_list()
         self._update_prompt()
-    
+
     def do_account(self, args):
         """
         account - Switch to a different account
@@ -135,7 +135,7 @@ class Trackma_cmd(cmd.Cmd):
     def do_filter(self, args):
         """
         filter - Changes the filtering of list by status; call with no arguments to see available filters
-        
+
         Usage: filter [filter type]
         """
         # Query the engine for the available statuses
@@ -149,11 +149,11 @@ class Trackma_cmd(cmd.Cmd):
                 print "Invalid filter."
         else:
             print "Available filters: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
-    
+
     def do_sort(self, args):
         """
         sort - Change sort
-        
+
         Usage: sort <sort type>
         Available types: id, title, my_progress, total, my_score
         """
@@ -163,17 +163,17 @@ class Trackma_cmd(cmd.Cmd):
             self._load_list()
         else:
             print "Invalid sort."
-    
+
     def do_mediatype(self, args):
         """
         mediatype - Reloads engine with different mediatype; call with no arguments to see supported mediatypes
-        
+
         Usage: mediatype [mediatype]
         """
         if args:
             if args[0] in self.engine.api_info['supported_mediatypes']:
                 self.engine.reload(mediatype=args[0])
-            
+
                 # Start with default filter selected
                 self.filter_num = self.engine.mediainfo['statuses'][0]
                 self._load_list()
@@ -182,14 +182,14 @@ class Trackma_cmd(cmd.Cmd):
                 print "Invalid mediatype."
         else:
             print "Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes'])
-        
+
     def do_list(self, args):
         """
         list - Lists all shows available in the local list as a nice formatted list.
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
-    
+
     def do_info(self, args):
         """
         info - Gets detailed information about a show in the local list.
@@ -207,31 +207,31 @@ class Trackma_cmd(cmd.Cmd):
         print "Title: %s" % details['title']
         for line in details['extra']:
             print "%s: %s" % line
-    
+
     def do_search(self, args):
         """
         search - Does a regex search on shows in the local lists and lists the matches.
-        
+
         Usage: search <pattern>
-        
+
         """
         showlist = self.engine.regex_list(args[0])
-        sortedlist = sorted(showlist, key=itemgetter(self.sort)) 
+        sortedlist = sorted(showlist, key=itemgetter(self.sort))
         self._make_list(sortedlist)
-    
+
     def do_add(self, args):
         """
         add - Searches for a show in the remote service and adds it to the local list.
-        
+
         Usage: add <pattern>
-        
+
         """
         try:
             entries = self.engine.search(args[0])
         except utils.TrackmaError, e:
             self.display_error(e)
             return
-        
+
         for i, entry in enumerate(entries, start=1):
             print "%d: (%s) %s" % (i, entry['type'], entry['title'])
         do_update = raw_input("Choose show to add (blank to cancel): ")
@@ -244,29 +244,29 @@ class Trackma_cmd(cmd.Cmd):
             except IndexError:
                 print "Invalid show."
                 return
-            
+
             # Tell the engine to add the show
             try:
                 self.engine.add_show(show, self.filter_num)
             except utils.TrackmaError, e:
                 self.display_error(e)
-    
+
     def do_delete(self, args):
         """
         delete - Deltes a show from the local list.
-        
+
         Usage: delete <show index or title>
-        
+
         """
         try:
             show = self._get_show(args[0])
-            
+
             do_delete = raw_input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
             if do_delete.lower() == 'y':
                 self.engine.delete_show(show)
         except utils.TrackmaError, e:
             self.display_error(e)
-        
+
     def do_neweps(self, args):
         """
         neweps - Searches for new episodes in the configured search directory.
@@ -277,7 +277,7 @@ class Trackma_cmd(cmd.Cmd):
         results = self.engine.get_new_episodes(showlist)
         for show in results:
             print show['title']
-        
+
     def do_play(self, args):
         """
         play - Starts the media player with the specified episode number.
@@ -288,7 +288,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             episode = 0
             show = self._get_show(args[0])
-            
+
             # If the user specified an episode, play it
             # otherwise play the next episode not watched yet
             try:
@@ -299,9 +299,9 @@ class Trackma_cmd(cmd.Cmd):
                     playing_next = False
             except IndexError:
                 playing_next = True
-            
+
             played_episode = self.engine.play_episode(show, episode)
-            
+
             # Ask if we should update the show to the last episode
             if played_episode and playing_next:
                 do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), played_episode))
@@ -309,11 +309,11 @@ class Trackma_cmd(cmd.Cmd):
                     self.engine.set_episode(show['id'], played_episode)
         except utils.TrackmaError, e:
             self.display_error(e)
-        
+
     def do_update(self, args):
         """
         update - Updates the progress of a show to the specified episode.
-        
+
         Usage: update <show index or name> <episode number>
         """
         try:
@@ -323,11 +323,11 @@ class Trackma_cmd(cmd.Cmd):
             print "Missing arguments."
         except utils.TrackmaError, e:
             self.display_error(e)
-    
+
     def do_score(self, args):
         """
         score - Changes the given score of a show to the specified score.
-        
+
         Usage: update <show id or name> <score>
         """
         try:
@@ -337,12 +337,12 @@ class Trackma_cmd(cmd.Cmd):
             print "Missing arguments."
         except utils.TrackmaError, e:
             self.display_error(e)
-    
+
     def do_status(self, args):
         """
         status - Changes the status of a show. Use the command `filter`
         withotu arguments to see the available statuses.
-        
+
         Usage: status <show id or name> <status name>
         """
         try:
@@ -351,19 +351,19 @@ class Trackma_cmd(cmd.Cmd):
         except IndexError:
             print "Missing arguments."
             return
-        
+
         try:
             _filter_num = self._guess_status(_filter)
         except KeyError:
             print "Invalid filter."
             return
-        
+
         try:
             show = self._get_show(_showtitle)
             self.engine.set_status(show['id'], _filter_num)
         except utils.TrackmaError, e:
             self.display_error(e)
-        
+
     def do_send(self, args):
         """
         send - Sends any queued changes in the local list to the remote
@@ -375,7 +375,7 @@ class Trackma_cmd(cmd.Cmd):
             self.engine.list_upload()
         except utils.TrackmaError, e:
             self.display_error(e)
-    
+
     def do_retrieve(self, args):
         """
         retrieve - Retrieves the full remote list from the remove service
@@ -393,18 +393,18 @@ class Trackma_cmd(cmd.Cmd):
             self._load_list()
         except utils.TrackmaError, e:
             self.display_error(e)
-    
+
     def do_undoall(self, args):
         """
         undo - Undo all changes
-        
+
         Usage: undoall
         """
         try:
             self.engine.undoall()
         except utils.TrackmaError, e:
             self.display_error(e)
-        
+
     def do_viewqueue(self, args):
         """
         viewqueue - Shows the queued changes.
@@ -418,50 +418,50 @@ class Trackma_cmd(cmd.Cmd):
                 print "- %s" % show['title'].encode('utf-8')
         else:
             print "Queue is empty."
-    
+
     def do_quit(self, args):
         """Quits the program."""
         try:
             self.engine.unload()
         except utils.TrackmaError, e:
             self.display_error(e)
-        
+
         print 'Bye!'
         sys.exit(0)
-    
+
     def do_EOF(self, args):
         print
         self.do_quit(args)
-    
+
     def complete_update(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
-    
+
     def complete_play(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
-    
+
     def complete_score(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
-    
+
     def complete_status(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
-    
+
     def complete_delete(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
-    
+
     def complete_filter(self, text, line, begidx, endidx):
         return (v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values())
-    
+
     def parse_args(self, arg):
         if arg:
             return shlex.split(arg)
         else:
             return []
-    
+
     def onecmd(self, line):
         """ Override. """
         cmd, arg, line = self.parseline(line)
@@ -502,7 +502,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def display_error(self, e):
         print "%s%s: %s%s" % (_COLOR_ERROR, type(e), e.message, _COLOR_RESET)
-    
+
     def messagehandler(self, classname, msgtype, msg):
         """
         Handles and shows messages coming from
@@ -510,7 +510,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         color_escape = ''
         color_reset = _COLOR_RESET
-        
+
         if classname == 'Engine':
             color_escape = _COLOR_ENGINE
         elif classname == 'Data':
@@ -521,14 +521,14 @@ class Trackma_cmd(cmd.Cmd):
             color_escape = _COLOR_API
         else:
             color_reset = ''
-        
+
         if msgtype == messenger.TYPE_INFO:
             print "%s%s: %s%s" % (color_escape, classname, msg, color_reset)
         elif msgtype == messenger.TYPE_WARN:
             print "%s%s warning: %s%s" % (color_escape, classname, msg, color_reset)
         elif _DEBUG and msgtype == messenger.TYPE_DEBUG:
             print "%s%s: %s%s" % (color_escape, classname, msg, color_reset)
-    
+
     def _guess_status(self, string):
         for k, v in self.engine.mediainfo['statuses_dict'].items():
             if string.lower() == v.lower().replace(' ', ''):
@@ -545,12 +545,12 @@ class Trackma_cmd(cmd.Cmd):
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
-        
+
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
         max_title_length = width - col_id_length - col_episodes_length - col_score_length - col_index_length - 5
-        
+
         # Find the widest title so we can adjust the title column
         for show in showlist:
             if len(show['title']) > col_title_length:
@@ -560,38 +560,38 @@ class Trackma_cmd(cmd.Cmd):
                     break
                 else:
                     col_title_length = len(show['title'])
-            
+
         # Print header
         print "| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
                 'Index',    col_index_length,
                 'Title',    col_title_length,
                 'Progress', col_episodes_length,
                 'Score',    col_score_length)
-        
+
         # List shows
         for index, show in enumerate(showlist, 1):
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
             else:
                 episodes_str = "-"
-            
+
             # Truncate title if needed
             title_str = show['title'].encode('utf-8')
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
-            
+
             # Color title according to status
             if show['status'] == 1:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
             else:
                 colored_title = title_str
-            
+
             print "| {0:^{1}} {2}{3} {4:{5}} {6:^{7}} |".format(
                 index, col_index_length,
                 colored_title,
                 '.' * (col_title_length-len(show['title'])),
                 episodes_str, col_episodes_length,
                 show['my_score'], col_score_length)
-        
+
         # Print result count
         print '%d results' % len(showlist)
         print
@@ -616,7 +616,7 @@ class Trackma_accounts(AccountManager):
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
-                
+
                 print "--- Add account ---"
                 import getpass
                 api = raw_input('Enter API (%s): ' % available_libs)
@@ -640,7 +640,7 @@ class Trackma_accounts(AccountManager):
                     print selected_api[3]
                     print
                     password = raw_input('PIN: ')
-                
+
                 try:
                     self.add_account(username, password, api)
                     print 'Done.'
@@ -680,7 +680,7 @@ class Trackma_accounts(AccountManager):
                     print "Invalid value."
                 except IndexError:
                     print "Account doesn't exist."
-    
+
     def list_accounts(self):
         accounts = self.get_accounts()
         self.indexes = []
