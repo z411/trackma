@@ -1031,6 +1031,7 @@ class AddDialog(QtGui.QDialog):
     def s_search(self):
         self.search_btn.setEnabled(False)
         self.select_btn.setEnabled(False)
+        self.table.clearSelection()
         self.table.setEnabled(False)
 
         self.worker_call('search', self.r_searched, self.search_txt.text())
