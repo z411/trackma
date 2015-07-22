@@ -329,6 +329,18 @@ class Trackma(QtGui.QMainWindow):
         self.worker.start()
 
     ### GUI Functions
+
+    # Hotkeys
+    self._window.connect("key-press-event",self._key_press_event)
+    def _key_press_event(self,widget,event):
+	keyval = event.keyval
+	keyval_name = gtk.gdk.keyval_name(keyval)
+	state = event.state
+	ctrl = (state & gtk.gdk.CONTROL_MASK)
+        if ctrl and keyval_name == 'n':
+            self.do_play()
+
+
     def _exit(self):
         self._busy()
         if self.config['remember_geometry']:
