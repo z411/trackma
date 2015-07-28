@@ -104,6 +104,7 @@ class libanilist(lib):
                 'publishing': 1,
                 'finished': 2,
                 'not yet published': 3,
+                'cancelled': 4,
             }
         else:
             self.total_str = "total_episodes"
@@ -113,6 +114,7 @@ class libanilist(lib):
                 'currently airing': 1,
                 'finished airing': 2,
                 'not yet aired': 3,
+                'cancelled': 4,
             }
 
         #handler=urllib2.HTTPHandler(debuglevel=1)
