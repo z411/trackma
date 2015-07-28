@@ -340,7 +340,7 @@ class libanilist(lib):
                 ('Description',     item.get('description')),
                 ('Genres',          item.get('genres')),
                 ('Classification',  item.get('classification')),
-                ('Status',          item.get('airing_status')),
+                ('Status',          item.get(self.airing_str)),
                 ('Average score',   item.get('average_score')),
                 ('Japanese title',  item.get('title_japanese')),
                 ('English title',   item.get('title_english')),
