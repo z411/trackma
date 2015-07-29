@@ -82,6 +82,7 @@ $ trackma-qt
 Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUSE.
 
 - **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
+- **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
 
