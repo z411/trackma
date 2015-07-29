@@ -203,6 +203,22 @@ class Trackma_gtk(object):
         mb.append(root_options)
         mb.append(root_menu2)
 
+        # Accelerators
+        accelgrp = gtk.AccelGroup()
+
+        key, mod = gtk.accelerator_parse("<Control>N")
+        self.mb_play.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>A")
+        self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>S")
+        self.mb_sync.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>E")
+        self.mb_send.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>R")
+        self.mb_retrieve.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+
+        self.main.add_accel_group(accelgrp)
+
         # Create vertical box
         vbox = gtk.VBox(False, 0)
         self.main.add(vbox)
