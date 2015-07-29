@@ -328,7 +328,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         score - Changes the given score of a show to the specified score.
 
-        Usage: update <show id or name> <score>
+        Usage: score <show id or name> <score>
         """
         try:
             show = self._get_show(args[0])
