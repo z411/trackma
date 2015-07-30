@@ -241,6 +241,7 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(self.show_rem_btn)
         left_box.addRow(self.show_progress_btn)
         left_box.addRow(self.show_play_btn)
+        left_box.addRow(self.show_play_next_btn)
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
