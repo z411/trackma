@@ -264,6 +264,7 @@ class Trackma_gtk(object):
         line2.pack_start(line2_t, False, False, 0)
         self.show_ep_num = gtk.SpinButton()
         self.show_ep_num.set_sensitive(False)
+        self.show_ep_num.connect("activate", self.do_update)
         #self.show_ep_num.connect("value_changed", self.do_update)
         line2.pack_start(self.show_ep_num, False, False, 0)
 
@@ -306,6 +307,7 @@ class Trackma_gtk(object):
         self.show_score = gtk.SpinButton()
         self.show_score.set_adjustment(gtk.Adjustment(upper=10, step_incr=1))
         self.show_score.set_sensitive(False)
+        self.show_score.connect("activate", self.do_score)
         line3.pack_start(self.show_score, False, False, 0)
 
         self.scoreset_button = gtk.Button('Set')
@@ -579,6 +581,7 @@ class Trackma_gtk(object):
             self.error(e.message)
 
     def do_update(self, widget):
+        self.show_ep_num.update()
         ep = self.show_ep_num.get_value_as_int()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
@@ -586,6 +589,7 @@ class Trackma_gtk(object):
             self.error(e.message)
 
     def do_score(self, widget):
+        self.show_score.update()
         score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
