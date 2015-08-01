@@ -203,22 +203,6 @@ class Trackma_gtk(object):
         mb.append(root_options)
         mb.append(root_menu2)
 
-        # Accelerators
-        accelgrp = gtk.AccelGroup()
-
-        key, mod = gtk.accelerator_parse("<Control>N")
-        self.mb_play.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("<Control>A")
-        self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("<Control>S")
-        self.mb_sync.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("<Control>E")
-        self.mb_send.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("<Control>R")
-        self.mb_retrieve.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-
-        self.main.add_accel_group(accelgrp)
-
         # Create vertical box
         vbox = gtk.VBox(False, 0)
         self.main.add(vbox)
@@ -362,6 +346,28 @@ class Trackma_gtk(object):
         vbox.pack_start(self.statusbar, False, False, 0)
 
         vbox.show_all()
+
+        # Accelerators
+        accelgrp = gtk.AccelGroup()
+
+        key, mod = gtk.accelerator_parse("<Control>N")
+        self.mb_play.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>A")
+        self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>S")
+        self.mb_sync.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>E")
+        self.mb_send.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>R")
+        self.mb_retrieve.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>Right")
+        self.add_epp_button.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        self.add_epp_button.set_tooltip_text("Ctrl+Right")
+        key, mod = gtk.accelerator_parse("<Control>Left")
+        self.rem_epp_button.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        self.rem_epp_button.set_tooltip_text("Ctrl+Left")
+
+        self.main.add_accel_group(accelgrp)
 
         # Status icon
         self.statusicon = gtk.StatusIcon()
