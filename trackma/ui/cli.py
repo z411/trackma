@@ -158,8 +158,8 @@ class Trackma_cmd(cmd.Cmd):
         Available types: id, title, my_progress, total, my_score
         """
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
-        if arg[0] in sorts:
-            self.sort = arg[0]
+        if args[0] in sorts:
+            self.sort = args[0]
             self._load_list()
         else:
             print "Invalid sort."
