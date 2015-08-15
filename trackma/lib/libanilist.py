@@ -267,8 +267,12 @@ class libanilist(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
 
-        data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
-        return True
+        try:
+            data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
+        except ValueError:
+            # An empty document, without any JSON, is returned
+            # when the delete worked.
+            return True
 
     def search(self, criteria):
         self.check_credentials()
