@@ -551,8 +551,8 @@ class Trackma_gtk(object):
 
         threading.Thread(target=self.task_reload, args=[account, mediatype]).start()
 
-    def do_play(self, widget, playnext):
-        threading.Thread(target=self.task_play, args=(playnext,)).start()
+    def do_play(self, widget, playnext, ep=None):
+        threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
     def do_neweps(self, widget):
         threading.Thread(target=self.task_neweps).start()
@@ -660,7 +660,7 @@ class Trackma_gtk(object):
             except utils.TrackmaError, e:
                 self.error(e.message)
 
-    def task_play(self, playnext):
+    def task_play(self, playnext, ep):
         self.allow_buttons(False)
 
         show = self.engine.get_show_info(self.selected_show)
@@ -669,7 +669,8 @@ class Trackma_gtk(object):
             if playnext:
                 played_ep = self.engine.play_episode(show)
             else:
-                ep = self.show_ep_num.get_value_as_int()
+                if not ep:
+                    ep = self.show_ep_num.get_value_as_int()
                 played_ep = self.engine.play_episode(show, ep)
 
             # Ask if we should update to the next episode
@@ -995,6 +996,7 @@ class Trackma_gtk(object):
                 path, col, cellx, celly = pthinfo
                 treeview.grab_focus()
                 treeview.set_cursor(path, col, 0)
+                show = self.engine.get_show_info(self.selected_show)
 
                 menu = gtk.Menu()
                 mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
@@ -1011,6 +1013,17 @@ class Trackma_gtk(object):
                 mb_delete.connect("activate", self.do_delete)
 
                 menu.append(mb_play)
+
+                if show['total']:
+                    menu_eps = gtk.Menu()
+                    for i in xrange(1, show['total']):
+                        mb_playep = gtk.MenuItem(str(i))
+                        mb_playep.connect("activate", self.do_play, False, i)
+                        menu_eps.append(mb_playep)
+                    mb_playep = gtk.MenuItem("Play episode")
+                    mb_playep.set_submenu(menu_eps)
+                    menu.append(mb_playep)
+
                 menu.append(mb_info)
                 menu.append(mb_web)
                 menu.append(gtk.SeparatorMenuItem())
