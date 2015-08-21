@@ -278,6 +278,9 @@ class Trackma_cmd(cmd.Cmd):
         for show in results:
             print show['title']
 
+    def do_scaneps(self, args):
+        self.engine.scan_library()
+
     def do_play(self, args):
         """
         play - Starts the media player with the specified episode number.

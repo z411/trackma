@@ -128,14 +128,13 @@ class Engine:
         else:
             source_list = self.get_list()
 
-        for show in self.get_list():
-
+        for show in source_list:
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
                                  'type': None,
-                                 'titles': self.get_show_titles(show),
-                                 }) # TODO types
+                             'titles': self.data_handler.get_show_titles(show),
+                             }) # TODO types
 
         return tracker_list
 
@@ -264,12 +263,6 @@ class Engine:
             if show['title'] == pattern:
                 return show
         raise utils.EngineError("Show not found.")
-
-    def get_show_titles(self, show):
-        if self.data_handler.altname_get(show['id']):
-            return [ self.data_handler.altname_get(show['id']) ]
-        else:
-            return [show['title']] + show['aliases']
 
     def get_show_details(self, show):
         """
@@ -567,17 +560,42 @@ class Engine:
     def get_new_episodes(self, showlist):
         results = list()
         total = len(showlist)
+        t = time.time()
 
         for i, show in enumerate(showlist):
             self.msg.info(self.name, "Searching %d/%d..." % (i+1, total))
 
-            titles = self.get_show_titles(show)
+            titles = self.data_handler.get_show_titles(show)
 
             (filename, ep) = self._search_video(titles, show['my_progress']+1)
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
+
+        self.msg.info(self.name, "Time: %s" % (time.time() - t))
         return results
+
+    def library(self):
+        return self.data_handler.library_get()
+        
+    def scan_library(self):
+        t = time.time()
+        library = {}
+        self.msg.info(self.name, "Scanning local library...")
+        tracker_list = self._get_tracker_list(1)
+        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
+            aie = tracker.AnimeInfoExtractor(filename)
+            (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+            if show_title:
+                show = utils.guess_show(show_title, tracker_list)
+                if show:
+                    if show['id'] not in library.keys():
+                        library[show['id']] = {}
+                    library[show['id']][show_ep] = fullpath
+
+        self.msg.info(self.name, "Time: %s" % (time.time() - t))
+        self.data_handler.library_save(library)
+        return library
 
     def play_episode(self, show, playep=0):
         """
@@ -610,7 +628,7 @@ class Engine:
 
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
 
-            titles = self.get_show_titles(show)
+            titles = self.data_handler.get_show_titles(show)
 
             filename, endep = self._search_video(titles, playep)
             if filename:

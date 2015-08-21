@@ -16,6 +16,7 @@
 
 
 import sys
+
 try:
     from PyQt4 import QtGui, QtCore
 except ImportError:
@@ -150,6 +151,8 @@ class Trackma(QtGui.QMainWindow):
         action_retrieve.setShortcut('Ctrl+R')
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
+        action_scan_library = QtGui.QAction('Rescan &Library', self)
+        action_scan_library.triggered.connect(self.s_scan_library)
 
         action_reload = QtGui.QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
@@ -177,6 +180,8 @@ class Trackma(QtGui.QMainWindow):
         menu_list.addSeparator()
         menu_list.addAction(action_send)
         menu_list.addAction(action_retrieve)
+        menu_list.addSeparator()
+        menu_list.addAction(action_scan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
@@ -400,11 +405,13 @@ class Trackma(QtGui.QMainWindow):
             self._rebuild_list(status, filtered_list[status], altnames)
 
 
-    def _rebuild_list(self, status, showlist=None, altnames=None):
+    def _rebuild_list(self, status, showlist=None, altnames=None, library=None):
         if not showlist:
             showlist = self.worker.engine.filter_list(status)
         if not altnames:
             altnames = self.worker.engine.altnames()
+        if not library:
+            library = self.worker.engine.library()
 
         widget = self.show_lists[status]
         columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date']
@@ -421,7 +428,7 @@ class Trackma(QtGui.QMainWindow):
 
         i = 0
         for show in showlist:
-            self._update_row( widget, i, show, altnames.get(show['id']) )
+            self._update_row( widget, i, show, altnames.get(show['id']), library.get(show['id']) )
             i += 1
 
         widget.setSortingEnabled(True)
@@ -432,7 +439,7 @@ class Trackma(QtGui.QMainWindow):
         tab_name = "%s (%d)" % (self.statuses_names[status], i)
         self.notebook.setTabText(tab_index, tab_name)
 
-    def _update_row(self, widget, row, show, altname, is_playing=False):
+    def _update_row(self, widget, row, show, altname, library_episodes, is_playing=False):
         if is_playing:
             color = QtGui.QColor(150, 150, 250)
         else:
@@ -442,10 +449,13 @@ class Trackma(QtGui.QMainWindow):
         if altname:
             title_str += " [%s]" % altname
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
-        percent_widget = QtGui.QProgressBar()
+        percent_widget = EpisodeBar()
         percent_widget.setRange(0, 100)
         if show['total'] > 0:
-            percent_widget.setValue( 100L * show['my_progress'] / show['total'] )
+            percent_widget.setMaximum(show['total'])
+            percent_widget.setValue(show['my_progress'])
+            percent_widget.setEpisodes(library_episodes)
+            percent_widget.setSubValue(utils.estimate_aired_episodes(show))
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
@@ -635,7 +645,11 @@ class Trackma(QtGui.QMainWindow):
 
         if reply == QtGui.QMessageBox.Yes:
             self.worker_call('delete_show', self.r_generic, show)
-
+    
+    def s_scan_library(self):
+        self._busy(True)
+        self.worker_call('scan_library', self.r_list_retrieved)
+        
     def s_altname(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         current_altname = self.worker.engine.altname(self.selected_show_id)
@@ -664,7 +678,6 @@ class Trackma(QtGui.QMainWindow):
         else:
             self._busy(True)
             self.worker_call('list_download', self.r_list_retrieved)
-
 
     def s_send(self, retrieve=False):
         self._busy(True)
@@ -728,8 +741,10 @@ class Trackma(QtGui.QMainWindow):
             if row is None:
                 return # Row not in list yet; can be safely avoided
 
+            library = self.worker.engine.library()
+            
             widget.setSortingEnabled(False)
-            self._update_row(widget, row, show, altname, is_playing)
+            self._update_row(widget, row, show, altname, library.get(show['id']), is_playing)
             widget.setSortingEnabled(True)
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
@@ -1628,6 +1643,70 @@ class ShowItemDate(ShowItem):
         else:
             return True
 
+class EpisodeBar(QtGui.QProgressBar):
+    """
+  Custom progress bar to show detailed information
+  about episodes
+    """
+    _subvalue = -1
+    _episodes = []
+    
+    def __init__(self, parent=None):
+        QtGui.QProgressBar.__init__(self, parent)
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+
+        painter.setBrush( QtGui.QColor(255, 255, 255) )
+        painter.setPen(QtCore.Qt.SolidLine)
+        painter.drawRect( QtCore.QRect(0, 0, self.width()-1, self.height()-1) )
+        
+        if self.subValue() > 0:
+            painter.setBrush( QtGui.QColor(210, 210, 210) )
+            painter.setPen(QtCore.Qt.transparent)
+            mid = int(self.width() / float(self.maximum()) * self.subValue()) - 2
+            progressRect = QtCore.QRect(1, 1, mid, self.height()-2)
+            painter.drawRect(progressRect)
+            
+        if self.value() > 0:
+            if self.value() >= self.maximum():
+                painter.setBrush( QtGui.QColor(0,210,0) )
+                mid = self.width() - 2
+            else:
+                painter.setBrush( QtGui.QColor(116, 192, 250) )
+                mid = int(self.width() / float(self.maximum()) * self.value()) - 2
+            painter.setPen(QtCore.Qt.transparent)
+            progressRect = QtCore.QRect(1, 1, mid, self.height()-2)
+            painter.drawRect(progressRect)
+        
+        if self.episodes():
+            for episode in self.episodes():
+                painter.setBrush( QtGui.QColor(196, 192, 110) )
+                painter.setPen(QtCore.Qt.transparent)
+                if episode <= self.maximum():
+                    start = int(self.width() / float(self.maximum()) * (episode -1)) - 1
+                    finish = int(self.width() / float(self.maximum()) * episode) - 1
+                    progressRect = QtCore.QRect(start, self.height()/2, finish-start, self.height()-self.height()/2-1)
+                    painter.drawRect(progressRect)
+    
+    def setSubValue(self, subvalue):
+        if subvalue > self.maximum():
+            self._subvalue = self.maximum()
+        else:
+            self._subvalue = subvalue
+            
+        self.update()
+    
+    def subValue(self):
+        return self._subvalue
+    
+    def setEpisodes(self, episodes):
+        self._episodes = episodes
+        self.update()
+    
+    def episodes(self):
+        return self._episodes
+
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
         QtGui.QDialog.__init__(self, parent)
@@ -1806,6 +1885,7 @@ class Engine_Worker(QtCore.QThread):
             'add_show': self._add_show,
             'delete_show': self._delete_show,
             'unload': self._unload,
+            'scan_library': self._scan_library,
         }
 
     def _messagehandler(self, classname, msgtype, msg):
@@ -1851,6 +1931,15 @@ class Engine_Worker(QtCore.QThread):
     def _unload(self):
         try:
             self.engine.unload()
+        except utils.TrackmaError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _scan_library(self):
+        try:
+            self.engine.scan_library()
         except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}

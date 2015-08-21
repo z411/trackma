@@ -16,6 +16,7 @@
 
 import os, re, shutil, copy
 import subprocess
+import datetime
 import json
 import difflib
 import cPickle as pickle
@@ -89,6 +90,11 @@ def regex_find_videos(extensions, subdirectory=''):
             if match:
                 yield ( os.path.join(root, filename), filename )
 
+def list_library(path):
+    for root, dirs, names in os.walk(path, followlinks=True):
+        for filename in names:
+            yield ( os.path.join(root, filename), filename )
+
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.trackma', directory))
     if not os.path.isdir(path):
@@ -109,6 +115,22 @@ def get_filename(subdir, filename):
 def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.trackma', filename))
 
+def estimate_aired_episodes(show):
+    # Estimate how many episodes have passed since airing
+    # Let's just assume 1 episode = 1 week
+    if show['status'] == 1:
+        days = (datetime.datetime.now() - show['start_date']).days
+        if days <= 0:
+            return 0
+        
+        eps = days / 7 + 1
+        if eps > show['total']:
+            return show['total']
+        return eps
+    elif show['status'] == 2:
+        return show['total']
+    
+    
 def guess_show(show_title, tracker_list):
     # Use difflib to see if the show title is similar to
     # one we have in the list
