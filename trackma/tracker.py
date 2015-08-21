@@ -410,10 +410,6 @@ class Tracker(object):
         playing_file = libplex.playing_file()
         return playing_file
 
-    def _analyze(self, filename):
-        aie = AnimeInfoExtractor(filename)
-        return (aie.getName(), aie.getEpisode())
-
     def _inotify_watch_recursive(self, fd, watch_dir):
         self.msg.debug(self.name, 'inotify: Watching %s' % watch_dir)
         inotifyx.add_watch(fd, watch_dir.encode('utf-8'), inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
@@ -567,28 +563,13 @@ class Tracker(object):
 
             # Do a regex to the filename to get
             # the show title and episode number
-            (show_title, show_ep) = self._analyze(filename)
+            aie = AnimeInfoExtractor(filename)
+            (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
                 return (STATE_UNRECOGNIZED, None) # Format not recognized
 
-            # Use difflib to see if the show title is similar to
-            # one we have in the list
-            highest_ratio = (None, 0)
-            matcher = difflib.SequenceMatcher()
-            matcher.set_seq1(show_title.lower())
-
-            # Compare to every show in our list to see which one
-            # has the most similar name
-            for item in self.list:
-                # Make sure to search through all the aliases
-                for title in item['titles']:
-                    matcher.set_seq2(title.lower())
-                    ratio = matcher.ratio()
-                    if ratio > highest_ratio[1]:
-                        highest_ratio = (item, ratio)
-
-            playing_show = highest_ratio[0]
-            if highest_ratio[1] > 0.7:
+            playing_show = utils.guess_show(show_title, self.list)
+            if playing_show:
                 return (STATE_PLAYING, (playing_show, show_ep))
             else:
                 return (STATE_NOT_FOUND, None) # Show not in list

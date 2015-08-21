@@ -17,6 +17,7 @@
 import os, re, shutil, copy
 import subprocess
 import json
+import difflib
 import cPickle as pickle
 
 VERSION = '0.3'
@@ -107,6 +108,27 @@ def get_filename(subdir, filename):
 
 def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.trackma', filename))
+
+def guess_show(show_title, tracker_list):
+    # Use difflib to see if the show title is similar to
+    # one we have in the list
+    highest_ratio = (None, 0)
+    matcher = difflib.SequenceMatcher()
+    matcher.set_seq1(show_title.lower())
+
+    # Compare to every show in our list to see which one
+    # has the most similar name
+    for item in tracker_list:
+        # Make sure to search through all the aliases
+        for title in item['titles']:
+            matcher.set_seq2(title.lower())
+            ratio = matcher.ratio()
+            if ratio > highest_ratio[1]:
+                highest_ratio = (item, ratio)
+
+    playing_show = highest_ratio[0]
+    if highest_ratio[1] > 0.7:
+        return playing_show
 
 def get_terminal_size(fd=1):
     """
