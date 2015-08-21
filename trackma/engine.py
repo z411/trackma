@@ -121,8 +121,13 @@ class Engine:
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def _get_tracker_list(self):
+    def _get_tracker_list(self, filter_num=None):
         tracker_list = []
+        if filter_num:
+            source_list = self.filter_list(filter_num)
+        else:
+            source_list = self.get_list()
+
         for show in self.get_list():
 
             tracker_list.append({'id': show['id'],
