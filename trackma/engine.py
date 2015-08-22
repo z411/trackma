@@ -578,13 +578,24 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self):
+    def scan_library(self, my_status=None):
+        # Check if operation is supported by the API
+        if not self.mediainfo.get('can_play'):
+            raise utils.EngineError('Operation not supported by current site or mediatype.')
+        if not self.config['searchdir']:
+            raise utils.EngineError('Media directory is not set.')
+        if not utils.dir_exists(self.config['searchdir']):
+            raise utils.EngineError('The set media directory doesn\'t exist.')
+        
         t = time.time()
         library = {}
         library_cache = self.data_handler.library_cache_get()
+        
+        if not my_status:
+            my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
-        tracker_list = self._get_tracker_list(1)
+        tracker_list = self._get_tracker_list(my_status)
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
@@ -636,7 +647,7 @@ class Engine:
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
-            raise utils.EngineError('Operation not supported by API.')
+            raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
             raise utils.EngineError('Media directory is not set.')
         if not utils.dir_exists(self.config['searchdir']):
