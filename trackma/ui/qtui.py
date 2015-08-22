@@ -452,10 +452,21 @@ class Trackma(QtGui.QMainWindow):
         percent_widget = EpisodeBar()
         percent_widget.setRange(0, 100)
         if show['total'] > 0:
+            tooltip = "Watched: %d<br>" % show['my_progress']
+            
             percent_widget.setMaximum(show['total'])
             percent_widget.setValue(show['my_progress'])
-            percent_widget.setEpisodes(library_episodes)
-            percent_widget.setSubValue(utils.estimate_aired_episodes(show))
+            
+            aired_eps = utils.estimate_aired_episodes(show)
+            if aired_eps:
+                percent_widget.setSubValue(aired_eps)
+                tooltip += "Aired (estimated): %d<br>" % aired_eps
+            if library_episodes:
+                tooltip += "Latest available: %d<br>" % max(library_episodes)
+                percent_widget.setEpisodes(library_episodes)
+            
+            tooltip += "Total: %d" % show['total']
+            percent_widget.setToolTip(tooltip)
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))

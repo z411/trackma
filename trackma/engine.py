@@ -577,24 +577,54 @@ class Engine:
 
     def library(self):
         return self.data_handler.library_get()
-        
+
     def scan_library(self):
         t = time.time()
         library = {}
+        library_cache = self.data_handler.library_cache_get()
+
         self.msg.info(self.name, "Scanning local library...")
         tracker_list = self._get_tracker_list(1)
-        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            aie = tracker.AnimeInfoExtractor(filename)
-            (show_title, show_ep) = (aie.getName(), aie.getEpisode())
-            if show_title:
-                show = utils.guess_show(show_title, tracker_list)
-                if show:
-                    if show['id'] not in library.keys():
-                        library[show['id']] = {}
-                    library[show['id']][show_ep] = fullpath
 
-        self.msg.info(self.name, "Time: %s" % (time.time() - t))
+        # Do a full listing of the media directory
+        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
+            show_id = None
+            if filename in library_cache.keys():
+                # If the filename was already seen before
+                # use the cached information, if there's no information (None)
+                # then it means it doesn't correspond to any show in the list
+                # and can be safely skipped.
+                if library_cache[filename]:
+                    show_id = library_cache[filename][0]
+                    show_ep = library_cache[filename][1]
+                else:
+                    continue
+            else:
+                # If the filename has not been seen, extract
+                # the information from the filename and do a fuzzy search
+                # on the user's list. Cache the information.
+                # If it fails, cache it as None.
+                aie = tracker.AnimeInfoExtractor(filename)
+                (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+                if show_title:
+                    show = utils.guess_show(show_title, tracker_list)
+                    if show:
+                        show_id = show['id']
+                        library_cache[filename] = (show['id'], show_ep)
+                    else:
+                        library_cache[filename] = None
+                else:
+                    library_cache[filename] = None
+
+            # After we got our information, add it to our library
+            if show_id:
+                if show_id not in library.keys():
+                    library[show_id] = {}
+                library[show_id][show_ep] = fullpath
+
+        self.msg.debug(self.name, "Time: %s" % (time.time() - t))
         self.data_handler.library_save(library)
+        self.data_handler.library_cache_save(library_cache)
         return library
 
     def play_episode(self, show, playep=0):
