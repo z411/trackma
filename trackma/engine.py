@@ -186,6 +186,7 @@ class Engine:
                                    self.config['searchdir'],
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait']),
+                                   self.config['tracker_update_close'],
                                   )
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)

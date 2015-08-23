@@ -339,6 +339,7 @@ class Tracker(object):
     last_state = STATE_NOVIDEO
     last_time = 0
     last_updated = False
+    last_close_queue = False
     plex_enabled = False
     plex_log = [None, None]
 
@@ -347,7 +348,7 @@ class Tracker(object):
     signals = { 'playing' : None,
                  'update': None, }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait):
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
@@ -357,6 +358,7 @@ class Tracker(object):
 
         tracker_args = (watch_dir, interval)
         self.wait_s = update_wait * 60
+        self.wait_close = update_close
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
         self.msg.debug(self.name, 'Enabling tracker...')
@@ -511,11 +513,17 @@ class Tracker(object):
 
                     if timedif > self.wait_s:
                         # Time has passed, let's update
-                        self._emit_signal('update', show['id'], episode)
-
-                        self.last_updated = True
+                        if self.wait_close:
+                            # Queue update for when the player closes
+                            self.msg.info(self.name, 'Waiting for the player to close.')
+                            self.last_close_queue = True
+                            self.last_updated = True
+                        else:
+                            # Update now
+                            self._emit_signal('update', show['id'], episode)
+                            self.last_updated = True
                     else:
-                        self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s-timedif))
+                        self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s-timedif+1))
                 else:
                     # We shouldn't update to this episode!
                     self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
@@ -528,8 +536,12 @@ class Tracker(object):
             # STATE_NOVIDEO : No video is playing anymroe
             # STATE_UNRECOGNIZED : There's a new video playing but the regex didn't recognize the format
             # STATE_NOT_FOUND : There's a new video playing but an associated show wasn't found
-            if state == STATE_NOVIDEO and self.last_show_tuple and not self.last_updated:
-                self.msg.info(self.name, 'Player was closed before update.')
+            if state == STATE_NOVIDEO and self.last_show_tuple:
+                # Update now if there's an update queued
+                if self.last_close_queue:
+                    self._emit_signal('update', self.last_show_tuple[0]['id'], self.last_show_tuple[1])
+                elif not self.last_updated:
+                    self.msg.info(self.name, 'Player was closed before update.')
             elif state == STATE_UNRECOGNIZED:
                 self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
             elif state == STATE_NOT_FOUND:
@@ -537,8 +549,9 @@ class Tracker(object):
 
             # Clear any show previously playing
             if self.last_show_tuple:
-                self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
+                self._emit_signal('playing', self.last_show_tuple[0]['id'], False, self.last_show_tuple[1])
                 self.last_updated = False
+                self.last_close_queue = False
                 self.last_time = 0
                 self.last_show_tuple = None
 
