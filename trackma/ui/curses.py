@@ -49,6 +49,7 @@ class Trackma_urwid(object):
     keymapping = dict()
     positions = list()
     last_search = None
+    last_update_prompt = ()
 
     """Widgets"""
     header = None
@@ -192,6 +193,7 @@ class Trackma_urwid(object):
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
         self.engine.connect_signal('show_synced', self.changed_show)
+        self.engine.connect_signal('prompt_for_update', self.prompt_update)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
@@ -533,24 +535,25 @@ class Trackma_urwid(object):
                 return
 
             if played_episode == (show['my_progress'] + 1):
-                self.question("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
+                self.prompt_update(show, played_episode)
             else:
                 self.status('Ready.')
 
-    def update_next_request(self, data):
-        self.ask_finish(self.update_next_request)
+    def prompt_update_request(self, data):
+        (show, episode) = self.last_update_prompt
+        self.ask_finish(self.prompt_update_request)
         if data == 'y':
-            item = self._get_selected_item()
-            show = self.engine.get_show_info(item.showid)
-            next_episode = show['my_progress'] + 1
-
             try:
-                show = self.engine.set_episode(item.showid, next_episode)
+                show = self.engine.set_episode(show['id'], episode)
             except utils.TrackmaError, e:
                 self.error(e.message)
                 return
         else:
             self.status('Ready.')
+
+    def prompt_update(self, show, episode):
+        self.last_update_prompt = (show, episode)
+        self.question("Update %s to episode %d? [y/N] " % (show['title'], episode), self.prompt_update_request)
 
     def changed_show(self, show):
         if self.started and show:

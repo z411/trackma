@@ -289,6 +289,7 @@ class Trackma(QtGui.QMainWindow):
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.playing_show.connect(self.ws_changed_show)
+        self.worker.prompt_for_update.connect(self.ws_prompt_update)
 
         # Show main window
         if not (self.config['show_tray'] and self.config['start_in_tray']):
@@ -748,7 +749,15 @@ class Trackma(QtGui.QMainWindow):
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
+    
+    def ws_prompt_update(self, show, episode):
+        reply = QtGui.QMessageBox.question(self, 'Message',
+            'Do you want to update %s to %d?' % (show['title'], episode),
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 
+        if reply == QtGui.QMessageBox.Yes:
+            self.worker_call('set_episode', self.r_generic, show['id'], episode)
+                    
     ### Responses from the engine thread
     def r_generic(self):
         self._unbusy()
@@ -859,12 +868,7 @@ class Trackma(QtGui.QMainWindow):
             played_ep = result['played_ep']
 
             if played_ep == (show['my_progress'] + 1):
-                reply = QtGui.QMessageBox.question(self, 'Message',
-                    'Do you want to update the show to %d?' % result['played_ep'],
-                    QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-
-                if reply == QtGui.QMessageBox.Yes:
-                    self.worker_call('set_episode', self.r_generic, show['id'], played_ep)
+                self.ws_prompt_update(show, played_ep)
 
 
 class DetailsDialog(QtGui.QDialog):
@@ -1137,6 +1141,8 @@ class SettingsDialog(QtGui.QDialog):
         self.tracker_update_wait = QtGui.QSpinBox()
         self.tracker_update_wait.setRange(0, 1000)
         self.tracker_update_wait.setMaximumWidth(60)
+        self.tracker_update_close = QtGui.QCheckBox()
+        self.tracker_update_prompt = QtGui.QCheckBox()
 
         g_media_layout.addRow( 'Enable tracker', self.tracker_enabled )
         g_media_layout.addRow( self.tracker_type_local )
@@ -1146,6 +1152,8 @@ class SettingsDialog(QtGui.QDialog):
         g_media_layout.addRow( 'Plex host', self.plex_host )
         g_media_layout.addRow( 'Plex port', self.plex_port )
         g_media_layout.addRow( 'Wait before updating (minutes)', self.tracker_update_wait )
+        g_media_layout.addRow( 'Wait until the player is closed', self.tracker_update_close )
+        g_media_layout.addRow( 'Ask before updating', self.tracker_update_prompt )
 
         g_media.setLayout(g_media_layout)
 
@@ -1306,6 +1314,8 @@ class SettingsDialog(QtGui.QDialog):
         self.tracker_interval.setValue(engine.get_config('tracker_interval'))
         self.tracker_process.setText(engine.get_config('tracker_process'))
         self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait'))
+        self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
+        self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
 
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
@@ -1362,10 +1372,12 @@ class SettingsDialog(QtGui.QDialog):
     def _save(self):
         engine = self.worker.engine
 
-        engine.set_config('tracker_enabled',     self.tracker_enabled.isChecked())
-        engine.set_config('tracker_interval',    self.tracker_interval.value())
-        engine.set_config('tracker_process',     str(self.tracker_process.text()))
-        engine.set_config('tracker_update_wait', self.tracker_update_wait.value())
+        engine.set_config('tracker_enabled',       self.tracker_enabled.isChecked())
+        engine.set_config('tracker_interval',      self.tracker_interval.value())
+        engine.set_config('tracker_process',       str(self.tracker_process.text()))
+        engine.set_config('tracker_update_wait',   self.tracker_update_wait.value())
+        engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
+        engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
 
         engine.set_config('player',     unicode(self.player.text()))
         engine.set_config('searchdir',  unicode(self.searchdir.text()))
@@ -1778,6 +1790,7 @@ class Engine_Worker(QtCore.QThread):
     changed_list = QtCore.pyqtSignal(dict, object)
     changed_queue = QtCore.pyqtSignal(int)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
+    prompt_for_update = QtCore.pyqtSignal(dict, int)
 
     def __init__(self, account):
         super(Engine_Worker, self).__init__()
@@ -1790,6 +1803,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('show_deleted', self._changed_list)
         self.engine.connect_signal('show_synced', self._changed_show)
         self.engine.connect_signal('queue_changed', self._changed_queue)
+        self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
 
         self.function_list = {
             'start': self._start,
@@ -1828,6 +1842,9 @@ class Engine_Worker(QtCore.QThread):
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)
+
+    def _prompt_for_update(self, show, episode):
+        self.prompt_for_update.emit(show, episode)
 
     # Callable functions
     def _start(self):

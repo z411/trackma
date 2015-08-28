@@ -97,6 +97,11 @@ class Trackma_cmd(cmd.Cmd):
             return self.sortedlist[index]
         except (ValueError, AttributeError, IndexError):
             return self.engine.get_show_info_title(title)
+    
+    def _ask_update(self, show, episode):
+        do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
+        if do_update.lower() == 'y':
+            self.engine.set_episode(show['id'], episode)
 
     def start(self):
         """
@@ -110,6 +115,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
+        self.engine.connect_signal('prompt_for_update', self._ask_update)
         self.engine.start()
 
         # Start with default filter selected
@@ -304,9 +310,7 @@ class Trackma_cmd(cmd.Cmd):
 
             # Ask if we should update the show to the last episode
             if played_episode and playing_next:
-                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), played_episode))
-                if do_update.lower() == 'y':
-                    self.engine.set_episode(show['id'], played_episode)
+                self._ask_update(show, played_episode)
         except utils.TrackmaError, e:
             self.display_error(e)
 

@@ -205,6 +205,7 @@ config_defaults = {
     'tracker_enabled': True,
     'tracker_update_wait': 5,
     'tracker_update_close': False,
+    'tracker_update_prompt': False,
     'tracker_interval': 30,
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',

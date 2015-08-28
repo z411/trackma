@@ -388,6 +388,7 @@ class Trackma_gtk(object):
         self.engine.connect_signal('playing', self.playing_show)
         self.engine.connect_signal('show_added', self.changed_show_status)
         self.engine.connect_signal('show_deleted', self.changed_show_status)
+        self.engine.connect_signal('prompt_for_update', self.do_update_next)
 
         self.selected_show = 0
 

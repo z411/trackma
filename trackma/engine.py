@@ -57,14 +57,15 @@ class Engine:
 
     name = 'Engine'
 
-    signals = { 'show_added':       None,
-                'show_deleted':     None,
-                'episode_changed':  None,
-                'score_changed':    None,
-                'status_changed':   None,
-                'show_synced':      None,
-                'queue_changed':    None,
-                'playing':          None, }
+    signals = { 'show_added':        None,
+                'show_deleted':      None,
+                'episode_changed':   None,
+                'score_changed':     None,
+                'status_changed':    None,
+                'show_synced':       None,
+                'queue_changed':     None,
+                'playing':           None,
+                'prompt_for_update': None, }
 
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -112,7 +113,11 @@ class Engine:
         self._emit_signal('playing', show, playing, episode)
 
     def _tracker_update(self, showid, episode):
-        self.set_episode(showid, episode)
+        show = self.get_show_info(showid)
+        if self.config['tracker_update_prompt']:
+            self._emit_signal('prompt_for_update', show, episode)
+        else:
+            self.set_episode(show['id'], episode)
 
     def _emit_signal(self, signal, *args):
         try:
