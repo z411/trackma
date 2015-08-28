@@ -443,7 +443,7 @@ class Trackma(QtGui.QMainWindow):
         if is_playing:
             color = QtGui.QColor(150, 150, 250)
         else:
-            color = self._get_color(show)
+            color = self._get_color(show, library_episodes)
 
         title_str = show['title']
         if altname:
@@ -462,8 +462,9 @@ class Trackma(QtGui.QMainWindow):
                 percent_widget.setSubValue(aired_eps)
                 tooltip += "Aired (estimated): %d<br>" % aired_eps
             if library_episodes:
-                tooltip += "Latest available: %d<br>" % max(library_episodes)
-                percent_widget.setEpisodes(library_episodes)
+                eps = library_episodes.keys()
+                tooltip += "Latest available: %d<br>" % max(eps)
+                percent_widget.setEpisodes(eps)
             
             tooltip += "Total: %d" % show['total']
             percent_widget.setToolTip(tooltip)
@@ -476,10 +477,10 @@ class Trackma(QtGui.QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
-    def _get_color(self, show):
+    def _get_color(self, show, eps):
         if show.get('queued'):
             return QtGui.QColor(210, 250, 210)
-        elif show.get('neweps'):
+        elif eps and max(eps) > show['my_progress']:
             return QtGui.QColor(250, 250, 130)
         elif show['status'] == 1:
             return QtGui.QColor(210, 250, 250)
@@ -1661,6 +1662,7 @@ class EpisodeBar(QtGui.QProgressBar):
     """
     _subvalue = -1
     _episodes = []
+    _subheight = 5
     
     def __init__(self, parent=None):
         QtGui.QProgressBar.__init__(self, parent)
@@ -1668,36 +1670,33 @@ class EpisodeBar(QtGui.QProgressBar):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
 
-        painter.setBrush( QtGui.QColor(255, 255, 255) )
-        painter.setPen(QtCore.Qt.SolidLine)
-        painter.drawRect( QtCore.QRect(0, 0, self.width()-1, self.height()-1) )
+        painter.setBrush( QtGui.QColor(245, 245, 245) )
+        painter.setPen(QtCore.Qt.transparent)
+        painter.drawRect( QtCore.QRect(0, 0, self.width(), self.height()) )
         
         if self.subValue() > 0:
             painter.setBrush( QtGui.QColor(210, 210, 210) )
-            painter.setPen(QtCore.Qt.transparent)
-            mid = int(self.width() / float(self.maximum()) * self.subValue()) - 2
-            progressRect = QtCore.QRect(1, 1, mid, self.height()-2)
+            mid = int(self.width() / float(self.maximum()) * self.subValue())
+            progressRect = QtCore.QRect(0, self.height()-self._subheight, mid, self.height()-(self.height()-self._subheight))
             painter.drawRect(progressRect)
             
         if self.value() > 0:
             if self.value() >= self.maximum():
                 painter.setBrush( QtGui.QColor(0,210,0) )
-                mid = self.width() - 2
+                mid = self.width()
             else:
                 painter.setBrush( QtGui.QColor(116, 192, 250) )
-                mid = int(self.width() / float(self.maximum()) * self.value()) - 2
-            painter.setPen(QtCore.Qt.transparent)
-            progressRect = QtCore.QRect(1, 1, mid, self.height()-2)
+                mid = int(self.width() / float(self.maximum()) * self.value())
+            progressRect = QtCore.QRect(0, 0, mid, self.height())
             painter.drawRect(progressRect)
         
         if self.episodes():
             for episode in self.episodes():
-                painter.setBrush( QtGui.QColor(196, 192, 110) )
-                painter.setPen(QtCore.Qt.transparent)
+                painter.setBrush( QtGui.QColor(81, 135, 177) )
                 if episode <= self.maximum():
-                    start = int(self.width() / float(self.maximum()) * (episode -1)) - 1
-                    finish = int(self.width() / float(self.maximum()) * episode) - 1
-                    progressRect = QtCore.QRect(start, self.height()/2, finish-start, self.height()-self.height()/2-1)
+                    start = int(self.width() / float(self.maximum()) * (episode -1))
+                    finish = int(self.width() / float(self.maximum()) * episode)
+                    progressRect = QtCore.QRect(start, self.height()-self._subheight, finish-start, self.height()-(self.height()-self._subheight))
                     painter.drawRect(progressRect)
     
     def setSubValue(self, subvalue):
