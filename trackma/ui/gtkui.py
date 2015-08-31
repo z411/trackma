@@ -1173,9 +1173,9 @@ class ShowView(gtk.TreeView):
             return '#54C571'
         elif show.get('neweps'):
             return '#FBB917'
-        elif show['status'] == 1:
+        elif show['status'] == utils.STATUS_AIRING:
             return '#0099cc'
-        elif show['status'] == 3:
+        elif show['status'] == utils.STATUS_NOTYET:
             return '#999900'
         else:
             return None

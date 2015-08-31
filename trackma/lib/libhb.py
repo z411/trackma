@@ -60,7 +60,9 @@ class libhb(lib):
 
     url = "http://hummingbird.me/api/v1"
 
-    status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not Yet Aired': 3}
+    status_translate = {'Currently Airing': utils.STATUS_AIRING,
+            'Finished Airing': utils.STATUS_FINISHED,
+            'Not Yet Aired': utils.STATUS_NOTYET}
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""

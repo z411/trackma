@@ -327,9 +327,9 @@ class libvndb(lib):
         show['image'] = info.get('image')
         show['start_date'] = info.get('start_date')
         if show['start_date'] and show['start_date'] > datetime.datetime.now():
-            show['status'] = 3
+            show['status'] = utils.STATUS_NOTYET
         else:
-            show['status'] = 2
+            show['status'] = utils.STATUS_FINISHED
 
     def _parse_info(self, item):
         start_date = self._str2date(item['released'])

@@ -27,6 +27,11 @@ datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
 
+STATUS_AIRING = 1
+STATUS_FINISHED = 2
+STATUS_NOTYET = 3
+STATUS_CANCELLED = 4
+
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,

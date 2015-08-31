@@ -583,7 +583,7 @@ class Trackma_cmd(cmd.Cmd):
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
-            if show['status'] == 1:
+            if show['status'] == utils.STATUS_AIRING:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
             else:
                 colored_title = title_str

@@ -482,9 +482,9 @@ class Trackma(QtGui.QMainWindow):
             return QtGui.QColor(210, 250, 210)
         elif eps and max(eps) > show['my_progress']:
             return QtGui.QColor(250, 250, 130)
-        elif show['status'] == 1:
+        elif show['status'] == utils.STATUS_AIRING:
             return QtGui.QColor(210, 250, 250)
-        elif show['status'] == 3:
+        elif show['status'] == utils.STATUS_NOTYET:
             return QtGui.QColor(250, 250, 210)
         else:
             return None

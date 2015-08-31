@@ -238,9 +238,12 @@ class libmal(lib):
         # Since the MAL API returns the status as a string, and
         # we handle statuses as integers, we need to convert them
         if self.mediatype == 'anime':
-            status_translate = {'Currently Airing': 1, 'Finished Airing': 2, 'Not yet aired': 3}
+            status_translate = {'Currently Airing': utils.STATUS_AIRING,
+                    'Finished Airing': utils.STATUS_FINISHED,
+                    'Not yet aired': utils.STATUS_NOTYET}
         elif self.mediatype == 'manga':
-            status_translate = {'Publishing': 1, 'Finished': 2}
+            status_translate = {'Publishing': utils.STATUS_AIRING,
+                    'Finished': utils.STATUS_AIRING}
 
         entries = list()
         for child in root.iter('entry'):

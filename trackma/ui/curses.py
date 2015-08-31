@@ -966,9 +966,9 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_updated'
         elif show.get('neweps'):
             self.color = 'item_neweps'
-        elif show['status'] == 1:
+        elif show['status'] == utils.STATUS_AIRING:
             self.color = 'item_airing'
-        elif show['status'] == 3:
+        elif show['status'] == utils.STATUS_NOTYET:
             self.color = 'item_notaired'
         else:
             self.color = 'body'
