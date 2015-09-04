@@ -1272,9 +1272,9 @@ class ShowView(gtk.TreeView):
         for row in self.store:
             if int(row[0]) == show['id']:
                 if is_playing:
-                    row[7] = '#6C2DC7'
+                    row[9] = '#6C2DC7'
                 else:
-                    row[7] = self._get_color(show, self.engine.library().get(show['id']))
+                    row[9] = self._get_color(show, self.engine.library().get(show['id']))
                 return
 
     def select(self, show):
