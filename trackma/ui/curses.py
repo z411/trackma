@@ -527,15 +527,12 @@ class Trackma_urwid(object):
             show = self.engine.get_show_info(item.showid)
 
             try:
-                played_episode = self.engine.play_episode(show, data)
+                self.engine.play_episode(show, data)
             except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
-            if played_episode == (show['my_progress'] + 1):
-                self.prompt_update(show, played_episode)
-            else:
-                self.status('Ready.')
+            self.status('Ready.')
 
     def prompt_update_request(self, data):
         (show, episode) = self.last_update_prompt

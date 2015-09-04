@@ -654,7 +654,7 @@ class Trackma(QtGui.QMainWindow):
                 episode = self.show_progress.value()
 
             self._busy(False)
-            self.worker_call('play_episode', self.r_played, show, episode)
+            self.worker_call('play_episode', self.r_generic, show, episode)
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -782,7 +782,7 @@ class Trackma(QtGui.QMainWindow):
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
-    
+
     def ws_prompt_update(self, show, episode):
         reply = QtGui.QMessageBox.question(self, 'Message',
             'Do you want to update %s to %d?' % (show['title'], episode),
@@ -790,7 +790,7 @@ class Trackma(QtGui.QMainWindow):
 
         if reply == QtGui.QMessageBox.Yes:
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
-                    
+
     ### Responses from the engine thread
     def r_generic(self):
         self._unbusy()
@@ -906,17 +906,6 @@ class Trackma(QtGui.QMainWindow):
             self.close()
             if not self.finish:
                 self.s_switch_account()
-
-    def r_played(self, result):
-        self._unbusy()
-        self.status('Ready.')
-
-        if result['success']:
-            show = result['show']
-            played_ep = result['played_ep']
-
-            if played_ep == (show['my_progress'] + 1):
-                self.ws_prompt_update(show, played_ep)
 
 
 class DetailsDialog(QtGui.QDialog):

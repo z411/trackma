@@ -310,10 +310,6 @@ class Trackma_cmd(cmd.Cmd):
                 playing_next = True
 
             played_episode = self.engine.play_episode(show, episode)
-
-            # Ask if we should update the show to the last episode
-            if played_episode and playing_next:
-                self._ask_update(show, played_episode)
         except utils.TrackmaError, e:
             self.display_error(e)
 

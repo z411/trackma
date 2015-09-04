@@ -669,18 +669,13 @@ class Trackma_gtk(object):
 
         try:
             if playnext:
-                played_ep = self.engine.play_episode(show)
+                self.engine.play_episode(show)
             else:
                 if not ep:
                     ep = self.show_ep_num.get_value_as_int()
-                played_ep = self.engine.play_episode(show, ep)
-
-            # Ask if we should update to the next episode
-            if played_ep == (show['my_progress'] + 1):
-                self.do_update_next(show, played_ep)
+                self.engine.play_episode(show, ep)
         except utils.TrackmaError, e:
             self.error(e.message)
-            print e.message
 
         self.status("Ready.")
         self.allow_buttons(True)
