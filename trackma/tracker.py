@@ -357,8 +357,7 @@ class Tracker(object):
         self.plex_enabled = libplex.get_config()[0]
 
         tracker_args = (watch_dir, interval)
-        #self.wait_s = update_wait * 60
-        self.wait_s = 5
+        self.wait_s = update_wait * 60
         self.wait_close = update_close
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
