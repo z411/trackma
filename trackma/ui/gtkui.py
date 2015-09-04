@@ -1614,12 +1614,16 @@ class Settings(gtk.Window):
         # Labels
         lbl_process = gtk.Label('Process Name')
         lbl_process.set_size_request(120, -1)
-        lbl_searchdir = gtk.Label('Search Directory')
+        lbl_searchdir = gtk.Label('Library Directory')
         lbl_searchdir.set_size_request(120, -1)
         lbl_tracker_enabled = gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         lbl_tracker_plex_host_port = gtk.Label('Host and Port')
         lbl_tracker_plex_host_port.set_size_request(120, -1)
+        lbl_tracker_update_wait = gtk.Label('Wait before update')
+        lbl_tracker_update_wait.set_size_request(120, -1)
+        lbl_tracker_update_options = gtk.Label('Update options')
+        lbl_tracker_update_options.set_size_request(120, -1)
 
         # Entries
         self.txt_process = gtk.Entry(4096)
@@ -1631,6 +1635,9 @@ class Settings(gtk.Window):
         self.txt_plex_port = gtk.Entry(5)
         self.txt_plex_port.set_width_chars(5)
         self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
+        self.spin_tracker_update_wait = gtk.SpinButton(gtk.Adjustment(value=5, lower=0, upper=500, step_incr=1, page_incr=10))
+        self.chk_tracker_update_close = gtk.CheckButton('Wait for the player to close')
+        self.chk_tracker_update_prompt = gtk.CheckButton('Ask before updating')
 
         # Radio buttons
         self.rbtn_tracker_local = gtk.RadioButton(None, 'Local')
@@ -1655,13 +1662,13 @@ class Settings(gtk.Window):
         header1.set_use_markup(True)
 
         line1 = gtk.HBox(False, 5)
-        line1.pack_start(lbl_process, False, False, 0)
-        line1.pack_start(self.txt_process, True, True, 0)
+        line1.pack_start(lbl_searchdir, False, False, 0)
+        line1.pack_start(self.txt_searchdir, True, True, 0)
+        line1.pack_start(self.browse_button, False, False, 0)
 
         line2 = gtk.HBox(False, 5)
-        line2.pack_start(lbl_searchdir, False, False, 0)
-        line2.pack_start(self.txt_searchdir, True, True, 0)
-        line2.pack_start(self.browse_button, False, False, 0)
+        line2.pack_start(lbl_process, False, False, 0)
+        line2.pack_start(self.txt_process, True, True, 0)
 
         line7 = gtk.HBox(False, 5)
         line7.pack_start(lbl_tracker_plex_host_port, False, False, 0)
@@ -1673,6 +1680,16 @@ class Settings(gtk.Window):
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
         line3.pack_start(self.rbtn_tracker_local, False, False, 0)
         line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
+
+        line8 = gtk.HBox(False, 5)
+        line8.pack_start(lbl_tracker_update_wait, False, False, 0)
+        line8.pack_start(self.spin_tracker_update_wait, False, False, 0)
+        line8.pack_start(gtk.Label('minutes'), False, False, 0)
+
+        line9 = gtk.HBox(False, 5)
+        line9.pack_start(lbl_tracker_update_options, False, False, 0)
+        line9.pack_start(self.chk_tracker_update_close, False, False, 0)
+        line9.pack_start(self.chk_tracker_update_prompt, False, False, 0)
 
         ### Auto-retrieve ###
         header2 = gtk.Label()
@@ -1754,23 +1771,40 @@ class Settings(gtk.Window):
         line6.pack_start(self.chk_start_in_tray, False, False, 0)
 
         # Join HBoxes
-        vbox = gtk.VBox(False, 10)
-        vbox.pack_start(header0, False, False, 0)
-        vbox.pack_start(line0, False, False, 0)
-        vbox.pack_start(header1, False, False, 0)
-        vbox.pack_start(line3, False, False, 0)
-        vbox.pack_start(line1, False, False, 0)
-        vbox.pack_start(line2, False, False, 0)
-        vbox.pack_start(line7, False, False, 0)
-        vbox.pack_start(header2, False, False, 0)
-        vbox.pack_start(line4, False, False, 0)
-        vbox.pack_start(header3, False, False, 0)
-        vbox.pack_start(line5, False, False, 0)
-        vbox.pack_start(header4, False, False, 0)
-        vbox.pack_start(line6, False, False, 0)
-        vbox.pack_start(alignment, False, False, 0)
+        mainbox = gtk.VBox(False, 10)
+        notebook = gtk.Notebook()
 
-        self.add(vbox)
+        page0 = gtk.VBox(False, 10)
+        page0.set_border_width(5)
+        page0.pack_start(header0, False, False, 0)
+        page0.pack_start(line0, False, False, 0)
+        page0.pack_start(header1, False, False, 0)
+        page0.pack_start(line3, False, False, 0)
+        page0.pack_start(line1, False, False, 0)
+        page0.pack_start(line2, False, False, 0)
+        page0.pack_start(line7, False, False, 0)
+        page0.pack_start(line8, False, False, 0)
+        page0.pack_start(line9, False, False, 0)
+
+        page1 = gtk.VBox(False, 10)
+        page1.set_border_width(5)
+        page1.pack_start(header2, False, False, 0)
+        page1.pack_start(line4, False, False, 0)
+        page1.pack_start(header3, False, False, 0)
+        page1.pack_start(line5, False, False, 0)
+
+        page2 = gtk.VBox(False, 10)
+        page2.set_border_width(5)
+        page2.pack_start(header4, False, False, 0)
+        page2.pack_start(line6, False, False, 0)
+
+        notebook.append_page(page0, gtk.Label('Media'))
+        notebook.append_page(page1, gtk.Label('Sync'))
+        notebook.append_page(page2, gtk.Label('User Interface'))
+        mainbox.pack_start(notebook, False, False, 0)
+        mainbox.pack_start(alignment, False, False, 0)
+
+        self.add(mainbox)
         self.load_config()
 
     def load_config(self):
@@ -1782,6 +1816,9 @@ class Settings(gtk.Window):
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
+        self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait'))
+        self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
+        self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
 
         if self.engine.get_config('tracker_type') == 'local':
             self.rbtn_tracker_local.set_active(True)
@@ -1821,6 +1858,9 @@ class Settings(gtk.Window):
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
+        self.engine.set_config('tracker_update_wait', self.spin_tracker_update_wait.get_value())
+        self.engine.set_config('tracker_update_close', self.chk_tracker_update_close.get_active())
+        self.engine.set_config('tracker_update_prompt', self.chk_tracker_update_prompt.get_active())
 
         # Tracker type
         if self.rbtn_tracker_local.get_active():
@@ -1877,8 +1917,10 @@ class Settings(gtk.Window):
                 self.txt_plex_host.set_sensitive(True)
                 self.txt_plex_port.set_sensitive(True)
                 self.txt_process.set_sensitive(False)
+            self.spin_tracker_update_wait.set_sensitive(True)
         else:
             self.txt_process.set_sensitive(False)
+            self.spin_tracker_update_wait.set_sensitive(False)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
 
