@@ -121,8 +121,8 @@ class Trackma_gtk(object):
         mb_show = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         self.mb_play.connect("activate", self.do_play, True)
-        mb_neweps = gtk.MenuItem('Scan new episodes')
-        mb_neweps.connect("activate", self.do_neweps)
+        mb_scanlibrary = gtk.MenuItem('Re-scan library')
+        mb_scanlibrary.connect("activate", self.do_scanlibrary)
         self.mb_info = gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.do_info)
         mb_web = gtk.MenuItem("Open web site")
@@ -140,7 +140,6 @@ class Trackma_gtk(object):
         self.mb_addsearch.connect("activate", self.do_addsearch)
 
         mb_show.append(self.mb_addsearch)
-        mb_show.append(mb_neweps)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
@@ -166,6 +165,8 @@ class Trackma_gtk(object):
         mb_list.append(gtk.SeparatorMenuItem())
         mb_list.append(self.mb_retrieve)
         mb_list.append(self.mb_send)
+        mb_list.append(gtk.SeparatorMenuItem())
+        mb_list.append(mb_scanlibrary)
 
         mb_options = gtk.Menu()
         self.mb_switch_account = gtk.MenuItem('Switch Account...')
@@ -554,8 +555,8 @@ class Trackma_gtk(object):
     def do_play(self, widget, playnext, ep=None):
         threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
-    def do_neweps(self, widget):
-        threading.Thread(target=self.task_neweps).start()
+    def do_scanlibrary(self, widget):
+        threading.Thread(target=self.task_scanlibrary).start()
 
     def do_delete(self, widget):
         try:
@@ -683,17 +684,15 @@ class Trackma_gtk(object):
         self.status("Ready.")
         self.allow_buttons(True)
 
-    def task_neweps(self):
+    def task_scanlibrary(self):
         self.allow_buttons(False)
-        _filter = self.engine.mediainfo['status_start']
-        filtered = self.engine.filter_list(_filter)
 
         try:
-            result = self.engine.get_new_episodes(filtered)
-            for show in result:
-                self.changed_show(show)
+            result = self.engine.scan_library()
         except utils.TrackmaError, e:
             self.error(e.message)
+
+        self.build_list(self.engine.mediainfo['status_start'])
 
         self.status("Ready.")
         self.allow_buttons(True)
@@ -876,8 +875,15 @@ class Trackma_gtk(object):
     def build_list(self, status):
         widget = self.show_lists[status]
         widget.append_start()
-        for show in self.engine.filter_list(widget.status_filter):
-            widget.append(show, self.engine.altname(show['id']))
+
+        if status == self.engine.mediainfo['status_start']:
+            library = self.engine.library()
+            for show in self.engine.filter_list(widget.status_filter):
+                widget.append(show, self.engine.altname(show['id']), library.get(show['id']))
+        else:
+            for show in self.engine.filter_list(widget.status_filter):
+                widget.append(show, self.engine.altname(show['id']))
+
         widget.append_finish()
 
     def on_about(self, widget):
@@ -1144,7 +1150,7 @@ class ShowView(gtk.TreeView):
         self.cols['Title'].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
-        self.cols['Title'].add_attribute(renderer_title, 'foreground', 7)
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9)
 
         if has_progress:
             renderer_progress = gtk.CellRendererText()
@@ -1153,9 +1159,13 @@ class ShowView(gtk.TreeView):
             self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
             self.cols['Progress'].set_expand(False)
 
-            renderer_percent = gtk.CellRendererProgress()
+            #renderer_percent = gtk.CellRendererProgress()
+            renderer_percent = ProgressCellRenderer()
             self.cols['Percent'].pack_start(renderer_percent, False)
-            self.cols['Percent'].add_attribute(renderer_percent, 'value', 6)
+            self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
+            self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
+            self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', 7)
+            self.cols['Percent'].add_attribute(renderer_percent, 'eps', 8)
             renderer_percent.set_fixed_size(100, -1)
 
         renderer_score = gtk.CellRendererText()
@@ -1164,14 +1174,14 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
         self.cols['Score'].set_expand(False)
 
-        # ID, Title, Episodes, Score, Episodes_str, Score_str, Progress, Color
-        self.store = gtk.ListStore(str, str, int, float, str, str, int, str)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str)
         self.set_model(self.store)
 
-    def _get_color(self, show):
+    def _get_color(self, show, eps):
         if show.get('queued'):
             return '#54C571'
-        elif show.get('neweps'):
+        elif eps and max(eps) > show['my_progress']:
             return '#FBB917'
         elif show['status'] == utils.STATUS_AIRING:
             return '#0099cc'
@@ -1184,10 +1194,11 @@ class ShowView(gtk.TreeView):
         self.freeze_child_notify()
         self.store.clear()
 
-    def append(self, show, altname=None):
+    def append(self, show, altname=None, eps=None):
         if self.has_progress:
             if show['total'] and show['my_progress'] <= show['total']:
-                progress = (float(show['my_progress']) / show['total']) * 100
+                #progress = (float(show['my_progress']) / show['total']) * 100
+                progress = show['my_progress']
             else:
                 progress = 0
             episodes_str = "%d / %d" % (show['my_progress'], show['total'])
@@ -1200,8 +1211,25 @@ class ShowView(gtk.TreeView):
             title_str += " [%s]" % altname
 
         score_str = "%0.*f" % (self.decimals, show['my_score'])
+        aired_eps = utils.estimate_aired_episodes(show)
+        if not aired_eps:
+            aired_eps = 0
 
-        row = [show['id'], title_str, show['my_progress'], show['my_score'], episodes_str, score_str, progress, self._get_color(show)]
+        if eps:
+            available_eps = eps.keys()
+        else:
+            available_eps = []
+
+        row = [show['id'],
+               title_str,
+               show['my_progress'],
+               show['my_score'],
+               episodes_str,
+               score_str,
+               show['total'],
+               aired_eps,
+               available_eps,
+               self._get_color(show, available_eps)]
         self.store.append(row)
 
     def append_finish(self):
@@ -1219,20 +1247,15 @@ class ShowView(gtk.TreeView):
         for row in self.store:
             if int(row[0]) == show['id']:
                 if self.has_progress:
-                    if show['total']:
-                        progress = (float(show['my_progress']) / show['total']) * 100
-                    else:
-                        progress = 0
                     episodes_str = "%d / %d" % (show['my_progress'], show['total'])
                     row[2] = show['my_progress']
                     row[4] = episodes_str
-                    row[6] = progress
 
                 score_str = "%0.*f" % (self.decimals, show['my_score'])
 
                 row[3] = show['my_score']
                 row[5] = score_str
-                row[7] = self._get_color(show)
+                row[9] = self._get_color(show, row[8])
                 return
 
         #print "Warning: Show ID not found in ShowView (%d)" % show['id']
@@ -1255,7 +1278,7 @@ class ShowView(gtk.TreeView):
                 if is_playing:
                     row[7] = '#6C2DC7'
                 else:
-                    row[7] = self._get_color(show)
+                    row[7] = self._get_color(show, self.engine.library().get(show['id']))
                 return
 
     def select(self, show):
@@ -2186,6 +2209,92 @@ class ShowSearchView(gtk.TreeView):
     def append_finish(self):
         self.thaw_child_notify()
         self.store.set_sort_column_id(1, gtk.SORT_ASCENDING)
+
+class ProgressCellRenderer(gtk.GenericCellRenderer):
+    value = 0
+    subvalue = 0
+    total = 0
+    eps = []
+    _subheight = 5
+
+    __gproperties__ = {
+        "value": (gobject.TYPE_INT, "Value",
+        "Progress percentage", 0, 1000, 0,
+        gobject.PARAM_READWRITE),
+
+        "subvalue": (gobject.TYPE_INT, "Subvalue",
+        "Sub percentage", 0, 1000, 0,
+        gobject.PARAM_READWRITE),
+
+        "total": (gobject.TYPE_INT, "Total",
+        "Total percentage", 0, 1000, 0,
+        gobject.PARAM_READWRITE),
+
+        "eps": (gobject.TYPE_PYOBJECT, "Episodes",
+        "Available episodes", gobject.PARAM_READWRITE),
+    }
+
+    def __init__(self):
+        self.__gobject_init__()
+        self.value = self.get_property("value")
+        self.subvalue = self.get_property("subvalue")
+        self.total = self.get_property("total")
+        self.eps = self.get_property("eps")
+
+    def do_set_property(self, pspec, value):
+        setattr(self, pspec.name, value)
+
+    def do_get_property(self, pspec):
+        return getattr(self, pspec.name)
+
+    def on_render(self, window, widget, background_area, cell_area, expose_area, flags):
+        cr = window.cairo_create()
+        (x, y, w, h) = self.on_get_size(widget, cell_area)
+
+        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.rectangle(x, y, w, h)
+        cr.fill()
+
+        if not self.total:
+            return
+
+        if self.subvalue:
+            if self.subvalue > self.total:
+                mid = w
+            else:
+                mid = int(w / float(self.total) * self.subvalue)
+
+            cr.set_source_rgb(0.7, 0.7, 0.7)
+            cr.rectangle(x, y+h-self._subheight, mid, h-(h-self._subheight))
+            cr.fill()
+
+        if self.value:
+            if self.value >= self.total:
+                cr.set_source_rgb(0.6, 0.8, 0.7)
+                cr.rectangle(x, y, w, h)
+            else:
+                mid = int(w / float(self.total) * self.value)
+                cr.set_source_rgb(0.6, 0.7, 0.8)
+                cr.rectangle(x, y, mid, h)
+            cr.fill()
+
+        if self.eps:
+            cr.set_source_rgb(0.4, 0.5, 0.6)
+            for episode in self.eps:
+                if episode > 0 and episode < self.total:
+                    start = int(w / float(self.total) * (episode - 1))
+                    finish = int(w / float(self.total) * episode)
+                    cr.rectangle(x+start, y+h-self._subheight, finish-start, h-(h-self._subheight))
+                    cr.fill()
+
+    def on_get_size(self, widget, cell_area):
+        if cell_area == None:
+            return (0, 0, 0, 0)
+        x = cell_area.x
+        y = cell_area.y
+        w = cell_area.width
+        h = cell_area.height
+        return (x, y, w, h)
 
 def main():
     app = Trackma_gtk()
