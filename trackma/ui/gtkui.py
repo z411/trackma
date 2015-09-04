@@ -1018,7 +1018,7 @@ class Trackma_gtk(object):
 
                 if show['total']:
                     menu_eps = gtk.Menu()
-                    for i in xrange(1, show['total']):
+                    for i in xrange(1, show['total'] + 1):
                         mb_playep = gtk.MenuItem(str(i))
                         mb_playep.connect("activate", self.do_play, False, i)
                         menu_eps.append(mb_playep)
