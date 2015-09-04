@@ -1192,15 +1192,9 @@ class ShowView(gtk.TreeView):
 
     def append(self, show, altname=None, eps=None):
         if self.has_progress:
-            if show['total'] and show['my_progress'] <= show['total']:
-                #progress = (float(show['my_progress']) / show['total']) * 100
-                progress = show['my_progress']
-            else:
-                progress = 0
             episodes_str = "%d / %d" % (show['my_progress'], show['total'])
         else:
             episodes_str = ''
-            progress = 0
 
         title_str = show['title']
         if altname:
@@ -1274,7 +1268,7 @@ class ShowView(gtk.TreeView):
                 if is_playing:
                     row[9] = '#6C2DC7'
                 else:
-                    row[9] = self._get_color(show, self.engine.library().get(show['id']))
+                    row[9] = self._get_color(show, row[8])
                 return
 
     def select(self, show):
