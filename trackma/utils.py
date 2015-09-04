@@ -123,19 +123,21 @@ def get_root_filename(filename):
 def estimate_aired_episodes(show):
     # Estimate how many episodes have passed since airing
     # Let's just assume 1 episode = 1 week
+    if not show['start_date']:
+        return
+
     if show['status'] == 1:
         days = (datetime.datetime.now() - show['start_date']).days
         if days <= 0:
             return 0
-        
+
         eps = days / 7 + 1
         if eps > show['total']:
             return show['total']
         return eps
     elif show['status'] == 2:
         return show['total']
-    
-    
+
 def guess_show(show_title, tracker_list):
     # Use difflib to see if the show title is similar to
     # one we have in the list
