@@ -683,7 +683,8 @@ class Engine:
                 arg_list = shlex.split(self.config['player'])
                 arg_list.append(filename)
                 try:
-                    subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+                    with open(os.devnull, 'wb') as DEVNULL:
+                        subprocess.Popen(arg_list, stdout=DEVNULL, stderr=DEVNULL)
                 except OSError:
                     raise utils.EngineError('Player not found, check your config.json')
                 return endep
