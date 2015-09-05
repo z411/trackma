@@ -66,9 +66,11 @@ following command:
 
 <pre># pip install Trackma</pre>
 
-Or if you've downloaded the source code:
+Or download the source code and install:
 
-<pre># python setup.py install</pre>
+<pre># git clone https://github.com/z411/trackma.git
+# cd trackma
+# sudo python2.7 setup.py install</pre>
 
 Then you can run the program with the interface you like.
 
