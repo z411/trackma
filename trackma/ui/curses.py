@@ -49,6 +49,7 @@ class Trackma_urwid(object):
     keymapping = dict()
     positions = list()
     last_search = None
+    last_update_prompt = ()
 
     """Widgets"""
     header = None
@@ -163,20 +164,31 @@ class Trackma_urwid(object):
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
-        self._rebuild_all_lists()
+        self._rebuild_lists()
         self.set_filter(0)
 
         self.status('Ready.')
         self.started = True
 
-    def _rebuild_all_lists(self):
-        for status in self.lists.keys():
+    def _rebuild_lists(self, status=None):
+        if status:
             self.lists[status].body[:] = []
+            showlist = self.engine.filter_list(status)
+        else:
+            for _status in self.lists.keys():
+                self.lists[_status].body[:] = []
+            showlist = self.engine.get_list()
 
-        showlist = self.engine.get_list()
+        library = self.engine.library()
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
+
         for show in sortedlist:
-            self.lists[show['my_status']].body.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
+            if show['my_status'] == self.engine.mediainfo['status_start']:
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
+            else:
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
+
+            self.lists[show['my_status']].body.append(item)
 
     def start(self, account):
         """Starts the engine"""
@@ -192,6 +204,7 @@ class Trackma_urwid(object):
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
         self.engine.connect_signal('show_synced', self.changed_show)
+        self.engine.connect_signal('prompt_for_update', self.prompt_update)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
@@ -208,16 +221,6 @@ class Trackma_urwid(object):
     def _get_cur_list(self):
         _filter = self.filters_nums[self.cur_filter]
         return self.lists[_filter].body
-
-    def _rebuild_list(self, filter_num):
-        w = self.lists[filter_num].body
-
-        self.lists[filter_num].body[:] = []
-
-        showlist = self.engine.filter_list(filter_num)
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
-        for show in sortedlist:
-            w.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
 
     def _get_selected_item(self):
         return self._get_cur_list().get_focus()[0]
@@ -275,7 +278,7 @@ class Trackma_urwid(object):
         _sort = self.sorts_iter.next()
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
-        self._rebuild_all_lists()
+        self._rebuild_lists()
         self.status("Ready.")
 
     def do_update(self):
@@ -295,7 +298,7 @@ class Trackma_urwid(object):
     def do_retrieve(self):
         try:
             self.engine.list_download()
-            self._rebuild_all_lists()
+            self._rebuild_lists()
             self.status("Ready.")
         except utils.TrackmaError, e:
             self.error(e.message)
@@ -419,11 +422,8 @@ class Trackma_urwid(object):
 
     def do_neweps(self):
         try:
-            _filter = self.filters_nums[self.cur_filter]
-            filtered = self.engine.filter_list(_filter)
-
-            shows = self.engine.get_new_episodes(filtered)
-            self._rebuild()
+            shows = self.engine.scan_library()
+            self._rebuild_lists(self.engine.mediainfo['status_start'])
 
             self.status("Ready.")
         except utils.TrackmaError, e:
@@ -527,30 +527,28 @@ class Trackma_urwid(object):
             show = self.engine.get_show_info(item.showid)
 
             try:
-                played_episode = self.engine.play_episode(show, data)
+                self.engine.play_episode(show, data)
             except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
-            if played_episode == (show['my_progress'] + 1):
-                self.question("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
-            else:
-                self.status('Ready.')
+            self.status('Ready.')
 
-    def update_next_request(self, data):
-        self.ask_finish(self.update_next_request)
+    def prompt_update_request(self, data):
+        (show, episode) = self.last_update_prompt
+        self.ask_finish(self.prompt_update_request)
         if data == 'y':
-            item = self._get_selected_item()
-            show = self.engine.get_show_info(item.showid)
-            next_episode = show['my_progress'] + 1
-
             try:
-                show = self.engine.set_episode(item.showid, next_episode)
+                show = self.engine.set_episode(show['id'], episode)
             except utils.TrackmaError, e:
                 self.error(e.message)
                 return
         else:
             self.status('Ready.')
+
+    def prompt_update(self, show, episode):
+        self.last_update_prompt = (show, episode)
+        self.question("Update %s to episode %d? [y/N] " % (show['title'], episode), self.prompt_update_request)
 
     def changed_show(self, show):
         if self.started and show:
@@ -559,9 +557,9 @@ class Trackma_urwid(object):
             self.mainloop.draw_screen()
 
     def changed_show_status(self, show, old_status=None):
-        self._rebuild_list(show['my_status'])
+        self._rebuild_lists(show['my_status'])
         if old_status is not None:
-            self._rebuild_list(old_status)
+            self._rebuild_lists(old_status)
 
         go_filter = 0
         for _filter in self.filters_nums:
@@ -578,7 +576,7 @@ class Trackma_urwid(object):
         self.mainloop.draw_screen()
 
     def changed_list(self, show):
-        self._rebuild_list(show['my_status'])
+        self._rebuild_lists(show['my_status'])
 
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
@@ -934,11 +932,16 @@ class ShowWalker(urwid.SimpleListWalker):
                 break
 
 class ShowItem(urwid.WidgetWrap):
-    def __init__(self, show, has_progress=True, altname=None):
+    def __init__(self, show, has_progress=True, altname=None, eps=None):
         if has_progress:
             self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         else:
             self.episodes_str = urwid.Text("-")
+
+        if eps:
+            self.eps = eps.keys()
+        else:
+            self.eps = None
 
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         self.has_progress = has_progress
@@ -964,11 +967,11 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'
-        elif show.get('neweps'):
+        elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
-        elif show['status'] == 1:
+        elif show['status'] == utils.STATUS_AIRING:
             self.color = 'item_airing'
-        elif show['status'] == 3:
+        elif show['status'] == utils.STATUS_NOTYET:
             self.color = 'item_notaired'
         else:
             self.color = 'body'
@@ -1002,7 +1005,7 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'
-        elif show.get('neweps'):
+        elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
         elif show['status'] == 1:
             self.color = 'item_airing'

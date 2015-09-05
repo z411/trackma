@@ -45,7 +45,7 @@ class Data(object):
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': dict() }
+    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': {}, 'library': {}, 'library_cache': {}, }
 
     autosend_timer = None
 
@@ -428,11 +428,29 @@ class Data(object):
     def altnames_get(self):
         return self.meta['altnames']
 
+    def library_get(self):
+        return self.meta['library']
+
+    def library_save(self, library):
+        self.meta['library'] = library
+
+    def library_cache_get(self):
+        return self.meta['library_cache']
+
+    def library_cache_save(self, library_cache):
+        self.meta['library_cache'] = library_cache
+
     def get_show_attr(self, show, key):
         return show.get(key)
 
     def set_show_attr(self, show, key, value):
         show[key] = value
+
+    def get_show_titles(self, show):
+        if self.altname_get(show['id']):
+            return [ self.altname_get(show['id']) ]
+        else:
+            return [show['title']] + show['aliases']
 
     def autosend(self):
         # Check if we should autosend now

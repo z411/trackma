@@ -101,18 +101,20 @@ class libanilist(lib):
             self.watched_str = "chapters_read"
             self.airing_str = "publishing_status"
             self.status_translate = {
-                'publishing': 1,
-                'finished': 2,
-                'not yet published': 3,
+                'publishing': utils.STATUS_AIRING,
+                'finished': utils.STATUS_FINISHED,
+                'not yet published': utils.STATUS_NOTYET,
+                'cancelled': utils.STATUS_CANCELLED,
             }
         else:
             self.total_str = "total_episodes"
             self.watched_str = "episodes_watched"
             self.airing_str = "airing_status"
             self.status_translate = {
-                'currently airing': 1,
-                'finished airing': 2,
-                'not yet aired': 3,
+                'currently airing': utils.STATUS_AIRING,
+                'finished airing': utils.STATUS_FINISHED,
+                'not yet aired': utils.STATUS_NOTYET,
+                'cancelled': utils.STATUS_CANCELLED,
             }
 
         #handler=urllib2.HTTPHandler(debuglevel=1)
@@ -340,7 +342,7 @@ class libanilist(lib):
                 ('Description',     item.get('description')),
                 ('Genres',          item.get('genres')),
                 ('Classification',  item.get('classification')),
-                ('Status',          item.get('airing_status')),
+                ('Status',          item.get(self.airing_str)),
                 ('Average score',   item.get('average_score')),
                 ('Japanese title',  item.get('title_japanese')),
                 ('English title',   item.get('title_english')),

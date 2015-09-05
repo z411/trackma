@@ -57,14 +57,15 @@ class Engine:
 
     name = 'Engine'
 
-    signals = { 'show_added':       None,
-                'show_deleted':     None,
-                'episode_changed':  None,
-                'score_changed':    None,
-                'status_changed':   None,
-                'show_synced':      None,
-                'queue_changed':    None,
-                'playing':          None, }
+    signals = { 'show_added':        None,
+                'show_deleted':      None,
+                'episode_changed':   None,
+                'score_changed':     None,
+                'status_changed':    None,
+                'show_synced':       None,
+                'queue_changed':     None,
+                'playing':           None,
+                'prompt_for_update': None, }
 
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -112,7 +113,11 @@ class Engine:
         self._emit_signal('playing', show, playing, episode)
 
     def _tracker_update(self, showid, episode):
-        self.set_episode(showid, episode)
+        show = self.get_show_info(showid)
+        if self.config['tracker_update_prompt']:
+            self._emit_signal('prompt_for_update', show, episode)
+        else:
+            self.set_episode(show['id'], episode)
 
     def _emit_signal(self, signal, *args):
         try:
@@ -121,16 +126,20 @@ class Engine:
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def _get_tracker_list(self):
+    def _get_tracker_list(self, filter_num=None):
         tracker_list = []
-        for show in self.get_list():
+        if filter_num:
+            source_list = self.filter_list(filter_num)
+        else:
+            source_list = self.get_list()
 
+        for show in source_list:
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
                                  'type': None,
-                                 'titles': self.get_show_titles(show),
-                                 }) # TODO types
+                             'titles': self.data_handler.get_show_titles(show),
+                             }) # TODO types
 
         return tracker_list
 
@@ -181,6 +190,7 @@ class Engine:
                                    self.config['searchdir'],
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait']),
+                                   self.config['tracker_update_close'],
                                   )
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)
@@ -259,12 +269,6 @@ class Engine:
             if show['title'] == pattern:
                 return show
         raise utils.EngineError("Show not found.")
-
-    def get_show_titles(self, show):
-        if self.data_handler.altname_get(show['id']):
-            return [ self.data_handler.altname_get(show['id']) ]
-        else:
-            return [show['title']] + show['aliases']
 
     def get_show_details(self, show):
         """
@@ -562,17 +566,83 @@ class Engine:
     def get_new_episodes(self, showlist):
         results = list()
         total = len(showlist)
+        t = time.time()
 
         for i, show in enumerate(showlist):
             self.msg.info(self.name, "Searching %d/%d..." % (i+1, total))
 
-            titles = self.get_show_titles(show)
+            titles = self.data_handler.get_show_titles(show)
 
             (filename, ep) = self._search_video(titles, show['my_progress']+1)
             if filename:
                 self.data_handler.set_show_attr(show, 'neweps', True)
                 results.append(show)
+
+        self.msg.info(self.name, "Time: %s" % (time.time() - t))
         return results
+
+    def library(self):
+        return self.data_handler.library_get()
+
+    def scan_library(self, my_status=None):
+        # Check if operation is supported by the API
+        if not self.mediainfo.get('can_play'):
+            raise utils.EngineError('Operation not supported by current site or mediatype.')
+        if not self.config['searchdir']:
+            raise utils.EngineError('Media directory is not set.')
+        if not utils.dir_exists(self.config['searchdir']):
+            raise utils.EngineError('The set media directory doesn\'t exist.')
+        
+        t = time.time()
+        library = {}
+        library_cache = self.data_handler.library_cache_get()
+        
+        if not my_status:
+            my_status = self.mediainfo['status_start']
+
+        self.msg.info(self.name, "Scanning local library...")
+        tracker_list = self._get_tracker_list(my_status)
+
+        # Do a full listing of the media directory
+        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
+            show_id = None
+            if filename in library_cache.keys():
+                # If the filename was already seen before
+                # use the cached information, if there's no information (None)
+                # then it means it doesn't correspond to any show in the list
+                # and can be safely skipped.
+                if library_cache[filename]:
+                    show_id = library_cache[filename][0]
+                    show_ep = library_cache[filename][1]
+                else:
+                    continue
+            else:
+                # If the filename has not been seen, extract
+                # the information from the filename and do a fuzzy search
+                # on the user's list. Cache the information.
+                # If it fails, cache it as None.
+                aie = tracker.AnimeInfoExtractor(filename)
+                (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+                if show_title:
+                    show = utils.guess_show(show_title, tracker_list)
+                    if show:
+                        show_id = show['id']
+                        library_cache[filename] = (show['id'], show_ep)
+                    else:
+                        library_cache[filename] = None
+                else:
+                    library_cache[filename] = None
+
+            # After we got our information, add it to our library
+            if show_id:
+                if show_id not in library.keys():
+                    library[show_id] = {}
+                library[show_id][show_ep] = fullpath
+
+        self.msg.debug(self.name, "Time: %s" % (time.time() - t))
+        self.data_handler.library_save(library)
+        self.data_handler.library_cache_save(library_cache)
+        return library
 
     def play_episode(self, show, playep=0):
         """
@@ -583,7 +653,7 @@ class Engine:
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
-            raise utils.EngineError('Operation not supported by API.')
+            raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
             raise utils.EngineError('Media directory is not set.')
         if not utils.dir_exists(self.config['searchdir']):
@@ -605,21 +675,18 @@ class Engine:
 
             self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
 
-            titles = self.get_show_titles(show)
+            titles = self.data_handler.get_show_titles(show)
 
             filename, endep = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
-                if self.tracker:
-                    self.tracker.disable()
                 arg_list = shlex.split(self.config['player'])
                 arg_list.append(filename)
                 try:
-                    subprocess.call(arg_list)
+                    with open(os.devnull, 'wb') as DEVNULL:
+                        subprocess.Popen(arg_list, stdout=DEVNULL, stderr=DEVNULL)
                 except OSError:
                     raise utils.EngineError('Player not found, check your config.json')
-                if self.tracker:
-                    self.tracker.enable()
                 return endep
             else:
                 raise utils.EngineError('Episode file not found.')

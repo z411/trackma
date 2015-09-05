@@ -97,6 +97,11 @@ class Trackma_cmd(cmd.Cmd):
             return self.sortedlist[index]
         except (ValueError, AttributeError, IndexError):
             return self.engine.get_show_info_title(title)
+    
+    def _ask_update(self, show, episode):
+        do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
+        if do_update.lower() == 'y':
+            self.engine.set_episode(show['id'], episode)
 
     def start(self):
         """
@@ -110,6 +115,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
+        self.engine.connect_signal('prompt_for_update', self._ask_update)
         self.engine.start()
 
         # Start with default filter selected
@@ -158,8 +164,8 @@ class Trackma_cmd(cmd.Cmd):
         Available types: id, title, my_progress, total, my_score
         """
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
-        if arg[0] in sorts:
-            self.sort = arg[0]
+        if args[0] in sorts:
+            self.sort = args[0]
             self._load_list()
         else:
             print "Invalid sort."
@@ -278,6 +284,9 @@ class Trackma_cmd(cmd.Cmd):
         for show in results:
             print show['title']
 
+    def do_scaneps(self, args):
+        self.engine.scan_library()
+
     def do_play(self, args):
         """
         play - Starts the media player with the specified episode number.
@@ -301,12 +310,6 @@ class Trackma_cmd(cmd.Cmd):
                 playing_next = True
 
             played_episode = self.engine.play_episode(show, episode)
-
-            # Ask if we should update the show to the last episode
-            if played_episode and playing_next:
-                do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), played_episode))
-                if do_update.lower() == 'y':
-                    self.engine.set_episode(show['id'], played_episode)
         except utils.TrackmaError, e:
             self.display_error(e)
 
@@ -328,7 +331,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         score - Changes the given score of a show to the specified score.
 
-        Usage: update <show id or name> <score>
+        Usage: score <show id or name> <score>
         """
         try:
             show = self._get_show(args[0])
@@ -580,7 +583,7 @@ class Trackma_cmd(cmd.Cmd):
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
-            if show['status'] == 1:
+            if show['status'] == utils.STATUS_AIRING:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
             else:
                 colored_title = title_str

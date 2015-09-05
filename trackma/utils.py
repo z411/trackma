@@ -16,7 +16,9 @@
 
 import os, re, shutil, copy
 import subprocess
+import datetime
 import json
+import difflib
 import cPickle as pickle
 
 VERSION = '0.3'
@@ -24,6 +26,11 @@ VERSION = '0.3'
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
+
+STATUS_AIRING = 1
+STATUS_FINISHED = 2
+STATUS_NOTYET = 3
+STATUS_CANCELLED = 4
 
 # Put the available APIs here
 available_libs = {
@@ -88,6 +95,11 @@ def regex_find_videos(extensions, subdirectory=''):
             if match:
                 yield ( os.path.join(root, filename), filename )
 
+def list_library(path):
+    for root, dirs, names in os.walk(path, followlinks=True):
+        for filename in names:
+            yield ( os.path.join(root, filename), filename )
+
 def make_dir(directory):
     path = os.path.expanduser(os.path.join('~', '.trackma', directory))
     if not os.path.isdir(path):
@@ -107,6 +119,45 @@ def get_filename(subdir, filename):
 
 def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.trackma', filename))
+
+def estimate_aired_episodes(show):
+    # Estimate how many episodes have passed since airing
+    # Let's just assume 1 episode = 1 week
+    if not show['start_date']:
+        return
+
+    if show['status'] == 1:
+        days = (datetime.datetime.now() - show['start_date']).days
+        if days <= 0:
+            return 0
+
+        eps = days / 7 + 1
+        if eps > show['total']:
+            return show['total']
+        return eps
+    elif show['status'] == 2:
+        return show['total']
+
+def guess_show(show_title, tracker_list):
+    # Use difflib to see if the show title is similar to
+    # one we have in the list
+    highest_ratio = (None, 0)
+    matcher = difflib.SequenceMatcher()
+    matcher.set_seq1(show_title.lower())
+
+    # Compare to every show in our list to see which one
+    # has the most similar name
+    for item in tracker_list:
+        # Make sure to search through all the aliases
+        for title in item['titles']:
+            matcher.set_seq2(title.lower())
+            ratio = matcher.ratio()
+            if ratio > highest_ratio[1]:
+                highest_ratio = (item, ratio)
+
+    playing_show = highest_ratio[0]
+    if highest_ratio[1] > 0.7:
+        return playing_show
 
 def get_terminal_size(fd=1):
     """
@@ -182,6 +233,8 @@ config_defaults = {
     'searchdir': '/home/user/Videos',
     'tracker_enabled': True,
     'tracker_update_wait': 5,
+    'tracker_update_close': False,
+    'tracker_update_prompt': False,
     'tracker_interval': 30,
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',

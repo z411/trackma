@@ -53,6 +53,8 @@ class libvndb(lib):
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
         'score_max': 10,
         'score_step': 0.1,
+        'status_start': 1,
+        'status_finish': 2,
     }
     mediatypes['wishlist'] = {
         'has_progress': False,
@@ -66,6 +68,8 @@ class libvndb(lib):
         'statuses_dict': { 0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist' },
         'score_max': 10,
         'score_step': 0.1,
+        'status_start': None,
+        'status_finish': None,
     }
 
     def __init__(self, messenger, account, userconfig):
@@ -327,9 +331,9 @@ class libvndb(lib):
         show['image'] = info.get('image')
         show['start_date'] = info.get('start_date')
         if show['start_date'] and show['start_date'] > datetime.datetime.now():
-            show['status'] = 3
+            show['status'] = utils.STATUS_NOTYET
         else:
-            show['status'] = 2
+            show['status'] = utils.STATUS_FINISHED
 
     def _parse_info(self, item):
         start_date = self._str2date(item['released'])
