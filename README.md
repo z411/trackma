@@ -66,7 +66,7 @@ following command:
 
 <pre># pip install Trackma</pre>
 
-Or if you've downloaded the source code:
+Or download the source code and install:
 
 <pre># git clone https://github.com/z411/trackma.git
 # cd trackma
