@@ -478,6 +478,7 @@ class Trackma_gtk(object):
 
             self.notebook.append_page(sw, gtk.Label(name))
             self.notebook.show_all()
+            self.show_lists[status].realize()
 
         self.notebook.connect("switch-page", self.select_show)
 
