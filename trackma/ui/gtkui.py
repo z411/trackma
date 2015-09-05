@@ -32,7 +32,6 @@ import os
 import cgi
 import time
 import threading
-import webbrowser
 import urllib2
 from cStringIO import StringIO
 
@@ -988,7 +987,7 @@ class Trackma_gtk(object):
     def do_web(self, widget):
         show = self.engine.get_show_info(self.selected_show)
         if show['url']:
-            webbrowser.open(show['url'], 2, True)
+            gtk.show_uri(None, show['url'], gtk.gdk.CURRENT_TIME)
 
     def showview_context_menu(self, treeview, event):
         if event.button == 3:
@@ -1503,7 +1502,7 @@ class InfoDialog(gtk.Window):
 
     def do_web(self, widget):
         if self.show['url']:
-            webbrowser.open(self.show['url'], 2, True)
+            gtk.show_uri(None, self.show['url'], gtk.gdk.CURRENT_TIME)
 
 
 class InfoWidget(gtk.VBox):
