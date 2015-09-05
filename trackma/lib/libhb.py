@@ -126,7 +126,7 @@ class libhb(lib):
                 showlist[showid] = utils.show()
                 showlist[showid].update({
                     'id': showid,
-                    'title': show['anime']['title'],
+                    'title': show['anime']['title'] or "",
                     'status': self.status_translate[status],
                     'start_date':   self._str2date( show['anime']['started_airing'] ),
                     'end_date':     self._str2date( show['anime']['finished_airing'] ),
@@ -222,7 +222,7 @@ class libhb(lib):
             alt_titles.append(show['alternate_title'])
         info.update({
             'id': show['id'],
-            'title': show['title'],
+            'title': show['title'] or "",
             'status': self.status_translate[show['status']],
             'image': show['cover_image'],
             'url': show['url'],
