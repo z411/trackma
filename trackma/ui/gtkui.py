@@ -688,7 +688,7 @@ class Trackma_gtk(object):
         except utils.TrackmaError, e:
             self.error(e.message)
 
-        self.build_list(self.engine.mediainfo['status_start'])
+        gobject.idle_add(self.build_list, self.engine.mediainfo['status_start'])
 
         self.status("Ready.")
         self.allow_buttons(True)
@@ -736,9 +736,7 @@ class Trackma_gtk(object):
         if retrieve:
             self.engine.list_download()
 
-        gtk.threads_enter()
-        self.build_all_lists()
-        gtk.threads_leave()
+        gobject.idle_add(self.build_all_lists)
 
         self.status("Ready.")
         self.allow_buttons(True)
