@@ -2311,7 +2311,7 @@ class ProgressCellRenderer(gtk.GenericCellRenderer):
         if self.eps:
             cr.set_source_rgb(0.4, 0.5, 0.6)
             for episode in self.eps:
-                if episode > 0 and episode < self.total:
+                if episode > 0 and episode <= self.total:
                     start = int(w / float(self.total) * (episode - 1))
                     finish = int(w / float(self.total) * episode)
                     cr.rectangle(x+start, y+h-self._subheight, finish-start, h-(h-self._subheight))
