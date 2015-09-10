@@ -108,6 +108,15 @@ class libmal(lib):
             request = urllib2.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
             response = self.opener.open(request, timeout = 10)
+        except urllib2.HTTPError, e:
+            if e.code == 401:
+                raise utils.APIError(
+                        "Unauthorized. Please check if your username and password are correct."
+                        "\n\nPlease note that you might also be getting this error if you have "
+                        "non-alphanumeric characters in your password due to an upstream "
+                        "MAL bug (#138).")
+            else:
+                raise utils.APIError("HTTP error %d: %s" % (e.code, e.reason))
         except urllib2.URLError, e:
             raise utils.APIError("Connection error: %s" % e)
 
@@ -124,20 +133,18 @@ class libmal(lib):
             return True     # Already logged in
 
         self.msg.info(self.name, 'Logging in...')
-        try:
-            response = self._request(self.url + "account/verify_credentials.xml")
-            root = ET.ElementTree().parse(response, parser=self._make_parser())
-            (userid, username) = self._parse_credentials(root)
-            self.username = username
 
-            self._set_userconfig('userid', userid)
-            self._set_userconfig('username', username)
-            self._emit_signal('userconfig_changed')
+        response = self._request(self.url + "account/verify_credentials.xml")
+        root = ET.ElementTree().parse(response, parser=self._make_parser())
+        (userid, username) = self._parse_credentials(root)
+        self.username = username
 
-            self.logged_in = True
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError("Incorrect credentials.")
+        self._set_userconfig('userid', userid)
+        self._set_userconfig('username', username)
+        self._emit_signal('userconfig_changed')
+
+        self.logged_in = True
+        return True
 
     def fetch_list(self):
         """Queries the full list from the remote server.
