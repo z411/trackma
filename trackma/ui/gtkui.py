@@ -366,6 +366,8 @@ class Trackma_gtk(object):
         key, mod = gtk.accelerator_parse("<Control>Left")
         self.rem_epp_button.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         self.rem_epp_button.set_tooltip_text("Ctrl+Left")
+        key, mod = gtk.accelerator_parse("<Control>L")
+        mb_scanlibrary.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
 
         self.main.add_accel_group(accelgrp)
 
