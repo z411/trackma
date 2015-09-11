@@ -380,9 +380,11 @@ class Trackma_gtk(object):
         self.mb_settings.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Control>Y")
         mb_copy.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("<Control>C")
+        key, mod = gtk.accelerator_parse("<Shift>A")
         mb_alt_title.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
-
+        key, mod = gtk.accelerator_parse("<Shift>C")
+        self.mb_switch_account.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+ 
         self.main.add_accel_group(accelgrp)
 
         # Status icon
