@@ -366,7 +366,25 @@ class Trackma_gtk(object):
         key, mod = gtk.accelerator_parse("<Control>Left")
         self.rem_epp_button.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         self.rem_epp_button.set_tooltip_text("Ctrl+Left")
-
+        key, mod = gtk.accelerator_parse("<Control>L")
+        mb_scanlibrary.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>W")
+        mb_web.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>D")
+        self.mb_info.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>Delete")
+        self.mb_delete.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>Q")
+        self.mb_exit.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>O")
+        self.mb_settings.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Control>Y")
+        mb_copy.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Shift>A")
+        mb_alt_title.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        key, mod = gtk.accelerator_parse("<Shift>C")
+        self.mb_switch_account.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+ 
         self.main.add_accel_group(accelgrp)
 
         # Status icon
