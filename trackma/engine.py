@@ -30,6 +30,7 @@ import messenger
 import data
 import tracker
 import utils
+import extras.AnimeInfoExtractor
 
 class Engine:
     """
@@ -536,7 +537,7 @@ class Engine:
         # Check over video files and propose our best candidate
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
             # Analyze what's the title and episode of the file
-            aie = tracker.AnimeInfoExtractor(filename)
+            aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
             candidate_title = aie.getName()
             candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
@@ -621,7 +622,7 @@ class Engine:
                 # the information from the filename and do a fuzzy search
                 # on the user's list. Cache the information.
                 # If it fails, cache it as None.
-                aie = tracker.AnimeInfoExtractor(filename)
+                aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
                 (show_title, show_ep) = (aie.getName(), aie.getEpisode())
                 if show_title:
                     show = utils.guess_show(show_title, tracker_list)
