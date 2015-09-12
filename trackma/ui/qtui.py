@@ -744,6 +744,7 @@ class Trackma(QtGui.QMainWindow):
         QtGui.QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
             '<p><b>About Trackma-qt %s</b></p><p>Trackma is an open source client for media tracking websites.</p>'
             '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
+            '<p>Thanks to all contributors. To see all contributors see AUTHORS file.</p>'
             '<p>Copyright (C) z411 - Icon by shuuichi</p>'
             '<p><a href="http://github.com/z411/trackma">http://github.com/z411/trackma</a></p>' % utils.VERSION)
 

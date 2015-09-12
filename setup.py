@@ -20,7 +20,7 @@ setup(
     name=NAME,
     version=utils.VERSION,
     packages=find_packages(),
-    
+
     install_requires=REQUIREMENTS,
     extras_require=EXTRA_REQUIREMENTS,
     package_data={'trackma': ['data/*']},

@@ -904,7 +904,7 @@ class Trackma_gtk(object):
         about.set_version(utils.VERSION)
         about.set_comments("Trackma is an open source client for media tracking websites.")
         about.set_website("http://github.com/z411/trackma")
-        about.set_copyright("(c) z411 - Icon by shuuichi")
+        about.set_copyright("Thanks to all contributors. See AUTHORS file.\n(c) z411 - Icon by shuuichi")
         about.run()
         about.destroy()
 
