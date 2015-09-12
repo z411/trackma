@@ -1712,7 +1712,7 @@ class Settings(gtk.Window):
         line8 = gtk.HBox(False, 5)
         line8.pack_start(lbl_tracker_update_wait, False, False, 0)
         line8.pack_start(self.spin_tracker_update_wait, False, False, 0)
-        line8.pack_start(gtk.Label('minutes'), False, False, 0)
+        line8.pack_start(gtk.Label('seconds'), False, False, 0)
 
         line9 = gtk.HBox(False, 5)
         line9.pack_start(lbl_tracker_update_options, False, False, 0)
@@ -1844,7 +1844,7 @@ class Settings(gtk.Window):
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
-        self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait'))
+        self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
         self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
         self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
 
@@ -1886,7 +1886,7 @@ class Settings(gtk.Window):
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
-        self.engine.set_config('tracker_update_wait', self.spin_tracker_update_wait.get_value())
+        self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
         self.engine.set_config('tracker_update_close', self.chk_tracker_update_close.get_active())
         self.engine.set_config('tracker_update_prompt', self.chk_tracker_update_prompt.get_active())
 

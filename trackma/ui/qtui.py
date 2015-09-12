@@ -774,7 +774,7 @@ class Trackma(QtGui.QMainWindow):
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 if episode == (show['my_progress'] + 1):
-                    delay = self.worker.engine.get_config('tracker_update_wait')
+                    delay = self.worker.engine.get_config('tracker_update_wait_s')
                     self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
 
     def ws_changed_list(self, show, old_status=None):
@@ -1194,7 +1194,7 @@ class SettingsDialog(QtGui.QDialog):
         g_media_layout.addRow( 'Process name (regex)', self.tracker_process )
         g_media_layout.addRow( 'Plex host', self.plex_host )
         g_media_layout.addRow( 'Plex port', self.plex_port )
-        g_media_layout.addRow( 'Wait before updating (minutes)', self.tracker_update_wait )
+        g_media_layout.addRow( 'Wait before updating (seconds)', self.tracker_update_wait )
         g_media_layout.addRow( 'Wait until the player is closed', self.tracker_update_close )
         g_media_layout.addRow( 'Ask before updating', self.tracker_update_prompt )
 
@@ -1356,7 +1356,7 @@ class SettingsDialog(QtGui.QDialog):
         self.tracker_enabled.setChecked(engine.get_config('tracker_enabled'))
         self.tracker_interval.setValue(engine.get_config('tracker_interval'))
         self.tracker_process.setText(engine.get_config('tracker_process'))
-        self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait'))
+        self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait_s'))
         self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
         self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
 
@@ -1418,7 +1418,7 @@ class SettingsDialog(QtGui.QDialog):
         engine.set_config('tracker_enabled',       self.tracker_enabled.isChecked())
         engine.set_config('tracker_interval',      self.tracker_interval.value())
         engine.set_config('tracker_process',       str(self.tracker_process.text()))
-        engine.set_config('tracker_update_wait',   self.tracker_update_wait.value())
+        engine.set_config('tracker_update_wait_s',   self.tracker_update_wait.value())
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
 
