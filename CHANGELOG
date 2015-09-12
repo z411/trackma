@@ -1,11 +1,20 @@
-v0.3.1
+v0.4
 - New: Anilist support
-- New: Implemented inotify-based tracker for instant recognition under Linux
-- Improvement: Several improvements to the CLI including indexes
-- Improvement: Migrated to setuptools and registered on PyPI
-- Bugfix: libmal doesn't have problems with HTML entities anymore
-- Bugfix: Fixed situations where libmal had problems with non-gzipped responses
-- Several minor bugfixes
+- New: Plex tracker support
+- New: Implemented inotify-based tracker for instant recognition (Linux only)
+- New: Added OAuth authentication support in the engine
+- New: Added local library functionality
+- New: Added option to wait for the player to close and ask before updating
+- Improvement: (Qt/GTK) New more detailed progress bar showing available and aired episodes
+- Improvement: (Qt) Option to remember position, size and state
+- Improvement: (CLI) Added indexes to make specifying a show quicker
+- Improvement: (Qt/GTK) Added shortcuts
+- Bugfix: Fixed ocassional bug where the cache got corrupted
+- Bugfix: (Qt) Fixed problem with non-western characters in the search dialog
+- Bugfix: (MAL) Fixed situations where libmal had problems with non-gzipped responses
+- Bugfix: (MAL) Fixed an error when MAL returned an empty document
+- Bugfix: (MAL) Fixed handling of HTML entities
+- Bugfix: (Hummingbird) Working around issue with empty titles
 
 v0.3
 
