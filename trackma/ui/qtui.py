@@ -776,7 +776,7 @@ class Trackma(QtGui.QMainWindow):
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 if episode == (show['my_progress'] + 1):
                     delay = self.worker.engine.get_config('tracker_update_wait_s')
-                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d minutes." % (show['title'], episode, delay))
+                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d seconds." % (show['title'], episode, delay))
 
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
