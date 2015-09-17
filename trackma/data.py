@@ -51,6 +51,7 @@ class Data(object):
 
     signals = {
                 'show_synced':       None,
+                'sync_complete':     None,
                 'queue_changed':     None,
               }
 
@@ -100,11 +101,8 @@ class Data(object):
         self.api.connect_signal('userconfig_changed', self.userconfig_update)
 
     def _emit_signal(self, signal, *args):
-        try:
-            if self.signals[signal]:
-                self.signals[signal](*args)
-        except KeyError:
-            raise Exception("Call to undefined signal.")
+        if self.signals[signal]:
+            self.signals[signal](*args)
 
     def connect_signal(self, signal, callback):
         try:
@@ -359,6 +357,7 @@ class Data(object):
             #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
 
             # Run through queue
+            items_processed = []
             for i in xrange(len(self.queue)):
                 show = self.queue.pop(0)
                 showid = show['id']
@@ -377,8 +376,9 @@ class Data(object):
 
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
-                        self._emit_signal('show_synced', self.showlist[showid])
+                        self._emit_signal('show_synced', self.showlist[showid], show)
 
+                    items_processed.append((self.showlist[showid], show))
                     self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
@@ -393,7 +393,7 @@ class Data(object):
             self.api.logout()
             self._save_cache()
             self._save_queue()
-
+            self._emit_signal('sync_complete', items_processed)
         else:
             self.msg.debug(self.name, 'No items in queue.')
 

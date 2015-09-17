@@ -1938,7 +1938,7 @@ class Engine_Worker(QtCore.QThread):
     def _fatal(self, msg):
         self.raised_fatal.emit(msg)
 
-    def _changed_show(self, show):
+    def _changed_show(self, show, changes=None):
         self.changed_show.emit(show)
 
     def _changed_list(self, show, old_status=None):

@@ -550,7 +550,7 @@ class Trackma_urwid(object):
         self.last_update_prompt = (show, episode)
         self.question("Update %s to episode %d? [y/N] " % (show['title'], episode), self.prompt_update_request)
 
-    def changed_show(self, show):
+    def changed_show(self, show, changes=None):
         if self.started and show:
             status = show['my_status']
             self.lists[status].body.update_show(show)

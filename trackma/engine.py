@@ -55,6 +55,7 @@ class Engine:
     msg = None
     loaded = False
     playing = False
+    hooks_available = False
 
     name = 'Engine'
 
@@ -64,6 +65,7 @@ class Engine:
                 'score_changed':     None,
                 'status_changed':    None,
                 'show_synced':       None,
+                'sync_complete':     None,
                 'queue_changed':     None,
                 'playing':           None,
                 'prompt_for_update': None, }
@@ -94,17 +96,34 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
 
+        # Load hook file
+        if os.path.exists(utils.get_root_filename('hook.py')):
+            import sys
+            sys.path[0:0] = [utils.get_root()]
+            try:
+                self.msg.info(self.name, "Importing user hooks (hook.py)...")
+                global hook
+                import hook
+                self.hooks_available = True
+            except ImportError:
+                self.msg.warn(self.name, "Error importing hooks.")
+            del sys.path[0]
+
     def _init_data_handler(self, mediatype=None):
         # Create data handler
         self.data_handler = data.Data(self.msg, self.config, self.account, mediatype)
         self.data_handler.connect_signal('show_synced', self._data_show_synced)
+        self.data_handler.connect_signal('sync_complete', self._data_sync_complete)
         self.data_handler.connect_signal('queue_changed', self._data_queue_changed)
 
         # Record the API details
         (self.api_info, self.mediainfo) = self.data_handler.get_api_info()
 
-    def _data_show_synced(self, show):
-        self._emit_signal('show_synced', show)
+    def _data_show_synced(self, show, changes):
+        self._emit_signal('show_synced', show, changes)
+
+    def _data_sync_complete(self, items):
+        self._emit_signal('sync_complete', items)
 
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
@@ -124,8 +143,12 @@ class Engine:
         try:
             if self.signals[signal]:
                 self.signals[signal](*args)
-        except KeyError:
-            raise Exception("Call to undefined signal.")
+            if self.hooks_available:
+                method = getattr(hook, signal)
+                self.msg.debug(self.name, "Calling hook %s..." % signal)
+                method(*args)
+        except AttributeError:
+            pass
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
@@ -593,11 +616,11 @@ class Engine:
             raise utils.EngineError('Media directory is not set.')
         if not utils.dir_exists(self.config['searchdir']):
             raise utils.EngineError('The set media directory doesn\'t exist.')
-        
+
         t = time.time()
         library = {}
         library_cache = self.data_handler.library_cache_get()
-        
+
         if not my_status:
             my_status = self.mediainfo['status_start']
 

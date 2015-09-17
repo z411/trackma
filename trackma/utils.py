@@ -120,6 +120,9 @@ def get_filename(subdir, filename):
 def get_root_filename(filename):
     return os.path.expanduser(os.path.join('~', '.trackma', filename))
 
+def get_root():
+    return os.path.expanduser(os.path.join('~', '.trackma'))
+
 def estimate_aired_episodes(show):
     # Estimate how many episodes have passed since airing
     # Let's just assume 1 episode = 1 week
