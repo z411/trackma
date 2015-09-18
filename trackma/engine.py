@@ -146,7 +146,7 @@ class Engine:
             if self.hooks_available:
                 method = getattr(hook, signal)
                 self.msg.debug(self.name, "Calling hook %s..." % signal)
-                method(*args)
+                method(self, *args)
         except AttributeError:
             pass
 
