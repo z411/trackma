@@ -124,12 +124,12 @@ class Trackma_gtk(object):
         mb_scanlibrary.connect("activate", self.do_scanlibrary)
         self.mb_info = gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.do_info)
-        mb_web = gtk.MenuItem("Open web site")
-        mb_web.connect("activate", self.do_web)
-        mb_copy = gtk.MenuItem("Copy title to clipboard")
-        mb_copy.connect("activate", self.do_copytoclip)
-        mb_alt_title = gtk.MenuItem("Set alternate title...")
-        mb_alt_title.connect("activate", self.do_altname)
+        self.mb_web = gtk.MenuItem("Open web site")
+        self.mb_web.connect("activate", self.do_web)
+        self.mb_copy = gtk.MenuItem("Copy title to clipboard")
+        self.mb_copy.connect("activate", self.do_copytoclip)
+        self.mb_alt_title = gtk.MenuItem("Set alternate title...")
+        self.mb_alt_title.connect("activate", self.do_altname)
         self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         self.mb_delete.connect("activate", self.do_delete)
         self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -142,10 +142,10 @@ class Trackma_gtk(object):
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
-        mb_show.append(mb_web)
+        mb_show.append(self.mb_web)
         mb_show.append(gtk.SeparatorMenuItem())
-        mb_show.append(mb_copy)
-        mb_show.append(mb_alt_title)
+        mb_show.append(self.mb_copy)
+        mb_show.append(self.mb_alt_title)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(self.mb_delete)
         mb_show.append(gtk.SeparatorMenuItem())
@@ -369,7 +369,7 @@ class Trackma_gtk(object):
         key, mod = gtk.accelerator_parse("<Control>L")
         mb_scanlibrary.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Control>W")
-        mb_web.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        self.mb_web.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Control>D")
         self.mb_info.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Control>Delete")
@@ -379,12 +379,12 @@ class Trackma_gtk(object):
         key, mod = gtk.accelerator_parse("<Control>O")
         self.mb_settings.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Control>Y")
-        mb_copy.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        self.mb_copy.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Shift>A")
-        mb_alt_title.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
+        self.mb_alt_title.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
         key, mod = gtk.accelerator_parse("<Shift>C")
         self.mb_switch_account.add_accelerator("activate", accelgrp, key, mod, gtk.ACCEL_VISIBLE)
- 
+
         self.main.add_accel_group(accelgrp)
 
         # Status icon
@@ -948,6 +948,7 @@ class Trackma_gtk(object):
             if self.engine.mediainfo['can_play']:
                 self.play_button.set_sensitive(boolean)
                 self.play_next_button.set_sensitive(boolean)
+                self.mb_play.set_sensitive(boolean)
 
             if self.engine.mediainfo['can_update']:
                 self.update_button.set_sensitive(boolean)
@@ -958,6 +959,11 @@ class Trackma_gtk(object):
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
+            self.mb_copy.set_sensitive(boolean)
+            self.mb_delete.set_sensitive(boolean)
+            self.mb_alt_title.set_sensitive(boolean)
+            self.mb_info.set_sensitive(boolean)
+            self.mb_web.set_sensitive(boolean)
 
     def do_copytoclip(self, widget):
         # Copy selected show title to clipboard
