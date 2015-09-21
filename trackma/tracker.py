@@ -126,9 +126,9 @@ class Tracker(object):
         self.msg.debug(self.name, 'inotify: Watching %s' % watch_dir)
         inotifyx.add_watch(fd, watch_dir.encode('utf-8'), inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
 
-        for root, dirs, files in os.walk(watch_dir):
-            for dir_ in dirs:
-                self._inotify_watch_recursive(fd, os.path.join(root, dir_))
+        for path in os.listdir(watch_dir):
+            if os.path.isdir(os.path.join(watch_dir, path)):
+                self._inotify_watch_recursive(fd, os.path.join(watch_dir, path))
 
     def _observe_inotify(self, watch_dir):
         self.msg.info(self.name, 'Using inotify.')
