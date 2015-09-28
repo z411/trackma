@@ -1662,6 +1662,7 @@ class ShowItem(QtGui.QTableWidgetItem):
 class ShowItemNum(ShowItem):
     def __init__(self, num, text, color=None):
         ShowItem.__init__(self, text, color)
+        self.setTextAlignment(QtCore.Qt.AlignHCenter)
         self.num = num
 
     def __lt__(self, other):

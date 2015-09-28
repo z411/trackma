@@ -1192,7 +1192,6 @@ class ShowView(gtk.TreeView):
             self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
             self.cols['Progress'].set_expand(False)
 
-            #renderer_percent = gtk.CellRendererProgress()
             renderer_percent = ProgressCellRenderer()
             self.cols['Percent'].pack_start(renderer_percent, False)
             self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
