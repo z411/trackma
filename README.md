@@ -56,6 +56,7 @@ Requirements
 - (Optional) PyGTK (python-gtk2) - for the GTK interface.
 - (Optional) Urwid (python-urwid) - for the curses/urwid interface.
 - (Optional/Recommended) PIL (python-imaging) - for showing preview images in the Qt/GTK interfaces.
+- python-pip (to install through pip) *or* python-setuptools (to install through setup.py)
 
 Installation
 ------------

@@ -372,7 +372,7 @@ class Engine:
         # Get the show info
         show = self.get_show_info(showid)
         # More checks
-        if show['total'] and newep > show['total']:
+        if (show['total'] and newep > show['total']) or newep < 0:
             raise utils.EngineError('Episode out of limits.')
         if show['my_progress'] == newep:
             raise utils.EngineError("Show already at episode %d" % newep)

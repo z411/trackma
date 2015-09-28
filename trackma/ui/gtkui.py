@@ -209,6 +209,13 @@ class Trackma_gtk(object):
 
         vbox.pack_start(mb, False, False, 0)
 
+        # Toolbar
+        #toolbar = gtk.Toolbar()
+        #toolbar.insert_stock(gtk.STOCK_REFRESH, "Sync", "Sync", None, None, 0)
+        #toolbar.insert_stock(gtk.STOCK_ADD, "Sync", "Sync", None, None, 1)
+        #toolbar.insert_stock(gtk.STOCK_MEDIA_PLAY, "Sync", "Sync", None, None, 2)
+        #vbox.pack_start(toolbar, False, False, 0)
+
         self.top_hbox = gtk.HBox(False, 10)
         self.top_hbox.set_border_width(5)
 
@@ -246,34 +253,39 @@ class Trackma_gtk(object):
         line2_t.set_size_request(70, -1)
         line2_t.set_alignment(0, 0.5)
         line2.pack_start(line2_t, False, False, 0)
-        self.show_ep_num = gtk.SpinButton()
-        self.show_ep_num.set_sensitive(False)
-        self.show_ep_num.connect("activate", self.do_update)
-        #self.show_ep_num.connect("value_changed", self.do_update)
-        line2.pack_start(self.show_ep_num, False, False, 0)
 
         # Buttons
         top_buttons = gtk.HBox(False, 5)
 
-        self.add_epp_button = gtk.Button('+')
-        self.add_epp_button.connect("clicked", self.do_add_epp)
-        self.add_epp_button.set_sensitive(False)
-        line2.pack_start(self.add_epp_button, False, False, 0)
-
-        self.rem_epp_button = gtk.Button('-')
+        rem_icon = gtk.Image()
+        rem_icon.set_from_stock(gtk.STOCK_REMOVE, gtk.ICON_SIZE_BUTTON)
+        self.rem_epp_button = gtk.Button()
+        self.rem_epp_button.set_image(rem_icon)
         self.rem_epp_button.connect("clicked", self.do_rem_epp)
         self.rem_epp_button.set_sensitive(False)
         line2.pack_start(self.rem_epp_button, False, False, 0)
 
-        self.update_button = gtk.Button('Update')
-        self.update_button.connect("clicked", self.do_update)
-        self.update_button.set_sensitive(False)
-        line2.pack_start(self.update_button, False, False, 0)
+        self.show_ep_button = gtk.Button()
+        self.show_ep_button.set_relief(gtk.RELIEF_NONE)
+        self.show_ep_button.connect("clicked", self._show_episode_entry)
+        self.show_ep_button.set_label("-")
+        self.show_ep_button.set_size_request(40, -1)
+        line2.pack_start(self.show_ep_button, False, False, 0)
 
-        self.play_button = gtk.Button('Play')
-        self.play_button.connect("clicked", self.do_play, False)
-        self.play_button.set_sensitive(False)
-        line2.pack_start(self.play_button, False, False, 0)
+        self.show_ep_num = gtk.Entry()
+        self.show_ep_num.set_sensitive(False)
+        self.show_ep_num.connect("activate", self.do_update)
+        self.show_ep_num.connect("focus-out-event", self._hide_episode_entry)
+        self.show_ep_num.set_size_request(40, -1)
+        line2.pack_start(self.show_ep_num, False, False, 0)
+
+        add_icon = gtk.Image()
+        add_icon.set_from_stock(gtk.STOCK_ADD, gtk.ICON_SIZE_BUTTON)
+        self.add_epp_button = gtk.Button()
+        self.add_epp_button.set_image(add_icon)
+        self.add_epp_button.connect("clicked", self.do_add_epp)
+        self.add_epp_button.set_sensitive(False)
+        line2.pack_start(self.add_epp_button, False, False, 0)
 
         self.play_next_button = gtk.Button('Play Next')
         self.play_next_button.connect("clicked", self.do_play, True)
@@ -421,6 +433,8 @@ class Trackma_gtk(object):
         else:
             self.main.show()
 
+        self.show_ep_num.hide()
+
         self.start_engine()
 
     def _clear_gui(self):
@@ -452,10 +466,9 @@ class Trackma_gtk(object):
         can_play = self.engine.mediainfo['can_play']
         can_update = self.engine.mediainfo['can_update']
 
-        self.play_button.set_sensitive(can_play)
         self.play_next_button.set_sensitive(can_play)
 
-        self.update_button.set_sensitive(can_update)
+        self.show_ep_button.set_sensitive(can_update)
         self.show_ep_num.set_sensitive(can_update)
         self.add_epp_button.set_sensitive(can_update)
 
@@ -498,6 +511,16 @@ class Trackma_gtk(object):
             self.show_lists[status].realize()
 
         self.notebook.connect("switch-page", self.select_show)
+
+    def _show_episode_entry(self, *args):
+        self.show_ep_button.hide()
+        self.show_ep_num.set_text(self.show_ep_button.get_label())
+        self.show_ep_num.show()
+        self.show_ep_num.grab_focus()
+
+    def _hide_episode_entry(self, *args):
+        self.show_ep_num.hide()
+        self.show_ep_button.show()
 
     def idle_destroy(self):
         gobject.idle_add(self.idle_destroy_push)
@@ -589,33 +612,28 @@ class Trackma_gtk(object):
         win = InfoDialog(self.engine, show)
 
     def do_add_epp(self, widget):
-        ep = self.show_ep_num.get_value_as_int()
+        show = self.engine.get_show_info(self.selected_show)
         try:
-            show = self.engine.set_episode(self.selected_show, ep + 1)
-            self.show_ep_num.set_value(show['my_progress'])
+            show = self.engine.set_episode(self.selected_show, show['my_progress'] + 1)
         except utils.TrackmaError, e:
             self.error(e.message)
 
     def do_rem_epp(self, widget):
-        ep = self.show_ep_num.get_value_as_int()
+        show = self.engine.get_show_info(self.selected_show)
         try:
-            if(ep > 0):
-                    show = self.engine.set_episode(self.selected_show, ep - 1)
-                    self.show_ep_num.set_value(show['my_progress'])
-
+            show = self.engine.set_episode(self.selected_show, show['my_progress'] - 1)
         except utils.TrackmaError, e:
             self.error(e.message)
 
     def do_update(self, widget):
-        self.show_ep_num.update()
-        ep = self.show_ep_num.get_value_as_int()
+        self._hide_episode_entry()
+        ep = self.show_ep_num.get_text()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
         except utils.TrackmaError, e:
             self.error(e.message)
 
     def do_score(self, widget):
-        self.show_score.update()
         score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
@@ -638,6 +656,9 @@ class Trackma_gtk(object):
     def changed_show(self, show):
         status = show['my_status']
         self.show_lists[status].update(show)
+        if show['id'] == self.selected_show:
+            self.show_ep_button.set_label(str(show['my_progress']))
+            self.show_score.set_value(show['my_score'])
 
     def changed_show_title(self, show, altname):
         status = show['my_status']
@@ -845,13 +866,8 @@ class Trackma_gtk(object):
         self.show_title.set_use_markup(True)
 
         # Episode selector
-        if show['total']:
-            adjustment = gtk.Adjustment(upper=show['total'], step_incr=1)
-        else:
-            adjustment = gtk.Adjustment(upper=1000, step_incr=1)
-
-        self.show_ep_num.set_adjustment(adjustment)
-        self.show_ep_num.set_value(show['my_progress'])
+        self.show_ep_button.set_label(str(show['my_progress']))
+        self._hide_episode_entry()
 
         # Status selector
         for i in self.statusmodel:
@@ -946,12 +962,11 @@ class Trackma_gtk(object):
 
         if self.selected_show or not boolean:
             if self.engine.mediainfo['can_play']:
-                self.play_button.set_sensitive(boolean)
                 self.play_next_button.set_sensitive(boolean)
                 self.mb_play.set_sensitive(boolean)
 
             if self.engine.mediainfo['can_update']:
-                self.update_button.set_sensitive(boolean)
+                self.show_ep_button.set_sensitive(boolean)
                 self.show_ep_num.set_sensitive(boolean)
                 self.add_epp_button.set_sensitive(boolean)
                 self.rem_epp_button.set_sensitive(boolean)
