@@ -463,23 +463,25 @@ class Trackma(QtGui.QMainWindow):
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = EpisodeBar()
         percent_widget.setRange(0, 100)
+        tooltip = "Watched: %d<br>" % show['my_progress']
+
         if show['total'] > 0:
-            tooltip = "Watched: %d<br>" % show['my_progress']
-
             percent_widget.setMaximum(show['total'])
-            percent_widget.setValue(show['my_progress'])
+        else:
+            percent_widget.setMaximum((int(show['my_progress']/12)+1)*12) # Round up to the next cour
+        percent_widget.setValue(show['my_progress'])
 
-            aired_eps = utils.estimate_aired_episodes(show)
-            if aired_eps:
-                percent_widget.setSubValue(aired_eps)
-                tooltip += "Aired (estimated): %d<br>" % aired_eps
-            if library_episodes:
-                eps = library_episodes.keys()
-                tooltip += "Latest available: %d<br>" % max(eps)
-                percent_widget.setEpisodes(eps)
+        aired_eps = utils.estimate_aired_episodes(show)
+        if aired_eps:
+            percent_widget.setSubValue(aired_eps)
+            tooltip += "Aired (estimated): %d<br>" % aired_eps
+        if library_episodes:
+            eps = library_episodes.keys()
+            tooltip += "Latest available: %d<br>" % max(eps)
+            percent_widget.setEpisodes(eps)
 
-            tooltip += "Total: %d" % show['total']
-            percent_widget.setToolTip(tooltip)
+        tooltip += "Total: %d" % show['total']
+        percent_widget.setToolTip(tooltip)
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
