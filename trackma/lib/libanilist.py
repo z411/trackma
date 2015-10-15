@@ -247,6 +247,7 @@ class libanilist(lib):
                     'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
+                    'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
                 })
 
                 showlist[showid] = show
@@ -297,6 +298,7 @@ class libanilist(lib):
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
+                'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
             })
 
             showlist.append( show )
@@ -339,9 +341,9 @@ class libanilist(lib):
             'title': item['title_romaji'],
             'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
+            'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
             'start_date': self._str2date(item.get('start_date')),
             'end_date': self._str2date(item.get('end_date')),
-            'url': "http://anilist.co/%s/%d" % (self.mediatype, showid),
             'extra': [
                 ('English',         item.get('title_english')),
                 ('Japanese',        item.get('title_japanese')),
