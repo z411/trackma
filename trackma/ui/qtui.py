@@ -19,6 +19,7 @@ import sys
 
 try:
     from PyQt4 import QtGui, QtCore
+    from PyQt4.QtGui import QPalette
 except ImportError:
     print ("Couldn't import Qt dependencies. Make sure you "
            "installed the PyQt4 package.")
@@ -61,9 +62,19 @@ class Trackma(QtGui.QMainWindow):
     finish = False
     was_maximized = False
 
+    colors = {}
+    colors['is_playing']  = 'QtGui.QColor(150, 150, 250)'
+    colors['is_queued']   = 'QtGui.QColor(210, 250, 210)'
+    colors['new_episode'] = 'QtGui.QColor(250, 250, 130)'
+    colors['is_airing']   = 'QtGui.QColor(210, 250, 250)'
+    colors['not_aired']   = 'QtGui.QColor(250, 250, 210)'
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
 
+        # Initialize row highlight colors
+        self.config = {}
+        self.config['colors'] = self.colors
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
@@ -453,7 +464,7 @@ class Trackma(QtGui.QMainWindow):
 
     def _update_row(self, widget, row, show, altname, library_episodes=None, is_playing=False):
         if is_playing:
-            color = QtGui.QColor(150, 150, 250)
+            color = eval(self.config['colors']['is_playing'])
         else:
             color = self._get_color(show, library_episodes)
 
@@ -493,13 +504,13 @@ class Trackma(QtGui.QMainWindow):
 
     def _get_color(self, show, eps):
         if show.get('queued'):
-            return QtGui.QColor(210, 250, 210)
+            return eval(self.config['colors']['is_queued'])
         elif eps and max(eps) > show['my_progress']:
-            return QtGui.QColor(250, 250, 130)
+            return eval(self.config['colors']['new_episode'])
         elif show['status'] == utils.STATUS_AIRING:
-            return QtGui.QColor(210, 250, 250)
+            return eval(self.config['colors']['is_airing'])
         elif show['status'] == utils.STATUS_NOTYET:
-            return QtGui.QColor(250, 250, 210)
+            return eval(self.config['colors']['not_aired'])
         else:
             return None
 
@@ -1346,9 +1357,16 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.remember_geometry)
         g_window.setLayout(g_window_layout)
 
+        # Group: Colour scheme
+        g_scheme = QtGui.QGroupBox('Color Scheme')
+        g_scheme.setFlat(True)
+        g_scheme_layout = QtGui.QVBoxLayout()
+        g_scheme.setLayout(g_scheme_layout)
+
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_scheme)
         page_ui.setLayout(page_ui_layout)
 
         # Content
