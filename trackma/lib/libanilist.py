@@ -19,7 +19,7 @@ import trackma.utils as utils
 
 import json
 import urllib, urllib2, socket
-import time
+import time, datetime
 
 class libanilist(lib):
     """
@@ -247,6 +247,7 @@ class libanilist(lib):
                     'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
+                    'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
                 })
 
                 showlist[showid] = show
@@ -297,6 +298,7 @@ class libanilist(lib):
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
+                'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
             })
 
             showlist.append( show )
@@ -333,22 +335,39 @@ class libanilist(lib):
 
     def _parse_info(self, item):
         info = utils.show()
+        showid = item['id']
         info.update({
-            'id': item['id'],
+            'id': showid,
             'title': item['title_romaji'],
             'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
+            'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+            'start_date': self._str2date(item.get('start_date')),
+            'end_date': self._str2date(item.get('end_date')),
             'extra': [
-                ('Description',     item.get('description')),
-                ('Genres',          item.get('genres')),
+                ('English',         item.get('title_english')),
+                ('Japanese',        item.get('title_japanese')),
                 ('Classification',  item.get('classification')),
-                ('Status',          item.get(self.airing_str)),
+                ('Genres',          item.get('genres')),
+                ('Synopsis',        item.get('description')),
+                ('Type',            item.get('type')),
                 ('Average score',   item.get('average_score')),
-                ('Japanese title',  item.get('title_japanese')),
-                ('English title',   item.get('title_english')),
+                ('Status',          item.get(self.airing_str)),
+                ('Start Date',      item.get('start_date')),
+                ('End Date',        item.get('end_date')),
             ]
         })
         return info
+
+    def _str2date(self, string):
+        if string is not None:
+            try:
+                return datetime.datetime.strptime(string[:10], "%Y-%m-%d")
+            except ValueError:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+
 
     def _c(self, s):
         return 0 if s is None else s
