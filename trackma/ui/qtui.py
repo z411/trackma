@@ -959,16 +959,20 @@ class DetailsWidget(QtGui.QWidget):
         self.show_title.setFont(show_title_font)
 
         info_area = QtGui.QWidget()
-        info_layout = QtGui.QHBoxLayout()
+        info_layout = QtGui.QGridLayout()
 
         self.show_image = QtGui.QLabel()
         self.show_image.setAlignment( QtCore.Qt.AlignTop )
         self.show_info = QtGui.QLabel()
         self.show_info.setWordWrap(True)
         self.show_info.setAlignment( QtCore.Qt.AlignTop )
+        self.show_description = QtGui.QLabel()
+        self.show_description.setWordWrap(True)
+        self.show_description.setAlignment( QtCore.Qt.AlignTop )
 
-        info_layout.addWidget( self.show_image )
-        info_layout.addWidget( self.show_info, 1 )
+        info_layout.addWidget( self.show_image,        0,0,1,1 )
+        info_layout.addWidget( self.show_info,         1,0,1,1 )
+        info_layout.addWidget( self.show_description,  0,1,2,1 )
 
         info_area.setLayout(info_layout)
 
@@ -1016,12 +1020,26 @@ class DetailsWidget(QtGui.QWidget):
             details = result['details']
 
             info_strings = []
+            description_strings = []
+            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'} # This might come down to personal preference
+            list_keys = {'Genres'} # Anilist gives genres as a list, need a special case to fix formatting
+
             for line in details['extra']:
                 if line[0] and line[1]:
-                    info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                    if line[0] in description_keys:
+                        description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                    else:
+                        if line[0] in list_keys:
+                            description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
+                        elif len(line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
+                            info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                        else:
+                            info_strings.append( "<p><b>%s:</b> %s</p>" % (line[0], line[1]) )
 
             info_string = ''.join(info_strings)
             self.show_info.setText( info_string )
+            description_string = ''.join(description_strings)
+            self.show_description.setText( description_string )
         else:
             self.show_info.setText( 'There was an error while getting details.' )
 
