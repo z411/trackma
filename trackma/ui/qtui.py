@@ -198,6 +198,7 @@ class Trackma(QtGui.QMainWindow):
         top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
         left_box = QtGui.QFormLayout()
+        plusrem_hbox = QtGui.QHBoxLayout()
 
         self.show_title = QtGui.QLabel('Trackma-qt')
         show_title_font = QtGui.QFont()
@@ -232,9 +233,11 @@ class Trackma(QtGui.QMainWindow):
         self.show_play_btn = QtGui.QPushButton('Play')
         self.show_plus_btn = QtGui.QPushButton('+')
         self.show_plus_btn.setShortcut('Ctrl+Right')
+        self.show_plus_btn.setFixedWidth( 48 )
         self.show_rem_btn = QtGui.QPushButton('-')
         self.show_rem_btn.clicked.connect(self.s_rem_episode)
         self.show_rem_btn.setShortcut('Ctrl+Left')
+        self.show_rem_btn.setFixedWidth( 48 )
         self.show_plus_btn.clicked.connect(self.s_plus_episode)
         self.show_play_btn.clicked.connect(lambda: self.s_play(False))
         self.show_play_next_btn = QtGui.QPushButton('Next')
@@ -245,12 +248,15 @@ class Trackma(QtGui.QMainWindow):
         self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
         self.show_status.currentIndexChanged.connect(self.s_set_status)
+        
+        plusrem_hbox.addWidget(self.show_rem_btn)
+        plusrem_hbox.addWidget(self.show_plus_btn,1)
+        plusrem_hbox.setAlignment( QtCore.Qt.AlignCenter )
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar)
         left_box.addRow(show_progress_label, self.show_progress)
-        left_box.addRow(self.show_plus_btn)
-        left_box.addRow(self.show_rem_btn)
+        left_box.addRow(plusrem_hbox)
         left_box.addRow(self.show_progress_btn)
         left_box.addRow(self.show_play_btn)
         left_box.addRow(self.show_play_next_btn)
@@ -457,23 +463,25 @@ class Trackma(QtGui.QMainWindow):
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = EpisodeBar()
         percent_widget.setRange(0, 100)
+        tooltip = "Watched: %d<br>" % show['my_progress']
+
         if show['total'] > 0:
-            tooltip = "Watched: %d<br>" % show['my_progress']
-
             percent_widget.setMaximum(show['total'])
-            percent_widget.setValue(show['my_progress'])
+        else:
+            percent_widget.setMaximum((int(show['my_progress']/12)+1)*12) # Round up to the next cour
+        percent_widget.setValue(show['my_progress'])
 
-            aired_eps = utils.estimate_aired_episodes(show)
-            if aired_eps:
-                percent_widget.setSubValue(aired_eps)
-                tooltip += "Aired (estimated): %d<br>" % aired_eps
-            if library_episodes:
-                eps = library_episodes.keys()
-                tooltip += "Latest available: %d<br>" % max(eps)
-                percent_widget.setEpisodes(eps)
+        aired_eps = utils.estimate_aired_episodes(show)
+        if aired_eps:
+            percent_widget.setSubValue(aired_eps)
+            tooltip += "Aired (estimated): %d<br>" % aired_eps
+        if library_episodes:
+            eps = library_episodes.keys()
+            tooltip += "Latest available: %d<br>" % max(eps)
+            percent_widget.setEpisodes(eps)
 
-            tooltip += "Total: %d" % show['total']
-            percent_widget.setToolTip(tooltip)
+        tooltip += "Total: %d" % show['total']
+        percent_widget.setToolTip(tooltip)
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
@@ -953,16 +961,20 @@ class DetailsWidget(QtGui.QWidget):
         self.show_title.setFont(show_title_font)
 
         info_area = QtGui.QWidget()
-        info_layout = QtGui.QHBoxLayout()
+        info_layout = QtGui.QGridLayout()
 
         self.show_image = QtGui.QLabel()
         self.show_image.setAlignment( QtCore.Qt.AlignTop )
         self.show_info = QtGui.QLabel()
         self.show_info.setWordWrap(True)
         self.show_info.setAlignment( QtCore.Qt.AlignTop )
+        self.show_description = QtGui.QLabel()
+        self.show_description.setWordWrap(True)
+        self.show_description.setAlignment( QtCore.Qt.AlignTop )
 
-        info_layout.addWidget( self.show_image )
-        info_layout.addWidget( self.show_info, 1 )
+        info_layout.addWidget( self.show_image,        0,0,1,1 )
+        info_layout.addWidget( self.show_info,         1,0,1,1 )
+        info_layout.addWidget( self.show_description,  0,1,2,1 )
 
         info_area.setLayout(info_layout)
 
@@ -1010,12 +1022,26 @@ class DetailsWidget(QtGui.QWidget):
             details = result['details']
 
             info_strings = []
+            description_strings = []
+            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'} # This might come down to personal preference
+            list_keys = {'Genres'} # Anilist gives genres as a list, need a special case to fix formatting
+
             for line in details['extra']:
                 if line[0] and line[1]:
-                    info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                    if line[0] in description_keys:
+                        description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                    else:
+                        if line[0] in list_keys:
+                            description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
+                        elif len(line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
+                            info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                        else:
+                            info_strings.append( "<p><b>%s:</b> %s</p>" % (line[0], line[1]) )
 
             info_string = ''.join(info_strings)
             self.show_info.setText( info_string )
+            description_string = ''.join(description_strings)
+            self.show_description.setText( description_string )
         else:
             self.show_info.setText( 'There was an error while getting details.' )
 
