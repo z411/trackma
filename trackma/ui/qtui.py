@@ -62,19 +62,9 @@ class Trackma(QtGui.QMainWindow):
     finish = False
     was_maximized = False
 
-    colors = {}
-    colors['is_playing']  = 'QtGui.QColor(150, 150, 250)'
-    colors['is_queued']   = 'QtGui.QColor(210, 250, 210)'
-    colors['new_episode'] = 'QtGui.QColor(250, 250, 130)'
-    colors['is_airing']   = 'QtGui.QColor(210, 250, 250)'
-    colors['not_aired']   = 'QtGui.QColor(250, 250, 210)'
-
     def __init__(self):
         QtGui.QMainWindow.__init__(self, None)
 
-        # Initialize row highlight colors
-        self.config = {}
-        self.config['colors'] = self.colors
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
@@ -463,10 +453,7 @@ class Trackma(QtGui.QMainWindow):
         self.notebook.setTabText(tab_index, tab_name)
 
     def _update_row(self, widget, row, show, altname, library_episodes=None, is_playing=False):
-        if is_playing:
-            color = eval(self.config['colors']['is_playing'])
-        else:
-            color = self._get_color(show, library_episodes)
+        color = self._get_color(is_playing, show, library_episodes)
 
         title_str = show['title']
         if altname:
@@ -502,15 +489,17 @@ class Trackma(QtGui.QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
-    def _get_color(self, show, eps):
-        if show.get('queued'):
-            return eval(self.config['colors']['is_queued'])
+    def _get_color(self, is_playing, show, eps):
+        if is_playing:
+            return getColor(self.config['colors']['is_playing'])
+        elif show.get('queued'):
+            return getColor(self.config['colors']['is_queued'])
         elif eps and max(eps) > show['my_progress']:
-            return eval(self.config['colors']['new_episode'])
+            return getColor(self.config['colors']['new_episode'])
         elif show['status'] == utils.STATUS_AIRING:
-            return eval(self.config['colors']['is_airing'])
+            return getColor(self.config['colors']['is_airing'])
         elif show['status'] == utils.STATUS_NOTYET:
-            return eval(self.config['colors']['not_aired'])
+            return getColor(self.config['colors']['not_aired'])
         else:
             return None
 
@@ -2158,6 +2147,16 @@ class Engine_Worker(QtCore.QThread):
             self.finished.emit(ret)
         except utils.TrackmaFatal, e:
             self._fatal(e.message)
+
+def getColor(colorString):
+    if colorString[0] == "#":
+        return QtGui.QColor(colorString)
+    else:
+        (group, role) = [int(i) for i in colorString.split(',')]
+        if (0 <= group <= 2) and (0 <= role <= 19):
+            return QtGui.QColor( QPalette().color(group, role) )
+        else:
+            return QtGui.QColor()
 
 def main():
     app = QtGui.QApplication(sys.argv)
