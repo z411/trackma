@@ -378,6 +378,10 @@ class Trackma(QtGui.QMainWindow):
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
 
+    def _update_config(self):
+        self._tray()
+        self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+
     def _tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
             self.tray.hide()
@@ -745,7 +749,7 @@ class Trackma(QtGui.QMainWindow):
 
     def s_settings(self):
         dialog = SettingsDialog(None, self.worker, self.config, self.configfile)
-        dialog.saved.connect(self._tray)
+        dialog.saved.connect(self._update_config)
         dialog.exec_()
 
     def s_about(self):
@@ -1349,7 +1353,26 @@ class SettingsDialog(QtGui.QDialog):
         # Group: Colour scheme
         g_scheme = QtGui.QGroupBox('Color Scheme')
         g_scheme.setFlat(True)
-        g_scheme_layout = QtGui.QVBoxLayout()
+        self.row_highlights = [('is_playing',  'Playing'),
+                               ('is_queued',   'Queued'),
+                               ('new_episode', 'New Episode'),
+                               ('is_airing',   'Airing'),
+                               ('not_aired',   'Unaired')]
+        self.row_hl_colors = []
+        self.row_hl_buttons = []
+        g_scheme_layout = QtGui.QGridLayout()
+        col = 0
+        for (key,label) in self.row_highlights: # Generate widgets from the keys and values
+            self.row_hl_colors.append( QtGui.QPushButton() )
+            self.row_hl_colors[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+            self.row_hl_colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+            self.row_hl_colors[-1].clicked.connect( self.s_color_picker(key,False) )
+            self.row_hl_buttons.append( QtGui.QPushButton('System Colors') )
+            self.row_hl_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
+            g_scheme_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
+            g_scheme_layout.addWidget( self.row_hl_colors[-1],  col, 1, 1, 1 )
+            g_scheme_layout.addWidget( self.row_hl_buttons[-1], col, 2, 1, 1 )
+            col+=1
         g_scheme.setLayout(g_scheme_layout)
 
         # UI layout
@@ -1559,6 +1582,18 @@ class SettingsDialog(QtGui.QDialog):
             new = old
 
         self.contents.setCurrentIndex( self.category_list.row( new ) )
+
+    def s_color_picker(self, key, system):
+        return lambda: self.color_picker(key, system)
+
+    def color_picker(self, key, system): #TODO: Make a system color picker
+        color = QtGui.QColorDialog.getColor(getColor(self.config['colors'][key]))
+        self.config['colors'][key] = str(color.name())
+        self.update_colors()
+
+    def update_colors(self):
+        for ((key,label),color) in zip(self.row_highlights,self.row_hl_colors):
+            color.setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
 
 class AccountDialog(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
@@ -2149,6 +2184,7 @@ class Engine_Worker(QtCore.QThread):
             self._fatal(e.message)
 
 def getColor(colorString):
+    # Takes a color string in either #RRGGBB format or group,role format (using QPalette int values)
     if colorString[0] == "#":
         return QtGui.QColor(colorString)
     else:
@@ -2156,6 +2192,7 @@ def getColor(colorString):
         if (0 <= group <= 2) and (0 <= role <= 19):
             return QtGui.QColor( QPalette().color(group, role) )
         else:
+            # Failsafe - return black
             return QtGui.QColor()
 
 def main():
