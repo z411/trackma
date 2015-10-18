@@ -380,7 +380,7 @@ class Trackma(QtGui.QMainWindow):
 
     def _update_config(self):
         self._tray()
-        self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+        # TODO: Reload listviews?
 
     def _tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
@@ -1586,14 +1586,71 @@ class SettingsDialog(QtGui.QDialog):
     def s_color_picker(self, key, system):
         return lambda: self.color_picker(key, system)
 
-    def color_picker(self, key, system): #TODO: Make a system color picker
-        color = QtGui.QColorDialog.getColor(getColor(self.config['colors'][key]))
-        self.config['colors'][key] = str(color.name())
-        self.update_colors()
+    def color_picker(self, key, system):
+        if system is True:
+            current = self.config['colors'][key]
+            result = ThemedColorPicker.do()
+            if result is not None and result is not current:
+                self.config['colors'][key] = result
+                self.update_colors()
+        else:
+            current = getColor(self.config['colors'][key])
+            result = QtGui.QColorDialog.getColor(current)
+            if result is not None and result is not current:
+                self.config['colors'][key] = str(result.name())
+                self.update_colors()
 
     def update_colors(self):
         for ((key,label),color) in zip(self.row_highlights,self.row_hl_colors):
             color.setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+
+class ThemedColorPicker(QtGui.QDialog):
+    def __init__(self,parent=None,default=None):
+        QtGui.QDialog.__init__(self,parent)
+        self.setWindowTitle('Select Color')
+        layout = QtGui.QVBoxLayout()
+        colorbox = QtGui.QGridLayout()
+        self.colorString = default
+
+        self.groups = [0,1,2]
+        self.roles = [1,2,3,4,5,11,12,16] # Only use background roles
+        self.colors = []
+        row = 0
+        # Make colored buttons for selection
+        for group in self.groups:
+            col = 0
+            for role in self.roles:
+                self.colors.append( QtGui.QPushButton() )
+                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor( QPalette().color(group, role) ).name() )
+                self.colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+                self.colors[-1].clicked.connect( self.s_select(group,role) )
+                colorbox.addWidget(self.colors[-1], row, col, 1, 1)
+                col += 1
+            row += 1
+        bottombox = QtGui.QDialogButtonBox()
+        bottombox.addButton(QtGui.QDialogButtonBox.Ok)
+        bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
+        bottombox.accepted.connect(self.accept)
+        bottombox.rejected.connect(self.reject)
+        layout.addLayout(colorbox)
+        layout.addWidget(bottombox)
+        self.setLayout(layout)
+
+    def s_select(self, group, role):
+        return lambda: self.select(group, role)
+
+    def select(self, group, role):
+        self.colorString = str(group) + ',' + str(role)
+
+    @staticmethod
+    def do(parent=None, default=None):
+        dialog = ThemedColorPicker(parent, default)
+        result = dialog.exec_()
+
+        if result == QtGui.QDialog.Accepted:
+            return dialog.colorString
+        else:
+            return None
 
 class AccountDialog(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
