@@ -51,7 +51,7 @@ def parse_config(filename, default):
     try:
         with open(filename) as configfile:
             config.update(json.load(configfile))
-    except IOError:
+    except:
         # Will just use the default config
         # and create the file for manual editing
         save_config(config, filename)
@@ -299,4 +299,11 @@ qt_defaults = {
     'last_y': 0,
     'last_width': 740,
     'last_height': 480,
+    'colors': {
+        'is_airing': '#D2FAFA',
+        'is_playing': '#9696FA',
+        'is_queued': '#D2FAD2',
+        'new_episode': '#FAFA82',
+        'not_aired': '#FAFAD2'
+    },
 }

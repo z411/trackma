@@ -19,6 +19,7 @@ import sys
 
 try:
     from PyQt4 import QtGui, QtCore
+    from PyQt4.QtGui import QPalette
 except ImportError:
     print ("Couldn't import Qt dependencies. Make sure you "
            "installed the PyQt4 package.")
@@ -377,6 +378,10 @@ class Trackma(QtGui.QMainWindow):
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
 
+    def _update_config(self):
+        self._tray()
+        # TODO: Reload listviews?
+
     def _tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
             self.tray.hide()
@@ -452,10 +457,7 @@ class Trackma(QtGui.QMainWindow):
         self.notebook.setTabText(tab_index, tab_name)
 
     def _update_row(self, widget, row, show, altname, library_episodes=None, is_playing=False):
-        if is_playing:
-            color = QtGui.QColor(150, 150, 250)
-        else:
-            color = self._get_color(show, library_episodes)
+        color = self._get_color(is_playing, show, library_episodes)
 
         title_str = show['title']
         if altname:
@@ -491,15 +493,17 @@ class Trackma(QtGui.QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
-    def _get_color(self, show, eps):
-        if show.get('queued'):
-            return QtGui.QColor(210, 250, 210)
+    def _get_color(self, is_playing, show, eps):
+        if is_playing:
+            return getColor(self.config['colors']['is_playing'])
+        elif show.get('queued'):
+            return getColor(self.config['colors']['is_queued'])
         elif eps and max(eps) > show['my_progress']:
-            return QtGui.QColor(250, 250, 130)
+            return getColor(self.config['colors']['new_episode'])
         elif show['status'] == utils.STATUS_AIRING:
-            return QtGui.QColor(210, 250, 250)
+            return getColor(self.config['colors']['is_airing'])
         elif show['status'] == utils.STATUS_NOTYET:
-            return QtGui.QColor(250, 250, 210)
+            return getColor(self.config['colors']['not_aired'])
         else:
             return None
 
@@ -745,7 +749,7 @@ class Trackma(QtGui.QMainWindow):
 
     def s_settings(self):
         dialog = SettingsDialog(None, self.worker, self.config, self.configfile)
-        dialog.saved.connect(self._tray)
+        dialog.saved.connect(self._update_config)
         dialog.exec_()
 
     def s_about(self):
@@ -1346,9 +1350,35 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.remember_geometry)
         g_window.setLayout(g_window_layout)
 
+        # Group: Colour scheme
+        g_scheme = QtGui.QGroupBox('Color Scheme')
+        g_scheme.setFlat(True)
+        self.row_highlights = [('is_playing',  'Playing'),
+                               ('is_queued',   'Queued'),
+                               ('new_episode', 'New Episode'),
+                               ('is_airing',   'Airing'),
+                               ('not_aired',   'Unaired')]
+        self.row_hl_colors = []
+        self.row_hl_buttons = []
+        g_scheme_layout = QtGui.QGridLayout()
+        col = 0
+        for (key,label) in self.row_highlights: # Generate widgets from the keys and values
+            self.row_hl_colors.append( QtGui.QPushButton() )
+            self.row_hl_colors[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+            self.row_hl_colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+            self.row_hl_colors[-1].clicked.connect( self.s_color_picker(key,False) )
+            self.row_hl_buttons.append( QtGui.QPushButton('System Colors') )
+            self.row_hl_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
+            g_scheme_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
+            g_scheme_layout.addWidget( self.row_hl_colors[-1],  col, 1, 1, 1 )
+            g_scheme_layout.addWidget( self.row_hl_buttons[-1], col, 2, 1, 1 )
+            col+=1
+        g_scheme.setLayout(g_scheme_layout)
+
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_scheme)
         page_ui.setLayout(page_ui_layout)
 
         # Content
@@ -1552,6 +1582,75 @@ class SettingsDialog(QtGui.QDialog):
             new = old
 
         self.contents.setCurrentIndex( self.category_list.row( new ) )
+
+    def s_color_picker(self, key, system):
+        return lambda: self.color_picker(key, system)
+
+    def color_picker(self, key, system):
+        if system is True:
+            current = self.config['colors'][key]
+            result = ThemedColorPicker.do()
+            if result is not None and result is not current:
+                self.config['colors'][key] = result
+                self.update_colors()
+        else:
+            current = getColor(self.config['colors'][key])
+            result = QtGui.QColorDialog.getColor(current)
+            if result is not None and result is not current:
+                self.config['colors'][key] = str(result.name())
+                self.update_colors()
+
+    def update_colors(self):
+        for ((key,label),color) in zip(self.row_highlights,self.row_hl_colors):
+            color.setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+
+class ThemedColorPicker(QtGui.QDialog):
+    def __init__(self,parent=None,default=None):
+        QtGui.QDialog.__init__(self,parent)
+        self.setWindowTitle('Select Color')
+        layout = QtGui.QVBoxLayout()
+        colorbox = QtGui.QGridLayout()
+        self.colorString = default
+
+        self.groups = [0,1,2]
+        self.roles = [1,2,3,4,5,11,12,16] # Only use background roles
+        self.colors = []
+        row = 0
+        # Make colored buttons for selection
+        for group in self.groups:
+            col = 0
+            for role in self.roles:
+                self.colors.append( QtGui.QPushButton() )
+                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor( QPalette().color(group, role) ).name() )
+                self.colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+                self.colors[-1].clicked.connect( self.s_select(group,role) )
+                colorbox.addWidget(self.colors[-1], row, col, 1, 1)
+                col += 1
+            row += 1
+        bottombox = QtGui.QDialogButtonBox()
+        bottombox.addButton(QtGui.QDialogButtonBox.Ok)
+        bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
+        bottombox.accepted.connect(self.accept)
+        bottombox.rejected.connect(self.reject)
+        layout.addLayout(colorbox)
+        layout.addWidget(bottombox)
+        self.setLayout(layout)
+
+    def s_select(self, group, role):
+        return lambda: self.select(group, role)
+
+    def select(self, group, role):
+        self.colorString = str(group) + ',' + str(role)
+
+    @staticmethod
+    def do(parent=None, default=None):
+        dialog = ThemedColorPicker(parent, default)
+        result = dialog.exec_()
+
+        if result == QtGui.QDialog.Accepted:
+            return dialog.colorString
+        else:
+            return None
 
 class AccountDialog(QtGui.QDialog):
     selected = QtCore.pyqtSignal(int, bool)
@@ -2140,6 +2239,18 @@ class Engine_Worker(QtCore.QThread):
             self.finished.emit(ret)
         except utils.TrackmaFatal, e:
             self._fatal(e.message)
+
+def getColor(colorString):
+    # Takes a color string in either #RRGGBB format or group,role format (using QPalette int values)
+    if colorString[0] == "#":
+        return QtGui.QColor(colorString)
+    else:
+        (group, role) = [int(i) for i in colorString.split(',')]
+        if (0 <= group <= 2) and (0 <= role <= 19):
+            return QtGui.QColor( QPalette().color(group, role) )
+        else:
+            # Failsafe - return black
+            return QtGui.QColor()
 
 def main():
     app = QtGui.QApplication(sys.argv)
