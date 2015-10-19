@@ -1033,7 +1033,7 @@ class DetailsWidget(QtGui.QWidget):
                     else:
                         if line[0] in list_keys:
                             description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
-                        elif len(line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
+                        elif len("%s" % line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
                             info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
                         else:
                             info_strings.append( "<p><b>%s:</b> %s</p>" % (line[0], line[1]) )
