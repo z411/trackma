@@ -249,7 +249,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
         self.show_status.currentIndexChanged.connect(self.s_set_status)
-        
+
         plusrem_hbox.addWidget(self.show_rem_btn)
         plusrem_hbox.addWidget(self.show_plus_btn,1)
         plusrem_hbox.setAlignment( QtCore.Qt.AlignCenter )
@@ -1596,7 +1596,7 @@ class SettingsDialog(QtGui.QDialog):
         else:
             current = getColor(self.config['colors'][key])
             result = QtGui.QColorDialog.getColor(current)
-            if result is not None and result is not current:
+            if result.isValid() and result is not current:
                 self.config['colors'][key] = str(result.name())
                 self.update_colors()
 
