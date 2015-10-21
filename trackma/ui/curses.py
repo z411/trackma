@@ -286,7 +286,7 @@ class Trackma_urwid(object):
         self.status("Ready.")
 
     def change_sort_order(self):
-    	self.status("Sotring...")
+    	self.status("Sorting...")
 	_order = self.orders_iter.next()
 	self.cur_order = _order
 	self._rebuild_lists()
