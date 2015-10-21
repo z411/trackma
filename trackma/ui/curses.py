@@ -46,6 +46,8 @@ class Trackma_urwid(object):
     mainloop = None
     cur_sort = 'title'
     sorts_iter = cycle(('my_progress', 'total', 'my_score', 'id', 'title'))
+    cur_order = False
+    orders_iter = cycle((True, False))
     keymapping = dict()
     positions = list()
     last_search = None
@@ -86,6 +88,7 @@ class Trackma_urwid(object):
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
+	self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
             ('fixed', 23, self.header_filter),
@@ -128,6 +131,7 @@ class Trackma_urwid(object):
                     'prev_filter': self.do_prev_filter,
                     'next_filter': self.do_next_filter,
                     'sort': self.do_sort,
+		    'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
                     'status': self.do_status,
@@ -180,7 +184,7 @@ class Trackma_urwid(object):
             showlist = self.engine.get_list()
 
         library = self.engine.library()
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
+        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
             if show['my_status'] == self.engine.mediainfo['status_start']:
@@ -281,6 +285,13 @@ class Trackma_urwid(object):
         self._rebuild_lists()
         self.status("Ready.")
 
+    def change_sort_order(self):
+    	self.status("Sotring...")
+	_order = self.orders_iter.next()
+	self.cur_order = _order
+	self._rebuild_lists()
+	self.status("Ready.")
+
     def do_update(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
@@ -309,7 +320,7 @@ class Trackma_urwid(object):
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  Left/Right:Change Filter\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
+        helptext += "  d:Delete\n  s:Send changes\n  r:Change sort order\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
