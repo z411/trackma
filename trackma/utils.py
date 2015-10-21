@@ -264,6 +264,7 @@ keymap_defaults = {
     'prev_filter': 'left',
     'next_filter': 'right',
     'sort': 'f3',
+    'sort_order': 'r',
     'update': 'f4',
     'play': 'f5',
     'status': 'f6',
