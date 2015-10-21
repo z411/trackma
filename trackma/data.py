@@ -359,26 +359,31 @@ class Data(object):
             # Run through queue
             items_processed = []
             for i in xrange(len(self.queue)):
-                show = self.queue.pop(0)
-                showid = show['id']
+                item = self.queue.pop(0)
+                showid = item['id']
+
+                try:
+                    show = self.showlist[showid]
+                except KeyError:
+                    show = None
 
                 try:
                     # Call the API to do the requested operation
-                    operation = show.get('action')
+                    operation = item.get('action')
                     if operation == 'add':
-                        self.api.add_show(show)
+                        self.api.add_show(item)
                     elif operation == 'update':
-                        self.api.update_show(show)
+                        self.api.update_show(item)
                     elif operation == 'delete':
-                        self.api.delete_show(show)
+                        self.api.delete_show(item)
                     else:
                         self.msg.warn(self.name, "Unknown operation in queue, skipping...")
 
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
-                        self._emit_signal('show_synced', self.showlist[showid], show)
+                        self._emit_signal('show_synced', show, item)
 
-                    items_processed.append((self.showlist[showid], show))
+                    items_processed.append((show, item))
                     self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
