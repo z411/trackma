@@ -118,9 +118,9 @@ class libshikimori(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        handler=urllib2.HTTPHandler(debuglevel=1)
-        self.opener = urllib2.build_opener(handler)
-        #self.opener = urllib2.build_opener()
+        #handler=urllib2.HTTPHandler(debuglevel=1)
+        #self.opener = urllib2.build_opener(handler)
+        self.opener = urllib2.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.4')]
 
     def _request(self, method, url, get=None, post=None, auth=False):
@@ -213,7 +213,6 @@ class libshikimori(lib):
                 'image_thumb': self.url + item[self.mediatype]['image']['preview'],
             })
 
-            print repr(show)
             showlist[showid] = show
 
         return showlist
