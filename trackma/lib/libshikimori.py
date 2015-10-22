@@ -188,7 +188,7 @@ class libshikimori(lib):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
 
-        data = self._request("GET", "/api/users/{0}/anime_rates".format(self.userid))
+        data = self._request("GET", "/api/users/{}/{}_rates".format(self.userid, self.mediatype))
 
         showlist = {}
 
