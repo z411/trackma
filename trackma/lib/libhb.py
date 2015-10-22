@@ -38,7 +38,7 @@ class libhb(lib):
     auth = ''
     logged_in = False
 
-    api_info =  { 'name': 'Hummingbird', 'version': 'v0.2', 'merge': False }
+    api_info =  { 'name': 'Hummingbird', 'shortname': 'hb', 'version': 'v0.2', 'merge': False }
 
     default_mediatype = 'anime'
     mediatypes = dict()

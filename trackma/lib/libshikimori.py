@@ -33,7 +33,7 @@ class libshikimori(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Shikimori', 'version': '1', 'merge': False }
+    api_info = { 'name': 'Shikimori', 'shortname': 'shikimori', 'version': '1', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,

@@ -35,6 +35,7 @@ class libvndb(lib):
 
     api_info =  {
                   'name': 'VNDB',
+                  'shortname': 'vndb',
                   'version': 'v0.3',
                   'merge': True,
                 }

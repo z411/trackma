@@ -33,7 +33,7 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'version': '1', 'merge': False }
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,

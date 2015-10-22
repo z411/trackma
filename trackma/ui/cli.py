@@ -78,11 +78,11 @@ class Trackma_cmd(cmd.Cmd):
         self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
-        self.prompt = "{0}@{1}({2}) {3}> ".format(
+        self.prompt = "{0} [{1}] ({2}) {3} >> ".format(
                 self.engine.get_userconfig('username'),
-                self.engine.api_info['name'],
+                self.engine.api_info['shortname'],
                 self.engine.api_info['mediatype'],
-                self.engine.mediainfo['statuses_dict'][self.filter_num]
+                self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', '')
         )
 
     def _load_list(self, *args):
@@ -97,7 +97,7 @@ class Trackma_cmd(cmd.Cmd):
             return self.sortedlist[index]
         except (ValueError, AttributeError, IndexError):
             return self.engine.get_show_info_title(title)
-    
+
     def _ask_update(self, show, episode):
         do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
         if do_update.lower() == 'y':
@@ -123,11 +123,62 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
 
+    def do_help(self, arg):
+        if arg:
+            try:
+                doc = getattr(self, 'do_' + arg).__doc__
+                if doc:
+                    (name, args, args_expl, expl, usage) = self._parse_doc(arg, doc)
+
+                    print arg
+                    print "-----"
+                    print expl
+                    print
+                    for arg in args:
+                        print arg
+                    if usage:
+                        print "Usage: " + usage
+                    print
+                    return
+            except AttributeError:
+                pass
+
+            print "No help available."
+            return
+        else:
+            CMD_LENGTH = 11
+            ARG_LENGTH = 13
+
+            print
+            print " {0:>{1}} {2:{3}} {4}".format(
+                    'command', CMD_LENGTH,
+                    'args', ARG_LENGTH,
+                    'description')
+            print " -----------------------------------------------"
+
+            names = self.get_names()
+            names.sort()
+            cmds = []
+            for name in names:
+                if name[:3] == 'do_':
+                    doc = getattr(self, name).__doc__
+                    if doc:
+                        cmd = name[3:]
+                        (name, args, args_expl, expl, usage) = self._parse_doc(cmd, doc)
+
+                        print " {0:>{1}} {2:{3}} {4}".format(
+                                name, CMD_LENGTH,
+                                '<' + ','.join(args) + '>', ARG_LENGTH,
+                                expl)
+
+            print
+            print "Use `help <command>` for detailed information."
+            print
+
+
     def do_account(self, args):
         """
-        account - Switch to a different account
-
-        Usage: account
+        Switch to a different account
         """
 
         self.account = self.accountman.select_account(True)
@@ -140,9 +191,10 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_filter(self, args):
         """
-        filter - Changes the filtering of list by status; call with no arguments to see available filters
+        Changes the filtering of list by status; call with no arguments to see available filters
 
-        Usage: filter [filter type]
+        :param status Name of status to filter
+        :usage filter [filter type]
         """
         # Query the engine for the available statuses
         # that the user can choose
@@ -158,10 +210,10 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_sort(self, args):
         """
-        sort - Change sort
+        Change of the lists
 
-        Usage: sort <sort type>
-        Available types: id, title, my_progress, total, my_score
+        :param type Sort type; available types: id, title, my_progress, total, my_score
+        :usage sort <sort type>
         """
         sorts = ('id', 'title', 'my_progress', 'total', 'my_score')
         if args[0] in sorts:
@@ -172,9 +224,11 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_mediatype(self, args):
         """
-        mediatype - Reloads engine with different mediatype; call with no arguments to see supported mediatypes
+        Reloads engine with different mediatype.
+        Call with no arguments to see supported mediatypes.
 
-        Usage: mediatype [mediatype]
+        :param mediatype Mediatype name
+        :usage mediatype [mediatype]
         """
         if args:
             if args[0] in self.engine.api_info['supported_mediatypes']:
@@ -189,19 +243,24 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes'])
 
+    def do_ls(self,args):
+        self.do_list(args)
+
     def do_list(self, args):
         """
-        list - Lists all shows available in the local list as a nice formatted list.
+        Lists all shows available in the local list as a nice formatted list.
+
+        :name list|ls
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
 
     def do_info(self, args):
         """
-        info - Gets detailed information about a show in the local list.
+        Gets detailed information about a show in the local list.
 
-        Usage: info <show index or title>
-
+        :param show Show index or title.
+        :usage info <show index or title>
         """
         try:
             show = self._get_show(args[0])
@@ -216,10 +275,10 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_search(self, args):
         """
-        search - Does a regex search on shows in the local lists and lists the matches.
+        Does a regex search on shows in the local lists and lists the matches.
 
-        Usage: search <pattern>
-
+        :param pattern Regex pattern to search for.
+        :usage search <pattern>
         """
         showlist = self.engine.regex_list(args[0])
         sortedlist = sorted(showlist, key=itemgetter(self.sort))
@@ -227,10 +286,10 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_add(self, args):
         """
-        add - Searches for a show in the remote service and adds it to the local list.
+        Searches for a show in the remote service and adds it to the local list.
 
-        Usage: add <pattern>
-
+        :param pattern Show criteria to search.
+        :usage add <pattern>
         """
         try:
             entries = self.engine.search(args[0])
@@ -259,10 +318,10 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_delete(self, args):
         """
-        delete - Deltes a show from the local list.
+        Deletes a show from the local list.
 
-        Usage: delete <show index or title>
-
+        :param show Show index or title.
+        :usage delete <show index or title>
         """
         try:
             show = self._get_show(args[0])
@@ -273,26 +332,19 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError, e:
             self.display_error(e)
 
-    def do_neweps(self, args):
-        """
-        neweps - Searches for new episodes in the configured search directory.
-
-        Usage: neweps
-        """
-        showlist = self.engine.filter_list(self.filter_num)
-        results = self.engine.get_new_episodes(showlist)
-        for show in results:
-            print show['title']
-
     def do_scaneps(self, args):
+        """
+        Re-scans the local library.
+        """
         self.engine.scan_library()
 
     def do_play(self, args):
         """
-        play - Starts the media player with the specified episode number.
-        If no episode is specified, the next will be played.
+        Starts the media player with the specified episode number (next if not specified).
 
-        Usage: play <show index or title> [episode number]
+        :param show Episode index or title.
+        :param ep Episode number. Assume next if not specified.
+        :usage play <show index or title> [episode number]
         """
         try:
             episode = 0
@@ -315,9 +367,11 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_update(self, args):
         """
-        update - Updates the progress of a show to the specified episode.
+        Updates the progress of a show to the specified episode.
 
-        Usage: update <show index or name> <episode number>
+        :param show Show index or name.
+        :param ep Episode number (numeric).
+        :usage update <show index or name> <episode number>
         """
         try:
             show = self._get_show(args[0])
@@ -329,9 +383,11 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_score(self, args):
         """
-        score - Changes the given score of a show to the specified score.
+        Changes the given score of a show to the specified score.
 
-        Usage: score <show id or name> <score>
+        :param show Show index or name.
+        :param score Score to set (numeric/decimal).
+        :usage score <show index or name> <score>
         """
         try:
             show = self._get_show(args[0])
@@ -343,10 +399,12 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_status(self, args):
         """
-        status - Changes the status of a show. Use the command `filter`
-        withotu arguments to see the available statuses.
+        Changes the status of a show.
+        Use the command `filter` without arguments to see the available statuses.
 
-        Usage: status <show id or name> <status name>
+        :param show Show index or name.
+        :param status Status name. Use `filter` without args to list them.
+        :usage status <show index or name> <status name>
         """
         try:
             _showtitle = args[0]
@@ -369,10 +427,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_send(self, args):
         """
-        send - Sends any queued changes in the local list to the remote
-        service.
-
-        Usage: send
+        Sends any queued changes in the local list to the remote service.
         """
         try:
             self.engine.list_upload()
@@ -381,10 +436,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_retrieve(self, args):
         """
-        retrieve - Retrieves the full remote list from the remove service
-        and overwrites the local list.
-
-        Usage: retrieve
+        Retrieves the full remote list overwrites the local list.
         """
         try:
             if self.engine.get_queue():
@@ -399,9 +451,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_undoall(self, args):
         """
-        undo - Undo all changes
-
-        Usage: undoall
+        Undo all changes in queue.
         """
         try:
             self.engine.undoall()
@@ -410,9 +460,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_viewqueue(self, args):
         """
-        viewqueue - Shows the queued changes.
-
-        Usage: viewqueue
+        List the queued changes.
         """
         queue = self.engine.get_queue()
         if len(queue):
@@ -422,8 +470,15 @@ class Trackma_cmd(cmd.Cmd):
         else:
             print "Queue is empty."
 
+    def do_exit(self, args):
+        self.do_quit(args)
+
     def do_quit(self, args):
-        """Quits the program."""
+        """
+        Quits the program.
+
+        :name quit|exit
+        """
         try:
             self.engine.unload()
         except utils.TrackmaError, e:
@@ -464,6 +519,9 @@ class Trackma_cmd(cmd.Cmd):
             return shlex.split(arg)
         else:
             return []
+
+    def emptyline(self):
+        return
 
     def onecmd(self, line):
         """ Override. """
@@ -537,6 +595,30 @@ class Trackma_cmd(cmd.Cmd):
             if string.lower() == v.lower().replace(' ', ''):
                 return k
         raise KeyError
+
+    def _parse_doc(self, cmd, doc):
+        lines = doc.split('\n')
+        name = cmd
+        args = []
+        args_expl = []
+        expl = ""
+        usage = None
+
+        for line in lines:
+            line = line.strip()
+            if line[:6] == ":param":
+                (arg, arg_expl) = line[7:].split(' ', 1)
+                args.append(arg)
+                args_expl.append(arg_expl)
+            elif line[:6] == ':usage':
+                usage = line[7:]
+            elif line[:5] == ':name':
+                name = line[6:]
+            elif line:
+                if not expl:
+                    expl = line
+
+        return (name, args, args_expl, expl, usage)
 
     def _make_list(self, showlist):
         """

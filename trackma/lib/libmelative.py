@@ -29,7 +29,7 @@ class libmelative(lib):
     """
     name = 'libmelative'
 
-    api_info =  { 'name': 'Melative', 'version': 'v0.1', 'merge': False }
+    api_info =  { 'name': 'Melative', 'shortname': 'melative', 'version': 'v0.1', 'merge': False }
 
     mediatypes = dict()
 
