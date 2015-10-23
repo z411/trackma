@@ -21,6 +21,7 @@ except ImportError:
     pass # readline is optional
 import cmd
 import shlex
+import textwrap
 import re
 from operator import itemgetter # Used for sorting list
 
@@ -31,15 +32,24 @@ import trackma.messenger as messenger
 import trackma.utils as utils
 
 _DEBUG = False
+_COLOR_RESET = '\033[0m'
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
 _COLOR_API = '\033[0;34m'
 _COLOR_TRACKER = '\033[0;35m'
 _COLOR_ERROR = '\033[0;31m'
 _COLOR_FATAL = '\033[1;31m'
-_COLOR_RESET = '\033[0m'
 
 _COLOR_AIRING = '\033[0;34m'
+
+# We must use mark these with special characters for
+# readline to calculate line width correctly
+_PCOLOR_RESET = '\001\033[0m\002'
+_PCOLOR_USER = '\001\033[0;32m\002'
+_PCOLOR_API = '\001\033[0;34m\002'
+_PCOLOR_MEDIATYPE = '\001\033[0;33m\002'
+_PCOLOR_FILTER = '\001\033[0;35m\002'
+
 
 class Trackma_cmd(cmd.Cmd):
     """
@@ -78,11 +88,16 @@ class Trackma_cmd(cmd.Cmd):
         self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
-        self.prompt = "{0} [{1}] ({2}) {3} >> ".format(
-                self.engine.get_userconfig('username'),
-                self.engine.api_info['shortname'],
-                self.engine.api_info['mediatype'],
-                self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', '')
+        self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
+                u  = self.engine.get_userconfig('username'),
+                a  = self.engine.api_info['shortname'],
+                mt = self.engine.api_info['mediatype'],
+                s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
+                c_r  = _PCOLOR_RESET,
+                c_u  = _PCOLOR_USER,
+                c_a  = _PCOLOR_API,
+                c_mt = _PCOLOR_MEDIATYPE,
+                c_s  = _COLOR_RESET
         )
 
     def _load_list(self, *args):
@@ -123,21 +138,32 @@ class Trackma_cmd(cmd.Cmd):
         self._load_list()
         self._update_prompt()
 
+        print
+        print "Ready. Type 'help' for a list of commands."
+        print "Press tab for autocompletion and up/down for command history."
+        self.do_filter(None) # Show available filters
+        print
+
     def do_help(self, arg):
         if arg:
             try:
                 doc = getattr(self, 'do_' + arg).__doc__
                 if doc:
-                    (name, args, args_expl, expl, usage) = self._parse_doc(arg, doc)
+                    (name, args, expl, usage) = self._parse_doc(arg, doc)
 
-                    print arg
-                    print "-----"
-                    print expl
                     print
-                    for arg in args:
-                        print arg
+                    print name
+                    for line in expl:
+                        print "  {}".format(line)
+                    if args:
+                        print "\n  Arguments:"
+                        for arg in args:
+                            if arg[2]:
+                                print "    {}: {}".format(arg[0], arg[1])
+                            else:
+                                print "    {} (optional): {}".format(arg[0], arg[1])
                     if usage:
-                        print "Usage: " + usage
+                        print "\n  Usage: " + usage
                     print
                     return
             except AttributeError:
@@ -149,12 +175,19 @@ class Trackma_cmd(cmd.Cmd):
             CMD_LENGTH = 11
             ARG_LENGTH = 13
 
+            (height, width) = utils.get_terminal_size()
+            prev_width = CMD_LENGTH + ARG_LENGTH + 3
+
+            tw = textwrap.TextWrapper()
+            tw.width = width - 2
+            tw.subsequent_indent = ' ' * prev_width
+
             print
             print " {0:>{1}} {2:{3}} {4}".format(
                     'command', CMD_LENGTH,
                     'args', ARG_LENGTH,
                     'description')
-            print " -----------------------------------------------"
+            print " " + "-"*(min(prev_width+81, width-3))
 
             names = self.get_names()
             names.sort()
@@ -162,14 +195,17 @@ class Trackma_cmd(cmd.Cmd):
             for name in names:
                 if name[:3] == 'do_':
                     doc = getattr(self, name).__doc__
-                    if doc:
-                        cmd = name[3:]
-                        (name, args, args_expl, expl, usage) = self._parse_doc(cmd, doc)
+                    if not doc:
+                        continue
 
-                        print " {0:>{1}} {2:{3}} {4}".format(
-                                name, CMD_LENGTH,
-                                '<' + ','.join(args) + '>', ARG_LENGTH,
-                                expl)
+                    cmd = name[3:]
+                    (name, args, expl, usage) = self._parse_doc(cmd, doc)
+
+                    line = " {0:>{1}} {2:{3}} {4}".format(
+                           name, CMD_LENGTH,
+                           '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
+                           expl[0])
+                    print tw.fill(line)
 
             print
             print "Use `help <command>` for detailed information."
@@ -178,7 +214,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_account(self, args):
         """
-        Switch to a different account
+        Switch to a different account.
         """
 
         self.account = self.accountman.select_account(True)
@@ -191,9 +227,9 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_filter(self, args):
         """
-        Changes the filtering of list by status; call with no arguments to see available filters
+        Changes the filtering of list by status.s
 
-        :param status Name of status to filter
+        :optparam status Name of status to filter
         :usage filter [filter type]
         """
         # Query the engine for the available statuses
@@ -206,7 +242,7 @@ class Trackma_cmd(cmd.Cmd):
             except KeyError:
                 print "Invalid filter."
         else:
-            print "Available filters: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
+            print "Available statuses: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() )
 
     def do_sort(self, args):
         """
@@ -227,7 +263,7 @@ class Trackma_cmd(cmd.Cmd):
         Reloads engine with different mediatype.
         Call with no arguments to see supported mediatypes.
 
-        :param mediatype Mediatype name
+        :optparam mediatype Mediatype name
         :usage mediatype [mediatype]
         """
         if args:
@@ -248,7 +284,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_list(self, args):
         """
-        Lists all shows available in the local list as a nice formatted list.
+        Lists all shows available in the local list.
 
         :name list|ls
         """
@@ -257,7 +293,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_info(self, args):
         """
-        Gets detailed information about a show in the local list.
+        Gets detailed information about a local show.
 
         :param show Show index or title.
         :usage info <show index or title>
@@ -275,7 +311,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_search(self, args):
         """
-        Does a regex search on shows in the local lists and lists the matches.
+        Does a regex search on shows in the local lists.
 
         :param pattern Regex pattern to search for.
         :usage search <pattern>
@@ -286,7 +322,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_add(self, args):
         """
-        Searches for a show in the remote service and adds it to the local list.
+        Search for a show in the remote service and add it.
 
         :param pattern Show criteria to search.
         :usage add <pattern>
@@ -343,7 +379,7 @@ class Trackma_cmd(cmd.Cmd):
         Starts the media player with the specified episode number (next if not specified).
 
         :param show Episode index or title.
-        :param ep Episode number. Assume next if not specified.
+        :optparam ep Episode number. Assume next if not specified.
         :usage play <show index or title> [episode number]
         """
         try:
@@ -383,7 +419,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_score(self, args):
         """
-        Changes the given score of a show to the specified score.
+        Changes the score of a show.
 
         :param show Show index or name.
         :param score Score to set (numeric/decimal).
@@ -427,7 +463,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_send(self, args):
         """
-        Sends any queued changes in the local list to the remote service.
+        Sends queued changes to the remote service.
         """
         try:
             self.engine.list_upload()
@@ -436,7 +472,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_retrieve(self, args):
         """
-        Retrieves the full remote list overwrites the local list.
+        Retrieves the remote list overwrites the local one.
         """
         try:
             if self.engine.get_queue():
@@ -600,25 +636,23 @@ class Trackma_cmd(cmd.Cmd):
         lines = doc.split('\n')
         name = cmd
         args = []
-        args_expl = []
-        expl = ""
+        expl = []
         usage = None
 
         for line in lines:
             line = line.strip()
             if line[:6] == ":param":
-                (arg, arg_expl) = line[7:].split(' ', 1)
-                args.append(arg)
-                args_expl.append(arg_expl)
+                args.append( line[7:].split(' ', 1) + [True] )
+            elif line[:9] == ":optparam":
+                args.append( line[10:].split(' ', 1) + [False] )
             elif line[:6] == ':usage':
                 usage = line[7:]
             elif line[:5] == ':name':
                 name = line[6:]
             elif line:
-                if not expl:
-                    expl = line
+                expl.append(line)
 
-        return (name, args, args_expl, expl, usage)
+        return (name, args, expl, usage)
 
     def _make_list(self, showlist):
         """
@@ -785,10 +819,6 @@ def main():
     main_cmd = Trackma_cmd()
     try:
         main_cmd.start()
-        print
-        print "Ready. Type 'help' for a list of commands."
-        print "Press tab for autocompletion and up/down for command history."
-        print
         main_cmd.cmdloop()
     except utils.TrackmaFatal, e:
         print "%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET)
