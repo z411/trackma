@@ -118,16 +118,18 @@ class libshikimori(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        #handler=urllib2.HTTPHandler(debuglevel=1)
-        #self.opener = urllib2.build_opener(handler)
-        self.opener = urllib2.build_opener()
+        handler=urllib2.HTTPHandler(debuglevel=1)
+        self.opener = urllib2.build_opener(handler)
+        #self.opener = urllib2.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.4')]
 
-    def _request(self, method, url, get=None, post=None, auth=False):
+    def _request(self, method, url, get=None, post=None, jsondata=None, auth=False):
         if get:
             url = "{}?{}".format(url, urllib.urlencode(get))
         if post:
             post = urllib.urlencode(post)
+        if jsondata:
+            post = json.dumps(jsondata, separators=(',',':'))
 
         request = urllib2.Request(self.url + url, post)
         request.get_method = lambda: method
@@ -285,24 +287,25 @@ class libshikimori(lib):
 
     def _update_entry(self, item, method):
         if method == 'POST':
-            values = {
+            user_rate = {
                 'user_id': self.userid,
                 'target_id': item['id'],
                 'target_type': self.mediatype.capitalize(),
             }
             dest_url = "/api/user_rates"
         else:
-            values = {}
+            user_rate = {}
             dest_url = "/api/user_rates/{}".format(item['id'])
 
         if 'my_progress' in item.keys():
-            values[self.watched_str] = item['my_progress']
+            user_rate[self.watched_str] = item['my_progress']
         if 'my_status' in item.keys():
-            values['list_status'] = item['my_status']
+            user_rate['list_status'] = item['my_status']
         if 'my_score' in item.keys():
-            values['score'] = item['my_score']
+            user_rate['score'] = item['my_score']
 
-        data = self._request(method, dest_url, post=values, auth=True)
+        values = {'user_rate': user_rate}
+        data = self._request(method, dest_url, jsondata=values, auth=True)
         return True
 
     def _parse_info(self, item):

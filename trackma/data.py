@@ -377,7 +377,7 @@ class Data(object):
                     elif operation == 'delete':
                         self.api.delete_show(item)
                     else:
-                        self.msg.warn(self.name, "Unknown operation in queue, skipping...")
+                        self.msg.warn(self.name, "Unknown operation in queue (%s), skipping..." % repr(operation))
 
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
@@ -386,7 +386,7 @@ class Data(object):
                     items_processed.append((show, item))
                     self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError, e:
-                    self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
+                    self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
                     self.queue.append(item)
                 except NotImplementedError:
