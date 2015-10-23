@@ -388,10 +388,10 @@ class Data(object):
                 except utils.APIError, e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % show['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
-                    self.queue.append(show)
+                    self.queue.append(item)
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
-                    self.queue.append(show)
+                    self.queue.append(item)
                 #except TypeError:
                 #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
 
