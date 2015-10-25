@@ -52,10 +52,12 @@ def parse_config(filename, default):
     try:
         with open(filename) as configfile:
             config.update(json.load(configfile))
-    except:
+    except IOError:
         # Will just use the default config
         # and create the file for manual editing
         save_config(config, filename)
+    except:
+        log_error("Erroneous config %s requires manual fixing or deletion to proceed." % filename)
 
     return config
 
