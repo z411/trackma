@@ -57,7 +57,9 @@ def parse_config(filename, default):
         # and create the file for manual editing
         save_config(config, filename)
     except:
-        log_error("Erroneous config %s requires manual fixing or deletion to proceed." % filename)
+        errorString = "Erroneous config %s requires manual fixing or deletion to proceed." % filename
+        log_error(errorString)
+        return errorString
 
     return config
 

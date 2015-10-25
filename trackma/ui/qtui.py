@@ -68,6 +68,8 @@ class Trackma(QtGui.QMainWindow):
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+        if type(self.config) is str: # An exception occurred while parsing the config
+            sys.exit(self.config)
 
         # Build UI
         QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
