@@ -1,3 +1,13 @@
+v0.5
+- New: Shikimori support
+- New: User hooks (~/.trackma/hook.py)
+- Improvement: (Qt) Configurable list colors
+- Improvement: (Qt) Interface improvements
+- Improvement: (curses) Implemented sort reversal
+- Improvement: (CLI) Prompt and help overhaul
+- Bugfix: (Qt/GTK) Progress bar works for shows with no total episodes (assumes 1 cour = 26 eps)
+- Bugfix: (GTK) Fixed sensitivity of several menu items
+
 v0.4
 - New: Anilist support
 - New: Plex tracker support
