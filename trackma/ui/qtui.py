@@ -387,6 +387,11 @@ class Trackma(QtGui.QMainWindow):
             self.tray.hide()
         elif not self.tray.isVisible() and self.config['show_tray']:
             self.tray.show()
+        if self.tray.isVisible():
+            if self.config['tray_api_icon']:
+                self.tray.setIcon( QtGui.QIcon( utils.available_libs[self.account['api']][1] ) )
+            else:
+                self.tray.setIcon( self.windowIcon() )
 
     def _busy(self, wait=False):
         if wait:
@@ -883,6 +888,8 @@ class Trackma(QtGui.QMainWindow):
 
             # Show API info
             self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
+            if self.config['tray_api_icon']:
+                self.tray.setIcon( QtGui.QIcon( utils.available_libs[self.account['api']][1] ) )
             self.api_user.setText( self.worker.engine.get_userconfig('username') )
             self.setWindowTitle( "Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
 
@@ -1334,11 +1341,13 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_icon.toggled.connect(self.s_tray_icon)
         self.close_to_tray = QtGui.QCheckBox('Close to tray')
         self.start_in_tray = QtGui.QCheckBox('Start minimized to tray')
+        self.tray_api_icon = QtGui.QCheckBox('Use API icon as tray icon')
         self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
         g_icon_layout = QtGui.QVBoxLayout()
         g_icon_layout.addWidget(self.tray_icon)
         g_icon_layout.addWidget(self.close_to_tray)
         g_icon_layout.addWidget(self.start_in_tray)
+        g_icon_layout.addWidget(self.tray_api_icon)
         g_icon_layout.addWidget(self.notifications)
         g_icon.setLayout(g_icon_layout)
 
@@ -1459,6 +1468,7 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_icon.setChecked(self.config['show_tray'])
         self.close_to_tray.setChecked(self.config['close_to_tray'])
         self.start_in_tray.setChecked(self.config['start_in_tray'])
+        self.tray_api_icon.setChecked(self.config['tray_api_icon'])
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
 
@@ -1520,6 +1530,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['show_tray'] = self.tray_icon.isChecked()
         self.config['close_to_tray'] = self.close_to_tray.isChecked()
         self.config['start_in_tray'] = self.start_in_tray.isChecked()
+        self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
 

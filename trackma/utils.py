@@ -296,6 +296,7 @@ qt_defaults = {
     'close_to_tray': True,
     'notifications': True,
     'start_in_tray': False,
+    'tray_api_icon': False,
     'remember_geometry': False,
     'last_x': 0,
     'last_y': 0,
