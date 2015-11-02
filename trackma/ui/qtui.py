@@ -123,6 +123,9 @@ class Trackma(QtGui.QMainWindow):
         action_play_next.setStatusTip('Play the next unwatched episode.')
         action_play_next.setShortcut('Ctrl+N')
         action_play_next.triggered.connect(lambda: self.s_play(True))
+        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog.setStatusTip('Select an episode to play.')
+        action_play_dialog.triggered.connect(self.s_play_number)
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
@@ -169,6 +172,7 @@ class Trackma(QtGui.QMainWindow):
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
         self.menu_show.addAction(action_play_next)
+        self.menu_show.addAction(action_play_dialog)
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_altname)
         self.menu_show.addSeparator()
@@ -176,6 +180,13 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
+        self.menu_show_context = QtGui.QMenu()
+        self.menu_show_context.addAction(action_play_next)
+        self.menu_show_context.addAction(action_play_dialog)
+        self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(action_altname)
+        self.menu_show_context.addSeparator()
+        self.menu_show_context.addAction(action_delete)
         menu_list = menubar.addMenu('&List')
         menu_list.addAction(action_sync)
         menu_list.addSeparator()
@@ -241,8 +252,6 @@ class Trackma(QtGui.QMainWindow):
         action_play_next_2.triggered.connect(lambda: self.s_play(True))
         action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep', self)
         action_play_last.triggered.connect(lambda: self.s_play(False))
-        action_play_dialog = QtGui.QAction('Play Episode...', self)
-        action_play_dialog.triggered.connect(self.s_play_number)
         self.show_play_btn.setMenu(self.show_play_menu)
         self.show_play_menu.addAction(action_play_next_2)
         self.show_play_menu.addAction(action_play_last)
@@ -505,12 +514,14 @@ class Trackma(QtGui.QMainWindow):
 
         tooltip += "Total: %d" % show['total']
         percent_widget.setToolTip(tooltip)
+        percent = percent_widget.value() * 100 / percent_widget.maximum()
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
         widget.setItem(row, 1, ShowItem( title_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
+        widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
@@ -885,7 +896,8 @@ class Trackma(QtGui.QMainWindow):
             for status in self.statuses_nums:
                 name = self.statuses_names[status]
 
-                self.show_lists[status] = QtGui.QTableWidget()
+                self.show_lists[status] = ShowsTableWidget()
+                self.show_lists[status].context_menu = self.menu_show_context
                 self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
                 #self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -1810,6 +1822,17 @@ class AccountItem(QtGui.QTableWidgetItem):
         self.num = num
         if icon:
             self.setIcon( icon )
+
+class ShowsTableWidget(QtGui.QTableWidget):
+    """
+    Regular table widget with context menu for show actions.
+
+    """
+    def __init__(self, parent = None):
+        QtGui.QTableWidget.__init__(self, parent)
+
+    def contextMenuEvent(self, event):
+        action = self.context_menu.exec_(event.globalPos())
 
 class ShowItem(QtGui.QTableWidgetItem):
     """
