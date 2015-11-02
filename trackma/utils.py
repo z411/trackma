@@ -101,6 +101,15 @@ def regex_find_videos(extensions, subdirectory=''):
             if match:
                 yield ( os.path.join(root, filename), filename )
 
+def regex_rename_files(pattern, source_dir, dest_dir):
+    in_path = os.path.expanduser(os.path.join('~', '.trackma', source_dir))
+    out_path = os.path.expanduser(os.path.join('~', '.trackma', dest_dir))
+    for filename in os.listdir(in_path):
+        if re.match(pattern, filename):
+            in_file = os.path.join(in_path,filename)
+            out_file = os.path.join(out_path,filename)
+            os.rename(in_file, out_file)
+
 def list_library(path):
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:

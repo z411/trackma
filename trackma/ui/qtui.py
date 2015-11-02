@@ -1736,13 +1736,18 @@ class AccountDialog(QtGui.QDialog):
         add_btn = QtGui.QPushButton('Add')
         add_btn.clicked.connect(self.add)
         delete_btn = QtGui.QPushButton('Delete')
+        delete_btn.setToolTip('Remove this account from Trackma')
         delete_btn.clicked.connect(self.delete)
+        purge_btn = QtGui.QPushButton('Purge')
+        purge_btn.setToolTip('Clear local DB for this account')
+        purge_btn.clicked.connect(self.purge)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
         bottom_layout.addWidget(delete_btn)
+        bottom_layout.addWidget(purge_btn)
         bottom_layout.addWidget(select_btn)
 
         # Get icons
@@ -1772,6 +1777,17 @@ class AccountDialog(QtGui.QDialog):
 
             if reply == QtGui.QMessageBox.Yes:
                 self.accountman.delete_account(selected_account_num)
+                self.rebuild()
+        except IndexError:
+            self._error("Please select an account.")
+
+    def purge(self):
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            reply = QtGui.QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+            if reply == QtGui.QMessageBox.Yes:
+                self.accountman.purge_account(selected_account_num)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
