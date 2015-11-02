@@ -241,10 +241,12 @@ class Trackma(QtGui.QMainWindow):
         action_play_next_2.triggered.connect(lambda: self.s_play(True))
         action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep', self)
         action_play_last.triggered.connect(lambda: self.s_play(False))
+        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog.triggered.connect(self.s_play_number)
         self.show_play_btn.setMenu(self.show_play_menu)
         self.show_play_menu.addAction(action_play_next_2)
         self.show_play_menu.addAction(action_play_last)
-        self.show_play_menu.addSeparator()
+        self.show_play_menu.addAction(action_play_dialog)
         self.show_inc_btn = QtGui.QToolButton()
         self.show_inc_btn.setIcon(QtGui.QIcon.fromTheme('list-add'))
         self.show_inc_btn.setShortcut('Ctrl+Right')
@@ -679,16 +681,29 @@ class Trackma(QtGui.QMainWindow):
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
 
-    def s_play(self, play_next):
+    def s_play(self, play_next, episode=0):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            episode = 0 # Engine plays next unwatched episode
-            if not play_next:
+            #episode = 0 # Engine plays next unwatched episode
+            if not play_next and not episode:
                 episode = self.show_progress.value()
 
             self._busy(False)
             self.worker_call('play_episode', self.r_generic, show, episode)
+
+    def s_play_number(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        ep_default = 1
+        ep_min = 1
+        ep_max = utils.estimate_aired_episodes(show)
+        if ep_max is None:
+            ep_max = max(show['total'],1)
+        episode, ok = QtGui.QInputDialog.getInt(self, 'Play Episode',
+            'Enter an episode number of %s to play:' % show['title'],
+            ep_default, ep_min, ep_max)
+        if ok:
+            self.s_play(False, episode)
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
