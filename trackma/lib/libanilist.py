@@ -33,7 +33,7 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1', 'merge': False }
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1.1', 'merge': True }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -336,6 +336,10 @@ class libanilist(lib):
 
         data = self._request(method, "{}list".format(self.mediatype), post=values, auth=True)
         return True
+
+    def merge(self, show, info):
+        show['start_date'] = info.get('start_date')
+        show['end_date'] = info.get('end_date')
 
     def _parse_info(self, item):
         info = utils.show()
