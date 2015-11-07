@@ -289,6 +289,18 @@ gtk_defaults = {
     'show_tray': True,
     'close_to_tray': True,
     'start_in_tray': False,
+    'colors': {
+        'is_airing': '#0099CC',
+        'is_playing': '#6C2DC7',
+        'is_queued': '#54C571',
+        'new_episode': '#FBB917',
+        'not_aired': '#999900',
+        'progress_bg': '#E5E5E5',
+        'progress_fg': '#99B3CC',
+        'progress_sub_bg': '#B3B3B3',
+        'progress_sub_fg': '#668099',
+        'progress_complete': '#99CCB3',
+    },
 }
 
 qt_defaults = {
