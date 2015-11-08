@@ -1829,15 +1829,15 @@ class Settings(gtk.Window):
                  ('progress','Progress widget')]
 
         self.colors['rows'] = [('is_playing',  'Playing'),
-                          ('is_queued',   'Queued'),
-                          ('new_episode', 'New Episode'),
-                          ('is_airing',   'Airing'),
-                          ('not_aired',   'Unaired')]
+                               ('is_queued',   'Queued'),
+                               ('new_episode', 'New Episode'),
+                               ('is_airing',   'Airing'),
+                               ('not_aired',   'Unaired')]
         self.colors['progress'] = [('progress_bg',       'Background'),
-                              ('progress_fg',       'Watched bar'),
-                              ('progress_sub_bg',   'Aired episodes'),
-                              ('progress_sub_fg',   'Stored episodes'),
-                              ('progress_complete', 'Complete')]
+                                   ('progress_fg',       'Watched bar'),
+                                   ('progress_sub_bg',   'Aired episodes'),
+                                   ('progress_sub_fg',   'Stored episodes'),
+                                   ('progress_complete', 'Complete')]
         self.col_pickers = {}
 
         col_notebook = gtk.Notebook()
