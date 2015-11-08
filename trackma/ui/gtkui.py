@@ -65,6 +65,8 @@ class Trackma_gtk(object):
         """Start the Account Selector"""
         self.configfile = utils.get_root_filename('ui-gtk.json')
         self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
+        if type(self.config) is str: # An exception occurred while parsing the config
+            sys.exit(self.config)
 
         manager = AccountManager()
 
