@@ -81,8 +81,6 @@ class Trackma_urwid(object):
         ]
 
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
-        if type(keymap) is str: # An exception occurred while parsing the config
-            sys.exit(keymap)
         self.keymapping = self.map_key_to_func(keymap)
 
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");

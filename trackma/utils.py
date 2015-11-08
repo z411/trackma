@@ -56,10 +56,11 @@ def parse_config(filename, default):
         # Will just use the default config
         # and create the file for manual editing
         save_config(config, filename)
-    except:
+    except ValueError:
+        # There's a syntax error in the config file
         errorString = "Erroneous config %s requires manual fixing or deletion to proceed." % filename
         log_error(errorString)
-        return errorString
+        raise TrackmaFatal(errorString)
 
     return config
 
