@@ -1824,30 +1824,31 @@ class Settings(gtk.Window):
         header5 = gtk.Label()
         header5.set_text('<span size="10000"><b>Color Scheme</b></span>')
         header5.set_use_markup(True)
-        colors = {}
+        self.colors = {}
         pages = [('rows',    'Row text'),
                  ('progress','Progress widget')]
 
-        colors['rows'] = [('is_playing',  'Playing'),
+        self.colors['rows'] = [('is_playing',  'Playing'),
                           ('is_queued',   'Queued'),
                           ('new_episode', 'New Episode'),
                           ('is_airing',   'Airing'),
                           ('not_aired',   'Unaired')]
-        colors['progress'] = [('progress_bg',       'Background'),
+        self.colors['progress'] = [('progress_bg',       'Background'),
                               ('progress_fg',       'Watched bar'),
                               ('progress_sub_bg',   'Aired episodes'),
                               ('progress_sub_fg',   'Stored episodes'),
                               ('progress_complete', 'Complete')]
+        self.col_pickers = {}
 
         col_notebook = gtk.Notebook()
         for (key,tab_title) in pages:
             rows = gtk.VBox(False, 10)
             rows_lines = []
-            for (c_key,text) in colors[key]: # Generate widgets for each color
+            for (c_key,text) in self.colors[key]: # Generate widgets for each color
                 line = gtk.HBox(False, 5)
                 label = gtk.Label(text)
                 picker = gtk.ColorButton(getColor(self.config['colors'][c_key]))
-
+                self.col_pickers[c_key] = picker
                 line.pack_start(label)
                 line.pack_end(picker, False, False, 0)
                 rows.pack_start(line, False, False, 0)
@@ -1988,6 +1989,9 @@ class Settings(gtk.Window):
         else:
             self.config['close_to_tray'] = False
             self.config['start_in_tray'] = False
+
+        """Update Colors"""
+        self.config['colors'] = {key: str(col.get_color()) for key,col in self.col_pickers.items()}
 
         utils.save_config(self.config, self.configfile)
 
