@@ -498,6 +498,7 @@ class Trackma_gtk(object):
 
             self.show_lists[status] = ShowView(
                     status,
+                    self.config['colors'],
                     self.engine.mediainfo['has_progress'],
                     self.score_decimal_places)
             self.show_lists[status].get_selection().connect("changed", self.select_show)
@@ -1150,9 +1151,10 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, has_progress=True, decimals=0):
+    def __init__(self, status, colors, has_progress=True, decimals=0):
         gtk.TreeView.__init__(self)
 
+        self.colors = colors
         self.has_progress = has_progress
         self.decimals = decimals
         self.status_filter = status
@@ -1183,7 +1185,7 @@ class ShowView(gtk.TreeView):
         self.cols['Title'].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
-        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9)
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9) # Using foreground-gdk does not work, possibly due to the timing of it being set
 
         if has_progress:
             renderer_progress = gtk.CellRendererText()
@@ -1192,7 +1194,7 @@ class ShowView(gtk.TreeView):
             self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
             self.cols['Progress'].set_expand(False)
 
-            renderer_percent = ProgressCellRenderer()
+            renderer_percent = ProgressCellRenderer(self.colors)
             self.cols['Percent'].pack_start(renderer_percent, False)
             self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
             self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
@@ -1212,13 +1214,13 @@ class ShowView(gtk.TreeView):
 
     def _get_color(self, show, eps):
         if show.get('queued'):
-            return '#54C571'
+            return str(getColor(self.colors['is_queued']))
         elif eps and max(eps) > show['my_progress']:
-            return '#FBB917'
+            return str(getColor(self.colors['new_episode']))
         elif show['status'] == utils.STATUS_AIRING:
-            return '#0099cc'
+            return str(getColor(self.colors['is_airing']))
         elif show['status'] == utils.STATUS_NOTYET:
-            return '#999900'
+            return str(getColor(self.colors['not_aired']))
         else:
             return None
 
@@ -1302,7 +1304,7 @@ class ShowView(gtk.TreeView):
         for row in self.store:
             if int(row[0]) == show['id']:
                 if is_playing:
-                    row[9] = '#6C2DC7'
+                    row[9] = getColor(self.colors['is_playing'])
                 else:
                     row[9] = self._get_color(show, row[8])
                 return
@@ -1818,6 +1820,42 @@ class Settings(gtk.Window):
         line6.pack_start(self.chk_close_to_tray, False, False, 0)
         line6.pack_start(self.chk_start_in_tray, False, False, 0)
 
+        ### Colors ###
+        header5 = gtk.Label()
+        header5.set_text('<span size="10000"><b>Color Scheme</b></span>')
+        header5.set_use_markup(True)
+        self.colors = {}
+        pages = [('rows',    'Row text'),
+                 ('progress','Progress widget')]
+
+        self.colors['rows'] = [('is_playing',  'Playing'),
+                               ('is_queued',   'Queued'),
+                               ('new_episode', 'New Episode'),
+                               ('is_airing',   'Airing'),
+                               ('not_aired',   'Unaired')]
+        self.colors['progress'] = [('progress_bg',       'Background'),
+                                   ('progress_fg',       'Watched bar'),
+                                   ('progress_sub_bg',   'Aired episodes'),
+                                   ('progress_sub_fg',   'Stored episodes'),
+                                   ('progress_complete', 'Complete')]
+        self.col_pickers = {}
+
+        col_notebook = gtk.Notebook()
+        for (key,tab_title) in pages:
+            rows = gtk.VBox(False, 10)
+            rows_lines = []
+            for (c_key,text) in self.colors[key]: # Generate widgets for each color
+                line = gtk.HBox(False, 5)
+                label = gtk.Label(text)
+                picker = gtk.ColorButton(getColor(self.config['colors'][c_key]))
+                self.col_pickers[c_key] = picker
+                line.pack_start(label)
+                line.pack_end(picker, False, False, 0)
+                rows.pack_start(line, False, False, 0)
+                rows_lines.append(line)
+            col_notebook.append_page(rows, gtk.Label(tab_title))
+
+
         # Join HBoxes
         mainbox = gtk.VBox(False, 10)
         notebook = gtk.Notebook()
@@ -1845,6 +1883,8 @@ class Settings(gtk.Window):
         page2.set_border_width(5)
         page2.pack_start(header4, False, False, 0)
         page2.pack_start(line6, False, False, 0)
+        page2.pack_start(header5, False, False, 0)
+        page2.pack_start(col_notebook, False, False, 0)
 
         notebook.append_page(page0, gtk.Label('Media'))
         notebook.append_page(page1, gtk.Label('Sync'))
@@ -1949,6 +1989,9 @@ class Settings(gtk.Window):
         else:
             self.config['close_to_tray'] = False
             self.config['start_in_tray'] = False
+
+        """Update Colors"""
+        self.config['colors'] = {key: str(col.get_color()) for key,col in self.col_pickers.items()}
 
         utils.save_config(self.config, self.configfile)
 
@@ -2136,7 +2179,7 @@ class ShowSearch(gtk.Window):
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
 
-        self.showlist = ShowSearchView()
+        self.showlist = ShowSearchView(self.config['colors'])
         self.showlist.get_selection().connect("changed", self.select_show)
 
         sw.add(self.showlist)
@@ -2226,7 +2269,7 @@ class ShowSearch(gtk.Window):
 
 
 class ShowSearchView(gtk.TreeView):
-    def __init__(self):
+    def __init__(self, colors):
         gtk.TreeView.__init__(self)
 
         self.cols = dict()
@@ -2259,15 +2302,17 @@ class ShowSearchView(gtk.TreeView):
         self.store = gtk.ListStore(str, str, str, str, str)
         self.set_model(self.store)
 
+        self.colors = colors
+
     def append_start(self):
         self.freeze_child_notify()
         self.store.clear()
 
     def append(self, show):
         if show['status'] == 1:
-            color = '#0099cc'
+            color = str(getColor(self.colors['is_airing']))
         elif show['status'] == 3:
-            color = '#999900'
+            color = str(getColor(self.colors['not_aired']))
         else:
             color = None
 
@@ -2302,8 +2347,9 @@ class ProgressCellRenderer(gtk.GenericCellRenderer):
         "Available episodes", gobject.PARAM_READWRITE),
     }
 
-    def __init__(self):
+    def __init__(self, colors):
         self.__gobject_init__()
+        self.colors = colors
         self.value = self.get_property("value")
         self.subvalue = self.get_property("subvalue")
         self.total = self.get_property("total")
@@ -2319,7 +2365,7 @@ class ProgressCellRenderer(gtk.GenericCellRenderer):
         cr = window.cairo_create()
         (x, y, w, h) = self.on_get_size(widget, cell_area)
 
-        cr.set_source_rgb(0.9, 0.9, 0.9)
+        cr.set_source_color(getColor(self.colors['progress_bg'])) #set_source_rgb(0.9, 0.9, 0.9)
         cr.rectangle(x, y, w, h)
         cr.fill()
 
@@ -2332,22 +2378,22 @@ class ProgressCellRenderer(gtk.GenericCellRenderer):
             else:
                 mid = int(w / float(self.total) * self.subvalue)
 
-            cr.set_source_rgb(0.7, 0.7, 0.7)
+            cr.set_source_color(getColor(self.colors['progress_sub_bg'])) #set_source_rgb(0.7, 0.7, 0.7)
             cr.rectangle(x, y+h-self._subheight, mid, h-(h-self._subheight))
             cr.fill()
 
         if self.value:
             if self.value >= self.total:
-                cr.set_source_rgb(0.6, 0.8, 0.7)
+                cr.set_source_color(getColor(self.colors['progress_complete'])) #set_source_rgb(0.6, 0.8, 0.7)
                 cr.rectangle(x, y, w, h)
             else:
                 mid = int(w / float(self.total) * self.value)
-                cr.set_source_rgb(0.6, 0.7, 0.8)
+                cr.set_source_color(getColor(self.colors['progress_fg'])) #set_source_rgb(0.6, 0.7, 0.8)
                 cr.rectangle(x, y, mid, h)
             cr.fill()
 
         if self.eps:
-            cr.set_source_rgb(0.4, 0.5, 0.6)
+            cr.set_source_color(getColor(self.colors['progress_sub_fg'])) #set_source_rgb(0.4, 0.5, 0.6)
             for episode in self.eps:
                 if episode > 0 and episode <= self.total:
                     start = int(w / float(self.total) * (episode - 1))
@@ -2363,6 +2409,19 @@ class ProgressCellRenderer(gtk.GenericCellRenderer):
         w = cell_area.width
         h = cell_area.height
         return (x, y, w, h)
+
+def getColor(colorString):
+    # Takes a color string in either #RRGGBB format TODO: or group,role format (using GTK int values)
+    # Returns gdk color
+    if colorString[0] == "#":
+        return gtk.gdk.color_parse(colorString)
+    #else:
+        #(group, role) = [int(i) for i in colorString.split(',')]
+        #if (0 <= group <= 2) and (0 <= role <= 19):
+            #return QtGui.QColor( QPalette().color(group, role) )
+        #else:
+            ## Failsafe - return black
+            #return QtGui.QColor()
 
 def main():
     app = Trackma_gtk()
