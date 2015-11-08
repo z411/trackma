@@ -493,7 +493,7 @@ class Trackma(QtGui.QMainWindow):
         if altname:
             title_str += " [%s]" % altname
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
-        percent_widget = EpisodeBar()
+        percent_widget = EpisodeBar(self, self.config['colors'])
         percent_widget.setRange(0, 100)
         tooltip = "Watched: %d<br>" % show['my_progress']
 
@@ -1403,26 +1403,41 @@ class SettingsDialog(QtGui.QDialog):
         # Group: Colour scheme
         g_scheme = QtGui.QGroupBox('Color Scheme')
         g_scheme.setFlat(True)
-        self.row_highlights = [('is_playing',  'Playing'),
+        col_tabs = [('rows',     '&Row highlights'),
+                    ('progress', '&Progress widget')]
+        self.colors = {}
+        self.colors['rows'] = [('is_playing',  'Playing'),
                                ('is_queued',   'Queued'),
                                ('new_episode', 'New Episode'),
                                ('is_airing',   'Airing'),
                                ('not_aired',   'Unaired')]
-        self.row_hl_colors = []
-        self.row_hl_buttons = []
+        self.colors['progress'] = [('progress_bg',       'Background'),
+                                   ('progress_fg',       'Watched bar'),
+                                   ('progress_sub_bg',   'Aired episodes'),
+                                   ('progress_sub_fg',   'Stored episodes'),
+                                   ('progress_complete', 'Complete')]
+        self.color_buttons = []
+        self.syscolor_buttons = []
         g_scheme_layout = QtGui.QGridLayout()
-        col = 0
-        for (key,label) in self.row_highlights: # Generate widgets from the keys and values
-            self.row_hl_colors.append( QtGui.QPushButton() )
-            self.row_hl_colors[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
-            self.row_hl_colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
-            self.row_hl_colors[-1].clicked.connect( self.s_color_picker(key,False) )
-            self.row_hl_buttons.append( QtGui.QPushButton('System Colors') )
-            self.row_hl_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
-            g_scheme_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
-            g_scheme_layout.addWidget( self.row_hl_colors[-1],  col, 1, 1, 1 )
-            g_scheme_layout.addWidget( self.row_hl_buttons[-1], col, 2, 1, 1 )
-            col+=1
+        tw_scheme = QtGui.QTabWidget()
+        for (key,tab_title) in col_tabs:
+            page = QtGui.QFrame()
+            page_layout = QtGui.QGridLayout()
+            col = 0
+            for (key,label) in self.colors[key]: # Generate widgets from the keys and values
+                self.color_buttons.append( QtGui.QPushButton() )
+                # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+                self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+                self.color_buttons[-1].clicked.connect( self.s_color_picker(key,False) )
+                self.syscolor_buttons.append( QtGui.QPushButton('System Colors') )
+                self.syscolor_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
+                page_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
+                page_layout.addWidget( self.color_buttons[-1],  col, 1, 1, 1 )
+                page_layout.addWidget( self.syscolor_buttons[-1], col, 2, 1, 1 )
+                col+=1
+            page.setLayout(page_layout)
+            tw_scheme.addTab(page,tab_title)
+        g_scheme_layout.addWidget(tw_scheme)
         g_scheme.setLayout(g_scheme_layout)
 
         # UI layout
@@ -1451,6 +1466,7 @@ class SettingsDialog(QtGui.QDialog):
         layout.setColumnStretch(1, 1)
 
         self._load()
+        self.update_colors()
 
         self.setLayout(layout)
 
@@ -1520,6 +1536,8 @@ class SettingsDialog(QtGui.QDialog):
         self.start_in_tray.setEnabled(self.tray_icon.isChecked())
         self.notifications.setEnabled(self.tray_icon.isChecked())
 
+        self.color_values = self.config['colors'].copy()
+
     def _save(self):
         engine = self.worker.engine
 
@@ -1574,6 +1592,8 @@ class SettingsDialog(QtGui.QDialog):
         self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
+
+        self.config['colors'] = self.color_values
 
         utils.save_config(self.config, self.configfile)
 
@@ -1640,21 +1660,21 @@ class SettingsDialog(QtGui.QDialog):
 
     def color_picker(self, key, system):
         if system is True:
-            current = self.config['colors'][key]
+            current = self.color_values[key]
             result = ThemedColorPicker.do()
             if result is not None and result is not current:
-                self.config['colors'][key] = result
+                self.color_values[key] = result
                 self.update_colors()
         else:
-            current = getColor(self.config['colors'][key])
+            current = getColor(self.color_values[key])
             result = QtGui.QColorDialog.getColor(current)
             if result.isValid() and result is not current:
-                self.config['colors'][key] = str(result.name())
+                self.color_values[key] = str(result.name())
                 self.update_colors()
 
     def update_colors(self):
-        for ((key,label),color) in zip(self.row_highlights,self.row_hl_colors):
-            color.setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+        for ((key,label),color) in zip(self.colors['rows']+self.colors['progress'],self.color_buttons):
+            color.setStyleSheet('background-color: ' + getColor(self.color_values[key]).name())
 
 class ThemedColorPicker(QtGui.QDialog):
     def __init__(self,parent=None,default=None):
@@ -1898,35 +1918,36 @@ class EpisodeBar(QtGui.QProgressBar):
     _episodes = []
     _subheight = 5
 
-    def __init__(self, parent=None):
+    def __init__(self, parent, colors):
         QtGui.QProgressBar.__init__(self, parent)
+        self.colors = colors
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
 
-        painter.setBrush( QtGui.QColor(245, 245, 245) )
+        painter.setBrush( getColor(self.colors['progress_bg']) )
         painter.setPen(QtCore.Qt.transparent)
         painter.drawRect( QtCore.QRect(0, 0, self.width(), self.height()) )
 
         if self.subValue() > 0:
-            painter.setBrush( QtGui.QColor(210, 210, 210) )
+            painter.setBrush( getColor(self.colors['progress_sub_bg']) )
             mid = int(self.width() / float(self.maximum()) * self.subValue())
             progressRect = QtCore.QRect(0, self.height()-self._subheight, mid, self.height()-(self.height()-self._subheight))
             painter.drawRect(progressRect)
 
         if self.value() > 0:
             if self.value() >= self.maximum():
-                painter.setBrush( QtGui.QColor(0,210,0) )
+                painter.setBrush( getColor(self.colors['progress_complete']) )
                 mid = self.width()
             else:
-                painter.setBrush( QtGui.QColor(116, 192, 250) )
+                painter.setBrush( getColor(self.colors['progress_fg']) )
                 mid = int(self.width() / float(self.maximum()) * self.value())
             progressRect = QtCore.QRect(0, 0, mid, self.height())
             painter.drawRect(progressRect)
 
         if self.episodes():
             for episode in self.episodes():
-                painter.setBrush( QtGui.QColor(81, 135, 177) )
+                painter.setBrush( getColor(self.colors['progress_sub_fg']) )
                 if episode <= self.maximum():
                     start = int(self.width() / float(self.maximum()) * (episode -1))
                     finish = int(self.width() / float(self.maximum()) * episode)

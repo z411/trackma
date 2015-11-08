@@ -51,7 +51,11 @@ def parse_config(filename, default):
 
     try:
         with open(filename) as configfile:
-            config.update(json.load(configfile))
+            loaded_config = json.load(configfile)
+            if 'colors' in config:      #Need to prevent nested dict from being overwritten with an incomplete dict
+                config['colors'].update(loaded_config['colors'])
+                loaded_config['colors'] = config['colors']
+            config.update(loaded_config)
     except IOError:
         # Will just use the default config
         # and create the file for manual editing
@@ -334,6 +338,11 @@ qt_defaults = {
         'is_playing': '#9696FA',
         'is_queued': '#D2FAD2',
         'new_episode': '#FAFA82',
-        'not_aired': '#FAFAD2'
+        'not_aired': '#FAFAD2',
+        'progress_bg': '#F5F5F5',
+        'progress_fg': '#74C0FA',
+        'progress_sub_bg': '#D2D2D2',
+        'progress_sub_fg': '#5187B1',
+        'progress_complete': '#00D200',
     },
 }
