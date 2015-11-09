@@ -495,6 +495,7 @@ class Trackma(QtGui.QMainWindow):
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = EpisodeBar(self, self.config['colors'])
         percent_widget.setRange(0, 100)
+        percent_widget.setBarStyle(EpisodeBar.BarStyle04, False)
         tooltip = "Watched: %d<br>" % show['my_progress']
 
         if show['total'] > 0:
@@ -1914,37 +1915,82 @@ class EpisodeBar(QtGui.QProgressBar):
   Custom progress bar to show detailed information
   about episodes
     """
+    # Enum BarStyle
+    BarStyleClassic = 0 # Basic native ProgressBar appearance
+    BarStyle04 = 1      # Rectangular dual bar of Trackma v0.4
+    BarStyleHybrid = 2  # Native ProgressBar with v0.4 library subbar overlaid
+
     _subvalue = -1
     _episodes = []
     _subheight = 5
+    _bar_style = BarStyle04
+    _show_text = False
+
 
     def __init__(self, parent, colors):
         QtGui.QProgressBar.__init__(self, parent)
         self.colors = colors
 
     def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
+        rect = QtCore.QRect(0,0,self.width(), self.height())
 
-        painter.setBrush( getColor(self.colors['progress_bg']) )
-        painter.setPen(QtCore.Qt.transparent)
-        painter.drawRect( QtCore.QRect(0, 0, self.width(), self.height()) )
+        if self._bar_style is self.BarStyleClassic:
+            painter = QtGui.QPainter(self)
+            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            prog_options.textVisible = self._show_text
+            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
 
+        elif self._bar_style is self.BarStyle04:
+            painter = QtGui.QPainter(self)
+            painter.setBrush( getColor(self.colors['progress_bg']) )
+            painter.setPen(QtCore.Qt.transparent)
+            painter.drawRect( rect )
+            self.paintSubValue(painter)
+            if self.value() > 0:
+                if self.value() >= self.maximum():
+                    painter.setBrush( getColor(self.colors['progress_complete']) )
+                    mid = self.width()
+                else:
+                    painter.setBrush( getColor(self.colors['progress_fg']) )
+                    mid = int(self.width() / float(self.maximum()) * self.value())
+                progressRect = QtCore.QRect(0, 0, mid, self.height())
+                painter.drawRect(progressRect)
+            self.paintEpisodes(painter)
+
+        elif self._bar_style is self.BarStyleHybrid:
+            buffer = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+            painter = QtGui.QPainter(buffer)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+            painter.fillRect(rect, QtCore.Qt.transparent)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
+            painter.setPen(QtCore.Qt.transparent)
+            self.paintSubValue(painter)
+            self.paintEpisodes(painter)
+            painter = QtGui.QPainter(self)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            painter.drawImage(rect, buffer)
+            if self._show_text:
+                self.style().drawControl(QtGui.QStyle.CE_ProgressBarLabel, prog_options, painter)
+
+    def paintSubValue(self, painter):
         if self.subValue() > 0:
             painter.setBrush( getColor(self.colors['progress_sub_bg']) )
             mid = int(self.width() / float(self.maximum()) * self.subValue())
             progressRect = QtCore.QRect(0, self.height()-self._subheight, mid, self.height()-(self.height()-self._subheight))
             painter.drawRect(progressRect)
 
-        if self.value() > 0:
-            if self.value() >= self.maximum():
-                painter.setBrush( getColor(self.colors['progress_complete']) )
-                mid = self.width()
-            else:
-                painter.setBrush( getColor(self.colors['progress_fg']) )
-                mid = int(self.width() / float(self.maximum()) * self.value())
-            progressRect = QtCore.QRect(0, 0, mid, self.height())
-            painter.drawRect(progressRect)
-
+    def paintEpisodes(self, painter):
         if self.episodes():
             for episode in self.episodes():
                 painter.setBrush( getColor(self.colors['progress_sub_fg']) )
@@ -1971,6 +2017,10 @@ class EpisodeBar(QtGui.QProgressBar):
 
     def episodes(self):
         return self._episodes
+
+    def setBarStyle(self, style, show_text):
+        self._bar_style = style
+        self._show_text = show_text
 
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
