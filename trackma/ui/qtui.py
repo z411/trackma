@@ -495,7 +495,7 @@ class Trackma(QtGui.QMainWindow):
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
         percent_widget = EpisodeBar(self, self.config['colors'])
         percent_widget.setRange(0, 100)
-        percent_widget.setBarStyle(EpisodeBar.BarStyle04, False)
+        percent_widget.setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
         tooltip = "Watched: %d<br>" % show['my_progress']
 
         if show['total'] > 0:
@@ -508,6 +508,7 @@ class Trackma(QtGui.QMainWindow):
         if aired_eps:
             percent_widget.setSubValue(aired_eps)
             tooltip += "Aired (estimated): %d<br>" % aired_eps
+
         if library_episodes:
             eps = library_episodes.keys()
             tooltip += "Latest available: %d<br>" % max(eps)
@@ -1401,6 +1402,22 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.remember_geometry)
         g_window.setLayout(g_window_layout)
 
+        # Group: Episode Bar
+        g_ep_bar = QtGui.QGroupBox('Episode Bar')
+        g_ep_bar.setFlat(True)
+        self.ep_bar_style = QtGui.QComboBox()
+        ep_bar_styles = [(EpisodeBar.BarStyleBasic,  'Basic'),
+                         (EpisodeBar.BarStyle04,     'Trackma v0.4 Dual'),
+                         (EpisodeBar.BarStyleHybrid, 'Hybrid Dual')]
+        for (n,label) in ep_bar_styles:
+            self.ep_bar_style.addItem(label, n)
+        self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
+        self.ep_bar_text = QtGui.QCheckBox('Show text label')
+        g_ep_bar_layout = QtGui.QVBoxLayout()
+        g_ep_bar_layout.addWidget(self.ep_bar_style)
+        g_ep_bar_layout.addWidget(self.ep_bar_text)
+        g_ep_bar.setLayout(g_ep_bar_layout)
+
         # Group: Colour scheme
         g_scheme = QtGui.QGroupBox('Color Scheme')
         g_scheme.setFlat(True)
@@ -1444,6 +1461,7 @@ class SettingsDialog(QtGui.QDialog):
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_ep_bar)
         page_ui_layout.addWidget(g_scheme)
         page_ui.setLayout(page_ui_layout)
 
@@ -1530,6 +1548,9 @@ class SettingsDialog(QtGui.QDialog):
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
 
+        self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
+        self.ep_bar_text.setChecked(self.config['episodebar_text'])
+
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
         self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
         self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
@@ -1594,6 +1615,9 @@ class SettingsDialog(QtGui.QDialog):
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
 
+        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
+        self.config['episodebar_text'] = self.ep_bar_text.isChecked()
+
         self.config['colors'] = self.color_values
 
         utils.save_config(self.config, self.configfile)
@@ -1639,7 +1663,14 @@ class SettingsDialog(QtGui.QDialog):
     def s_tray_icon(self, checked):
         self.close_to_tray.setEnabled(checked)
         self.start_in_tray.setEnabled(checked)
+        self.tray_api_icon.setEnabled(checked)
         self.notifications.setEnabled(checked)
+
+    def s_ep_bar_style(self, index):
+        if self.ep_bar_style.itemData(index) == EpisodeBar.BarStyle04:
+            self.ep_bar_text.setEnabled(False)
+        else:
+            self.ep_bar_text.setEnabled(True)
 
     def s_auto_status_change(self, checked):
         self.auto_status_change_if_scored.setEnabled(checked)
@@ -1916,7 +1947,7 @@ class EpisodeBar(QtGui.QProgressBar):
   about episodes
     """
     # Enum BarStyle
-    BarStyleClassic = 0 # Basic native ProgressBar appearance
+    BarStyleBasic = 0   # Basic native ProgressBar appearance
     BarStyle04 = 1      # Rectangular dual bar of Trackma v0.4
     BarStyleHybrid = 2  # Native ProgressBar with v0.4 library subbar overlaid
 
@@ -1934,7 +1965,7 @@ class EpisodeBar(QtGui.QProgressBar):
     def paintEvent(self, event):
         rect = QtCore.QRect(0,0,self.width(), self.height())
 
-        if self._bar_style is self.BarStyleClassic:
+        if self._bar_style is self.BarStyleBasic:
             painter = QtGui.QPainter(self)
             prog_options = QtGui.QStyleOptionProgressBarV2()
             prog_options.maximum = self.maximum()

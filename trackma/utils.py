@@ -333,6 +333,8 @@ qt_defaults = {
     'last_y': 0,
     'last_width': 740,
     'last_height': 480,
+    'episodebar_style': 1,
+    'episodebar_text': False,
     'colors': {
         'is_airing': '#D2FAFA',
         'is_playing': '#9696FA',
