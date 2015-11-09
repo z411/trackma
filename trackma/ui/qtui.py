@@ -1235,6 +1235,7 @@ class SettingsDialog(QtGui.QDialog):
         category_media = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('media-playback-start'), 'Media', self.category_list)
         category_sync = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('view-refresh'), 'Sync', self.category_list)
         category_ui = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('window-new'), 'User Interface', self.category_list)
+        category_theme = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('applications-graphics'), 'Theme', self.category_list)
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
@@ -1402,6 +1403,16 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.remember_geometry)
         g_window.setLayout(g_window_layout)
 
+        # UI layout
+        page_ui_layout.addWidget(g_icon)
+        page_ui_layout.addWidget(g_window)
+        page_ui.setLayout(page_ui_layout)
+
+        # Theming tab
+        page_theme = QtGui.QWidget()
+        page_theme_layout = QtGui.QFormLayout()
+        page_theme_layout.setAlignment(QtCore.Qt.AlignTop)
+
         # Group: Episode Bar
         g_ep_bar = QtGui.QGroupBox('Episode Bar')
         g_ep_bar.setFlat(True)
@@ -1459,17 +1470,16 @@ class SettingsDialog(QtGui.QDialog):
         g_scheme.setLayout(g_scheme_layout)
 
         # UI layout
-        page_ui_layout.addWidget(g_icon)
-        page_ui_layout.addWidget(g_window)
-        page_ui_layout.addWidget(g_ep_bar)
-        page_ui_layout.addWidget(g_scheme)
-        page_ui.setLayout(page_ui_layout)
+        page_theme_layout.addWidget(g_ep_bar)
+        page_theme_layout.addWidget(g_scheme)
+        page_theme.setLayout(page_theme_layout)
 
         # Content
         self.contents = QtGui.QStackedWidget()
         self.contents.addWidget(page_media)
         self.contents.addWidget(page_sync)
         self.contents.addWidget(page_ui)
+        self.contents.addWidget(page_theme)
         self.contents.layout().setMargin(0)
 
         # Bottom buttons
