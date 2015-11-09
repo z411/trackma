@@ -37,7 +37,7 @@ class Data(object):
 
     """
     name = 'Data'
-    version = 1
+    version = 2
 
     msg = None
     api = None
@@ -133,7 +133,8 @@ class Data(object):
         if self._queue_exists():
             self._load_queue()
 
-        if self._info_exists():
+        if self._info_exists() and self.meta.get('version') == self.version:
+            # Load info cache only if we're on the same database version
             self._load_info()
 
         # If there is a list cache, load from it
