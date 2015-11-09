@@ -184,8 +184,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            response = self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
-            return True
+            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
@@ -200,8 +199,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            response = self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
-            return True
+            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
@@ -211,8 +209,7 @@ class libmal(lib):
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
 
         try:
-            response = self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
-            return True
+            self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 

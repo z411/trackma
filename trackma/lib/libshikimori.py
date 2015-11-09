@@ -118,9 +118,9 @@ class libshikimori(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        handler=urllib2.HTTPHandler(debuglevel=1)
-        self.opener = urllib2.build_opener(handler)
-        #self.opener = urllib2.build_opener()
+        #handler=urllib2.HTTPHandler(debuglevel=1)
+        #self.opener = urllib2.build_opener(handler)
+        self.opener = urllib2.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.4')]
 
     def _request(self, method, url, get=None, post=None, jsondata=None, auth=False):
@@ -135,7 +135,7 @@ class libshikimori(lib):
         request.get_method = lambda: method
 
         if auth:
-            #request.add_header('Content-Type', 'application/x-www-form-urlencoded')
+            request.add_header('Content-Type', 'application/json')
             request.add_header('X-User-Nickname', self.username)
             request.add_header('X-User-Api-Access-Token', self._get_userconfig('access_token'))
 
@@ -149,6 +149,8 @@ class libshikimori(lib):
                 raise utils.APIError("Connection error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
+        except ValueError:
+            pass # No JSON data
 
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
@@ -202,10 +204,12 @@ class libshikimori(lib):
             showid = item[self.mediatype]['id']
             show.update({
                 'id': showid,
+                'my_id': item['id'],
                 'title': item[self.mediatype]['name'],
                 'aliases': [item[self.mediatype]['russian']],
                 #'type': item[self.mediatype]['type'],
                 #'status': self.status_translate[item[self.mediatype][self.airing_str]],
+                'my_id': item['id'],
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
                 'my_score': item['score'],
@@ -233,8 +237,7 @@ class libshikimori(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
 
-        data = self._request("DELETE", "/api/user_rates/{}".format(item['id']), auth=True)
-        return True
+        data = self._request("DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
 
     def search(self, criteria):
         self.check_credentials()
@@ -286,6 +289,7 @@ class libshikimori(lib):
         return self.mediatypes[self.mediatype]
 
     def _update_entry(self, item, method):
+        # Note: This method returns the newly added or modified item ID (my_id)
         if method == 'POST':
             user_rate = {
                 'user_id': self.userid,
@@ -294,19 +298,20 @@ class libshikimori(lib):
             }
             dest_url = "/api/user_rates"
         else:
+            #user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
             user_rate = {}
-            dest_url = "/api/user_rates/{}".format(item['id'])
+            dest_url = "/api/user_rates/{}".format(item['my_id'])
 
         if 'my_progress' in item.keys():
             user_rate[self.watched_str] = item['my_progress']
         if 'my_status' in item.keys():
-            user_rate['list_status'] = item['my_status']
+            user_rate['status'] = item['my_status']
         if 'my_score' in item.keys():
             user_rate['score'] = item['my_score']
 
         values = {'user_rate': user_rate}
         data = self._request(method, dest_url, jsondata=values, auth=True)
-        return True
+        return data['id']
 
     def _parse_info(self, item):
         info = utils.show()

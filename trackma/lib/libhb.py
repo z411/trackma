@@ -166,8 +166,7 @@ class libhb(lib):
             values['sane_rating_update'] = item['my_score']
 
         try:
-            response = self._request("/libraries/%s" % item['id'], post=values)
-            return True
+            self._request("/libraries/%s" % item['id'], post=values)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
@@ -178,8 +177,7 @@ class libhb(lib):
 
         values = {'auth_token': self.auth}
         try:
-            response = self._request("/libraries/%s/remove" % item['id'], post=values)
-            return True
+            self._request("/libraries/%s/remove" % item['id'], post=values)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 

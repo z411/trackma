@@ -193,6 +193,7 @@ def show():
         'title':        '',
         'url':          '',
         'aliases':      [],
+        'my_id':        None,
         'my_progress':  0,
         'my_status':    1,
         'my_score':     0,

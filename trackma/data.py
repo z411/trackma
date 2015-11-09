@@ -272,7 +272,11 @@ class Data(object):
 
         if not exists:
             # Create queue item and append it
-            item = {'id': show['id'], 'action': 'update', 'title': show['title']}
+            item = {'id': show['id'],
+                    'my_id': show['my_id'],
+                    'action': 'update',
+                    'title': show['title'],
+                   }
             item[key] = value
             self.queue.append(item)
 
@@ -371,7 +375,10 @@ class Data(object):
                     # Call the API to do the requested operation
                     operation = item.get('action')
                     if operation == 'add':
-                        self.api.add_show(item)
+                        my_id = self.api.add_show(item)
+
+                        if my_id:
+                            show['my_id'] = my_id
                     elif operation == 'update':
                         self.api.update_show(item)
                     elif operation == 'delete':

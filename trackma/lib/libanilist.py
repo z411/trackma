@@ -256,12 +256,12 @@ class libanilist(lib):
     def add_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Adding item %s..." % item['title'])
-        return self._update_entry(item, "POST")
+        self._update_entry(item, "POST")
 
     def update_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Updating item %s..." % item['title'])
-        return self._update_entry(item, "PUT")
+        self._update_entry(item, "PUT")
 
     def delete_show(self, item):
         self.check_credentials()
@@ -272,7 +272,7 @@ class libanilist(lib):
         except ValueError:
             # An empty document, without any JSON, is returned
             # when the delete worked.
-            return True
+            pass
 
     def search(self, criteria):
         self.check_credentials()
