@@ -68,6 +68,15 @@ class AccountManager(object):
 
         self._save()
 
+    def purge_account(self, num):
+        """
+        Renames stale cache files for account number **num**.
+        """
+        account = self.accounts['accounts'][num]
+        userfolder = "%s.%s" % (account['username'], account['api'])
+        utils.make_dir(userfolder + '.old')
+        utils.regex_rename_files('(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
+
     def get_account(self, num):
         """
         Returns the account dict **num**.

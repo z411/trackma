@@ -19,7 +19,7 @@ import sys
 
 try:
     from PyQt4 import QtGui, QtCore
-    from PyQt4.QtGui import QPalette
+    from PyQt4.QtGui import QPalette, QIcon
 except ImportError:
     print ("Couldn't import Qt dependencies. Make sure you "
            "installed the PyQt4 package.")
@@ -123,6 +123,9 @@ class Trackma(QtGui.QMainWindow):
         action_play_next.setStatusTip('Play the next unwatched episode.')
         action_play_next.setShortcut('Ctrl+N')
         action_play_next.triggered.connect(lambda: self.s_play(True))
+        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog.setStatusTip('Select an episode to play.')
+        action_play_dialog.triggered.connect(self.s_play_number)
         action_details = QtGui.QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
@@ -169,6 +172,7 @@ class Trackma(QtGui.QMainWindow):
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
         self.menu_show.addAction(action_play_next)
+        self.menu_show.addAction(action_play_dialog)
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_altname)
         self.menu_show.addSeparator()
@@ -176,6 +180,13 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
+        self.menu_show_context = QtGui.QMenu()
+        self.menu_show_context.addAction(action_play_next)
+        self.menu_show_context.addAction(action_play_dialog)
+        self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(action_altname)
+        self.menu_show_context.addSeparator()
+        self.menu_show_context.addAction(action_delete)
         menu_list = menubar.addMenu('&List')
         menu_list.addAction(action_sync)
         menu_list.addSeparator()
@@ -199,7 +210,7 @@ class Trackma(QtGui.QMainWindow):
         top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
         left_box = QtGui.QFormLayout()
-        plusrem_hbox = QtGui.QHBoxLayout()
+        small_btns_hbox = QtGui.QHBoxLayout()
 
         self.show_title = QtGui.QLabel('Trackma-qt')
         show_title_font = QtGui.QFont()
@@ -230,37 +241,50 @@ class Trackma(QtGui.QMainWindow):
         self.show_progress = QtGui.QSpinBox()
         self.show_progress_bar = QtGui.QProgressBar()
         self.show_progress_btn = QtGui.QPushButton('Update')
+        self.show_progress_btn.setToolTip('Set number of episodes watched to the value entered above')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
-        self.show_play_btn = QtGui.QPushButton('Play')
-        self.show_plus_btn = QtGui.QPushButton('+')
-        self.show_plus_btn.setShortcut('Ctrl+Right')
-        self.show_plus_btn.setFixedWidth( 48 )
-        self.show_rem_btn = QtGui.QPushButton('-')
-        self.show_rem_btn.clicked.connect(self.s_rem_episode)
-        self.show_rem_btn.setShortcut('Ctrl+Left')
-        self.show_rem_btn.setFixedWidth( 48 )
-        self.show_plus_btn.clicked.connect(self.s_plus_episode)
-        self.show_play_btn.clicked.connect(lambda: self.s_play(False))
-        self.show_play_next_btn = QtGui.QPushButton('Next')
-        self.show_play_next_btn.clicked.connect(lambda: self.s_play(True))
+        self.show_play_btn = QtGui.QToolButton()
+        self.show_play_btn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        self.show_play_btn.setToolTip('Play the next unwatched episode\nHold to play other episodes')
+        self.show_play_btn.clicked.connect(lambda: self.s_play(True))
+        self.show_play_menu = QtGui.QMenu()
+        action_play_next_2 = QtGui.QAction(QtGui.QIcon.fromTheme('media-skip-forward'), 'Play &Next Episode', self)
+        action_play_next_2.triggered.connect(lambda: self.s_play(True))
+        action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep', self)
+        action_play_last.triggered.connect(lambda: self.s_play(False))
+        self.show_play_btn.setMenu(self.show_play_menu)
+        self.show_play_menu.addAction(action_play_next_2)
+        self.show_play_menu.addAction(action_play_last)
+        self.show_play_menu.addAction(action_play_dialog)
+        self.show_inc_btn = QtGui.QToolButton()
+        self.show_inc_btn.setIcon(QtGui.QIcon.fromTheme('list-add'))
+        self.show_inc_btn.setShortcut('Ctrl+Right')
+        self.show_inc_btn.setToolTip('Increment number of episodes watched')
+        self.show_inc_btn.clicked.connect(self.s_plus_episode)
+        self.show_dec_btn = QtGui.QToolButton()
+        self.show_dec_btn.setIcon(QtGui.QIcon.fromTheme('list-remove'))
+        self.show_dec_btn.clicked.connect(self.s_rem_episode)
+        self.show_dec_btn.setShortcut('Ctrl+Left')
+        self.show_dec_btn.setToolTip('Decrement number of episodes watched')
         show_score_label = QtGui.QLabel('Score')
         self.show_score = QtGui.QDoubleSpinBox()
         self.show_score_btn = QtGui.QPushButton('Set')
+        self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_status = QtGui.QComboBox()
+        self.show_status.setToolTip('Change your watching status of this show')
         self.show_status.currentIndexChanged.connect(self.s_set_status)
 
-        plusrem_hbox.addWidget(self.show_rem_btn)
-        plusrem_hbox.addWidget(self.show_plus_btn,1)
-        plusrem_hbox.setAlignment( QtCore.Qt.AlignCenter )
+        small_btns_hbox.addWidget(self.show_dec_btn)
+        small_btns_hbox.addWidget(self.show_play_btn)
+        small_btns_hbox.addWidget(self.show_inc_btn)
+        small_btns_hbox.setAlignment( QtCore.Qt.AlignCenter )
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar)
+        left_box.addRow(small_btns_hbox)
         left_box.addRow(show_progress_label, self.show_progress)
-        left_box.addRow(plusrem_hbox)
         left_box.addRow(self.show_progress_btn)
-        left_box.addRow(self.show_play_btn)
-        left_box.addRow(self.show_play_next_btn)
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
@@ -372,7 +396,8 @@ class Trackma(QtGui.QMainWindow):
             self.show_progress_btn.setEnabled(enable)
             self.show_score_btn.setEnabled(enable)
             self.show_play_btn.setEnabled(enable)
-            self.show_play_next_btn.setEnabled(enable)
+            self.show_inc_btn.setEnabled(enable)
+            self.show_dec_btn.setEnabled(enable)
             self.show_status.setEnabled(enable)
 
     def _update_queue_counter(self, queue):
@@ -468,8 +493,9 @@ class Trackma(QtGui.QMainWindow):
         if altname:
             title_str += " [%s]" % altname
         progress_str = "%d / %d" % (show['my_progress'], show['total'])
-        percent_widget = EpisodeBar()
+        percent_widget = EpisodeBar(self, self.config['colors'])
         percent_widget.setRange(0, 100)
+        percent_widget.setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
         tooltip = "Watched: %d<br>" % show['my_progress']
 
         if show['total'] > 0:
@@ -482,6 +508,7 @@ class Trackma(QtGui.QMainWindow):
         if aired_eps:
             percent_widget.setSubValue(aired_eps)
             tooltip += "Aired (estimated): %d<br>" % aired_eps
+
         if library_episodes:
             eps = library_episodes.keys()
             tooltip += "Latest available: %d<br>" % max(eps)
@@ -489,12 +516,14 @@ class Trackma(QtGui.QMainWindow):
 
         tooltip += "Total: %d" % show['total']
         percent_widget.setToolTip(tooltip)
+        percent = percent_widget.value() * 100 / percent_widget.maximum()
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
         widget.setItem(row, 1, ShowItem( title_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
+        widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
 
@@ -536,7 +565,8 @@ class Trackma(QtGui.QMainWindow):
             self.show_progress_btn.setEnabled(False)
             self.show_score_btn.setEnabled(False)
             self.show_play_btn.setEnabled(False)
-            self.show_play_next_btn.setEnabled(False)
+            self.show_inc_btn.setEnabled(False)
+            self.show_dec_btn.setEnabled(False)
             return
 
         # Block signals
@@ -560,10 +590,9 @@ class Trackma(QtGui.QMainWindow):
         self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
-        self.show_plus_btn.setEnabled(True)
-        self.show_plus_btn.setEnabled(True)
+        self.show_inc_btn.setEnabled(True)
+        self.show_dec_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
-        self.show_play_next_btn.setEnabled(True)
         self.show_status.setEnabled(True)
 
         # Download image or use cache
@@ -665,16 +694,29 @@ class Trackma(QtGui.QMainWindow):
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
 
-    def s_play(self, play_next):
+    def s_play(self, play_next, episode=0):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            episode = 0 # Engine plays next unwatched episode
-            if not play_next:
+            #episode = 0 # Engine plays next unwatched episode
+            if not play_next and not episode:
                 episode = self.show_progress.value()
 
             self._busy(False)
             self.worker_call('play_episode', self.r_generic, show, episode)
+
+    def s_play_number(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        ep_default = 1
+        ep_min = 1
+        ep_max = utils.estimate_aired_episodes(show)
+        if ep_max is None:
+            ep_max = max(show['total'],1)
+        episode, ok = QtGui.QInputDialog.getInt(self, 'Play Episode',
+            'Enter an episode number of %s to play:' % show['title'],
+            ep_default, ep_min, ep_max)
+        if ok:
+            self.s_play(False, episode)
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -856,7 +898,8 @@ class Trackma(QtGui.QMainWindow):
             for status in self.statuses_nums:
                 name = self.statuses_names[status]
 
-                self.show_lists[status] = QtGui.QTableWidget()
+                self.show_lists[status] = ShowsTableWidget()
+                self.show_lists[status].context_menu = self.menu_show_context
                 self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
                 #self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -1192,6 +1235,7 @@ class SettingsDialog(QtGui.QDialog):
         category_media = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('media-playback-start'), 'Media', self.category_list)
         category_sync = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('view-refresh'), 'Sync', self.category_list)
         category_ui = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('window-new'), 'User Interface', self.category_list)
+        category_theme = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('applications-graphics'), 'Theme', self.category_list)
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
@@ -1359,42 +1403,83 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.remember_geometry)
         g_window.setLayout(g_window_layout)
 
+        # UI layout
+        page_ui_layout.addWidget(g_icon)
+        page_ui_layout.addWidget(g_window)
+        page_ui.setLayout(page_ui_layout)
+
+        # Theming tab
+        page_theme = QtGui.QWidget()
+        page_theme_layout = QtGui.QFormLayout()
+        page_theme_layout.setAlignment(QtCore.Qt.AlignTop)
+
+        # Group: Episode Bar
+        g_ep_bar = QtGui.QGroupBox('Episode Bar')
+        g_ep_bar.setFlat(True)
+        self.ep_bar_style = QtGui.QComboBox()
+        ep_bar_styles = [(EpisodeBar.BarStyleBasic,  'Basic'),
+                         (EpisodeBar.BarStyle04,     'Trackma v0.4 Dual'),
+                         (EpisodeBar.BarStyleHybrid, 'Hybrid Dual')]
+        for (n,label) in ep_bar_styles:
+            self.ep_bar_style.addItem(label, n)
+        self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
+        self.ep_bar_text = QtGui.QCheckBox('Show text label')
+        g_ep_bar_layout = QtGui.QVBoxLayout()
+        g_ep_bar_layout.addWidget(self.ep_bar_style)
+        g_ep_bar_layout.addWidget(self.ep_bar_text)
+        g_ep_bar.setLayout(g_ep_bar_layout)
+
         # Group: Colour scheme
         g_scheme = QtGui.QGroupBox('Color Scheme')
         g_scheme.setFlat(True)
-        self.row_highlights = [('is_playing',  'Playing'),
+        col_tabs = [('rows',     '&Row highlights'),
+                    ('progress', '&Progress widget')]
+        self.colors = {}
+        self.colors['rows'] = [('is_playing',  'Playing'),
                                ('is_queued',   'Queued'),
                                ('new_episode', 'New Episode'),
                                ('is_airing',   'Airing'),
                                ('not_aired',   'Unaired')]
-        self.row_hl_colors = []
-        self.row_hl_buttons = []
+        self.colors['progress'] = [('progress_bg',       'Background'),
+                                   ('progress_fg',       'Watched bar'),
+                                   ('progress_sub_bg',   'Aired episodes'),
+                                   ('progress_sub_fg',   'Stored episodes'),
+                                   ('progress_complete', 'Complete')]
+        self.color_buttons = []
+        self.syscolor_buttons = []
         g_scheme_layout = QtGui.QGridLayout()
-        col = 0
-        for (key,label) in self.row_highlights: # Generate widgets from the keys and values
-            self.row_hl_colors.append( QtGui.QPushButton() )
-            self.row_hl_colors[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
-            self.row_hl_colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
-            self.row_hl_colors[-1].clicked.connect( self.s_color_picker(key,False) )
-            self.row_hl_buttons.append( QtGui.QPushButton('System Colors') )
-            self.row_hl_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
-            g_scheme_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
-            g_scheme_layout.addWidget( self.row_hl_colors[-1],  col, 1, 1, 1 )
-            g_scheme_layout.addWidget( self.row_hl_buttons[-1], col, 2, 1, 1 )
-            col+=1
+        tw_scheme = QtGui.QTabWidget()
+        for (key,tab_title) in col_tabs:
+            page = QtGui.QFrame()
+            page_layout = QtGui.QGridLayout()
+            col = 0
+            for (key,label) in self.colors[key]: # Generate widgets from the keys and values
+                self.color_buttons.append( QtGui.QPushButton() )
+                # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+                self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+                self.color_buttons[-1].clicked.connect( self.s_color_picker(key,False) )
+                self.syscolor_buttons.append( QtGui.QPushButton('System Colors') )
+                self.syscolor_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
+                page_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
+                page_layout.addWidget( self.color_buttons[-1],  col, 1, 1, 1 )
+                page_layout.addWidget( self.syscolor_buttons[-1], col, 2, 1, 1 )
+                col+=1
+            page.setLayout(page_layout)
+            tw_scheme.addTab(page,tab_title)
+        g_scheme_layout.addWidget(tw_scheme)
         g_scheme.setLayout(g_scheme_layout)
 
         # UI layout
-        page_ui_layout.addWidget(g_icon)
-        page_ui_layout.addWidget(g_window)
-        page_ui_layout.addWidget(g_scheme)
-        page_ui.setLayout(page_ui_layout)
+        page_theme_layout.addWidget(g_ep_bar)
+        page_theme_layout.addWidget(g_scheme)
+        page_theme.setLayout(page_theme_layout)
 
         # Content
         self.contents = QtGui.QStackedWidget()
         self.contents.addWidget(page_media)
         self.contents.addWidget(page_sync)
         self.contents.addWidget(page_ui)
+        self.contents.addWidget(page_theme)
         self.contents.layout().setMargin(0)
 
         # Bottom buttons
@@ -1410,6 +1495,7 @@ class SettingsDialog(QtGui.QDialog):
         layout.setColumnStretch(1, 1)
 
         self._load()
+        self.update_colors()
 
         self.setLayout(layout)
 
@@ -1472,12 +1558,17 @@ class SettingsDialog(QtGui.QDialog):
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
 
+        self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
+        self.ep_bar_text.setChecked(self.config['episodebar_text'])
+
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
         self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
         self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
         self.close_to_tray.setEnabled(self.tray_icon.isChecked())
         self.start_in_tray.setEnabled(self.tray_icon.isChecked())
         self.notifications.setEnabled(self.tray_icon.isChecked())
+
+        self.color_values = self.config['colors'].copy()
 
     def _save(self):
         engine = self.worker.engine
@@ -1534,6 +1625,11 @@ class SettingsDialog(QtGui.QDialog):
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
 
+        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
+        self.config['episodebar_text'] = self.ep_bar_text.isChecked()
+
+        self.config['colors'] = self.color_values
+
         utils.save_config(self.config, self.configfile)
 
         self.saved.emit()
@@ -1577,7 +1673,14 @@ class SettingsDialog(QtGui.QDialog):
     def s_tray_icon(self, checked):
         self.close_to_tray.setEnabled(checked)
         self.start_in_tray.setEnabled(checked)
+        self.tray_api_icon.setEnabled(checked)
         self.notifications.setEnabled(checked)
+
+    def s_ep_bar_style(self, index):
+        if self.ep_bar_style.itemData(index) == EpisodeBar.BarStyle04:
+            self.ep_bar_text.setEnabled(False)
+        else:
+            self.ep_bar_text.setEnabled(True)
 
     def s_auto_status_change(self, checked):
         self.auto_status_change_if_scored.setEnabled(checked)
@@ -1599,21 +1702,21 @@ class SettingsDialog(QtGui.QDialog):
 
     def color_picker(self, key, system):
         if system is True:
-            current = self.config['colors'][key]
+            current = self.color_values[key]
             result = ThemedColorPicker.do()
             if result is not None and result is not current:
-                self.config['colors'][key] = result
+                self.color_values[key] = result
                 self.update_colors()
         else:
-            current = getColor(self.config['colors'][key])
+            current = getColor(self.color_values[key])
             result = QtGui.QColorDialog.getColor(current)
             if result.isValid() and result is not current:
-                self.config['colors'][key] = str(result.name())
+                self.color_values[key] = str(result.name())
                 self.update_colors()
 
     def update_colors(self):
-        for ((key,label),color) in zip(self.row_highlights,self.row_hl_colors):
-            color.setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
+        for ((key,label),color) in zip(self.colors['rows']+self.colors['progress'],self.color_buttons):
+            color.setStyleSheet('background-color: ' + getColor(self.color_values[key]).name())
 
 class ThemedColorPicker(QtGui.QDialog):
     def __init__(self,parent=None,default=None):
@@ -1695,13 +1798,18 @@ class AccountDialog(QtGui.QDialog):
         add_btn = QtGui.QPushButton('Add')
         add_btn.clicked.connect(self.add)
         delete_btn = QtGui.QPushButton('Delete')
+        delete_btn.setToolTip('Remove this account from Trackma')
         delete_btn.clicked.connect(self.delete)
+        purge_btn = QtGui.QPushButton('Purge')
+        purge_btn.setToolTip('Clear local DB for this account')
+        purge_btn.clicked.connect(self.purge)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
         bottom_layout.addWidget(delete_btn)
+        bottom_layout.addWidget(purge_btn)
         bottom_layout.addWidget(select_btn)
 
         # Get icons
@@ -1731,6 +1839,17 @@ class AccountDialog(QtGui.QDialog):
 
             if reply == QtGui.QMessageBox.Yes:
                 self.accountman.delete_account(selected_account_num)
+                self.rebuild()
+        except IndexError:
+            self._error("Please select an account.")
+
+    def purge(self):
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            reply = QtGui.QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+            if reply == QtGui.QMessageBox.Yes:
+                self.accountman.purge_account(selected_account_num)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
@@ -1782,6 +1901,17 @@ class AccountItem(QtGui.QTableWidgetItem):
         if icon:
             self.setIcon( icon )
 
+class ShowsTableWidget(QtGui.QTableWidget):
+    """
+    Regular table widget with context menu for show actions.
+
+    """
+    def __init__(self, parent = None):
+        QtGui.QTableWidget.__init__(self, parent)
+
+    def contextMenuEvent(self, event):
+        action = self.context_menu.exec_(event.globalPos())
+
 class ShowItem(QtGui.QTableWidgetItem):
     """
     Regular item able to show colors and alignment
@@ -1826,39 +1956,85 @@ class EpisodeBar(QtGui.QProgressBar):
   Custom progress bar to show detailed information
   about episodes
     """
+    # Enum BarStyle
+    BarStyleBasic = 0   # Basic native ProgressBar appearance
+    BarStyle04 = 1      # Rectangular dual bar of Trackma v0.4
+    BarStyleHybrid = 2  # Native ProgressBar with v0.4 library subbar overlaid
+
     _subvalue = -1
     _episodes = []
     _subheight = 5
+    _bar_style = BarStyle04
+    _show_text = False
 
-    def __init__(self, parent=None):
+
+    def __init__(self, parent, colors):
         QtGui.QProgressBar.__init__(self, parent)
+        self.colors = colors
 
     def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
+        rect = QtCore.QRect(0,0,self.width(), self.height())
 
-        painter.setBrush( QtGui.QColor(245, 245, 245) )
-        painter.setPen(QtCore.Qt.transparent)
-        painter.drawRect( QtCore.QRect(0, 0, self.width(), self.height()) )
+        if self._bar_style is self.BarStyleBasic:
+            painter = QtGui.QPainter(self)
+            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            prog_options.textVisible = self._show_text
+            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
 
+        elif self._bar_style is self.BarStyle04:
+            painter = QtGui.QPainter(self)
+            painter.setBrush( getColor(self.colors['progress_bg']) )
+            painter.setPen(QtCore.Qt.transparent)
+            painter.drawRect( rect )
+            self.paintSubValue(painter)
+            if self.value() > 0:
+                if self.value() >= self.maximum():
+                    painter.setBrush( getColor(self.colors['progress_complete']) )
+                    mid = self.width()
+                else:
+                    painter.setBrush( getColor(self.colors['progress_fg']) )
+                    mid = int(self.width() / float(self.maximum()) * self.value())
+                progressRect = QtCore.QRect(0, 0, mid, self.height())
+                painter.drawRect(progressRect)
+            self.paintEpisodes(painter)
+
+        elif self._bar_style is self.BarStyleHybrid:
+            buffer = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+            painter = QtGui.QPainter(buffer)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+            painter.fillRect(rect, QtCore.Qt.transparent)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
+            painter.setPen(QtCore.Qt.transparent)
+            self.paintSubValue(painter)
+            self.paintEpisodes(painter)
+            painter = QtGui.QPainter(self)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            painter.drawImage(rect, buffer)
+            if self._show_text:
+                self.style().drawControl(QtGui.QStyle.CE_ProgressBarLabel, prog_options, painter)
+
+    def paintSubValue(self, painter):
         if self.subValue() > 0:
-            painter.setBrush( QtGui.QColor(210, 210, 210) )
+            painter.setBrush( getColor(self.colors['progress_sub_bg']) )
             mid = int(self.width() / float(self.maximum()) * self.subValue())
             progressRect = QtCore.QRect(0, self.height()-self._subheight, mid, self.height()-(self.height()-self._subheight))
             painter.drawRect(progressRect)
 
-        if self.value() > 0:
-            if self.value() >= self.maximum():
-                painter.setBrush( QtGui.QColor(0,210,0) )
-                mid = self.width()
-            else:
-                painter.setBrush( QtGui.QColor(116, 192, 250) )
-                mid = int(self.width() / float(self.maximum()) * self.value())
-            progressRect = QtCore.QRect(0, 0, mid, self.height())
-            painter.drawRect(progressRect)
-
+    def paintEpisodes(self, painter):
         if self.episodes():
             for episode in self.episodes():
-                painter.setBrush( QtGui.QColor(81, 135, 177) )
+                painter.setBrush( getColor(self.colors['progress_sub_fg']) )
                 if episode <= self.maximum():
                     start = int(self.width() / float(self.maximum()) * (episode -1))
                     finish = int(self.width() / float(self.maximum()) * episode)
@@ -1882,6 +2058,10 @@ class EpisodeBar(QtGui.QProgressBar):
 
     def episodes(self):
         return self._episodes
+
+    def setBarStyle(self, style, show_text):
+        self._bar_style = style
+        self._show_text = show_text
 
 class AccountAddDialog(QtGui.QDialog):
     def __init__(self, parent, icons):
