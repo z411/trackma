@@ -115,6 +115,8 @@ class Trackma_gtk(object):
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('Trackma-gtk ' + utils.VERSION)
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/icon.png')
+        if self.config['remember_geometry']:
+            self.main.resize(self.config['last_width'], self.config['last_height'])
 
         # Menus
         mb_show = gtk.Menu()
@@ -579,8 +581,16 @@ class Trackma_gtk(object):
         return True
 
     def do_quit(self, widget=None, event=None, data=None):
+        if self.config['remember_geometry']:
+            self.do_store_geometry()
         if self.close_thread is None:
             self.close_thread = threading.Thread(target=self.task_unload).start()
+
+    def do_store_geometry(self):
+        (width, height) = self.main.get_size()
+        self.config['last_width'] = width
+        self.config['last_height'] = height
+        utils.save_config(self.config, self.configfile)
 
     def do_addsearch(self, widget):
         win = ShowSearch(self.engine)
@@ -1811,14 +1821,20 @@ class Settings(gtk.Window):
         self.chk_show_tray = gtk.CheckButton('Show Tray Icon')
         self.chk_close_to_tray = gtk.CheckButton('Close to Tray')
         self.chk_start_in_tray = gtk.CheckButton('Start Minimized to Tray')
+        self.chk_tray_api_icon = gtk.CheckButton('Use API Icon in Tray')
+        self.chk_remember_geometry = gtk.CheckButton('Remember Window Geometry')
         self.chk_close_to_tray.set_sensitive(False)
         self.chk_start_in_tray.set_sensitive(False)
+        self.chk_tray_api_icon.set_sensitive(False)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_start_in_tray)
+        self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_tray_api_icon)
         line6 = gtk.VBox(False, 5)
         line6.pack_start(self.chk_show_tray, False, False, 0)
         line6.pack_start(self.chk_close_to_tray, False, False, 0)
         line6.pack_start(self.chk_start_in_tray, False, False, 0)
+        line6.pack_start(self.chk_tray_api_icon, False, False, 0)
+        line6.pack_start(self.chk_remember_geometry, False, False, 0)
 
         ### Colors ###
         header5 = gtk.Label()
@@ -1936,6 +1952,8 @@ class Settings(gtk.Window):
         self.chk_show_tray.set_active(self.config['show_tray'])
         self.chk_close_to_tray.set_active(self.config['close_to_tray'])
         self.chk_start_in_tray.set_active(self.config['start_in_tray'])
+        self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+        self.chk_remember_geometry.set_active(self.config['remember_geometry'])
 
     def save_config(self):
         """Engine Configuration"""
@@ -1986,9 +2004,13 @@ class Settings(gtk.Window):
         if self.chk_show_tray.get_active():
             self.config['close_to_tray'] = self.chk_close_to_tray.get_active()
             self.config['start_in_tray'] = self.chk_start_in_tray.get_active()
+            self.config['tray_api_icon'] = self.chk_tray_api_icon.get_active()
         else:
             self.config['close_to_tray'] = False
             self.config['start_in_tray'] = False
+            self.config['tray_api_icon'] = False
+
+        self.config['remember_geometry'] = self.chk_remember_geometry.get_active()
 
         """Update Colors"""
         self.config['colors'] = {key: str(col.get_color()) for key,col in self.col_pickers.items()}

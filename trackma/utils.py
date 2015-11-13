@@ -308,6 +308,12 @@ gtk_defaults = {
     'show_tray': True,
     'close_to_tray': True,
     'start_in_tray': False,
+    'tray_api_icon': False,
+    'remember_geometry': False,
+    'last_width': 740,
+    'last_height': 480,
+    'episodebar_style': 1,
+    'episodebar_text': False,
     'colors': {
         'is_airing': '#0099CC',
         'is_playing': '#6C2DC7',
