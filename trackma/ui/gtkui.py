@@ -452,6 +452,8 @@ class Trackma_gtk(object):
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
+        if self.config['tray_api_icon']:
+            self.statusicon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
             self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
