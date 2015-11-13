@@ -313,7 +313,6 @@ gtk_defaults = {
     'last_width': 740,
     'last_height': 480,
     'episodebar_style': 1,
-    'episodebar_text': False,
     'colors': {
         'is_airing': '#0099CC',
         'is_playing': '#6C2DC7',
