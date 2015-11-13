@@ -32,7 +32,6 @@ class libanilist(lib):
     name = 'libanilist'
     msg = None
     logged_in = False
-    max_airing_api_calls = 0 # If more than this many shows need to get airing data, request full airing list (~150kB) instead of each item individually
 
     api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1.1', 'merge': False }
     mediatypes = dict()
@@ -258,7 +257,7 @@ class libanilist(lib):
                 showlist[showid] = show
 
         if self.mediatype == 'anime': # Airing data unavailable for manga
-            if len(airinglist) > self.max_airing_api_calls: # Request all airing anime in one go (~150kB)
+            if len(airinglist) > 0:
                 browseparam = {'access_token': self._get_userconfig('access_token'),
                          'status': 'Currently Airing',
                          'airing_data': 'true',
@@ -271,17 +270,6 @@ class libanilist(lib):
                             showlist[id].update({
                                 'next_ep_number': item['airing']['next_episode'],
                                 'next_ep_time': item['airing']['time'],
-                            })
-            else: # Request individually
-                for id in airinglist:
-                    data = self._request("GET", "anime/{0}/airing".format(id), get=param)
-                    # This API actually returns all of the available episode airing data, seemingly unordered.
-                    # As such, it is even more overkill than using the browse API.
-                    if data:
-                        for key, value in data.items(): # This does not work. Do not use without modification.
-                            showlist[id].update({
-                                'next_ep_number': int(key),
-                                'next_ep_time': value,
                             })
         return showlist
 
