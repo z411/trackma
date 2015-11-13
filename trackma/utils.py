@@ -52,7 +52,8 @@ def parse_config(filename, default):
     try:
         with open(filename) as configfile:
             loaded_config = json.load(configfile)
-            if 'colors' in config:      #Need to prevent nested dict from being overwritten with an incomplete dict
+            if 'colors' in config and 'colors' in loaded_config:
+                # Need to prevent nested dict from being overwritten with an incomplete dict
                 config['colors'].update(loaded_config['colors'])
                 loaded_config['colors'] = config['colors']
             config.update(loaded_config)
