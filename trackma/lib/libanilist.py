@@ -43,6 +43,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'date_next_ep': True,
         'status_start': 'watching',
         'status_finish': 'completed',
         'statuses':  ['watching', 'completed', 'on-hold', 'dropped', 'plan to watch'],

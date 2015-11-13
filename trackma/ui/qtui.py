@@ -46,6 +46,15 @@ except ImportError:
         print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
         imaging_available = False
 
+try:
+    import dateutil.parser
+    import dateutil.tz
+    import datetime
+    dateutil_available = True
+except ImportError:
+    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    dateutil_available = False
+
 class Trackma(QtGui.QMainWindow):
     """
     Main GUI class
@@ -456,6 +465,8 @@ class Trackma(QtGui.QMainWindow):
 
         widget = self.show_lists[status]
         columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date']
+        if 'date_next_ep' in self.mediainfo and self.mediainfo['date_next_ep']:
+            columns[5] = 'Next Episode'
         widget.clear()
         widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
@@ -526,6 +537,13 @@ class Trackma(QtGui.QMainWindow):
         widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
+        if 'date_next_ep' in self.mediainfo \
+        and self.mediainfo['date_next_ep'] \
+        and 'next_ep_time' in show \
+        and dateutil_available:
+            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
+            delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
