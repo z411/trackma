@@ -144,21 +144,24 @@ def get_root():
 
 def estimate_aired_episodes(show):
     # Estimate how many episodes have passed since airing
-    # Let's just assume 1 episode = 1 week
-    if not show['start_date']:
-        return
 
-    if show['status'] == 1:
-        days = (datetime.datetime.now() - show['start_date']).days
-        if days <= 0:
-            return 0
-
-        eps = days / 7 + 1
-        if eps > show['total']:
-            return show['total']
-        return eps
-    elif show['status'] == 2:
+    if show['status'] == 2:     # If it's 'finished airing', then all episodes have aired
         return show['total']
+    elif show['status'] == 3:   # If it's 'not yet aired', then no episodes have aired
+        return 0
+    elif show['status'] == 1:   # It's airing, so we make an estimate based on available information
+        if 'next_ep_number' in show: # Do we have the upcoming episode number?
+            return show['next_ep_number']-1
+        elif show['start_date']: # Do we know when it started? Let's just assume 1 episode = 1 week
+            days = (datetime.datetime.now() - show['start_date']).days
+            if days <= 0:
+                return 0
+
+            eps = days / 7 + 1
+            if eps > show['total']:
+                return show['total']
+            return eps
+    return
 
 def guess_show(show_title, tracker_list):
     # Use difflib to see if the show title is similar to

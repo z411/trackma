@@ -19,7 +19,7 @@ import trackma.utils as utils
 
 import json
 import urllib, urllib2, socket
-import time
+import time, datetime
 
 class libanilist(lib):
     """
@@ -33,7 +33,7 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1', 'merge': False }
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1.1', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -43,6 +43,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'date_next_ep': True,
         'status_start': 'watching',
         'status_finish': 'completed',
         'statuses':  ['watching', 'completed', 'on-hold', 'dropped', 'plan to watch'],
@@ -220,6 +221,7 @@ class libanilist(lib):
         data = self._request("GET", "user/{0}/{1}list".format(self.userid, self.mediatype), get=param)
 
         showlist = {}
+        airinglist = []
 
         #with open('list', 'w') as f:
         #    json.dump(data, f, indent=2)
@@ -247,10 +249,29 @@ class libanilist(lib):
                     'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
+                    'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
                 })
+
+                if show['status'] == 1:
+                    airinglist.append(showid)
 
                 showlist[showid] = show
 
+        if self.mediatype == 'anime': # Airing data unavailable for manga
+            if len(airinglist) > 0:
+                browseparam = {'access_token': self._get_userconfig('access_token'),
+                         'status': 'Currently Airing',
+                         'airing_data': 'true',
+                         'full_page': 'true'}
+                data = self._request("GET", "browse/anime", get=browseparam)
+                for item in data:
+                    id = item['id']
+                    if id in showlist and 'airing' in item:
+                        if item['airing']:
+                            showlist[id].update({
+                                'next_ep_number': item['airing']['next_episode'],
+                                'next_ep_time': item['airing']['time'],
+                            })
         return showlist
 
     def add_show(self, item):
@@ -301,6 +322,7 @@ class libanilist(lib):
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
+                'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
             })
 
             showlist.append( show )
@@ -337,22 +359,39 @@ class libanilist(lib):
 
     def _parse_info(self, item):
         info = utils.show()
+        showid = item['id']
         info.update({
-            'id': item['id'],
+            'id': showid,
             'title': item['title_romaji'],
             'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
+            'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+            'start_date': self._str2date(item.get('start_date')),
+            'end_date': self._str2date(item.get('end_date')),
             'extra': [
-                ('Description',     item.get('description')),
-                ('Genres',          item.get('genres')),
+                ('English',         item.get('title_english')),
+                ('Japanese',        item.get('title_japanese')),
                 ('Classification',  item.get('classification')),
-                ('Status',          item.get(self.airing_str)),
+                ('Genres',          item.get('genres')),
+                ('Synopsis',        item.get('description')),
+                ('Type',            item.get('type')),
                 ('Average score',   item.get('average_score')),
-                ('Japanese title',  item.get('title_japanese')),
-                ('English title',   item.get('title_english')),
+                ('Status',          item.get(self.airing_str)),
+                ('Start Date',      item.get('start_date')),
+                ('End Date',        item.get('end_date')),
             ]
         })
         return info
+
+    def _str2date(self, string):
+        if string is not None:
+            try:
+                return datetime.datetime.strptime(string[:10], "%Y-%m-%d")
+            except ValueError:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+
 
     def _c(self, s):
         return 0 if s is None else s
