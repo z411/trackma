@@ -115,6 +115,8 @@ class Trackma_gtk(object):
         self.main.connect('destroy', self.on_destroy)
         self.main.set_title('Trackma-gtk ' + utils.VERSION)
         gtk.window_set_default_icon_from_file(utils.datadir + '/data/icon.png')
+        if self.config['remember_geometry']:
+            self.main.resize(self.config['last_width'], self.config['last_height'])
 
         # Menus
         mb_show = gtk.Menu()
@@ -450,6 +452,8 @@ class Trackma_gtk(object):
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
+        if self.config['tray_api_icon']:
+            self.statusicon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
             self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
@@ -500,7 +504,8 @@ class Trackma_gtk(object):
                     status,
                     self.config['colors'],
                     self.engine.mediainfo['has_progress'],
-                    self.score_decimal_places)
+                    self.score_decimal_places,
+                    self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -579,8 +584,16 @@ class Trackma_gtk(object):
         return True
 
     def do_quit(self, widget=None, event=None, data=None):
+        if self.config['remember_geometry']:
+            self.do_store_geometry()
         if self.close_thread is None:
             self.close_thread = threading.Thread(target=self.task_unload).start()
+
+    def do_store_geometry(self):
+        (width, height) = self.main.get_size()
+        self.config['last_width'] = width
+        self.config['last_height'] = height
+        utils.save_config(self.config, self.configfile)
 
     def do_addsearch(self, widget):
         win = ShowSearch(self.engine)
@@ -1151,20 +1164,21 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, colors, has_progress=True, decimals=0):
+    def __init__(self, status, colors, has_progress=True, decimals=0, progress_style=1):
         gtk.TreeView.__init__(self)
 
         self.colors = colors
         self.has_progress = has_progress
         self.decimals = decimals
         self.status_filter = status
+        self.progress_style = progress_style
 
         self.set_enable_search(True)
         self.set_search_column(1)
 
         self.cols = dict()
         if has_progress:
-            columns = (('Title', 1), ('Progress', 2), ('Score', 3), ('Percent', 4))
+            columns = (('Title', 1), ('Progress', 2), ('Score', 3), ('Percent', 10))
         else:
             columns = (('Title', 1), ('Score', 3))
 
@@ -1194,12 +1208,17 @@ class ShowView(gtk.TreeView):
             self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
             self.cols['Progress'].set_expand(False)
 
-            renderer_percent = ProgressCellRenderer(self.colors)
-            self.cols['Percent'].pack_start(renderer_percent, False)
-            self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
-            self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
-            self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', 7)
-            self.cols['Percent'].add_attribute(renderer_percent, 'eps', 8)
+            if self.progress_style == 0:
+                renderer_percent = gtk.CellRendererProgress()
+                self.cols['Percent'].pack_start(renderer_percent, False)
+                self.cols['Percent'].add_attribute(renderer_percent, 'value', 10)
+            else:
+                renderer_percent = ProgressCellRenderer(self.colors)
+                self.cols['Percent'].pack_start(renderer_percent, False)
+                self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
+                self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
+                self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', 7)
+                self.cols['Percent'].add_attribute(renderer_percent, 'eps', 8)
             renderer_percent.set_fixed_size(100, -1)
 
         renderer_score = gtk.CellRendererText()
@@ -1208,8 +1227,8 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
         self.cols['Score'].set_expand(False)
 
-        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color
-        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int)
         self.set_model(self.store)
 
     def _get_color(self, show, eps):
@@ -1231,7 +1250,12 @@ class ShowView(gtk.TreeView):
     def append(self, show, altname=None, eps=None):
         if self.has_progress:
             episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+            if show['total'] and show['my_progress'] <= show['total']:
+                progress = (float(show['my_progress']) / show['total']) * 100
+            else:
+                progress = 0
         else:
+            progress = 0
             episodes_str = ''
 
         title_str = show['title']
@@ -1257,7 +1281,8 @@ class ShowView(gtk.TreeView):
                show['total'],
                aired_eps,
                available_eps,
-               self._get_color(show, available_eps)]
+               self._get_color(show, available_eps),
+               progress]
         self.store.append(row)
 
     def append_finish(self):
@@ -1811,14 +1836,22 @@ class Settings(gtk.Window):
         self.chk_show_tray = gtk.CheckButton('Show Tray Icon')
         self.chk_close_to_tray = gtk.CheckButton('Close to Tray')
         self.chk_start_in_tray = gtk.CheckButton('Start Minimized to Tray')
+        self.chk_tray_api_icon = gtk.CheckButton('Use API Icon in Tray')
+        self.chk_remember_geometry = gtk.CheckButton('Remember Window Geometry')
+        self.chk_classic_progress = gtk.CheckButton('Use Classic Progress Bar')
         self.chk_close_to_tray.set_sensitive(False)
         self.chk_start_in_tray.set_sensitive(False)
+        self.chk_tray_api_icon.set_sensitive(False)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_start_in_tray)
+        self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_tray_api_icon)
         line6 = gtk.VBox(False, 5)
         line6.pack_start(self.chk_show_tray, False, False, 0)
         line6.pack_start(self.chk_close_to_tray, False, False, 0)
         line6.pack_start(self.chk_start_in_tray, False, False, 0)
+        line6.pack_start(self.chk_tray_api_icon, False, False, 0)
+        line6.pack_start(self.chk_remember_geometry, False, False, 0)
+        line6.pack_start(self.chk_classic_progress, False, False, 0)
 
         ### Colors ###
         header5 = gtk.Label()
@@ -1936,6 +1969,9 @@ class Settings(gtk.Window):
         self.chk_show_tray.set_active(self.config['show_tray'])
         self.chk_close_to_tray.set_active(self.config['close_to_tray'])
         self.chk_start_in_tray.set_active(self.config['start_in_tray'])
+        self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+        self.chk_remember_geometry.set_active(self.config['remember_geometry'])
+        self.chk_classic_progress.set_active(not self.config['episodebar_style'])
 
     def save_config(self):
         """Engine Configuration"""
@@ -1986,9 +2022,14 @@ class Settings(gtk.Window):
         if self.chk_show_tray.get_active():
             self.config['close_to_tray'] = self.chk_close_to_tray.get_active()
             self.config['start_in_tray'] = self.chk_start_in_tray.get_active()
+            self.config['tray_api_icon'] = self.chk_tray_api_icon.get_active()
         else:
             self.config['close_to_tray'] = False
             self.config['start_in_tray'] = False
+            self.config['tray_api_icon'] = False
+
+        self.config['remember_geometry'] = self.chk_remember_geometry.get_active()
+        self.config['episodebar_style'] = int(not self.chk_classic_progress.get_active())
 
         """Update Colors"""
         self.config['colors'] = {key: str(col.get_color()) for key,col in self.col_pickers.items()}
