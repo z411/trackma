@@ -199,6 +199,24 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show_context.addAction(action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
+        # Make icon for viewed episodes
+        rect = QtCore.QSize(16,16)
+        buffer = QtGui.QPixmap(rect)
+        buffer.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(buffer)
+        opt = QtGui.QStyleOptionButton()
+        opt.state = QtGui.QStyle.State_On
+        self.style().drawPrimitive(QtGui.QStyle.PE_IndicatorMenuCheckMark, opt, painter)
+        self.played_icon = QtGui.QIcon(buffer)
+        del painter
+        buffer.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(buffer)
+        opt.state = QtGui.QStyle.State_Off
+        self.style().drawPrimitive(QtGui.QStyle.PE_IndicatorMenuCheckMark, opt, painter)
+        self.unplayed_icon = QtGui.QIcon(buffer)
+        del painter
+
+
         menu_list = menubar.addMenu('&List')
         menu_list.addAction(action_sync)
         menu_list.addSeparator()
@@ -686,6 +704,10 @@ class Trackma(QtGui.QMainWindow):
                     current_actions = 0
                     l = len(self.play_ep_submenus)
                     self.play_ep_submenus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
+                    if watched_eps > min((l+1)*bp_btm, max_eps):
+                        self.play_ep_submenus[-1].setIcon(self.played_icon)
+                    else:
+                        self.play_ep_submenus[-1].setIcon(self.unplayed_icon)
                 self.play_ep_submenus[-1].addAction(action)
                 current_actions += 1
 
@@ -702,6 +724,10 @@ class Trackma(QtGui.QMainWindow):
                         l = len(self.play_ep_sub2menus)
                         self.play_ep_sub2menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
                     self.play_ep_sub2menus[-1].addMenu(s)
+                    if watched_eps > min((l+1)*bp_btm*bp_mid, max_eps):
+                        self.play_ep_sub2menus[-1].setIcon(self.played_icon)
+                    else:
+                        self.play_ep_sub2menus[-1].setIcon(self.unplayed_icon)
                     current_menus += 1
 
                 if len(self.play_ep_sub2menus) <= bp_top:
@@ -717,6 +743,10 @@ class Trackma(QtGui.QMainWindow):
                             l = len(self.play_ep_sub3menus)
                             self.play_ep_sub3menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
                         self.play_ep_sub3menus[-1].addMenu(s)
+                        if watched_eps > min((l+1)*bp_btm*bp_mid*bp_mid, max_eps):
+                            self.play_ep_sub3menus[-1].setIcon(self.played_icon)
+                        else:
+                            self.play_ep_sub3menus[-1].setIcon(self.unplayed_icon)
                         current_menus += 1
                     # No more levels, our sanity check earlier ensured that.
                     for submenu in self.play_ep_sub3menus:
