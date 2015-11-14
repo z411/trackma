@@ -684,8 +684,10 @@ class Trackma(QtGui.QMainWindow):
         for ep in range(1, max_eps+1):
                 action = QtGui.QAction('Ep. %d' % ep, self)
                 action.triggered.connect(self.s_play_ep_number(action, ep))
-                action.setCheckable(True)
-                action.setChecked(ep <= watched_eps)
+                if ep <= watched_eps:
+                    action.setIcon(self.ep_icons['all'])
+                else:
+                    action.setIcon(self.ep_icons['none'])
                 ep_actions.append(action)
 
         if max_eps <= bp_top:
@@ -853,7 +855,7 @@ class Trackma(QtGui.QMainWindow):
             self.s_play(False, episode)
 
     def s_play_ep_number(self, action, number):
-        return lambda: [action.setChecked(True), self.s_play(False, number)]
+        return lambda: [action.setIcon(self.ep_icons['part']), self.s_play(False, number)]
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
