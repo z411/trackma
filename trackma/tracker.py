@@ -26,6 +26,8 @@ import utils
 import extras.plex as plex
 import extras.AnimeInfoExtractor
 
+import ctypes
+
 inotify_available = False
 
 STATE_PLAYING = 0
@@ -100,7 +102,7 @@ class Tracker(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def _get_playing_file(self, players):
+    def _get_playing_file_lsof(self, players):
         try:
             lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
         except OSError:
@@ -115,6 +117,39 @@ class Tracker(object):
             match = fileregex.match(line)
             if match is not None:
                 return os.path.basename(match.group(1))
+
+        return False
+    
+    def _foreach_window(self, hwnd, lParam):
+        # Get class name and window title of the current hwnd
+        # and add it to the list of the found windows
+        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+
+        buff_class = ctypes.create_unicode_buffer(32)
+        buff_title = ctypes.create_unicode_buffer(length + 1)
+
+        ctypes.windll.user32.GetClassNameW(hwnd, buff_class, 32)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buff_title, length + 1)
+
+        self.win32_hwnd_list.append( (buff_class.value, buff_title.value) )
+        return True
+    
+    def _get_playing_file_win32(self):
+        # Enumerate all windows using the win32 API
+        # This will call _foreach_window for each window handle
+        # Then return the window title if the class name matches
+        # Currently supporting MPC(-HC) and mpv
+
+        self.win32_hwnd_list = []
+        self.EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+        ctypes.windll.user32.EnumWindows(self.EnumWindowsProc(self._foreach_window), 0)
+        winregex = re.compile("(\.mkv|\.mp4|\.avi)")
+
+        for classname, title in self.win32_hwnd_list:
+            if classname == 'MediaPlayerClassicW' and winregex.search(title) is not None:
+                return title
+            elif classname == 'mpv' and winregex.search(title) is not None:
+                return title.replace('mpv - ', '')
 
         return False
 
@@ -142,7 +177,8 @@ class Tracker(object):
                 if events:
                     for event in events:
                         if not event.mask & inotifyx.IN_ISDIR:
-                            (state, show_tuple) = self._get_playing_show()
+                            filename = self._get_playing_file_lsof(self.process_name)
+                            (state, show_tuple) = self._get_playing_show(filename)
                             self.update_show_if_needed(state, show_tuple)
 
                             if self.last_state == STATE_NOVIDEO:
@@ -158,17 +194,30 @@ class Tracker(object):
             os.close(fd)
 
     def _observe_polling(self, interval):
-        self.msg.warn(self.name, "inotifyx not available; using polling (slow).")
+        self.msg.info(self.name, "inotifyx not available; using polling (slow).")
         while True:
             # This runs the tracker and update the playing show if necessary
-            (state, show_tuple) = self._get_playing_show()
+            filename = self._get_playing_file_lsof(self.process_name)
+            (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
             # Wait for the interval before running check again
             time.sleep(interval)
+    
+    def _observe_win32(self, interval):
+        self.msg.info(self.name, "Using Win32.")
+        
+        while True:
+            # This runs the tracker and update the playing show if necessary
+            filename = self._get_playing_file_win32()
+            (state, show_tuple) = self._get_playing_show(filename)
+            self.update_show_if_needed(state, show_tuple)
+
+            # Wait for the interval before running check again
+            time.sleep(1)
 
     def _observe_plex(self, interval):
-        self.msg.info(self.name, "Tracking Plex.")
+        self.msg.info(self.name, "Using Plex.")
 
         while True:
             # This stores the last two states of the plex server and only
@@ -178,7 +227,8 @@ class Tracker(object):
 
             if self.plex_log[-1] == "ACTIVE" or self.plex_log[-1] == "IDLE":
                 self.wait_s = plex.timer_from_file()
-                (state, show_tuple) = self._get_playing_show()
+                filename = self._get_plex_file()
+                (state, show_tuple) = self._get_playing_show(filename)
                 self.update_show_if_needed(state, show_tuple)
             elif (self.plex_log[-2] != "NOT_RUNNING" and self.plex_log[-1] == "NOT_RUNNING"):
                 self.msg.warn(self.name, "Plex Media Server is not running.")
@@ -191,7 +241,9 @@ class Tracker(object):
         if self.plex_enabled:
             self._observe_plex(interval)
         else:
-            if inotify_available:
+            if os.name == 'nt':
+                self._observe_win32(interval)
+            elif inotify_available:
                 self._observe_inotify(watch_dir)
             else:
                 self._observe_polling(interval)
@@ -267,15 +319,10 @@ class Tracker(object):
 
         self.last_state = state
 
-    def _get_playing_show(self):
+    def _get_playing_show(self, filename):
         if not self.active:
             # Don't do anything if the Tracker is disabled
             return (STATE_NOVIDEO, None)
-
-        if self.plex_enabled:
-            filename = self._get_plex_file()
-        else:
-            filename = self._get_playing_file(self.process_name)
 
         if filename:
             if filename == self.last_filename:
