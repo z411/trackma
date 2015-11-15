@@ -121,24 +121,36 @@ class Tracker(object):
         return False
     
     def _foreach_window(self, hwnd, lParam):
+        # Get class name and window title of the current hwnd
+        # and add it to the list of the found windows
         length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
-        buff = ctypes.create_unicode_buffer(length + 1)
-        ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
-        self.win32_hwnd_list.append(buff.value)
+
+        buff_class = ctypes.create_unicode_buffer(32)
+        buff_title = ctypes.create_unicode_buffer(length + 1)
+
+        ctypes.windll.user32.GetClassNameW(hwnd, buff_class, 32)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buff_title, length + 1)
+
+        self.win32_hwnd_list.append( (buff_class.value, buff_title.value) )
         return True
     
     def _get_playing_file_win32(self):
+        # Enumerate all windows using the win32 API
+        # This will call _foreach_window for each window handle
+        # Then return the window title if the class name matches
+        # Currently supporting MPC(-HC) and mpv
+
         self.win32_hwnd_list = []
         self.EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
         ctypes.windll.user32.EnumWindows(self.EnumWindowsProc(self._foreach_window), 0)
         winregex = re.compile("(\.mkv|\.mp4|\.avi)")
-        
-        for line in self.win32_hwnd_list:
-            if winregex.search(line) is not None:
-                final = line.replace('mpv - ', '')
-                final = final.replace(' - VLC media player', '')
-                return final
-        
+
+        for classname, title in self.win32_hwnd_list:
+            if classname == 'MediaPlayerClassicW' and winregex.search(title) is not None:
+                return title
+            elif classname == 'mpv' and winregex.search(title) is not None:
+                return title.replace('mpv - ', '')
+
         return False
 
     def _get_plex_file(self):
