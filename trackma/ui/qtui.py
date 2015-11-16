@@ -189,13 +189,32 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addAction(action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
+
+        self.menu_play = QtGui.QMenu('Play')
         self.menu_show_context = QtGui.QMenu()
-        self.menu_show_context.addAction(action_play_next)
-        self.menu_show_context.addAction(action_play_dialog)
+        #self.menu_show_context.addAction(action_play_next)
+        #self.menu_show_context.addAction(action_play_dialog)
+        self.menu_show_context.addMenu(self.menu_play)
         self.menu_show_context.addAction(action_details)
         self.menu_show_context.addAction(action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
+        # Make icons for viewed episodes
+        rect = QtCore.QSize(16,16)
+        buffer = QtGui.QPixmap(rect)
+        ep_icon_states = {'all': QtGui.QStyle.State_On,
+                          'part': QtGui.QStyle.State_NoChange,
+                          'none': QtGui.QStyle.State_Off}
+        self.ep_icons = {}
+        for key, state in ep_icon_states.items():
+            buffer.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(buffer)
+            opt = QtGui.QStyleOptionButton()
+            opt.state = state
+            self.style().drawPrimitive(QtGui.QStyle.PE_IndicatorMenuCheckMark, opt, painter)
+            self.ep_icons[key] = QtGui.QIcon(buffer)
+            painter.end()
+
         menu_list = menubar.addMenu('&List')
         menu_list.addAction(action_sync)
         menu_list.addSeparator()
@@ -256,15 +275,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_play_btn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
         self.show_play_btn.setToolTip('Play the next unwatched episode\nHold to play other episodes')
         self.show_play_btn.clicked.connect(lambda: self.s_play(True))
-        self.show_play_menu = QtGui.QMenu()
-        action_play_next_2 = QtGui.QAction(QtGui.QIcon.fromTheme('media-skip-forward'), 'Play &Next Episode', self)
-        action_play_next_2.triggered.connect(lambda: self.s_play(True))
-        action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep', self)
-        action_play_last.triggered.connect(lambda: self.s_play(False))
-        self.show_play_btn.setMenu(self.show_play_menu)
-        self.show_play_menu.addAction(action_play_next_2)
-        self.show_play_menu.addAction(action_play_last)
-        self.show_play_menu.addAction(action_play_dialog)
+        self.show_play_btn.setMenu(self.menu_play)
         self.show_inc_btn = QtGui.QToolButton()
         self.show_inc_btn.setIcon(QtGui.QIcon.fromTheme('list-add'))
         self.show_inc_btn.setShortcut('Ctrl+Right')
@@ -594,8 +605,11 @@ class Trackma(QtGui.QMainWindow):
         if show['total']:
             self.show_progress.setMaximum(show['total'])
             self.show_progress_bar.setMaximum(show['total'])
+            # Regenerate Play Episode Menu
+            self.generate_episode_menus(self.menu_play, show['total'], show['my_progress'])
         else:
-            self.show_progress.setMaximum(5000)
+            self.show_progress.setMaximum(utils.estimate_aired_episodes(show))
+            self.generate_episode_menus(self.menu_play, utils.estimate_aired_episodes(show),show['my_progress'])
 
         # Update information
         self.show_title.setText(show['title'])
@@ -640,6 +654,110 @@ class Trackma(QtGui.QMainWindow):
 
         # Unblock signals
         self.show_status.blockSignals(False)
+
+    def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
+        bp_top = 5  # No more than this many submenus/episodes in the root menu
+        bp_mid = 10 # No more than this many submenus in submenus
+        bp_btm = 13 # No more than this many episodes in the submenus
+        # The number of episodes where we ditch the submenus entirely since Qt doesn't deserve this abuse
+        breakpoint_no_menus = bp_top * bp_btm * bp_mid * bp_mid
+
+        menu.clear()
+        # Make basic actions
+        action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-skip-forward'), 'Play &Next Episode', self)
+        action_play_next.triggered.connect(lambda: self.s_play(True))
+        action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
+        action_play_last.triggered.connect(lambda: self.s_play(False))
+        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog.setStatusTip('Select an episode to play.')
+        action_play_dialog.triggered.connect(self.s_play_number)
+
+        menu.addAction(action_play_next)
+        menu.addAction(action_play_last)
+
+        if max_eps < 1 or max_eps > breakpoint_no_menus:
+            menu.addAction(action_play_dialog)
+            return menu
+        menu.addSeparator()
+
+        ep_actions = []
+        for ep in range(1, max_eps+1):
+                action = QtGui.QAction('Ep. %d' % ep, self)
+                action.triggered.connect(self.s_play_ep_number(action, ep))
+                if ep <= watched_eps:
+                    action.setIcon(self.ep_icons['all'])
+                else:
+                    action.setIcon(self.ep_icons['none'])
+                ep_actions.append(action)
+
+        if max_eps <= bp_top:
+            # Just put the eps in the root menu
+            for action in ep_actions:
+                menu.addAction(action)
+
+        else:
+            # We need to go deeper. For now, put all the episodes into bottom-level submenus.
+            self.play_ep_submenus = [] # I don't like this scoping. If you find a way to transfer ownership of the submenu to the menu feel free to fix this.
+            current_actions = bp_btm + 1 # A bit hacky but avoids a special case for the first submenu
+            for action in ep_actions:
+                if current_actions >= bp_btm:
+                    current_actions = 0
+                    l = len(self.play_ep_submenus)
+                    self.play_ep_submenus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
+                    if watched_eps > min((l+1)*bp_btm, max_eps):
+                        self.play_ep_submenus[-1].setIcon(self.ep_icons['all'])
+                    elif watched_eps > l*bp_btm:
+                        self.play_ep_submenus[-1].setIcon(self.ep_icons['part'])
+                    else:
+                        self.play_ep_submenus[-1].setIcon(self.ep_icons['none'])
+                self.play_ep_submenus[-1].addAction(action)
+                current_actions += 1
+
+            # Now to put the bottom level menus into other things
+            if len(self.play_ep_submenus) <= bp_top: # Straight into the root menu, easy!
+                for submenu in self.play_ep_submenus:
+                    menu.addMenu(submenu)
+            else: # For now, put them into another level of submenus
+                self.play_ep_sub2menus = []
+                current_menus = bp_mid + 1
+                for s in self.play_ep_submenus:
+                    if current_menus >= bp_mid:
+                        current_menus = 0
+                        l = len(self.play_ep_sub2menus)
+                        self.play_ep_sub2menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
+                    self.play_ep_sub2menus[-1].addMenu(s)
+                    if watched_eps > min((l+1)*bp_btm*bp_mid, max_eps):
+                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['all'])
+                    elif watched_eps > l*bp_btm*bp_mid:
+                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['part'])
+                    else:
+                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['none'])
+                    current_menus += 1
+
+                if len(self.play_ep_sub2menus) <= bp_top:
+                    for submenu in self.play_ep_sub2menus:
+                        menu.addMenu(submenu)
+                else:
+                    # I seriously hope this additional level is not needed, but maybe someone will want to set smaller breakpoints.
+                    self.play_ep_sub3menus = []
+                    current_menus = bp_mid + 1
+                    for s in self.play_ep_sub2menus:
+                        if current_menus >= bp_mid:
+                            current_menus = 0
+                            l = len(self.play_ep_sub3menus)
+                            self.play_ep_sub3menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
+                        self.play_ep_sub3menus[-1].addMenu(s)
+                        if watched_eps > min((l+1)*bp_btm*bp_mid*bp_mid, max_eps):
+                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['all'])
+                        elif watched_eps > l*bp_btm*bp_mid*bp_mid:
+                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['part'])
+                        else:
+                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['none'])
+                        current_menus += 1
+                    # No more levels, our sanity check earlier ensured that.
+                    for submenu in self.play_ep_sub3menus:
+                        menu.addMenu(submenu)
+        return menu
 
     ### Slots
     def s_hide(self):
@@ -735,6 +853,9 @@ class Trackma(QtGui.QMainWindow):
             ep_default, ep_min, ep_max)
         if ok:
             self.s_play(False, episode)
+
+    def s_play_ep_number(self, action, number):
+        return lambda: [action.setIcon(self.ep_icons['part']), self.s_play(False, number)]
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
