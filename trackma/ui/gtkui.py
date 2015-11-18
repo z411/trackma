@@ -503,9 +503,10 @@ class Trackma_gtk(object):
             self.show_lists[status] = ShowView(
                     status,
                     self.config['colors'],
-                    self.engine.mediainfo['has_progress'],
-                    self.score_decimal_places,
-                    self.config['episodebar_style'])
+                    has_progress = self.engine.mediainfo['has_progress'],
+                    has_date = True, # TODO: Make this API-specific to save space on APIs without start dates
+                    decimals = self.score_decimal_places,
+                    progress_style = self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -1164,7 +1165,7 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, colors, has_progress=True, decimals=0, progress_style=1):
+    def __init__(self, status, colors, has_progress=True, has_date=False, decimals=0, progress_style=1):
         gtk.TreeView.__init__(self)
 
         self.colors = colors
@@ -1177,10 +1178,14 @@ class ShowView(gtk.TreeView):
         self.set_search_column(1)
 
         self.cols = dict()
+        columns = [('Title', 1)]
         if has_progress:
-            columns = (('Title', 1), ('Progress', 2), ('Score', 3), ('Percent', 10))
-        else:
-            columns = (('Title', 1), ('Score', 3))
+            columns.append( ('Progress', 2) )
+        columns.append( ('Score', 3) )
+        if has_progress:
+            columns.append( ('Percent', 10) )
+        if has_date:
+            columns.append( ('Date', 11) )
 
         for (name, sort) in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
@@ -1226,9 +1231,14 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].add_attribute(renderer_score, 'text', 5)
         self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
         self.cols['Score'].set_expand(False)
+        renderer_date = gtk.CellRendererText()
+        self.cols['Date'].pack_start(renderer_date, False)
+        self.cols['Date'].add_attribute(renderer_date, 'text', 11)
+        self.cols['Date'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        self.cols['Date'].set_expand(False)
 
-        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%
-        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%, Date
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int, str)
         self.set_model(self.store)
 
     def _get_color(self, show, eps):
@@ -1283,6 +1293,10 @@ class ShowView(gtk.TreeView):
                available_eps,
                self._get_color(show, available_eps),
                progress]
+        if show['start_date']:
+            row.append(show['start_date'].isoformat()[0:10])
+        else:
+            row.append('-')
         self.store.append(row)
 
     def append_finish(self):
