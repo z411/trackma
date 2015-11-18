@@ -596,7 +596,7 @@ class Trackma_gtk(object):
         utils.save_config(self.config, self.configfile)
 
     def do_addsearch(self, widget):
-        win = ShowSearch(self.engine)
+        win = ShowSearch(self.engine, self.config['colors'])
         win.show_all()
 
     def do_settings(self, widget):
@@ -2182,7 +2182,7 @@ class AccountSelectAdd(gtk.Window):
 
 
 class ShowSearch(gtk.Window):
-    def __init__(self, engine):
+    def __init__(self, engine, colors):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
         self.engine = engine
@@ -2220,7 +2220,7 @@ class ShowSearch(gtk.Window):
         bottombar.pack_start(close_button, False, False, 0)
         alignment.add(bottombar)
 
-        self.showlist = ShowSearchView(self.config['colors'])
+        self.showlist = ShowSearchView(colors)
         self.showlist.get_selection().connect("changed", self.select_show)
 
         sw.add(self.showlist)
@@ -2260,7 +2260,7 @@ class ShowSearch(gtk.Window):
         # Get selected show ID
         (tree_model, tree_iter) = widget.get_selected()
         if not tree_iter:
-            self.allow_buttons_push(False, lists_too=False)
+            self.allow_buttons_push(False) # (False, lists_too=False)
             return
 
         self.selected_show = int(tree_model.get(tree_iter, 0)[0])
