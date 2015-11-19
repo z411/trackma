@@ -45,7 +45,7 @@ class Trackma_urwid(object):
     engine = None
     mainloop = None
     cur_sort = 'title'
-    sorts_iter = cycle(('my_progress', 'total', 'my_score', 'id', 'title'))
+    sorts_iter = cycle(('my_progress', 'total', 'start_date', 'my_score', 'id', 'title'))
     cur_order = False
     orders_iter = cycle((True, False))
     keymapping = dict()
@@ -111,6 +111,7 @@ class Trackma_urwid(object):
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Progress')),
                 ('fixed', 7, urwid.Text('Score')),
+                ('fixed', 12, urwid.Text("{0:^10}".format('Date'))),
             ]), 'header')
 
         self.listwalker = ShowWalker([])
@@ -131,7 +132,7 @@ class Trackma_urwid(object):
                     'prev_filter': self.do_prev_filter,
                     'next_filter': self.do_next_filter,
                     'sort': self.do_sort,
-		    'sort_order': self.change_sort_order,
+                    'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
                     'status': self.do_status,
@@ -184,7 +185,10 @@ class Trackma_urwid(object):
             showlist = self.engine.get_list()
 
         library = self.engine.library()
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
+        if self.cur_sort == 'start_date':
+            sortedlist = sorted(showlist, key=lambda k: self._start_date_getter(k), reverse=self.cur_order)
+        else:
+            sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
             if show['my_status'] == self.engine.mediainfo['status_start']:
@@ -193,6 +197,12 @@ class Trackma_urwid(object):
                 item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
 
             self.lists[show['my_status']].body.append(item)
+
+    def _start_date_getter(self, item):
+        try:
+            return item['start_date'].isoformat()
+        except:
+            return '-'
 
     def start(self, account):
         """Starts the engine"""
@@ -286,11 +296,11 @@ class Trackma_urwid(object):
         self.status("Ready.")
 
     def change_sort_order(self):
-    	self.status("Sorting...")
-	_order = self.orders_iter.next()
-	self.cur_order = _order
-	self._rebuild_lists()
-	self.status("Ready.")
+        self.status("Sorting...")
+        _order = self.orders_iter.next()
+        self.cur_order = _order
+        self._rebuild_lists()
+        self.status("Ready.")
 
     def do_update(self):
         showid = self._get_selected_item().showid
@@ -955,6 +965,10 @@ class ShowItem(urwid.WidgetWrap):
             self.eps = None
 
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
+        if show['start_date']:
+            self.date_str = urwid.Text(show['start_date'].isoformat()[0:10])
+        else:
+            self.date_str = urwid.Text("{0:^10}".format('--'))
         self.has_progress = has_progress
         self.playing = False
 
@@ -970,6 +984,7 @@ class ShowItem(urwid.WidgetWrap):
             ('weight', 1, self.title_str),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
+            ('fixed', 12, self.date_str),
         ]
 
         # If the show should be highlighted, do it
