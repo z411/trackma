@@ -20,6 +20,7 @@ Currently supported websites
 - [Hummingbird](http://hummingbird.me/) (Anime)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
 - [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
 
 Screenshots

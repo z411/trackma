@@ -260,7 +260,7 @@ class libshikimori(lib):
                 'id': showid,
                 'title': item['name'],
                 'aliases': [item['russian']],
-                'type': item['kind'],
+                'type': item.get('kind', ''),
                 #'status': item[self.airing_str],
                 'status': 0,
                 'my_status': self.media_info()['status_start'],
