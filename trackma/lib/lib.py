@@ -48,6 +48,8 @@ class lib(object):
             'can_status': True,
             'can_update': True,
             'can_play': True,
+            'has_date_start': True,
+            'has_date_next_ep': False,
             'status_start': 1,
             'status_finish': 2,
             'statuses':  [1, 2, 3, 4, 6],

@@ -36,6 +36,15 @@ import trackma.utils as utils
 from operator import itemgetter
 from itertools import cycle
 
+try:
+    import dateutil.parser
+    import dateutil.tz
+    import datetime
+    dateutil_available = True
+except ImportError:
+    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    dateutil_available = False
+
 class Trackma_urwid(object):
     """
     Main class for the urwid version of Trackma
@@ -45,7 +54,7 @@ class Trackma_urwid(object):
     engine = None
     mainloop = None
     cur_sort = 'title'
-    sorts_iter = cycle(('my_progress', 'total', 'start_date', 'my_score', 'id', 'title'))
+    sorts_iter = cycle(('my_progress', 'total', 'my_score', 'id', 'title'))
     cur_order = False
     orders_iter = cycle((True, False))
     keymapping = dict()
@@ -165,6 +174,30 @@ class Trackma_urwid(object):
         self.lists = dict()
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
+        sorts_tuple = ('my_progress', 'total', 'my_score', 'id', 'title')
+
+        cols = [
+            ('weight', 1, urwid.Text('Title')),
+            ('fixed', 10, urwid.Text('Progress')),
+            ('fixed', 7, urwid.Text('Score')),
+        ]
+
+        if self._column_enabled('has_date_start'):
+            cols.append( ('fixed', 12, urwid.Text("{0:^10}".format('Date'))) )
+            sorts_tuple = sorts_tuple + ('start_date', )
+        elif self.cur_sort == 'start_date':
+            self.cur_sort = 'title'
+
+        if self._column_enabled('has_date_next_ep'):
+            cols.append( ('fixed', 10, urwid.Text("{0:^8}".format('Next Ep.'))) )
+            sorts_tuple = sorts_tuple + ('next_ep_time', )
+        elif self.cur_sort == 'next_ep_time':
+            self.cur_sort = 'title'
+
+        self.sorts_iter = cycle(sorts_tuple)
+        self.header_sort.set_text("Sort:%s" % self.cur_sort)
+
+        self.listframe.set_header( urwid.AttrMap(urwid.Columns(cols), 'header') )
 
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
@@ -174,6 +207,14 @@ class Trackma_urwid(object):
 
         self.status('Ready.')
         self.started = True
+
+    def _column_enabled(self, key):
+        try:
+            if key == 'has_date_next_ep' and not dateutil_available:
+                return False
+            return self.engine.mediainfo[key]
+        except:
+            return False
 
     def _rebuild_lists(self, status=None):
         if status:
@@ -187,20 +228,28 @@ class Trackma_urwid(object):
         library = self.engine.library()
         if self.cur_sort == 'start_date':
             sortedlist = sorted(showlist, key=lambda k: self._start_date_getter(k), reverse=self.cur_order)
+        elif self.cur_sort == 'next_ep_time':
+            sortedlist = sorted(showlist, key=lambda k: self._next_ep_getter(k), reverse=self.cur_order)
         else:
             sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
             if show['my_status'] == self.engine.mediainfo['status_start']:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']), date=self._column_enabled('has_date_start'), date_next=self._column_enabled('has_date_next_ep'))
             else:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), date=self._column_enabled('has_date_start'), date_next=self._column_enabled('has_date_next_ep'))
 
             self.lists[show['my_status']].body.append(item)
 
     def _start_date_getter(self, item):
         try:
             return item['start_date'].isoformat()
+        except:
+            return '-'
+
+    def _next_ep_getter(self, item):
+        try:
+            return item['next_ep_time']
         except:
             return '-'
 
@@ -953,7 +1002,7 @@ class ShowWalker(urwid.SimpleListWalker):
                 break
 
 class ShowItem(urwid.WidgetWrap):
-    def __init__(self, show, has_progress=True, altname=None, eps=None):
+    def __init__(self, show, has_progress=True, altname=None, eps=None, date=False, date_next=False):
         if has_progress:
             self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         else:
@@ -965,10 +1014,6 @@ class ShowItem(urwid.WidgetWrap):
             self.eps = None
 
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
-        if show['start_date']:
-            self.date_str = urwid.Text(show['start_date'].isoformat()[0:10])
-        else:
-            self.date_str = urwid.Text("{0:^10}".format('--'))
         self.has_progress = has_progress
         self.playing = False
 
@@ -984,8 +1029,21 @@ class ShowItem(urwid.WidgetWrap):
             ('weight', 1, self.title_str),
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
-            ('fixed', 12, self.date_str),
         ]
+        if date:
+            try:
+                self.date_str = urwid.Text(show['start_date'].isoformat()[0:10])
+            except:
+                self.date_str = urwid.Text("{0:^10}".format('--'))
+            self.item.append( ('fixed', 12, self.date_str) )
+        if date_next:
+            try:
+                next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
+                delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+                self.date_next_str = urwid.Text("%2id,%02dhr" % (delta.days, delta.seconds/3600))
+            except:
+                self.date_next_str = urwid.Text("{0:^8}".format('--'))
+            self.item.append( ('fixed', 10, self.date_next_str) )
 
         # If the show should be highlighted, do it
         # otherwise color it according to its status

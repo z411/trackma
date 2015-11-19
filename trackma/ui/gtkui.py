@@ -46,6 +46,15 @@ except ImportError:
         print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
         imaging_available = False
 
+try:
+    import dateutil.parser
+    import dateutil.tz
+    import datetime
+    dateutil_available = True
+except ImportError:
+    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    dateutil_available = False
+
 import trackma.messenger as messenger
 import trackma.utils as utils
 
@@ -504,7 +513,8 @@ class Trackma_gtk(object):
                     status,
                     self.config['colors'],
                     has_progress = self.engine.mediainfo['has_progress'],
-                    has_date = True, # TODO: Make this API-specific to save space on APIs without start dates
+                    has_date = 'has_date_start' in self.engine.mediainfo and self.engine.mediainfo['has_date_start'],
+                    has_next_ep_date = 'has_date_next_ep' in self.engine.mediainfo and self.engine.mediainfo['has_date_next_ep'],
                     decimals = self.score_decimal_places,
                     progress_style = self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
@@ -1165,11 +1175,12 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, colors, has_progress=True, has_date=False, decimals=0, progress_style=1):
+    def __init__(self, status, colors, has_progress=True, has_date=False, has_next_ep_date=False, decimals=0, progress_style=1):
         gtk.TreeView.__init__(self)
 
         self.colors = colors
         self.has_progress = has_progress
+        self.has_next_ep_date = has_next_ep_date
         self.decimals = decimals
         self.status_filter = status
         self.progress_style = progress_style
@@ -1186,6 +1197,8 @@ class ShowView(gtk.TreeView):
             columns.append( ('Percent', 10) )
         if has_date:
             columns.append( ('Date', 11) )
+        if has_next_ep_date:
+            columns.append( ('Next Episode', 12) )
 
         for (name, sort) in columns:
             self.cols[name] = gtk.TreeViewColumn(name)
@@ -1231,14 +1244,21 @@ class ShowView(gtk.TreeView):
         self.cols['Score'].add_attribute(renderer_score, 'text', 5)
         self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
         self.cols['Score'].set_expand(False)
-        renderer_date = gtk.CellRendererText()
-        self.cols['Date'].pack_start(renderer_date, False)
-        self.cols['Date'].add_attribute(renderer_date, 'text', 11)
-        self.cols['Date'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
-        self.cols['Date'].set_expand(False)
+        if has_date:
+            renderer_date = gtk.CellRendererText()
+            self.cols['Date'].pack_start(renderer_date, False)
+            self.cols['Date'].add_attribute(renderer_date, 'text', 11)
+            self.cols['Date'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+            self.cols['Date'].set_expand(False)
+        if has_next_ep_date:
+            renderer_next_ep = gtk.CellRendererText()
+            self.cols['Next Episode'].pack_start(renderer_next_ep, False)
+            self.cols['Next Episode'].add_attribute(renderer_next_ep, 'text', 12)
+            self.cols['Next Episode'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+            self.cols['Next Episode'].set_expand(False)
 
-        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%, Date
-        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int, str)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%, Date, Next Ep Date
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int, str, str)
         self.set_model(self.store)
 
     def _get_color(self, show, eps):
@@ -1297,6 +1317,15 @@ class ShowView(gtk.TreeView):
             row.append(show['start_date'].isoformat()[0:10])
         else:
             row.append('-')
+        if dateutil_available:
+            try:
+                next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
+                delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+                row.append("%i days, %02d hrs." % (delta.days, delta.seconds/3600))
+            except:
+                row.append('--')
+        else:
+            row.append('--')
         self.store.append(row)
 
     def append_finish(self):
