@@ -503,12 +503,13 @@ class Trackma_gtk(object):
             self.show_lists[status] = ShowView(
                     status,
                     self.config['colors'],
-                    self.engine.mediainfo['has_progress'],
+                    self.config['visible_columns'],
                     self.score_decimal_places,
                     self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
+            self.show_lists[status].connect("column-toggled", self._column_toggled)
             self.show_lists[status].pagenumber = self.notebook.get_n_pages()
             sw.add(self.show_lists[status])
 
@@ -517,6 +518,24 @@ class Trackma_gtk(object):
             self.show_lists[status].realize()
 
         self.notebook.connect("switch-page", self.select_show)
+
+    def _column_toggled(self, w, column_name, visible):
+        if visible:
+            # Make column visible
+            self.config['visible_columns'].append(column_name)
+
+            for view in self.show_lists.itervalues():
+                view.cols[column_name].set_visible(True)
+        else:
+            # Make column invisible
+            if len(self.config['visible_columns']) <= 1:
+                return # There should be at least 1 column visible
+
+            self.config['visible_columns'].remove(column_name)
+            for view in self.show_lists.itervalues():
+                view.cols[column_name].set_visible(False)
+
+        utils.save_config(self.config, self.configfile)
 
     def _show_episode_entry(self, *args):
         self.show_ep_button.hide()
@@ -1164,11 +1183,14 @@ class ImageView(gtk.HBox):
         self.w_pholder.set_text(msg)
 
 class ShowView(gtk.TreeView):
-    def __init__(self, status, colors, has_progress=True, decimals=0, progress_style=1):
+    __gsignals__ = {'column-toggled': (gobject.SIGNAL_RUN_LAST, \
+            gobject.TYPE_PYOBJECT, (gobject.TYPE_STRING, gobject.TYPE_BOOLEAN) )}
+
+    def __init__(self, status, colors, visible_columns, decimals=0, progress_style=1):
         gtk.TreeView.__init__(self)
 
         self.colors = colors
-        self.has_progress = has_progress
+        self.visible_columns = visible_columns
         self.decimals = decimals
         self.status_filter = status
         self.progress_style = progress_style
@@ -1177,15 +1199,36 @@ class ShowView(gtk.TreeView):
         self.set_search_column(1)
 
         self.cols = dict()
-        if has_progress:
-            columns = (('Title', 1), ('Progress', 2), ('Score', 3), ('Percent', 10))
-        else:
-            columns = (('Title', 1), ('Score', 3))
+        self.available_columns = (
+                ('Title', 1),
+                ('Progress', 2),
+                ('Score', 3),
+                ('Percent', 10),
+                ('Start', 11),
+                ('End', 12),
+                ('My start', 13),
+                ('My end', 14),
+        )
 
-        for (name, sort) in columns:
+        for (name, sort) in self.available_columns:
             self.cols[name] = gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(sort)
+
+            # This is a hack to allow for right-clickable header
+            label = gtk.Label(name)
+            label.show()
+            self.cols[name].set_widget(label)
+
             self.append_column(self.cols[name])
+
+            w = self.cols[name].get_widget()
+            while not isinstance(w, gtk.Button):
+                w = w.get_parent()
+
+            w.connect('button-release-event', self._header_button_release)
+
+            if name not in self.visible_columns:
+                self.cols[name].set_visible(False)
 
         #renderer_id = gtk.CellRendererText()
         #self.cols['ID'].pack_start(renderer_id, False)
@@ -1201,35 +1244,70 @@ class ShowView(gtk.TreeView):
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
         self.cols['Title'].add_attribute(renderer_title, 'foreground', 9) # Using foreground-gdk does not work, possibly due to the timing of it being set
 
-        if has_progress:
-            renderer_progress = gtk.CellRendererText()
-            self.cols['Progress'].pack_start(renderer_progress, False)
-            self.cols['Progress'].add_attribute(renderer_progress, 'text', 4)
-            self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
-            self.cols['Progress'].set_expand(False)
+        renderer_progress = gtk.CellRendererText()
+        self.cols['Progress'].pack_start(renderer_progress, False)
+        self.cols['Progress'].add_attribute(renderer_progress, 'text', 4)
+        self.cols['Progress'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        self.cols['Progress'].set_expand(False)
 
-            if self.progress_style == 0:
-                renderer_percent = gtk.CellRendererProgress()
-                self.cols['Percent'].pack_start(renderer_percent, False)
-                self.cols['Percent'].add_attribute(renderer_percent, 'value', 10)
-            else:
-                renderer_percent = ProgressCellRenderer(self.colors)
-                self.cols['Percent'].pack_start(renderer_percent, False)
-                self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
-                self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
-                self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', 7)
-                self.cols['Percent'].add_attribute(renderer_percent, 'eps', 8)
-            renderer_percent.set_fixed_size(100, -1)
+        if self.progress_style == 0:
+            renderer_percent = gtk.CellRendererProgress()
+            self.cols['Percent'].pack_start(renderer_percent, False)
+            self.cols['Percent'].add_attribute(renderer_percent, 'value', 10)
+        else:
+            renderer_percent = ProgressCellRenderer(self.colors)
+            self.cols['Percent'].pack_start(renderer_percent, False)
+            self.cols['Percent'].add_attribute(renderer_percent, 'value', 2)
+            self.cols['Percent'].add_attribute(renderer_percent, 'total', 6)
+            self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', 7)
+            self.cols['Percent'].add_attribute(renderer_percent, 'eps', 8)
+        renderer_percent.set_fixed_size(100, -1)
 
-        renderer_score = gtk.CellRendererText()
-        self.cols['Score'].pack_start(renderer_score, False)
-        self.cols['Score'].add_attribute(renderer_score, 'text', 5)
-        self.cols['Score'].set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
-        self.cols['Score'].set_expand(False)
+        renderer = gtk.CellRendererText()
+        self.cols['Score'].pack_start(renderer, False)
+        self.cols['Score'].add_attribute(renderer, 'text', 5)
+        renderer = gtk.CellRendererText()
+        self.cols['Start'].pack_start(renderer, False)
+        self.cols['Start'].add_attribute(renderer, 'text', 11)
+        renderer = gtk.CellRendererText()
+        self.cols['End'].pack_start(renderer, False)
+        self.cols['End'].add_attribute(renderer, 'text', 12)
+        renderer = gtk.CellRendererText()
+        self.cols['My start'].pack_start(renderer, False)
+        self.cols['My start'].add_attribute(renderer, 'text', 13)
+        renderer = gtk.CellRendererText()
+        self.cols['My end'].pack_start(renderer, False)
+        self.cols['My end'].add_attribute(renderer, 'text', 14)
 
-        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%
-        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int)
+        # ID, Title, Episodes, Score, Episodes_str, Score_str, Total, Subvalue, Eps, Color, Progress%, start_date, end_date, my_start_date, my_finish_date
+        self.store = gtk.ListStore(str, str, int, float, str, str, int, int, gobject.TYPE_PYOBJECT, str, int, str, str, str, str)
         self.set_model(self.store)
+
+    def _header_button_release(self, button, event):
+        if event.button == 3:
+            menu = gtk.Menu()
+            for name, sort in self.available_columns:
+                is_active = name in self.visible_columns
+
+                item = gtk.CheckMenuItem(name)
+                item.set_active(is_active)
+                item.connect('activate', self._header_menu_item, name, not is_active)
+                menu.append(item)
+                item.show()
+
+            menu.popup(None, None, None, event.button, event.time)
+
+    def _header_menu_item(self, w, column_name, visible):
+        self.emit('column-toggled', column_name, visible)
+
+    def _format_date(self, date):
+        if date:
+            try:
+                return date.strftime('%Y-%m-%d')
+            except ValueError:
+                return '?'
+        else:
+            return '-'
 
     def _get_color(self, show, eps):
         if show.get('queued'):
@@ -1248,15 +1326,11 @@ class ShowView(gtk.TreeView):
         self.store.clear()
 
     def append(self, show, altname=None, eps=None):
-        if self.has_progress:
-            episodes_str = "%d / %d" % (show['my_progress'], show['total'])
-            if show['total'] and show['my_progress'] <= show['total']:
-                progress = (float(show['my_progress']) / show['total']) * 100
-            else:
-                progress = 0
+        episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+        if show['total'] and show['my_progress'] <= show['total']:
+            progress = (float(show['my_progress']) / show['total']) * 100
         else:
             progress = 0
-            episodes_str = ''
 
         title_str = show['title']
         if altname:
@@ -1272,6 +1346,11 @@ class ShowView(gtk.TreeView):
         else:
             available_eps = []
 
+        start_date =     self._format_date(show['start_date'])
+        end_date =       self._format_date(show['end_date'])
+        my_start_date =  self._format_date(show['my_start_date'])
+        my_finish_date = self._format_date(show['my_finish_date'])
+
         row = [show['id'],
                title_str,
                show['my_progress'],
@@ -1282,7 +1361,11 @@ class ShowView(gtk.TreeView):
                aired_eps,
                available_eps,
                self._get_color(show, available_eps),
-               progress]
+               progress,
+               start_date,
+               end_date,
+               my_start_date,
+               my_finish_date]
         self.store.append(row)
 
     def append_finish(self):
@@ -1299,10 +1382,9 @@ class ShowView(gtk.TreeView):
     def update(self, show):
         for row in self.store:
             if int(row[0]) == show['id']:
-                if self.has_progress:
-                    episodes_str = "%d / %d" % (show['my_progress'], show['total'])
-                    row[2] = show['my_progress']
-                    row[4] = episodes_str
+                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+                row[2] = show['my_progress']
+                row[4] = episodes_str
 
                 score_str = "%0.*f" % (self.decimals, show['my_score'])
 

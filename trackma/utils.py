@@ -316,6 +316,7 @@ gtk_defaults = {
     'remember_geometry': False,
     'last_width': 740,
     'last_height': 480,
+    'visible_columns': [],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
