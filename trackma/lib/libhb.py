@@ -50,6 +50,7 @@ class libhb(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'has_date_start': True,
         'status_start': 'currently-watching',
         'status_finish': 'completed',
         'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],

@@ -475,9 +475,11 @@ class Trackma(QtGui.QMainWindow):
             library = self.worker.engine.library()
 
         widget = self.show_lists[status]
-        columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date']
-        if 'date_next_ep' in self.mediainfo and self.mediainfo['date_next_ep']:
-            columns[5] = 'Next Episode'
+        columns = ['ID', 'Title', 'Progress', 'Score', 'Percent']
+        if self._column_enabled('has_date_start'):
+            columns.append('Date')
+        if self._column_enabled('has_date_next_ep'):
+            columns.append('Next Episode')
         widget.clear()
         widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
@@ -547,14 +549,26 @@ class Trackma(QtGui.QMainWindow):
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
         widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
-        widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
-        if 'date_next_ep' in self.mediainfo \
-        and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show \
-        and dateutil_available:
-            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
-            delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
-            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
+        col = 5
+        if self._column_enabled('has_date_start'):
+            widget.setItem(row, col, ShowItemDate( show['start_date'], color ))
+            col += 1
+        if self._column_enabled('has_date_next_ep'):
+            try:
+                next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
+                delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+                widget.setItem(row, col, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
+                col += 1
+            except:
+                pass
+
+    def _column_enabled(self, key):
+        try:
+            if key == 'has_date_next_ep' and not dateutil_available:
+                return False
+            return self.mediainfo[key]
+        except:
+            return False
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
