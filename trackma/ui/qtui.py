@@ -191,6 +191,8 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addAction(action_quit)
 
         self.menu_play = QtGui.QMenu('Play')
+
+        # Context menu for right click on list item
         self.menu_show_context = QtGui.QMenu()
         #self.menu_show_context.addAction(action_play_next)
         #self.menu_show_context.addAction(action_play_dialog)
@@ -199,6 +201,22 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show_context.addAction(action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
+
+        # Context menu for right click on list header
+        self.menu_columns = QtGui.QMenu()
+        self.available_columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date', 'Next Episode']
+
+        self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
+        self.menu_columns_group.triggered.connect(self.s_toggle_column)
+
+        for column_name in self.available_columns:
+            action = QtGui.QAction(column_name, self, checkable=True)
+            if column_name in self.config['visible_columns']:
+                action.setChecked(True)
+
+            self.menu_columns_group.addAction(action)
+            self.menu_columns.addAction(action)
+
         # Make icons for viewed episodes
         rect = QtCore.QSize(16,16)
         buffer = QtGui.QPixmap(rect)
@@ -475,19 +493,19 @@ class Trackma(QtGui.QMainWindow):
             library = self.worker.engine.library()
 
         widget = self.show_lists[status]
-        columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date']
-        if 'date_next_ep' in self.mediainfo and self.mediainfo['date_next_ep']:
-            columns[5] = 'Next Episode'
+
         widget.clear()
         widget.setSortingEnabled(False)
         widget.setRowCount(len(showlist))
-        widget.setColumnCount(len(columns))
-        widget.setHorizontalHeaderLabels(columns)
-        widget.setColumnHidden(0, True)
+        widget.setColumnCount(len(self.available_columns))
+        widget.setHorizontalHeaderLabels(self.available_columns)
+
+        # Hide invisible columns
+        for i, column in enumerate(self.available_columns):
+            if column not in self.config['visible_columns']:
+                widget.setColumnHidden(i, True)
+
         widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
-        widget.horizontalHeader().resizeSection(2, 70)
-        widget.horizontalHeader().resizeSection(3, 55)
-        widget.horizontalHeader().resizeSection(4, 100)
 
         i = 0
 
@@ -949,6 +967,26 @@ class Trackma(QtGui.QMainWindow):
     def s_about_qt(self):
         QtGui.QMessageBox.aboutQt(self, 'About Qt')
 
+    def s_show_menu_columns(self, pos):
+        globalPos = self.sender().mapToGlobal(pos)
+        globalPos += QtCore.QPoint(3, 3)
+        self.menu_columns.exec_(globalPos)
+
+    def s_toggle_column(self, w):
+        (column_name, visible) = (w.text(), w.isChecked())
+        index = self.available_columns.index(column_name)
+
+        if visible:
+            if column_name not in self.config['visible_columns']:
+                self.config['visible_columns'].append(str(column_name))
+        else:
+            if column_name in self.config['visible_columns']:
+                self.config['visible_columns'].remove(column_name)
+
+        utils.save_config(self.config, self.configfile)
+
+        for showlist in self.show_lists.itervalues():
+            showlist.setColumnHidden(index, not visible)
 
     ### Worker slots
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
@@ -1044,6 +1082,8 @@ class Trackma(QtGui.QMainWindow):
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
+                self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+                self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)

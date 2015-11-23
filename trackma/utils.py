@@ -343,6 +343,7 @@ qt_defaults = {
     'last_y': 0,
     'last_width': 740,
     'last_height': 480,
+    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'episodebar_style': 1,
     'episodebar_text': False,
     'colors': {
