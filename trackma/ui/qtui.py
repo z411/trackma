@@ -204,7 +204,9 @@ class Trackma(QtGui.QMainWindow):
 
         # Context menu for right click on list header
         self.menu_columns = QtGui.QMenu()
-        self.available_columns = ['ID', 'Title', 'Progress', 'Score', 'Percent', 'Date', 'Next Episode']
+        self.available_columns = ['ID', 'Title', 'Progress', 'Score',
+                'Percent', 'Next Episode', 'Start date', 'End date',
+                'My start', 'My finish']
 
         self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
@@ -565,7 +567,6 @@ class Trackma(QtGui.QMainWindow):
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
         widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
-        widget.setItem(row, 5, ShowItemDate( show['start_date'], color ))
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
         and 'next_ep_time' in show \
@@ -573,6 +574,10 @@ class Trackma(QtGui.QMainWindow):
             next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
             delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
             widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
+        widget.setItem(row, 6, ShowItemDate( show['start_date'], color ))
+        widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
+        widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
+        widget.setItem(row, 9, ShowItemDate( show['my_finish_date'], color ))
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
@@ -2116,7 +2121,10 @@ class ShowItemNum(ShowItem):
 class ShowItemDate(ShowItem):
     def __init__(self, date, color=None):
         if date:
-            datestr = date.strftime("%Y-%m-%d")
+            try:
+                datestr = date.strftime("%Y-%m-%d")
+            except ValueError:
+                datestr = '?'
         else:
             datestr = '-'
 
