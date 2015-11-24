@@ -1909,6 +1909,20 @@ class Settings(gtk.Window):
         line5.pack_start(line_autosend_size, False, False, 0)
         line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
 
+        ### Additional options
+        header_additional = gtk.Label()
+        header_additional.set_text('<span size="10000"><b>Additional options</b></span>')
+        header_additional.set_use_markup(True)
+
+        self.chk_auto_status_change = gtk.CheckButton('Change status automatically')
+        self.chk_auto_status_change_if_scored = gtk.CheckButton('Change status automatically only if scored')
+        self.chk_auto_status_change_if_scored.set_sensitive(False)
+        self.chk_auto_status_change.connect("toggled", self.radio_toggled, self.chk_auto_status_change_if_scored)
+        self.chk_auto_date_change = gtk.CheckButton('Change start and finish dates automatically')
+        line_additional = gtk.VBox(False, 5)
+        line_additional.pack_start(self.chk_auto_status_change, False, False, 0)
+        line_additional.pack_start(self.chk_auto_status_change_if_scored, False, False, 0)
+        line_additional.pack_start(self.chk_auto_date_change, False, False, 0)
 
         ### GTK Interface ###
         header4 = gtk.Label()
@@ -1993,6 +2007,8 @@ class Settings(gtk.Window):
         page1.pack_start(line4, False, False, 0)
         page1.pack_start(header3, False, False, 0)
         page1.pack_start(line5, False, False, 0)
+        page1.pack_start(header_additional, False, False, 0)
+        page1.pack_start(line_additional, False, False, 0)
 
         page2 = gtk.VBox(False, 10)
         page2.set_border_width(5)
@@ -2047,6 +2063,10 @@ class Settings(gtk.Window):
         self.spin_autosend_hours.set_value(self.engine.get_config('autosend_hours'))
         self.spin_autosend_size.set_value(self.engine.get_config('autosend_size'))
 
+        self.chk_auto_status_change.set_active(self.engine.get_config('auto_status_change'))
+        self.chk_auto_status_change_if_scored.set_active(self.engine.get_config('auto_status_change_if_scored'))
+        self.chk_auto_date_change.set_active(self.engine.get_config('auto_date_change'))
+
         """GTK Interface Configuration"""
         self.chk_show_tray.set_active(self.config['show_tray'])
         self.chk_close_to_tray.set_active(self.config['close_to_tray'])
@@ -2096,6 +2116,9 @@ class Settings(gtk.Window):
         self.engine.set_config('autosend_hours', self.spin_autosend_hours.get_value_as_int())
         self.engine.set_config('autosend_size', self.spin_autosend_size.get_value_as_int())
 
+        self.engine.set_config('auto_status_change', self.chk_auto_status_change.get_active())
+        self.engine.set_config('auto_status_change_if_scored', self.chk_auto_status_change_if_scored.get_active())
+        self.engine.set_config('auto_date_change', self.chk_auto_date_change.get_active())
         self.engine.save_config()
 
         """GTK Interface configuration"""
