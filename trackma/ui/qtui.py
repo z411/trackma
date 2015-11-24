@@ -508,6 +508,9 @@ class Trackma(QtGui.QMainWindow):
                 widget.setColumnHidden(i, True)
 
         widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
+        widget.horizontalHeader().resizeSection(2, 70)
+        widget.horizontalHeader().resizeSection(3, 55)
+        widget.horizontalHeader().resizeSection(4, 100)
 
         i = 0
 
