@@ -128,7 +128,7 @@ class Trackma(QtGui.QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
 
         # Build menus
-        action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Play &Next', self)
+        action_play_next = QtGui.QAction(getIcon('media-playback-start'), 'Play &Next', self)
         action_play_next.setStatusTip('Play the next unwatched episode.')
         action_play_next.setShortcut('Ctrl+N')
         action_play_next.triggered.connect(lambda: self.s_play(True))
@@ -141,13 +141,13 @@ class Trackma(QtGui.QMainWindow):
         action_altname = QtGui.QAction('Change &alternate name...', self)
         action_altname.setStatusTip('Set an alternate title for the tracker.')
         action_altname.triggered.connect(self.s_altname)
-        action_add = QtGui.QAction(QtGui.QIcon.fromTheme('edit-find'), 'Search/Add from Remote', self)
+        action_add = QtGui.QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
         action_add.setShortcut('Ctrl+A')
         action_add.triggered.connect(self.s_add)
-        action_delete = QtGui.QAction(QtGui.QIcon.fromTheme('edit-delete'), '&Delete', self)
+        action_delete = QtGui.QAction(getIcon('edit-delete'), '&Delete', self)
         action_delete.setStatusTip('Remove this show from your list.')
         action_delete.triggered.connect(self.s_delete)
-        action_quit = QtGui.QAction(QtGui.QIcon.fromTheme('application-exit'), '&Quit', self)
+        action_quit = QtGui.QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
@@ -173,7 +173,7 @@ class Trackma(QtGui.QMainWindow):
         action_settings = QtGui.QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
-        action_about = QtGui.QAction(QtGui.QIcon.fromTheme('help-about'), 'About...', self)
+        action_about = QtGui.QAction(getIcon('help-about'), 'About...', self)
         action_about.triggered.connect(self.s_about)
         action_about_qt = QtGui.QAction('About Qt...', self)
         action_about_qt.triggered.connect(self.s_about_qt)
@@ -292,17 +292,17 @@ class Trackma(QtGui.QMainWindow):
         self.show_progress_btn.setToolTip('Set number of episodes watched to the value entered above')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QtGui.QToolButton()
-        self.show_play_btn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        self.show_play_btn.setIcon(getIcon('media-playback-start'))
         self.show_play_btn.setToolTip('Play the next unwatched episode\nHold to play other episodes')
         self.show_play_btn.clicked.connect(lambda: self.s_play(True))
         self.show_play_btn.setMenu(self.menu_play)
         self.show_inc_btn = QtGui.QToolButton()
-        self.show_inc_btn.setIcon(QtGui.QIcon.fromTheme('list-add'))
+        self.show_inc_btn.setIcon(getIcon('list-add'))
         self.show_inc_btn.setShortcut('Ctrl+Right')
         self.show_inc_btn.setToolTip('Increment number of episodes watched')
         self.show_inc_btn.clicked.connect(self.s_plus_episode)
         self.show_dec_btn = QtGui.QToolButton()
-        self.show_dec_btn.setIcon(QtGui.QIcon.fromTheme('list-remove'))
+        self.show_dec_btn.setIcon(getIcon('list-remove'))
         self.show_dec_btn.clicked.connect(self.s_rem_episode)
         self.show_dec_btn.setShortcut('Ctrl+Left')
         self.show_dec_btn.setToolTip('Decrement number of episodes watched')
@@ -690,9 +690,9 @@ class Trackma(QtGui.QMainWindow):
 
         menu.clear()
         # Make basic actions
-        action_play_next = QtGui.QAction(QtGui.QIcon.fromTheme('media-skip-forward'), 'Play &Next Episode', self)
+        action_play_next = QtGui.QAction(getIcon('media-skip-forward'), 'Play &Next Episode', self)
         action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_last = QtGui.QAction(QtGui.QIcon.fromTheme('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
+        action_play_last = QtGui.QAction(getIcon('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
         action_play_last.triggered.connect(lambda: self.s_play(False))
         action_play_dialog = QtGui.QAction('Play Episode...', self)
         action_play_dialog.setStatusTip('Select an episode to play.')
@@ -1419,10 +1419,10 @@ class SettingsDialog(QtGui.QDialog):
 
         # Categories
         self.category_list = QtGui.QListWidget()
-        category_media = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('media-playback-start'), 'Media', self.category_list)
-        category_sync = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('view-refresh'), 'Sync', self.category_list)
-        category_ui = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('window-new'), 'User Interface', self.category_list)
-        category_theme = QtGui.QListWidgetItem(QtGui.QIcon.fromTheme('applications-graphics'), 'Theme', self.category_list)
+        category_media = QtGui.QListWidgetItem(getIcon('media-playback-start'), 'Media', self.category_list)
+        category_sync = QtGui.QListWidgetItem(getIcon('view-refresh'), 'Sync', self.category_list)
+        category_ui = QtGui.QListWidgetItem(getIcon('window-new'), 'User Interface', self.category_list)
+        category_theme = QtGui.QListWidgetItem(getIcon('applications-graphics'), 'Theme', self.category_list)
         self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
@@ -2620,6 +2620,10 @@ class Engine_Worker(QtCore.QThread):
             self.finished.emit(ret)
         except utils.TrackmaFatal, e:
             self._fatal(e.message)
+
+def getIcon(icon_name):
+    fallback = QtGui.QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
+    return QtGui.QIcon.fromTheme(icon_name, fallback)
 
 def getColor(colorString):
     # Takes a color string in either #RRGGBB format or group,role format (using QPalette int values)
