@@ -764,6 +764,7 @@ class Engine:
         """Asks the data handler to download the remote list."""
         self.undoall()
         self.data_handler.download_data()
+        self._update_tracker()
 
     def list_upload(self):
         """Asks the data handler to upload the unsynced changes in the queue."""
