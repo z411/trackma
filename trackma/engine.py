@@ -608,7 +608,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None, ignorecache=True):
+    def scan_library(self, my_status=None, ignorecache=False):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
