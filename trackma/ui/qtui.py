@@ -141,6 +141,10 @@ class Trackma(QtGui.QMainWindow):
         action_altname = QtGui.QAction('Change &alternate name...', self)
         action_altname.setStatusTip('Set an alternate title for the tracker.')
         action_altname.triggered.connect(self.s_altname)
+        action_play_random = QtGui.QAction('Play &random show', self)
+        action_play_random.setStatusTip('Pick a random show with a new episode and play it.')
+        action_play_random.setShortcut('Ctrl+R')
+        action_play_random.triggered.connect(self.s_play_random)
         action_add = QtGui.QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
         action_add.setShortcut('Ctrl+A')
         action_add.triggered.connect(self.s_add)
@@ -156,12 +160,12 @@ class Trackma(QtGui.QMainWindow):
         action_sync.setStatusTip('Send changes and then retrieve remote list')
         action_sync.setShortcut('Ctrl+S')
         action_sync.triggered.connect(lambda: self.s_send(True))
-        action_send = QtGui.QAction('Sen&d changes', self)
+        action_send = QtGui.QAction('S&end changes', self)
         action_send.setShortcut('Ctrl+E')
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
-        action_retrieve = QtGui.QAction('&Redownload list', self)
-        action_retrieve.setShortcut('Ctrl+R')
+        action_retrieve = QtGui.QAction('Re&download list', self)
+        action_retrieve.setShortcut('Ctrl+D')
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QtGui.QAction('Rescan &Library', self)
@@ -184,6 +188,8 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addAction(action_play_dialog)
         self.menu_show.addAction(action_details)
         self.menu_show.addAction(action_altname)
+        self.menu_show.addSeparator()
+        self.menu_show.addAction(action_play_random)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_add)
         self.menu_show.addAction(action_delete)
@@ -864,8 +870,12 @@ class Trackma(QtGui.QMainWindow):
             if not play_next and not episode:
                 episode = self.show_progress.value()
 
-            self._busy(False)
+            self._busy(True)
             self.worker_call('play_episode', self.r_generic, show, episode)
+
+    def s_play_random(self):
+        self._busy(True)
+        self.worker_call('play_random', self.r_generic)
 
     def s_play_number(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -2426,6 +2436,7 @@ class Engine_Worker(QtCore.QThread):
             'set_score': self._set_score,
             'set_status': self._set_status,
             'play_episode': self._play_episode,
+            'play_random': self._play_random,
             'list_download': self._list_download,
             'list_upload': self._list_upload,
             'get_show_details': self._get_show_details,
@@ -2542,6 +2553,15 @@ class Engine_Worker(QtCore.QThread):
             return {'success': False}
 
         return {'success': True, 'show': show, 'played_ep': played_ep}
+
+    def _play_random(self):
+        try:
+            (show, ep) = self.engine.play_random()
+        except utils.TrackmaError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True, 'played_show': show, 'played_ep': ep}
 
     def _list_download(self):
         try:

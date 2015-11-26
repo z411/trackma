@@ -681,7 +681,9 @@ class Engine:
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
 
-        self.play_episode(random.choice(newep))
+        show = random.choice(newep)
+        ep = self.play_episode(show)
+        return (show, ep)
 
     def play_episode(self, show, playep=0):
         """
