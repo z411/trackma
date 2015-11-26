@@ -669,16 +669,19 @@ class Engine:
         return library
 
     def play_random(self):
+        """
+        This function will pick a random show that has a new episode to watch
+        and play it.
+        """
         library = self.library()
-        neweps = []
+        newep = []
 
         for showid, eps in library.iteritems():
             show = self.get_show_info(showid)
-            maxep = max(eps.keys())
-            if maxep > show['my_progress']:
-                neweps.append(show)
+            if show['my_progress'] + 1 in eps.keys():
+                newep.append(show)
 
-        self.play_episode(random.choice(neweps))
+        self.play_episode(random.choice(newep))
 
     def play_episode(self, show, playep=0):
         """
