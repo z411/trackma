@@ -374,6 +374,15 @@ class Trackma_cmd(cmd.Cmd):
         """
         self.engine.scan_library()
 
+    def do_random(self, args):
+        """
+        Starts the media player with a random new episode.
+        """
+        try:
+            self.engine.play_random()
+        except utils.TrackmaError, e:
+            self.display_error(e)
+
     def do_play(self, args):
         """
         Starts the media player with the specified episode number (next if not specified).

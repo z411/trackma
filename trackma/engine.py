@@ -23,7 +23,7 @@ import threading
 import difflib
 import time
 import datetime
-import webbrowser
+import random
 import shlex
 
 import messenger
@@ -608,7 +608,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None):
+    def scan_library(self, my_status=None, ignorecache=True):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
@@ -630,7 +630,7 @@ class Engine:
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
             show_id = None
-            if filename in library_cache.keys():
+            if not ignorecache and filename in library_cache.keys():
                 # If the filename was already seen before
                 # use the cached information, if there's no information (None)
                 # then it means it doesn't correspond to any show in the list
@@ -667,6 +667,18 @@ class Engine:
         self.data_handler.library_save(library)
         self.data_handler.library_cache_save(library_cache)
         return library
+
+    def play_random(self):
+        library = self.library()
+        neweps = []
+
+        for showid, eps in library.iteritems():
+            show = self.get_show_info(showid)
+            maxep = max(eps.keys())
+            if maxep > show['my_progress']:
+                neweps.append(show)
+
+        self.play_episode(random.choice(neweps))
 
     def play_episode(self, show, playep=0):
         """
