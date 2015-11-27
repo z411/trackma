@@ -37,7 +37,7 @@ class Data(object):
 
     """
     name = 'Data'
-    version = 2
+    version = 3
 
     msg = None
     api = None
