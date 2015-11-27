@@ -394,5 +394,8 @@ class libanilist(lib):
 
 
     def _c(self, s):
-        return 0 if s is None else s
+        if s is None:
+            return 0
+        else:
+            return s
 
