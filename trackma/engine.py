@@ -29,6 +29,7 @@ import shlex
 import messenger
 import data
 import tracker
+import torrents
 import utils
 import extras.AnimeInfoExtractor
 
@@ -781,3 +782,9 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
+    def torrents(self):
+        man = torrents.Torrents(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
+        d = man.get_sorted_torrents()
+
+        for item in d:
+            print repr(item)

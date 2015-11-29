@@ -383,6 +383,13 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError, e:
             self.display_error(e)
 
+    def do_torrents(self, args):
+        try:
+            self.engine.torrents()
+        except utils.TrackmaError, e:
+            self.display_error(e)
+
+
     def do_play(self, args):
         """
         Starts the media player with the specified episode number (next if not specified).
