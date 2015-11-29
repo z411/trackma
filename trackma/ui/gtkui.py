@@ -437,9 +437,6 @@ class Trackma_gtk(object):
 
         self.show_ep_num.hide()
 
-        if not self.config['visible_columns']:
-            self.config['visible_columns'] = ['Title', 'Progress', 'Score', 'Percent']
-
         self.start_engine()
 
     def _clear_gui(self):
