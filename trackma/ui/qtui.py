@@ -77,6 +77,8 @@ class Trackma(QtGui.QMainWindow):
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+        self.api_configfile = utils.get_root_filename('ui-qt.0.json')
+        self.api_config = {}
 
         # Build UI
         QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
@@ -106,6 +108,7 @@ class Trackma(QtGui.QMainWindow):
             self.reload(account)
         else:
             self.start(account)
+
 
     def start(self, account):
         """
@@ -216,6 +219,11 @@ class Trackma(QtGui.QMainWindow):
 
         self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
+
+        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % account['api'])
+        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
+        if self.config['columns_per_api']:
+            self.config['visible_columns'] = self.api_config['visible_columns']
 
         for column_name in self.available_columns:
             action = QtGui.QAction(column_name, self, checkable=True)
@@ -385,6 +393,11 @@ class Trackma(QtGui.QMainWindow):
     def reload(self, account=None, mediatype=None):
         if account:
             self.account = account
+
+        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % account['api'])
+        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
+        if self.config['columns_per_api']:
+            self.config['visible_columns'] = self.api_config['visible_columns']
 
         self.show()
         self._busy(False)
@@ -1002,6 +1015,9 @@ class Trackma(QtGui.QMainWindow):
                 self.config['visible_columns'].remove(column_name)
 
         utils.save_config(self.config, self.configfile)
+        if self.config['columns_per_api']:
+            self.api_config['visible_columns'] = self.config['visible_columns']
+            utils.save_config(self.api_config, self.api_configfile)
 
         for showlist in self.show_lists.itervalues():
             showlist.setColumnHidden(index, not visible)
@@ -1596,8 +1612,10 @@ class SettingsDialog(QtGui.QDialog):
         g_window = QtGui.QGroupBox('Window')
         g_window.setFlat(True)
         self.remember_geometry = QtGui.QCheckBox('Remember window size and position')
+        self.columns_per_api = QtGui.QCheckBox('Use different visible columns per API')
         g_window_layout = QtGui.QVBoxLayout()
         g_window_layout.addWidget(self.remember_geometry)
+        g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
 
         # UI layout
@@ -1754,6 +1772,7 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_api_icon.setChecked(self.config['tray_api_icon'])
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
+        self.columns_per_api.setChecked(self.config['columns_per_api'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
@@ -1821,6 +1840,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
+        self.config['columns_per_api'] = self.columns_per_api.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
