@@ -1,18 +1,60 @@
-0.2
-===
-- New: Basic Hummingbird support
+v0.5
+- New: Shikimori support
+- New: User hooks (~/.trackma/hook.py)
+- Improvement: (Qt) Configurable list colors
+- Improvement: (Qt) Interface improvements
+- Improvement: (curses) Implemented sort reversal
+- Improvement: (CLI) Prompt and help overhaul
+- Bugfix: (Qt/GTK) Progress bar works for shows with no total episodes (assumes 1 cour = 26 eps)
+- Bugfix: (GTK) Fixed sensitivity of several menu items
+
+v0.4
+- New: Anilist support
+- New: Plex tracker support
+- New: Implemented inotify-based tracker for instant recognition (Linux only)
+- New: Added OAuth authentication support in the engine
+- New: Added local library functionality
+- New: Added option to wait for the player to close and ask before updating
+- Improvement: (Qt/GTK) New more detailed progress bar showing available and aired episodes
+- Improvement: (Qt) Option to remember position, size and state
+- Improvement: (CLI) Added indexes to make specifying a show quicker
+- Improvement: (Qt/GTK) Added shortcuts
+- Bugfix: Fixed ocassional bug where the cache got corrupted
+- Bugfix: (Qt) Fixed problem with non-western characters in the search dialog
+- Bugfix: (MAL) Fixed situations where libmal had problems with non-gzipped responses
+- Bugfix: (MAL) Fixed an error when MAL returned an empty document
+- Bugfix: (MAL) Fixed handling of HTML entities
+- Bugfix: (Hummingbird) Working around issue with empty titles
+
+v0.3
+
+- New: Qt interface
+- New: Hummingbird support
+- New: Using new code for media tracker (AIE)
+- New: Show details dialog
+- New: Track icon in Qt and GTK interfaces
+- New: Support for alternative titles for problematic show titles
+- Improvement: Right click context menu for GTK and alternate names
+- Improvement: Few GTK aesthetic changes
+- Improvement: CLI can now point to shows by index rather than title
+- Improvement: Decimal scores
+- Improvement: Various tracker and video search improvements
+- Improvement: Support for player arguments
+- Several minor improvements and bugfixes
+
+v0.2
+First public release, there are still many things to fix and implement but it seems to be stable and usable enough.
+
 - New: Implemented account switching and account manager
 - New: Support for viewing show details
 - New: GTK Settings window
 - New: GTK Tray icon
 - New: Aliases and manual alternative titles
 - New: Timed autosend and autoretrieve
+- New: Basic Hummingbird support
 - Improvement: libmal now uses gzipped requests
 - Improvement: Now config files are stored in JSON
 - Improvement: Shows get colored when queued or playing
 - Improvement: Better curses interface memory management
 - Several bugfixes
 
-0.1
-===
-- Initial release

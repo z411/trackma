@@ -4,10 +4,10 @@ import cPickle
 class AccountManager(object):
     """
     This is the account manager.
-    
+
     It provides a generic way for the user interface to query for the
     available registered accounts, and add or delete accounts.
-    
+
     This class returns an Account Dictionary used by
     the :class:`Engine` to start.
     """
@@ -31,13 +31,13 @@ class AccountManager(object):
         """
         Registers a new account with the specified
         *username*, *password* and *api*.
-        
+
         The *api* must be one of the available APIs
         found in the utils.available_libs dict.
         """
-        
+
         available_libs = utils.available_libs.keys()
-        
+
         if not username:
             raise utils.AccountError('Empty username.')
         if not password:
@@ -54,26 +54,35 @@ class AccountManager(object):
         self.accounts['accounts'][nextnum] = account
         self.accounts['next'] += 1
         self._save()
-    
+
     def delete_account(self, num):
         """
         Deletes the account number **num**.
         """
         self.accounts['default'] = None
         del self.accounts['accounts'][num]
-        
+
         # Reset index if there are no accounts left
         if not self.accounts['accounts']:
             self.accounts['next'] = 1
-        
+
         self._save()
-    
+
+    def purge_account(self, num):
+        """
+        Renames stale cache files for account number **num**.
+        """
+        account = self.accounts['accounts'][num]
+        userfolder = "%s.%s" % (account['username'], account['api'])
+        utils.make_dir(userfolder + '.old')
+        utils.regex_rename_files('(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
+
     def get_account(self, num):
         """
         Returns the account dict **num**.
         """
         return self.accounts['accounts'][num]
-    
+
     def get_accounts(self):
         """
         Returns an iterator of available accounts.

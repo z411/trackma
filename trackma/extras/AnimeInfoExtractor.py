@@ -14,16 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import subprocess
-import threading
 import re
-import time
-import os
 from decimal import Decimal
-import difflib
-
-import messenger
-import utils
 
 class AnimeInfoExtractor(object):
     """
@@ -56,6 +48,12 @@ class AnimeInfoExtractor(object):
 
     def getEpisodeNumbers(self):
         return self.episodeStart, self.episodeEnd
+
+    def getEpisode(self):
+        ep = self.episodeStart if self.episodeEnd == '' else self.episodeEnd
+        ep = ep if ep != '' else '1'
+
+        return int(ep)
 
     def __extractExtension(self, filename):
         m = re.search("\.(\w{3})$", filename)
@@ -308,193 +306,3 @@ class AnimeInfoExtractor(object):
         # Strip any trailing opening brackets
         filename = filename.rstrip('([{')
         self.__extractShowName(filename)
-
-class Tracker(object):
-    msg = None
-    active = True
-    list = None
-    last_show_tuple = None
-    last_filename = None
-    
-    name = 'Tracker'
-
-    signals = { 'playing' : None,
-                'update': None, }
-
-    def __init__(self, messenger, tracker_list, process_name, interval, update_wait):
-        self.msg = messenger
-        self.msg.info(self.name, 'Initializing...')
-    
-        self.list = tracker_list
-        #self.interval = interval
-        #self.update_wait = update_wait
-        self.process_name = process_name
-        
-        tracker_args = (interval, update_wait)
-        tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
-        tracker_t.daemon = True
-        self.msg.debug(self.name, 'Enabling tracker...')
-        tracker_t.start()
-    
-    def set_message_handler(self, message_handler):
-        """Changes the message handler function on the fly."""
-        self.msg = message_handler
-     
-    def disable(self):
-        self.active = False
-    
-    def enable(self):
-        self.active = True
-    
-    def update_list(self, tracker_list):
-        self.list = tracker_list
-    
-    def connect_signal(self, signal, callback):
-        try:
-            self.signals[signal] = callback
-        except KeyError:
-            raise utils.EngineFatal("Invalid signal.")
-
-    def _emit_signal(self, signal, *args):
-        try:
-            if self.signals[signal]:
-                self.signals[signal](*args)
-        except KeyError:
-            raise Exception("Call to undefined signal.")
-
-    def _get_playing_file(self, players):
-        lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
-        output = lsof.communicate()[0].decode('utf-8')
-        fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
-        
-        for line in output.splitlines():
-            match = fileregex.match(line)
-            if match is not None:
-                return os.path.basename(match.group(1))
-        
-        return False
-
-    def _analyze(self, filename):
-        aie = AnimeInfoExtractor(filename)
-        epStart, epEnd = aie.getEpisodeNumbers()
-        ep = epStart if epEnd == '' else epEnd
-        ep = ep if ep != '' else '1'
-
-        return (aie.getName(), int(ep))
-    
-    def _tracker(self, interval, wait):
-        last_state = None
-        last_time = 0
-        last_updated = False
-        wait_s = wait * 60
-        
-        while True:
-            # This runs the tracker and returns the playing show, if any
-            (state, show_tuple) = self._iteration()
-
-            if show_tuple:
-                (show, episode) = show_tuple
-                
-                if not self.last_show_tuple or show['id'] != self.last_show_tuple[0]['id'] or episode != self.last_show_tuple[1]:
-                    # There's a new show detected, so
-                    # let's save the show information and
-                    # the time we detected it first
-                    
-                    # But if we're watching a new show, let's make sure turn off
-                    # the Playing flag on that one first
-                    if self.last_show_tuple and self.last_show_tuple[0] != show:
-                        self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
- 
-                    self.last_show_tuple = (show, episode)
-                    self._emit_signal('playing', show['id'], True, episode)
- 
-                    last_time = time.time()
-                    last_updated = False
-                
-                if not last_updated:
-                    # Check if we need to update the show yet
-                    if episode == (show['my_progress'] + 1):
-                        timedif = time.time() - last_time
-                        
-                        if timedif > wait_s:
-                            # Time has passed, let's update
-                            self._emit_signal('update', show['id'], episode)
-                            
-                            last_updated = True
-                        else:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, wait_s-timedif))
-                    else:
-                        # We shouldn't update to this episode!
-                        self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
-                        last_updated = True
-                else:
-                    # The episode was updated already. do nothing
-                    pass
-            elif last_state != state:
-                # React depending on state
-                # 1 : No video is playing anymroe
-                # 2 : There's a new video playing but the regex didn't recognize the format
-                # 3 : There's a new video playing but an associated show wasn't found
-                if state == 1 and self.last_show_tuple and not last_updated:
-                    self.msg.info(self.name, 'Player was closed before update.')
-                elif state == 2:
-                    self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-                elif state == 3:
-                    self.msg.warn(self.name, 'Found player but show not in list.')
-                
-                # Clear any show previously playing
-                if self.last_show_tuple:
-                    self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
-                    last_updated = False
-                    last_time = 0
-                    self.last_show_tuple = None
-            
-            last_state = state
-            
-            # Wait for the interval before running check again
-            time.sleep(interval)
-    
-    def _iteration(self):
-        if not self.active:
-            # Don't do anything if the Tracker is disabled
-            return (1, None)
-        
-        filename = self._get_playing_file(self.process_name)
-        
-        if filename:
-            if filename == self.last_filename:
-                # It's the exact same filename, there's no need to do the processing again
-                return (4, self.last_show_tuple)
-            
-            self.last_filename = filename
-
-            # Do a regex to the filename to get
-            # the show title and episode number
-            (show_title, show_ep) = self._analyze(filename)
-            if not show_title:
-                return (2, None) # Format not recognized
-            
-            # Use difflib to see if the show title is similar to
-            # one we have in the list
-            highest_ratio = (None, 0)
-            matcher = difflib.SequenceMatcher()
-            matcher.set_seq1(show_title.lower())
-            
-            # Compare to every show in our list to see which one
-            # has the most similar name
-            for item in self.list:
-                # Make sure to search through all the aliases
-                for title in item['titles']:
-                    matcher.set_seq2(title.lower())
-                    ratio = matcher.ratio()
-                    if ratio > highest_ratio[1]:
-                        highest_ratio = (item, ratio)
-            
-            playing_show = highest_ratio[0]
-            if highest_ratio[1] > 0.7:
-                return (0, (playing_show, show_ep))
-            else:
-                return (3, None) # Show not in list
-        else:
-            self.last_filename = None
-            return (1, None) # Not playing

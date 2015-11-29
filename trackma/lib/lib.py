@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import wmal.utils as utils
+import trackma.utils as utils
 
 class lib(object):
     """
-    Base interface for creating API implementations for wMAL.
+    Base interface for creating API implementations for Trackma.
 
     messenger: Messenger object to send useful messages to
     mediatype: String containing the media type to be used
@@ -26,20 +26,20 @@ class lib(object):
     name = 'lib'
     version = 'dummy'
     msg = None
-    
+
     api_info = { 'name': 'BaseAPI', 'version': 'undefined', 'merge': False }
     """
     api_info is a dictionary containing useful information about the API itself
     name: API name
     version: API version
     """
-    
+
     mediatypes = dict()
     """
     mediatypes is a dictionary containing the possible mediatypes for the current API.
     An example mediatype should look like this:
     ::
-    
+
         mediatypes['anime'] = {
             'has_progress': True,
             'can_add': True,
@@ -53,47 +53,57 @@ class lib(object):
             'statuses':  [1, 2, 3, 4, 6],
             'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
         }
-    
+
     """
-    
+
     default_mediatype = None
 
     # Supported signals for the data handler
-    signals = { 'show_info_changed': None, }
-    
+    signals = {
+            'show_info_changed': None,
+            'userconfig_changed': None,
+    }
+
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
+        self.userconfig = userconfig
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
-        
+
         if not userconfig.get('mediatype'):
             userconfig['mediatype'] = self.default_mediatype
-        
+
         if userconfig['mediatype'] in self.mediatypes:
             self.mediatype = userconfig['mediatype']
         else:
             raise utils.APIFatal('Unsupported mediatype %s.' % userconfig['mediatype'])
-        
+
         self.api_info['mediatype'] = self.mediatype
         self.api_info['supported_mediatypes'] = self.mediatypes.keys()
 
-    def _emit_signal(self, signal, args=None):
+    def _emit_signal(self, signal, *args):
         try:
             if self.signals[signal]:
-                self.signals[signal](args)
+                self.signals[signal](*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
+
+    def _get_userconfig(self, key):
+        return self.userconfig.get(key)
+
+    def _set_userconfig(self, key, value):
+        self.userconfig[key] = value
 
     def connect_signal(self, signal, callback):
         try:
             self.signals[signal] = callback
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
-        
+
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
         raise NotImplementedError
-    
+
     def fetch_list(self):
         """
         Fetches the remote list and returns a dictionary of show dictionaries.
@@ -102,13 +112,13 @@ class lib(object):
         You can create an empty show dictionary with the :func:`utils.show` function.
         """
         raise NotImplementedError
-    
+
     def add_show(self, item):
         """
         Adds the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
         """
         raise NotImplementedError
-    
+
     def update_show(self, item):
         """
         Sends the updates of a show to the remote site.
@@ -119,13 +129,13 @@ class lib(object):
 
         """
         raise NotImplementedError
-    
+
     def delete_show(self, item):
         """
         Deletes the **item** in the remote server list. The **item** is a show dictionary passed by the Data Handler.
         """
         raise NotImplementedError
-        
+
     def search(self, criteria):
         """
         Called when the data handler needs a detailed list of shows from the remote server.
@@ -133,20 +143,20 @@ class lib(object):
         containing any additional detailed information about the show.
         """
         raise NotImplementedError
-    
-    def request_info(self, ids):
+
+    def request_info(self, items):
         # Request detailed information for requested shows
         raise NotImplementedError
-    
+
     def logout(self):
         # This is called whenever the API won't be required
         # for a good while
         pass
-        
+
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
-        
+
     def set_message_handler(self, message_handler):
         self.msg = message_handler
-    
+

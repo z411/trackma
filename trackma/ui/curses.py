@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,55 +14,61 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-try:
-    import urwid.curses_display
-except ImportError:
-    pass
-
-import urwid
-import re
 import sys
+
+try:
+    import urwid
+except ImportError:
+    print ("urwid not found. Make sure you installed the "
+           "urwid package.")
+    sys.exit(-1)
+
+import re
+import urwid
 import webbrowser
 
-from wmal.engine import Engine
-from wmal.accounts import AccountManager
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
 
-import wmal.messenger as messenger
-import wmal.utils as utils
+import trackma.messenger as messenger
+import trackma.utils as utils
 
 from operator import itemgetter
 from itertools import cycle
 
-class wMAL_urwid(object):
+class Trackma_urwid(object):
     """
-    Main class for the urwid version of wMAL
+    Main class for the urwid version of Trackma
     """
-    
+
     """Main objects"""
     engine = None
     mainloop = None
     cur_sort = 'title'
     sorts_iter = cycle(('my_progress', 'total', 'my_score', 'id', 'title'))
+    cur_order = False
+    orders_iter = cycle((True, False))
     keymapping = dict()
     positions = list()
     last_search = None
-    
+    last_update_prompt = ()
+
     """Widgets"""
     header = None
     listbox = None
     view = None
-    
+
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-        
+
         palette = [
         ('body','', ''),
         ('focus','standout', ''),
         ('head','light red', 'black'),
         ('header','bold', ''),
-        ('status', 'yellow', 'dark blue'),
+        ('status', 'white', 'dark blue'),
         ('error', 'light red', 'dark blue'),
-        ('window', 'yellow', 'dark blue'),
+        ('window', 'white', 'dark blue'),
         ('button', 'black', 'light gray'),
         ('button hilight', 'white', 'dark red'),
         ('item_airing', 'dark blue', ''),
@@ -73,22 +79,23 @@ class wMAL_urwid(object):
         ('info_title', 'light red', ''),
         ('info_section', 'dark blue', ''),
         ]
-        
+
         keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
         self.keymapping = self.map_key_to_func(keymap)
-        
-        sys.stdout.write("\x1b]0;wMAL-curses "+utils.VERSION+"\x07");
-        self.header_title = urwid.Text('wMAL-curses ' + utils.VERSION)
+
+        sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
+        self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
+	self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
             ('fixed', 23, self.header_filter),
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
-        
-        
+
+
         top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
                    keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
                    keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
@@ -96,34 +103,35 @@ class wMAL_urwid(object):
         self.top_pile = urwid.Pile([self.header,
             urwid.AttrMap(urwid.Text(top_text), 'status')
         ])
-        
-        self.statusbar = urwid.AttrMap(urwid.Text('wMAL-curses '+utils.VERSION), 'status')
-        
+
+        self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
+
         self.listheader = urwid.AttrMap(
             urwid.Columns([
                 ('weight', 1, urwid.Text('Title')),
                 ('fixed', 10, urwid.Text('Progress')),
                 ('fixed', 7, urwid.Text('Score')),
             ]), 'header')
-        
+
         self.listwalker = ShowWalker([])
         self.listbox = urwid.ListBox(self.listwalker)
         self.listframe = urwid.Frame(self.listbox, header=self.listheader)
 
         self.viewing_info = False
-            
+
         self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
-        
+
         self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
-        
+
     def map_key_to_func(self, keymap):
         keymapping = dict()
-        funcmap = { 'help': self.do_help, 
+        funcmap = { 'help': self.do_help,
                     'prev_filter': self.do_prev_filter,
                     'next_filter': self.do_next_filter,
                     'sort': self.do_sort,
+		    'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
                     'status': self.do_status,
@@ -142,7 +150,7 @@ class wMAL_urwid(object):
                     'details_exit': self.do_info_exit,
                     'open_web': self.do_open_web,
                     }
-        
+
         for key, value in keymap.items():
             try:
                 keymapping.update({value: funcmap[key]})
@@ -150,33 +158,47 @@ class wMAL_urwid(object):
                 # keymap.json requested an action not available in funcmap
                 pass
         return keymapping
-    
+
     def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
         self.lists = dict()
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
-        
+
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
-        self._rebuild_all_lists()
+        self._rebuild_lists()
         self.set_filter(0)
 
         self.status('Ready.')
-    
-    def _rebuild_all_lists(self):
-        for status in self.lists.keys():
+        self.started = True
+
+    def _rebuild_lists(self, status=None):
+        if status:
             self.lists[status].body[:] = []
-        
-        showlist = self.engine.get_list()
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
+            showlist = self.engine.filter_list(status)
+        else:
+            for _status in self.lists.keys():
+                self.lists[_status].body[:] = []
+            showlist = self.engine.get_list()
+
+        library = self.engine.library()
+        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
+
         for show in sortedlist:
-            self.lists[show['my_status']].body.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
-     
+            if show['my_status'] == self.engine.mediainfo['status_start']:
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
+            else:
+                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
+
+            self.lists[show['my_status']].body.append(item)
+
     def start(self, account):
         """Starts the engine"""
         # Engine configuration
+        self.started = False
+
         self.status("Starting engine...")
         self.engine = Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
@@ -186,12 +208,13 @@ class wMAL_urwid(object):
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
         self.engine.connect_signal('show_synced', self.changed_show)
+        self.engine.connect_signal('prompt_for_update', self.prompt_update)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
         self.engine.start()
         self._rebuild()
-    
+
     def set_filter(self, filter_num):
         self.cur_filter = filter_num
         _filter = self.filters_nums[self.cur_filter]
@@ -203,16 +226,6 @@ class wMAL_urwid(object):
         _filter = self.filters_nums[self.cur_filter]
         return self.lists[_filter].body
 
-    def _rebuild_list(self, filter_num):
-        w = self.lists[filter_num].body
-
-        self.lists[filter_num].body[:] = []
-        
-        showlist = self.engine.filter_list(filter_num)
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort))
-        for show in sortedlist:
-            w.append(ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id'])))
-    
     def _get_selected_item(self):
         return self._get_cur_list().get_focus()[0]
 
@@ -221,7 +234,7 @@ class wMAL_urwid(object):
 
     def error(self, msg):
         self.statusbar.base_widget.set_text([('error', "Error: %s" % msg)])
-        
+
     def message_handler(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
             try:
@@ -229,7 +242,7 @@ class wMAL_urwid(object):
                 self.mainloop.draw_screen()
             except AssertionError:
                 print(msg)
-        
+
     def keystroke(self, input):
         try:
             self.keymapping[input]()
@@ -239,7 +252,7 @@ class wMAL_urwid(object):
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
-        
+
         if self.engine is None:
             if manager.get_default():
                 self.start(manager.get_default())
@@ -249,13 +262,13 @@ class wMAL_urwid(object):
         else:
             self.dialog = AccountDialog(self.mainloop, manager, True)
             urwid.connect_signal(self.dialog, 'done', self.do_reload_engine)
-        
+
     def do_addsearch(self):
         self.ask('Search on remote: ', self.addsearch_request)
-    
+
     def do_delete(self):
         self.question('Delete selected show? [y/n] ', self.delete_request)
-        
+
     def do_prev_filter(self):
         if self.cur_filter > 0:
             self.set_filter(self.cur_filter - 1)
@@ -269,19 +282,26 @@ class wMAL_urwid(object):
         _sort = self.sorts_iter.next()
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
-        self._rebuild_all_lists()
+        self._rebuild_lists()
         self.status("Ready.")
-    
+
+    def change_sort_order(self):
+    	self.status("Sorting...")
+	_order = self.orders_iter.next()
+	self.cur_order = _order
+	self._rebuild_lists()
+	self.status("Ready.")
+
     def do_update(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
-        
+
     def do_play(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
-    
+
     def do_send(self):
         self.engine.list_upload()
         self.status("Ready.")
@@ -289,27 +309,27 @@ class wMAL_urwid(object):
     def do_retrieve(self):
         try:
             self.engine.list_download()
-            self._rebuild_all_lists()
+            self._rebuild_lists()
             self.status("Ready.")
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
-    
+
     def do_help(self):
-        helptext = "wMAL-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
-        helptext += "wMAL is an open source client for media tracking websites.\n"
-        helptext += "http://github.com/z411/wmal-python\n\n"
+        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext += "Trackma is an open source client for media tracking websites.\n"
+        helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
-        helptext += "More controls:\n  Left/Right:View status\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
+        helptext += "More controls:\n  Left/Right:Change Filter\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
+        helptext += "  d:Delete\n  s:Send changes\n  r:Change sort order\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
         self.dialog = Dialog(pile, self.mainloop, width=62, title='About/Help')
         self.dialog.show()
-    
+
     def help_close(self, widget):
         self.dialog.close()
-    
+
     def do_altname(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
@@ -320,11 +340,11 @@ class wMAL_urwid(object):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
-        
+
     def do_status(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
-        
+
         buttons = list()
         num = 1
         selected = 1
@@ -343,7 +363,7 @@ class wMAL_urwid(object):
         pile.set_focus(selected)
         self.dialog = Dialog(pile, self.mainloop, width=22)
         self.dialog.show()
-        
+
     def do_reload(self):
         # Create a list of buttons to select the mediatype
         rb_mt = []
@@ -356,21 +376,22 @@ class wMAL_urwid(object):
             urwid.connect_signal(but, 'change', self.reload_request, [None, mediatype])
             mediatypes.append(urwid.AttrMap(but, 'button', 'button hilight'))
         mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
-        
+
         #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
         self.dialog = Dialog(mediatype, self.mainloop, width=30, title='Change media type')
         self.dialog.show()
-    
+
     def do_reload_engine(self, account=None, mediatype=None):
+        self.started = False
         self.engine.reload(account, mediatype)
         self._rebuild()
-    
+
     def do_open_web(self):
         showid = self._get_selected_item().showid
         show = self.engine.get_show_info(showid)
         if show['url']:
             webbrowser.open(show['url'], 2, True)
- 
+
     def do_info(self):
         if self.viewing_info:
             return
@@ -382,10 +403,10 @@ class wMAL_urwid(object):
 
         try:
             details = self.engine.get_show_details(show)
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
             return
- 
+
         title = urwid.Text( ('info_title', show['title']), 'center', 'any')
         widgets = []
         for line in details['extra']:
@@ -399,11 +420,11 @@ class wMAL_urwid(object):
                     linestr = line[1]
 
                 widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
-        
+
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
         self.status("Detail View | ESC:Return  Up/Down:Scroll  O:View website")
-    
+
     def do_info_exit(self):
         if self.viewing_info:
             self.view.body = self.listframe
@@ -412,26 +433,23 @@ class wMAL_urwid(object):
 
     def do_neweps(self):
         try:
-            _filter = self.filters_nums[self.cur_filter]
-            filtered = self.engine.filter_list(_filter)
-
-            shows = self.engine.get_new_episodes(filtered)
-            self._rebuild()
+            shows = self.engine.scan_library()
+            self._rebuild_lists(self.engine.mediainfo['status_start'])
 
             self.status("Ready.")
-        except utils.wmalError, e:
+        except utils.TrackmaError, e:
             self.error(e.message)
 
     def do_quit(self):
         self.engine.unload()
         raise urwid.ExitMainLoop()
-    
+
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)
         if data:
             try:
                 shows = self.engine.search(data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
@@ -442,65 +460,65 @@ class wMAL_urwid(object):
                 self.dialog.show()
             else:
                 self.status("No results.")
-    
+
     def addsearch_do(self, show):
         self.dialog.close()
         # Add show as current status
-        show['my_status'] = self.filters_nums[self.cur_filter]
+        _filter = self.filters_nums[self.cur_filter]
         try:
-            self.engine.add_show(show)
-        except utils.wmalError, e:
+            self.engine.add_show(show, _filter)
+        except utils.TrackmaError, e:
             self.error(e.message)
-        
+
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
         if data == 'y':
             showid = self._get_selected_item().showid
             show = self.engine.get_show_info(showid)
-            
+
             try:
                 show = self.engine.delete_show(show)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
-        
-    def status_request(self, widget, data):
+
+    def status_request(self, widget, data=None):
         self.dialog.close()
-        if data:
+        if data is not None:
             item = self._get_selected_item()
-            
+
             try:
                 show = self.engine.set_status(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
-    
+
     def reload_request(self, widget, selected, data):
         if selected:
             self.dialog.close()
             self.do_reload_engine(data[0], data[1])
-    
+
     def update_request(self, data):
         self.ask_finish(self.update_request)
         if data:
             item = self._get_selected_item()
-            
+
             try:
                 show = self.engine.set_episode(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
-    
+
     def score_request(self, data):
         self.ask_finish(self.score_request)
         if data:
             item = self._get_selected_item()
-            
+
             try:
                 show = self.engine.set_score(item.showid, data)
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
-    
+
     def altname_request(self, data):
         self.ask_finish(self.altname_request)
         if data:
@@ -509,7 +527,7 @@ class wMAL_urwid(object):
             try:
                 self.engine.altname(item.showid, data)
                 item.update_altname(self.engine.altname(item.showid))
-            except utils.wmalError, e:
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
 
@@ -518,44 +536,42 @@ class wMAL_urwid(object):
         if data:
             item = self._get_selected_item()
             show = self.engine.get_show_info(item.showid)
-            
+
             try:
-                played_episode = self.engine.play_episode(show, data)
-            except utils.wmalError, e:
+                self.engine.play_episode(show, data)
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
-            
-            if played_episode == (show['my_progress'] + 1):
-                self.question("Update %s to episode %d? [y/N] " % (show['title'], played_episode), self.update_next_request)
-            else:
-                self.status('Ready.')
-    
-    def update_next_request(self, data):
-        self.ask_finish(self.update_next_request)
+
+            self.status('Ready.')
+
+    def prompt_update_request(self, data):
+        (show, episode) = self.last_update_prompt
+        self.ask_finish(self.prompt_update_request)
         if data == 'y':
-            item = self._get_selected_item()
-            show = self.engine.get_show_info(item.showid)
-            next_episode = show['my_progress'] + 1
-            
             try:
-                show = self.engine.set_episode(item.showid, next_episode)
-            except utils.wmalError, e:
+                show = self.engine.set_episode(show['id'], episode)
+            except utils.TrackmaError, e:
                 self.error(e.message)
                 return
         else:
             self.status('Ready.')
-    
-    def changed_show(self, show):
-        if show:
+
+    def prompt_update(self, show, episode):
+        self.last_update_prompt = (show, episode)
+        self.question("Update %s to episode %d? [y/N] " % (show['title'], episode), self.prompt_update_request)
+
+    def changed_show(self, show, changes=None):
+        if self.started and show:
             status = show['my_status']
             self.lists[status].body.update_show(show)
             self.mainloop.draw_screen()
 
     def changed_show_status(self, show, old_status=None):
-        self._rebuild_list(show['my_status'])
-        if old_status:
-            self._rebuild_list(old_status)
-        
+        self._rebuild_lists(show['my_status'])
+        if old_status is not None:
+            self._rebuild_lists(old_status)
+
         go_filter = 0
         for _filter in self.filters_nums:
             if _filter == show['my_status']:
@@ -569,27 +585,27 @@ class wMAL_urwid(object):
         status = show['my_status']
         self.lists[status].body.playing_show(show, is_playing)
         self.mainloop.draw_screen()
-    
+
     def changed_list(self, show):
-        self._rebuild_list(show['my_status'])
-        
+        self._rebuild_lists(show['my_status'])
+
     def ask(self, msg, callback, data=u''):
         self.asker = Asker(msg, str(data))
         self.view.set_footer(urwid.AttrMap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', callback)
-    
+
     def question(self, msg, callback, data=u''):
         self.asker = QuestionAsker(msg, str(data))
         self.view.set_footer(urwid.AttrMap(self.asker, 'status'))
         self.view.set_focus('footer')
         urwid.connect_signal(self.asker, 'done', callback)
-    
+
     def ask_finish(self, callback):
         self.view.set_focus('body')
         urwid.disconnect_signal(self, self.asker, 'done', callback)
         self.view.set_footer(self.statusbar)
-    
+
     def do_search(self, key=''):
         if self.last_search:
             text = "Search forward [%s]: " % self.last_search
@@ -598,18 +614,18 @@ class wMAL_urwid(object):
 
         self.ask(text, self.search_request, key)
         #urwid.connect_signal(self.asker, 'change', self.search_live)
-        
+
     #def search_live(self, widget, data):
     #    if data:
     #        self.listwalker.select_match(data)
-        
+
     def search_request(self, data):
         self.ask_finish(self.search_request)
         if data:
             self.last_search = data
             self._get_cur_list().select_match(data)
         elif self.last_search:
-            self._get_cur_list().select_match(self.last_search) 
+            self._get_cur_list().select_match(self.last_search)
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
@@ -621,13 +637,13 @@ class Dialog(urwid.Overlay):
                 width=width,
                 valign="middle",
                 height=height)
-    
+
     def show(self):
         self.loop.widget = self
-        
+
     def close(self):
         self.loop.widget = self.oldwidget
-        
+
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'enter'):
             self.widget.keypress(size, key)
@@ -637,7 +653,7 @@ class Dialog(urwid.Overlay):
 class AddDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
-    
+
     def __init__(self, loop, engine, showlist={}, width=30):
         self.viewing_info = False
         self.engine = engine
@@ -648,18 +664,18 @@ class AddDialog(Dialog):
                 ('fixed', 10, urwid.Text('Type')),
                 ('fixed', 7, urwid.Text('Total')),
             ])
-        
+
         self.listwalker = urwid.SimpleListWalker([])
         self.listbox = urwid.ListBox(self.listwalker)
-        
+
         # Add results to the list
         for show in showlist:
             self.listwalker.append(SearchItem(show))
-        
+
         self.info_txt = urwid.Text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
         self.frame = urwid.Frame(self.listbox, header=self.listheader, footer=self.info_txt)
         self.__super.__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
-    
+
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
             self.widget.keypress(size, key)
@@ -697,12 +713,12 @@ class AddDialog(Dialog):
                     linestr = line[1]
 
                 widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
-        
+
         self.frame.body = urwid.ListBox(widgets)
         self.frame.header = title
         self.viewing_info = True
         self.info_txt.set_text("Detail View | ESC:Return  Up/Down:Scroll  O:View website")
-    
+
     def do_info_exit(self):
         if self.viewing_info:
             self.frame.body = self.listbox
@@ -711,34 +727,34 @@ class AddDialog(Dialog):
             self.viewing_info = False
         else:
             self.close()
- 
+
 class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
     adding_data = dict()
-    
+
     def __init__(self, loop, manager, switch=False, width=50):
         self.switch = switch
         self.manager = manager
-        
+
         listheader = urwid.Columns([
                 ('weight', 1, urwid.Text('Username')),
                 ('fixed', 15, urwid.Text('Site')),
             ])
-        
+
         self.listwalker = urwid.SimpleListWalker([])
         listbox = urwid.ListBox(self.listwalker)
-        
+
         self.build_list()
-              
+
         self.foot = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
         self.frame = urwid.Frame(listbox, header=listheader, footer=self.foot)
         self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
-        
+
         self.adding = False
 
         self.show()
-    
+
     def build_list(self):
         self.listwalker[:] = []
 
@@ -757,7 +773,7 @@ class AccountDialog(Dialog):
             if key == 'enter':
                 self.do_select(False)
             elif key == 'a':
-                self.do_add_username()
+                self.do_add_api()
             elif key == 'r':
                 self.do_select(True)
             elif key == 'D':
@@ -768,28 +784,42 @@ class AccountDialog(Dialog):
                     raise urwid.ExitMainLoop()
             else:
                 self.widget.keypress(size, key)
-    
-    def do_add_username(self):
+
+    def do_add_api(self):
         self.adding = True
-        ask = Asker("Username: ")
+        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+        ask = Asker("API (%s): " % available_libs)
         self.frame.footer = ask
         self.frame.set_focus('footer')
+        urwid.connect_signal(ask, 'done', self.do_add_username)
+
+    def do_add_username(self, data):
+        self.adding_data['apiname'] = data
+        try:
+            self.adding_data['api'] = api = utils.available_libs[data]
+        except KeyError:
+            self.adding = False
+            self.frame.footer = urwid.Text("Error: Invalid API.")
+            self.frame.set_focus('body')
+            return
+
+        if api[2] == utils.LOGIN_OAUTH:
+            ask = Asker("Account name: ")
+        else:
+            ask = Asker("Username: ")
+        self.frame.footer = ask
         urwid.connect_signal(ask, 'done', self.do_add_password)
 
     def do_add_password(self, data):
         self.adding_data['username'] = data
-        ask = Asker("Password: ")
-        self.frame.footer = ask
-        urwid.connect_signal(ask, 'done', self.do_add_api)
-
-    def do_add_api(self, data):
-        self.adding_data['password'] = data
-
-        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
-        ask = Asker("API (%s): " % available_libs)
+        if self.adding_data['api'][2] == utils.LOGIN_OAUTH:
+            ask = Asker("Please go to the following URL and paste the PIN.\n"
+                        "{0}\nPIN: ".format(self.adding_data['api'][3]))
+        else:
+            ask = Asker("Password: ")
         self.frame.footer = ask
         urwid.connect_signal(ask, 'done', self.do_add)
-    
+
     def do_delete_ask(self):
         self.adding = True
         ask = QuestionAsker("Do you want to delete this account? [y/n] ")
@@ -807,8 +837,8 @@ class AccountDialog(Dialog):
 
     def do_add(self, data):
         username = self.adding_data['username']
-        password = self.adding_data['password']
-        api = data
+        password = data
+        api = self.adding_data['apiname']
 
         try:
             self.manager.add_account(username, password, api)
@@ -825,7 +855,7 @@ class AccountDialog(Dialog):
         self.adding = False
         self.frame.footer = self.foot
         self.frame.set_focus('body')
-    
+
     def do_select(self, remember):
         accountitem = self.listwalker.get_focus()[0]
         if remember:
@@ -845,13 +875,13 @@ class AccountItem(urwid.WidgetWrap):
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
         self.__super.__init__(w)
-    
+
     def selectable(self):
         return True
 
     def keypress(self, size, key):
         return key
-    
+
 class SearchItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
         self.show = show
@@ -862,13 +892,13 @@ class SearchItem(urwid.WidgetWrap):
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
         self.__super.__init__(w)
-    
+
     def selectable(self):
         return True
 
     def keypress(self, size, key):
         return key
-    
+
 class ShowWalker(urwid.SimpleListWalker):
     def _get_showitem(self, showid):
         for i, item in enumerate(self):
@@ -876,7 +906,7 @@ class ShowWalker(urwid.SimpleListWalker):
                 return (i, item)
         #raise Exception('Show not found in ShowWalker.')
         return (None, None)
-    
+
     def highlight_show(self, show, tocolor):
         (position, showitem) = self._get_showitem(show['id'])
         showitem.highlight(tocolor)
@@ -888,7 +918,7 @@ class ShowWalker(urwid.SimpleListWalker):
             return True
         else:
             return False
-    
+
     def playing_show(self, show, is_playing):
         (position, showitem) = self._get_showitem(show['id'])
         if showitem:
@@ -902,7 +932,7 @@ class ShowWalker(urwid.SimpleListWalker):
         (position, showitem) = self._get_showitem(show['id'])
         if showitem:
             self.set_focus(position)
-    
+
     def select_match(self, searchstr):
         pos = self.get_focus()[1]
         for i, item in enumerate(self):
@@ -911,14 +941,19 @@ class ShowWalker(urwid.SimpleListWalker):
             if re.search(searchstr, item.showtitle, re.I):
                 self.set_focus(i)
                 break
-    
+
 class ShowItem(urwid.WidgetWrap):
-    def __init__(self, show, has_progress=True, altname=None):
+    def __init__(self, show, has_progress=True, altname=None, eps=None):
         if has_progress:
             self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
         else:
             self.episodes_str = urwid.Text("-")
-        
+
+        if eps:
+            self.eps = eps.keys()
+        else:
+            self.eps = None
+
         self.score_str = urwid.Text("{0:^5}".format(show['my_score']))
         self.has_progress = has_progress
         self.playing = False
@@ -936,36 +971,36 @@ class ShowItem(urwid.WidgetWrap):
             ('fixed', 10, self.episodes_str),
             ('fixed', 7, self.score_str),
         ]
-        
+
         # If the show should be highlighted, do it
         # otherwise color it according to its status
         if self.playing:
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'
-        elif show.get('neweps'):
+        elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
-        elif show['status'] == 1:
+        elif show['status'] == utils.STATUS_AIRING:
             self.color = 'item_airing'
-        elif show['status'] == 3:
+        elif show['status'] == utils.STATUS_NOTYET:
             self.color = 'item_notaired'
         else:
             self.color = 'body'
-        
+
         self.m = urwid.AttrMap(urwid.Columns(self.item), self.color, 'focus')
-        
+
         self.__super.__init__(self.m)
-    
+
     def get_showid(self):
         return self.showid
-    
+
     def update(self, show):
         if show['id'] == self.showid:
             # Update progress
             if self.has_progress:
                 self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
-            
+
             # Update color
             self.highlight(show)
         else:
@@ -975,13 +1010,13 @@ class ShowItem(urwid.WidgetWrap):
         # Update title
         self.showtitle = "%s (%s)" % (self.show['title'], altname)
         self.title_str.set_text(self.showtitle)
-    
+
     def highlight(self, show):
         if self.playing:
             self.color = 'item_playing'
         elif show.get('queued'):
             self.color = 'item_updated'
-        elif show.get('neweps'):
+        elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
         elif show['status'] == 1:
             self.color = 'item_airing'
@@ -989,7 +1024,7 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_notaired'
         else:
             self.color = 'body'
-        
+
         self.m.set_attr_map({None: self.color})
 
     def selectable(self):
@@ -997,7 +1032,7 @@ class ShowItem(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         return key
-    
+
 
 class Asker(urwid.Edit):
     __metaclass__ = urwid.signals.MetaSignals
@@ -1017,9 +1052,9 @@ class QuestionAsker(Asker):
     def keypress(self, size, key):
         if key.lower() in 'yn':
             urwid.emit_signal(self, 'done', key.lower())
-    
+
 def main():
     try:
-        wMAL_urwid()
-    except utils.wmalFatal, e:
+        Trackma_urwid()
+    except utils.TrackmaFatal, e:
         print "Fatal error: %s" % e.message

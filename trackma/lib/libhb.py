@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from wmal.lib.lib import lib
-import wmal.utils as utils
+from trackma.lib.lib import lib
+import trackma.utils as utils
+import datetime
 
 import urllib, urllib2
 import json
@@ -28,18 +28,18 @@ class libhb(lib):
     Should inherit a base library interface.
 
     Website: http://hummingbird.me/
-    API documentation: 
-    Designed by: 
+    API documentation:
+    Designed by:
 
     """
     name = 'libhb'
-    
+
     username = '' # TODO Must be filled by check_credentials
     auth = ''
     logged_in = False
-    
-    api_info =  { 'name': 'Hummingbird', 'version': 'v0.2', 'merge': False }
-    
+
+    api_info =  { 'name': 'Hummingbird', 'shortname': 'hb', 'version': 'v0.2', 'merge': False }
+
     default_mediatype = 'anime'
     mediatypes = dict()
     mediatypes['anime'] = {
@@ -50,30 +50,30 @@ class libhb(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'status_start': 1,
-        'status_finish': 2,
+        'status_start': 'currently-watching',
+        'status_finish': 'completed',
         'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],
         'statuses_dict': { 'currently-watching': 'Watching', 'completed': 'Completed', 'on-hold': 'On Hold', 'dropped': 'Dropped', 'plan-to-watch': 'Plan to Watch' },
-        'score_max': 10,
-        'score_decimals': 1,
+        'score_max': 5,
+        'score_step': 0.5,
     }
-    
-    url = "https://hummingbirdv1.p.mashape.com"
-    mashape_auth = "DJO7uQdZPu1gNfQWWwVHtS7xt8JhJSDf"
-    
+
+    url = "http://hummingbird.me/api/v1"
+
+    status_translate = {'Currently Airing': utils.STATUS_AIRING,
+            'Finished Airing': utils.STATUS_FINISHED,
+            'Not Yet Aired': utils.STATUS_NOTYET}
+
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
-        # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
-        # together with the urllib2 opener.
         super(libhb, self).__init__(messenger, account, userconfig)
-        
+
         self.username = account['username']
         self.password = account['password']
 
         # Build opener with the mashape API key
         self.opener = urllib2.build_opener()
-        self.opener.addheaders = [('X-Mashape-Authorization', self.mashape_auth)]
-        
+
     def _request(self, url, get=None, post=None):
         if get:
             url += "?%s" % urllib.urlencode(get)
@@ -82,48 +82,56 @@ class libhb(lib):
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.URLError, e:
-            raise utils.APIError("Connection error: %s" % e) 
-   
+        except urllib2.HTTPError, e:
+            if e.code == 401:
+                raise utils.APIError("Incorrect credentials.")
+            else:
+                raise utils.APIError("Connection error: %s" % e)
+
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
         if self.logged_in:
             return True     # Already logged in
-        
+
         self.msg.info(self.name, 'Logging in...')
-        try:
-            response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
-            self.auth = response.strip('"')
-            self.logged_in = True
-            return True
-        except urllib2.HTTPError, e:
-            raise utils.APIError("Incorrect credentials.")
-   
+
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        self.auth = response.strip('"')
+        self._set_userconfig('username', self.username)
+        self.logged_in = True
+        return True
+
     def fetch_list(self):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
-        
+
         try:
-            # Get an XML list from MyAnimeList API
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
             shows = json.load(data)
-            
+
             showlist = dict()
             infolist = list()
+
             for show in shows:
-                slug = show['anime']['slug']
+                showid = show['anime']['id']
+                status = show['anime']['status']
+                rating = show['rating']['value']
                 epCount = show['anime']['episode_count']
                 alt_titles = []
 
                 if show['anime']['alternate_title'] is not None:
                     alt_titles.append(show['anime']['alternate_title'])
-                showlist[slug] = utils.show()
-                showlist[slug].update({
-                    'id': slug,
-                    'title': show['anime']['title'],
+                showlist[showid] = utils.show()
+                showlist[showid].update({
+                    'id': showid,
+                    'title': show['anime']['title'] or show['anime']['alternate_title'] or "",
+                    'status': self.status_translate[status],
+                    'start_date':   self._str2date( show['anime']['started_airing'] ),
+                    'end_date':     self._str2date( show['anime']['finished_airing'] ),
                     'my_progress': show['episodes_watched'],
+                    'my_score': float(rating) if rating is not None else 0.0,
                     'aliases': alt_titles,
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,
@@ -136,7 +144,7 @@ class libhb(lib):
             return showlist
         except urllib2.HTTPError, e:
             raise utils.APIError("Error getting list.")
-    
+
     def add_show(self, item):
         """Adds a new show in the server"""
         self.update_show(item)
@@ -145,7 +153,7 @@ class libhb(lib):
         """Sends a show update to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
-        
+
         # Send the POST data to the Hummingbird API
         values = {'auth_token': self.auth}
 
@@ -155,53 +163,65 @@ class libhb(lib):
         if 'my_status' in item.keys():
             values['status'] = item['my_status']
         if 'my_score' in item.keys():
-            values['rating'] = item['my_score']
+            values['sane_rating_update'] = item['my_score']
 
         try:
-            response = self._request("/libraries/%s" % item['id'], post=values)
-            return True
+            self._request("/libraries/%s" % item['id'], post=values)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error updating: ' + str(e.code))
-    
+
     def delete_show(self, item):
         """Sends a show delete to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
-        
+
         values = {'auth_token': self.auth}
         try:
-            response = self._request("/libraries/%s/remove" % item['id'], post=values)
-            return True
+            self._request("/libraries/%s/remove" % item['id'], post=values)
         except urllib2.HTTPError, e:
             raise utils.APIError('Error deleting: ' + str(e.code))
-    
+
     def search(self, query):
         self.msg.info(self.name, "Searching for %s..." % query)
-        
+
         values = {'query': query}
         try:
             data = self._request("/search/anime", get=values)
             shows = json.load(data)
-            
-            infolist = list()
+
+            infolist = []
             for show in shows:
                 info = self._parse_info(show)
                 info['my_status'] = 'currently-watching' # TODO : Default to watching; this should be changeable
                 infolist.append(info)
-                
+
             self._emit_signal('show_info_changed', infolist)
+
+            if not infolist:
+                raise utils.APIError('No results.')
+
             return infolist
         except urllib2.HTTPError, e:
             raise utils.APIError('Error searching: ' + str(e.code))
-        
+
+    def _str2date(self, string):
+        if string != '0000-00-00':
+            try:
+                return datetime.datetime.strptime(string, "%Y-%m-%d")
+            except:
+                return None # Ignore date if it's invalid
+        else:
+            return None
+
     def _parse_info(self, show):
         info = utils.show()
         alt_titles = []
         if show['alternate_title'] is not None:
             alt_titles.append(show['alternate_title'])
         info.update({
-            'id': show['slug'],
-            'title': show['title'],
+            'id': show['id'],
+            'title': show['title'] or show['alternate_title'] or "",
+            'status': self.status_translate[show['status']],
             'image': show['cover_image'],
             'url': show['url'],
             'aliases': alt_titles,
