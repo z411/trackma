@@ -316,7 +316,7 @@ gtk_defaults = {
     'remember_geometry': False,
     'last_width': 740,
     'last_height': 480,
-    'visible_columns': [],
+    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
@@ -344,6 +344,7 @@ qt_defaults = {
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
     'colors': {
@@ -358,4 +359,8 @@ qt_defaults = {
         'progress_sub_fg': '#5187B1',
         'progress_complete': '#00D200',
     },
+}
+
+qt_per_api_defaults = {
+    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
 }
