@@ -2,8 +2,10 @@ import utils
 import extras.AnimeInfoExtractor
 
 import cPickle
-import urllib
+import urllib2
 import xml.etree.ElementTree as ET
+import gzip
+from cStringIO import StringIO
 
 class Torrents(object):
     STATUS_NEXT_EPISODE = 1
@@ -16,7 +18,8 @@ class Torrents(object):
     name = 'Torrents'
 
     # Hardcoded for now
-    FEED_URL = "http://www.nyaa.se/?page=rss&cats=1_37"
+    #FEED_URL = "http://www.nyaa.se/?page=rss&cats=1_37"
+    FEED_URL = "http://tokyotosho.se/rss.php?filter=1&zwnj=0"
 
     def __init__(self, messenger, animelist, config):
         self.animelist = animelist
@@ -34,11 +37,23 @@ class Torrents(object):
             cPickle.dump(self.torrents, f)
 
     def _download_feed(self, url):
-        return ET.parse(urllib.urlopen(url)).getroot()
+        req = urllib2.Request(url)
+        req.add_header('Accept-Encoding', 'gzip')
+        response = urllib2.urlopen(req)
+
+        if response.info().get('content-encoding') == 'gzip':
+            stream = StringIO(response.read())
+            result = gzip.GzipFile(fileobj=stream)
+        else:
+            result = response
+
+        return ET.parse(result).getroot()
+        #return ET.parse(result)
 
     def _parse_feed(self, dom):
         items = []
-        for node in dom.iter('item'):
+        channel = dom.find('channel')
+        for node in channel.findall('item'):
             item = {}
             for child in node:
                 if child.tag == 'title':
@@ -80,7 +95,7 @@ class Torrents(object):
             aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(item['title'])
             (item_title, item_episode, item_group) = (aie.getName(), aie.getEpisode(), aie.subberTag)
 
-            #torrent['show_title'] = item_title
+            torrent['show_title'] = item_title
             torrent['show_episode'] = item_episode
             torrent['show_group'] = item_group
 
@@ -93,7 +108,7 @@ class Torrents(object):
 
             if show:
                 torrent['show_id'] = show['id']
-                torrent['show_title'] = show['title']
+                #torrent['show_title'] = show['title']
 
                 if item_episode == (show['my_progress'] + 1):
                     # Show found!
