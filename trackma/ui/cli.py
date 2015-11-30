@@ -385,10 +385,16 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_torrents(self, args):
         try:
-            self.engine.torrents()
+            next_episode, not_next_episode = self.engine.torrents()
+
+            print "New episodes:"
+            for item in next_episode:
+                print "{} ({})".format(item['filename'], item['url'])
+            print "Further episodes:"
+            for item in not_next_episode:
+                print "{} ({})".format(item['filename'], item['url'])
         except utils.TrackmaError, e:
             self.display_error(e)
-
 
     def do_play(self, args):
         """

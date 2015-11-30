@@ -786,5 +786,12 @@ class Engine:
         man = torrents.Torrents(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
         d = man.get_sorted_torrents()
 
+        next_episode = []
+        not_next_episode = []
         for item in d:
-            print repr(item)
+            if item['status'] == torrents.STATUS_NEXT_EPISODE:
+                next_episode.append(item)
+            elif item['status'] == torrents.STATUS_NOT_NEXT_EPISODE:
+                not_next_episode.append(item)
+
+        return (next_episode, not_next_episode)

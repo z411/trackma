@@ -7,13 +7,13 @@ import xml.etree.ElementTree as ET
 import gzip
 from cStringIO import StringIO
 
-class Torrents(object):
-    STATUS_NEXT_EPISODE = 1
-    STATUS_NOT_NEXT_EPISODE = 2
-    STATUS_WATCHED = 3
-    STATUS_NOT_FOUND = 4
-    STATUS_NOT_RECOGNIZED = 5
+STATUS_NEXT_EPISODE = 1
+STATUS_NOT_NEXT_EPISODE = 2
+STATUS_WATCHED = 3
+STATUS_NOT_FOUND = 4
+STATUS_NOT_RECOGNIZED = 5
 
+class Torrents(object):
     torrents = {}
     name = 'Torrents'
 
@@ -23,6 +23,7 @@ class Torrents(object):
 
     def __init__(self, messenger, animelist, config):
         self.animelist = animelist
+        self.msg = messenger
         utils.make_dir('')
         self.filename = utils.get_root_filename('torrents.dict')
         self._load()
@@ -51,7 +52,6 @@ class Torrents(object):
         #return ET.parse(result)
 
     def _parse_feed(self, dom):
-        items = []
         channel = dom.find('channel')
         for node in channel.findall('item'):
             item = {}
@@ -63,32 +63,27 @@ class Torrents(object):
                 elif child.tag == 'description':
                     item['description'] = child.text
 
-            items.append(item)
-
-        return items
+            yield item
 
     def get_torrents(self):
         torrents_keys = self.torrents.keys()
 
-        print "Downloading list..."
+        self.msg.info(self.name, "Downloading torrent feed...")
         dom = self._download_feed(self.FEED_URL)
-        print "Parsing..."
+        self.msg.info(self.name, "Parsing torrents...")
         items = self._parse_feed(dom)
-        total_items = len(items)
-        i = 1
         for item in items:
-            print "Processing %d/%d..." % (i, total_items)
-            i += 1
-
             if item['title'] in torrents_keys:
-                print "Already cached." + item['title']
-                continue
+                continue # Already cached
 
-            torrent = {'show_id': None,
+            torrent = {
+                       'filename': item['title'],
+                       'url': item['link'],
+                       'show_id': None,
                        'show_title': None,
                        'show_episode': None,
                        'show_group': None,
-                       'status': self.STATUS_NOT_FOUND,
+                       'status': STATUS_NOT_FOUND,
                       }
 
             highest_ratio = (None, 0)
@@ -100,8 +95,7 @@ class Torrents(object):
             torrent['show_group'] = item_group
 
             if not item_title:
-                #print "Not recognized: %s\n  %s" % (item['title'], repr(anal))
-                torrent['status'] = self.STATUS_NOT_RECOGNIZED
+                torrent['status'] = STATUS_NOT_RECOGNIZED
                 continue
 
             show = utils.guess_show(item_title, self.animelist)
@@ -112,22 +106,20 @@ class Torrents(object):
 
                 if item_episode == (show['my_progress'] + 1):
                     # Show found!
-                    torrent['status'] = self.STATUS_NEXT_EPISODE
+                    torrent['status'] = STATUS_NEXT_EPISODE
                 elif item_episode > (show['my_progress'] + 1):
-                    torrent['status'] = self.STATUS_NOT_NEXT_EPISODE
+                    torrent['status'] = STATUS_NOT_NEXT_EPISODE
                 else:
                     # The show was found but this episode was already watched
-                    torrent['status'] = self.STATUS_WATCHED
+                    torrent['status'] = STATUS_WATCHED
             else:
                 # This show isn't in the list
-                print "Not found: %s" % (item['title'])
                 pass
 
             # Add to the list
             self.torrents[item['title']] = torrent
 
         self._save()
-        print "Done!"
         return self.torrents
 
     def get_sorted_torrents(self):
