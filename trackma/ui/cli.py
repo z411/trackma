@@ -389,10 +389,10 @@ class Trackma_cmd(cmd.Cmd):
 
             print "New episodes:"
             for item in next_episode:
-                print "{} ({})".format(item['filename'], item['url'])
+                print "- {} ({})".format(item['filename'], item['url'])
             print "Further episodes:"
             for item in not_next_episode:
-                print "{} ({})".format(item['filename'], item['url'])
+                print "- {} ({})".format(item['filename'], item['url'])
         except utils.TrackmaError, e:
             self.display_error(e)
 
