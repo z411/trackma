@@ -2170,19 +2170,24 @@ class AccountDialog(QtGui.QDialog):
         cancel_btn.clicked.connect(self.cancel)
         add_btn = QtGui.QPushButton('Add')
         add_btn.clicked.connect(self.add)
-        delete_btn = QtGui.QPushButton('Delete')
-        delete_btn.setToolTip('Remove this account from Trackma')
-        delete_btn.clicked.connect(self.delete)
-        purge_btn = QtGui.QPushButton('Purge')
-        purge_btn.setToolTip('Clear local DB for this account')
-        purge_btn.clicked.connect(self.purge)
+        self.edit_btns = QtGui.QComboBox()
+        self.edit_btns.blockSignals(True)
+        self.edit_btns.addItem('Edit...')
+        self.edit_btns.addItem('Update')
+        self.edit_btns.addItem('Delete')
+        self.edit_btns.addItem('Purge')
+        self.edit_btns.setItemData( 1, 'Change the local password/PIN or friends list for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData( 2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData( 3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setCurrentIndex(0)
+        self.edit_btns.blockSignals(False)
+        self.edit_btns.currentIndexChanged.connect(self.s_edit)
         select_btn = QtGui.QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
-        bottom_layout.addWidget(delete_btn)
-        bottom_layout.addWidget(purge_btn)
+        bottom_layout.addWidget(self.edit_btns)
         bottom_layout.addWidget(select_btn)
 
         # Get icons
@@ -2201,9 +2206,29 @@ class AccountDialog(QtGui.QDialog):
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
         if result:
-            (username, password, api) = result
+            (username, password, api, friends) = result
             self.accountman.add_account(username, password, api)
             self.rebuild()
+
+    def edit(self):
+        self.edit_btns.blockSignals(True)
+        self.edit_btns.setCurrentIndex(0)
+        self.edit_btns.blockSignals(False)
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            acct = self.accountman.get_account(selected_account_num)
+            result = AccountAddDialog.do(icons=self.icons,
+                                         edit=True,
+                                         username=acct['username'],
+                                         password=acct['password'],
+                                         api=acct['api'],
+                                         friends=[])
+            if result:
+                (username, password, api, friends) = result
+                self.accountman.edit_account(selected_account_num, username, password, api)
+                self.rebuild()
+        except IndexError:
+            self._error("Please select an account.")
 
     def delete(self):
         try:
@@ -2226,6 +2251,14 @@ class AccountDialog(QtGui.QDialog):
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
+
+    def s_edit(self, index):
+        if   index is 1:
+            self.edit()
+        elif index is 2:
+            self.delete()
+        elif index is 3:
+            self.purge()
 
     def rebuild(self):
         self.table.clear()
@@ -2440,19 +2473,20 @@ class EpisodeBar(QtGui.QProgressBar):
         self._show_text = show_text
 
 class AccountAddDialog(QtGui.QDialog):
-    def __init__(self, parent, icons):
+    def __init__(self, parent, icons, edit=False, username='', password='', api='', friends=''):
         QtGui.QDialog.__init__(self, parent)
+        self.edit = edit
 
         # Build UI
         layout = QtGui.QVBoxLayout()
 
         formlayout = QtGui.QFormLayout()
         self.lbl_username = QtGui.QLabel('Username:')
-        self.username = QtGui.QLineEdit()
+        self.username = QtGui.QLineEdit(username)
 
         pin_layout = QtGui.QHBoxLayout()
         self.lbl_password = QtGui.QLabel('Password:')
-        self.password = QtGui.QLineEdit()
+        self.password = QtGui.QLineEdit(password)
         self.api = QtGui.QComboBox()
         self.api.currentIndexChanged.connect(self.s_refresh)
         self.api_auth = QtGui.QLabel('Request PIN')
@@ -2461,10 +2495,12 @@ class AccountAddDialog(QtGui.QDialog):
         self.api_auth.setOpenExternalLinks(True)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
+        self.friendlist = QtGui.QLineEdit(', '.join(friends))
 
         formlayout.addRow( QtGui.QLabel('Site:'), self.api )
         formlayout.addRow( self.lbl_username, self.username )
         formlayout.addRow( self.lbl_password, pin_layout )
+        formlayout.addRow( QtGui.QLabel('Friends:'), self.friendlist )
 
         bottombox = QtGui.QDialogButtonBox()
         bottombox.addButton(QtGui.QDialogButtonBox.Save)
@@ -2476,6 +2512,11 @@ class AccountAddDialog(QtGui.QDialog):
         for libname, lib in sorted(utils.available_libs.iteritems()):
             self.api.addItem(icons[libname], lib[0], libname)
 
+        if self.edit:
+            self.username.setEnabled(False)
+            self.api.setCurrentIndex(self.api.findData(api, QtCore.Qt.UserRole))
+            self.api.setEnabled(False)
+
         # Finish layouts
         layout.addLayout(formlayout)
         layout.addWidget(bottombox)
@@ -2483,14 +2524,25 @@ class AccountAddDialog(QtGui.QDialog):
         self.setLayout(layout)
 
     def validate(self):
-        if len(self.username.text()) > 0 and len(self.password.text()) > 0:
-            self.accept()
+        if len(self.username.text()) is 0:
+            if len(self.password.text()) is 0:
+                self._error('Please fill the credentials fields.')
+            else:
+                self._error('Please fill the username field.')
+        elif len(self.password.text()) is 0:
+            self._error('Please fill the password/PIN field.')
         else:
-            self._error('Please fill all the fields.')
+            try:
+                self.friends = str(self.friendlist.text()).split(', ')
+                self.accept()
+            except:
+                self._error('Please ensure each friend in your friends list is separated by a comma and space.')
 
     def s_refresh(self, index):
-        self.username.setText("")
-        self.password.setText("")
+        if not self.edit:
+            self.username.setText("")
+            self.password.setText("")
+            self.friendlist.setText("")
 
         apiname = str(self.api.itemData(index).toString())
         api = utils.available_libs[apiname]
@@ -2513,8 +2565,8 @@ class AccountAddDialog(QtGui.QDialog):
         QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
 
     @staticmethod
-    def do(parent=None, icons=None):
-        dialog = AccountAddDialog(parent, icons)
+    def do(parent=None, icons=None, edit=False, username='', password='', api='', friends=''):
+        dialog = AccountAddDialog(parent, icons, edit, username, password, api, friends)
         result = dialog.exec_()
 
         if result == QtGui.QDialog.Accepted:
@@ -2522,7 +2574,8 @@ class AccountAddDialog(QtGui.QDialog):
             return (
                     str( dialog.username.text() ),
                     str( dialog.password.text() ),
-                    str( dialog.api.itemData(currentIndex).toString() )
+                    str( dialog.api.itemData(currentIndex).toString() ),
+                    dialog.friends
                    )
         else:
             return None
