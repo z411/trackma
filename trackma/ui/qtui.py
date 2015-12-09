@@ -595,7 +595,9 @@ class Trackma(QtGui.QMainWindow):
         and dateutil_available:
             next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
             delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
-            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
+            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
+        else:
+            widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))
         widget.setItem(row, 6, ShowItemDate( show['start_date'], color ))
         widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
         widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
@@ -2135,10 +2137,10 @@ class ShowItem(QtGui.QTableWidgetItem):
 
     """
 
-    def __init__(self, text, color=None):
+    def __init__(self, text, color=None, alignment=None):
         QtGui.QTableWidgetItem.__init__(self, text)
-        #if alignment:
-        #    self.setTextAlignment( alignment )
+        if alignment:
+            self.setTextAlignment( alignment )
         if color:
             self.setBackgroundColor( color )
 
@@ -2163,7 +2165,7 @@ class ShowItemDate(ShowItem):
 
         self.date = date
 
-        ShowItem.__init__(self, datestr, color)
+        ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
 
     def __lt__(self, other):
         if self.date and other.date:
