@@ -36,11 +36,11 @@ from trackma.engine import Engine
 from trackma.accounts import AccountManager
 
 try:
-    import Image
+    from PIL import Image
     imaging_available = True
 except ImportError:
     try:
-        from PIL import Image
+    	import Image
         imaging_available = True
     except ImportError:
         print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
