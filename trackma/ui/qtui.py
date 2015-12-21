@@ -394,7 +394,7 @@ class Trackma(QtGui.QMainWindow):
         if account:
             self.account = account
 
-        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % account['api'])
+        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % self.account['api'])
         self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
         if self.config['columns_per_api']:
             self.config['visible_columns'] = self.api_config['visible_columns']
