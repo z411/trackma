@@ -237,7 +237,7 @@ class libanilist(lib):
 
                 show = utils.show()
                 showid = item[self.mediatype]['id']
-                show.update({
+                showdata = {
                     'id': showid,
                     'title': item[self.mediatype]['title_romaji'],
                     'aliases': [item[self.mediatype]['title_english']],
@@ -250,7 +250,8 @@ class libanilist(lib):
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
                     'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
-                })
+                }
+                show.update({k:v for k,v in showdata.items() if v})
 
                 if show['status'] == 1:
                     airinglist.append(showid)
@@ -312,7 +313,7 @@ class libanilist(lib):
         for item in data:
             show = utils.show()
             showid = item['id']
-            show.update({
+            showdata = {
                 'id': showid,
                 'title': item['title_romaji'],
                 'aliases': [item['title_english']],
@@ -323,7 +324,8 @@ class libanilist(lib):
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
                 'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
-            })
+            }
+            show.update({k:v for k,v in showdata.items() if v})
 
             showlist.append( show )
 
