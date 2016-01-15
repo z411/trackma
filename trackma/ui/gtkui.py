@@ -615,7 +615,10 @@ class Trackma_gtk(object):
         utils.save_config(self.config, self.configfile)
 
     def do_addsearch(self, widget):
-        win = ShowSearch(self.engine, self.config['colors'])
+        page = self.notebook.get_current_page()
+        current_status = self.engine.mediainfo['statuses'][page]
+
+        win = ShowSearch(self.engine, self.config['colors'], current_status)
         win.show_all()
 
     def do_settings(self, widget):
@@ -2287,10 +2290,11 @@ class AccountSelectAdd(gtk.Window):
 
 
 class ShowSearch(gtk.Window):
-    def __init__(self, engine, colors):
+    def __init__(self, engine, colors, current_status):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
         self.engine = engine
+        self.current_status = current_status
 
         fullbox = gtk.HPaned()
 
@@ -2350,7 +2354,7 @@ class ShowSearch(gtk.Window):
 
         if show is not None:
             try:
-                self.engine.add_show(show)
+                self.engine.add_show(show, self.current_status)
                 #self.do_close()
             except utils.TrackmaError, e:
                 self.error_push(e.message)
