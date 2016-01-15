@@ -975,7 +975,10 @@ class Trackma(QtGui.QMainWindow):
         self.detailswindow.show()
 
     def s_add(self):
-        self.addwindow = AddDialog(None, self.worker)
+        page = self.notebook.currentIndex()
+        current_status = self.statuses_nums[page]
+
+        self.addwindow = AddDialog(None, self.worker, current_status)
         self.addwindow.setModal(True)
         self.addwindow.show()
 
@@ -1318,11 +1321,12 @@ class AddDialog(QtGui.QDialog):
     worker = None
     selected_show = None
 
-    def __init__(self, parent, worker):
+    def __init__(self, parent, worker, current_status):
         QtGui.QMainWindow.__init__(self, parent)
         self.setMinimumSize(700, 500)
         self.setWindowTitle('Search/Add from Remote')
         self.worker = worker
+        self.current_status = current_status
 
         layout = QtGui.QGridLayout()
 
@@ -1398,7 +1402,7 @@ class AddDialog(QtGui.QDialog):
 
     def s_add(self):
         if self.selected_show:
-            self.worker_call('add_show', self.r_added, self.selected_show)
+            self.worker_call('add_show', self.r_added, self.selected_show, self.current_status)
 
     # Worker responses
     def r_searched(self, result):
@@ -2621,9 +2625,9 @@ class Engine_Worker(QtCore.QThread):
 
         return {'success': True, 'results': results}
 
-    def _add_show(self, show):
+    def _add_show(self, show, status):
         try:
-            results = self.engine.add_show(show)
+            results = self.engine.add_show(show, status)
         except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
