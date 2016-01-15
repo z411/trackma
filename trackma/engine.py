@@ -342,8 +342,12 @@ class Engine:
         if status:
             if status not in self.mediainfo['statuses']:
                 raise utils.EngineError('Invalid status.')
+            else:
+                show['my_status'] = status
+        else:
+            # Default add to 'plan to read/watch'
+            show['my_status'] = self.mediainfo['statuses'][-1]
 
-            show['my_status'] = status
 
         # Add in data handler
         self.data_handler.queue_add(show)
