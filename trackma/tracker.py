@@ -104,7 +104,7 @@ class Tracker(object):
 
     def _get_playing_file_lsof(self, players):
         try:
-            lsof = subprocess.Popen(['lsof', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+            lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
         except OSError:
             self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
             self.disable()
@@ -119,7 +119,7 @@ class Tracker(object):
                 return os.path.basename(match.group(1))
 
         return False
-    
+
     def _foreach_window(self, hwnd, lParam):
         # Get class name and window title of the current hwnd
         # and add it to the list of the found windows
@@ -133,7 +133,7 @@ class Tracker(object):
 
         self.win32_hwnd_list.append( (buff_class.value, buff_title.value) )
         return True
-    
+
     def _get_playing_file_win32(self):
         # Enumerate all windows using the win32 API
         # This will call _foreach_window for each window handle
@@ -203,10 +203,10 @@ class Tracker(object):
 
             # Wait for the interval before running check again
             time.sleep(interval)
-    
+
     def _observe_win32(self, interval):
         self.msg.info(self.name, "Using Win32.")
-        
+
         while True:
             # This runs the tracker and update the playing show if necessary
             filename = self._get_playing_file_win32()
