@@ -331,6 +331,7 @@ class libmal(lib):
                 'my_score':     int(child.find('my_score').text),
                 'my_start_date':  self._str2date( child.find('my_start_date').text ),
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
+                'my_tags':         child.find('my_tags').text,
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
                 'start_date':   self._str2date( child.find('series_start').text ),
@@ -407,6 +408,9 @@ class libmal(lib):
         if 'my_finish_date' in item.keys():
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
+        if 'my_tags' in item.keys():
+            tags = ET.SubElement(root, "tags")
+            tags.text = str(item['my_tags'])
 
         return ET.tostring(root)
 

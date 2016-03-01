@@ -215,7 +215,7 @@ class Trackma(QtGui.QMainWindow):
         self.menu_columns = QtGui.QMenu()
         self.available_columns = ['ID', 'Title', 'Progress', 'Score',
                 'Percent', 'Next Episode', 'Start date', 'End date',
-                'My start', 'My finish']
+                'My start', 'My finish', 'Tags']
 
         self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
@@ -602,6 +602,13 @@ class Trackma(QtGui.QMainWindow):
         widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
         widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
         widget.setItem(row, 9, ShowItemDate( show['my_finish_date'], color ))
+        try:
+            tag_str = show['my_tags']
+            if not tag_str:
+                tag_str = '-'
+        except:
+            tag_str = '-'
+        widget.setItem(row, 10, ShowItem( tag_str, color ))
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
