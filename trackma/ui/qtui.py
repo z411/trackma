@@ -325,6 +325,9 @@ class Trackma(QtGui.QMainWindow):
         self.show_score_btn = QtGui.QPushButton('Set')
         self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
+        self.show_tags_btn = QtGui.QPushButton('Edit Tags...')
+        self.show_tags_btn.setToolTip('Open a dialog to edit your tags for this show')
+        self.show_tags_btn.clicked.connect(self.s_set_tags)
         self.show_status = QtGui.QComboBox()
         self.show_status.setToolTip('Change your watching status of this show')
         self.show_status.currentIndexChanged.connect(self.s_set_status)
@@ -342,6 +345,7 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
+        left_box.addRow(self.show_tags_btn)
 
         main_hbox.addLayout(left_box)
         main_hbox.addWidget(self.notebook, 1)
@@ -454,6 +458,7 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
             self.show_score_btn.setEnabled(enable)
+            self.show_tags_btn.setEnabled(enable)
             self.show_play_btn.setEnabled(enable)
             self.show_inc_btn.setEnabled(enable)
             self.show_dec_btn.setEnabled(enable)
@@ -647,6 +652,7 @@ class Trackma(QtGui.QMainWindow):
             self.show_status.setEnabled(False)
             self.show_progress_btn.setEnabled(False)
             self.show_score_btn.setEnabled(False)
+            self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(False)
             self.show_inc_btn.setEnabled(False)
             self.show_dec_btn.setEnabled(False)
@@ -676,6 +682,7 @@ class Trackma(QtGui.QMainWindow):
         self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
+        self.show_tags_btn.setEnabled(True)
         self.show_inc_btn.setEnabled(True)
         self.show_dec_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
@@ -883,6 +890,22 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
+
+    def s_set_tags(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        if show['my_tags']:
+            tags = show['my_tags']
+        else:
+            tags = ''
+        tags, ok = QtGui.QInputDialog.getText(self, 'Edit Tags',
+            'Enter desired tags (comma separated)',
+            text=tags)
+        if ok:
+            self.s_edit_tags(show, tags)
+
+    def s_edit_tags(self, show, tags):
+        self._busy(True)
+        self.worker_call('set_tags', self.r_generic, show['id'], tags)
 
     def s_play(self, play_next, episode=0):
         if self.selected_show_id:
@@ -2453,6 +2476,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine = Engine(account, self._messagehandler)
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
+        self.engine.connect_signal('tags_changed', self._changed_show)
         self.engine.connect_signal('status_changed', self._changed_list)
         self.engine.connect_signal('playing', self._playing_show)
         self.engine.connect_signal('show_added', self._changed_list)
@@ -2468,6 +2492,7 @@ class Engine_Worker(QtCore.QThread):
             'set_episode': self._set_episode,
             'set_score': self._set_score,
             'set_status': self._set_status,
+            'set_tags': self._set_tags,
             'play_episode': self._play_episode,
             'play_random': self._play_random,
             'list_download': self._list_download,
@@ -2572,6 +2597,15 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
+        except utils.TrackmaError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _set_tags(self, showid, tags):
+        try:
+            self.engine.set_tags(showid, tags)
         except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}

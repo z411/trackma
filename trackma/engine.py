@@ -536,6 +536,30 @@ class Engine:
 
         return show
 
+    def set_tags(self, showid, newtags):
+        """
+        Updates the tags of the specified **showid** to **newtags**
+        and queues the list update for the next sync.
+        """
+        # Check if operation is supported by the API
+        if 'can_tag' not in self.mediainfo or not self.mediainfo.get('can_tag'):
+            raise utils.EngineError('Operation not supported by API.')
+
+        # Get the show and update it
+        show = self.get_show_info(showid)
+        # More checks
+        if show['my_tags'] == newtags:
+            raise utils.EngineError("Tags already %s" % newtags)
+
+        # Change score
+        self.msg.info(self.name, "Updating show %s to tags '%s'..." % (show['title'], newtags))
+        self.data_handler.queue_update(show, 'my_tags', newtags)
+
+        # Emit signal
+        self._emit_signal('tags_changed', show)
+
+        return show
+
     def delete_show(self, show):
         """
         Deletes **show** completely from the list and queues the list update for the next sync.
