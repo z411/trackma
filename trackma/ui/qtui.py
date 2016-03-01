@@ -458,7 +458,10 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
             self.show_score_btn.setEnabled(enable)
-            self.show_tags_btn.setEnabled(enable)
+            if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+                self.show_tags_btn.setEnabled(enable)
+            else:
+                self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(enable)
             self.show_inc_btn.setEnabled(enable)
             self.show_dec_btn.setEnabled(enable)
@@ -682,7 +685,8 @@ class Trackma(QtGui.QMainWindow):
         self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
-        self.show_tags_btn.setEnabled(True)
+        if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+            self.show_tags_btn.setEnabled(True)
         self.show_inc_btn.setEnabled(True)
         self.show_dec_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
