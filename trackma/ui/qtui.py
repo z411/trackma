@@ -28,6 +28,7 @@ except ImportError:
 import os
 from cStringIO import StringIO
 import urllib2
+import base64
 
 import trackma.messenger as messenger
 import trackma.utils as utils
@@ -224,6 +225,7 @@ class Trackma(QtGui.QMainWindow):
         self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
         if self.config['columns_per_api']:
             self.config['visible_columns'] = self.api_config['visible_columns']
+            self.config['columns_state'] = self.api_config['columns_state']
 
         for column_name in self.available_columns:
             action = QtGui.QAction(column_name, self, checkable=True)
@@ -449,6 +451,8 @@ class Trackma(QtGui.QMainWindow):
         self._busy()
         if self.config['remember_geometry']:
             self._store_geometry()
+        if self.config['remember_columns']:
+            self._store_columnstate()
         self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
@@ -458,6 +462,17 @@ class Trackma(QtGui.QMainWindow):
         self.config['last_width'] = self.width()
         self.config['last_height'] = self.height()
         utils.save_config(self.config, self.configfile)
+
+    def _store_columnstate(self):
+        self.config['columns_state'] = dict()
+        for status in self.statuses_nums:
+            state = self.show_lists[status].horizontalHeader().saveState()
+            self.config['columns_state'][status] = base64.b64encode(state)
+        if self.config['columns_per_api']:
+            self.api_config['columns_state'] = self.config['columns_state']
+            utils.save_config(self.api_config, self.api_configfile)
+        else:
+            utils.save_config(self.config, self.configfile)
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
@@ -543,9 +558,15 @@ class Trackma(QtGui.QMainWindow):
                 widget.setColumnHidden(i, True)
 
         widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
+        widget.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Fixed)
         widget.horizontalHeader().resizeSection(2, 70)
+        widget.horizontalHeader().setResizeMode(3, QtGui.QHeaderView.Fixed)
         widget.horizontalHeader().resizeSection(3, 55)
         widget.horizontalHeader().resizeSection(4, 100)
+
+        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
+            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
+            widget.horizontalHeader().restoreState(state)
 
         i = 0
 
@@ -1183,6 +1204,7 @@ class Trackma(QtGui.QMainWindow):
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
+                self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
                 self.show_lists[status].verticalHeader().hide()
@@ -1680,9 +1702,11 @@ class SettingsDialog(QtGui.QDialog):
         g_window = QtGui.QGroupBox('Window')
         g_window.setFlat(True)
         self.remember_geometry = QtGui.QCheckBox('Remember window size and position')
+        self.remember_columns = QtGui.QCheckBox('Remember column layouts and widths')
         self.columns_per_api = QtGui.QCheckBox('Use different visible columns per API')
         g_window_layout = QtGui.QVBoxLayout()
         g_window_layout.addWidget(self.remember_geometry)
+        g_window_layout.addWidget(self.remember_columns)
         g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
 
@@ -1840,6 +1864,7 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_api_icon.setChecked(self.config['tray_api_icon'])
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
+        self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
@@ -1908,6 +1933,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
+        self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
