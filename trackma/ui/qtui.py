@@ -271,6 +271,7 @@ class Trackma(QtGui.QMainWindow):
         main_layout = QtGui.QVBoxLayout()
         top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
+        list_box = QtGui.QGridLayout()
         left_box = QtGui.QFormLayout()
         small_btns_hbox = QtGui.QHBoxLayout()
 
@@ -289,6 +290,9 @@ class Trackma(QtGui.QMainWindow):
 
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
+        self.show_filter = QtGui.QLineEdit()
+        self.show_filter.textChanged.connect(self.s_filter_changed)
+
         self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
             self.setGeometry(self.config['last_x'], self.config['last_y'],
@@ -347,8 +351,12 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(self.show_status)
         left_box.addRow(self.show_tags_btn)
 
+        list_box.addWidget(self.notebook, 0, 0, 1, 0)
+        list_box.addWidget(QtGui.QLabel('Filter:'), 1, 0)
+        list_box.addWidget(self.show_filter, 1, 1)
+
         main_hbox.addLayout(left_box)
-        main_hbox.addWidget(self.notebook, 1)
+        main_hbox.addLayout(list_box, 1)
 
         main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
@@ -720,6 +728,19 @@ class Trackma(QtGui.QMainWindow):
         # Unblock signals
         self.show_status.blockSignals(False)
 
+    def _filter_check_row(self, table, row, expression):
+        # Determine if a show matches a filter. True -> match -> do not hide
+        if not expression: # No filter
+            return True
+        # TODO: Separate the expression into specific field terms, fail if any are not met
+
+        # General case: if any fields match the remaining expression, success.
+        for col in range(table.columnCount()):
+            item = table.item(row, col)
+            if item.text().contains(expression):
+                return True
+        return False
+
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
         bp_top = 5  # No more than this many submenus/episodes in the root menu
         bp_mid = 10 # No more than this many submenus in submenus
@@ -872,6 +893,13 @@ class Trackma(QtGui.QMainWindow):
         item = self.notebook.currentWidget().currentItem()
         if item:
             self.s_show_selected(item)
+        self.s_filter_changed() # Refresh filter
+
+    def s_filter_changed(self):
+        table = self.notebook.currentWidget()
+        expr = self.show_filter.text()
+        for row in range(table.rowCount()):
+            table.setRowHidden(row, not self._filter_check_row(table, row, expr))
 
     def s_plus_episode(self):
         self._busy(True)
