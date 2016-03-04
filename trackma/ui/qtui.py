@@ -217,6 +217,17 @@ class Trackma(QtGui.QMainWindow):
         self.available_columns = ['ID', 'Title', 'Progress', 'Score',
                 'Percent', 'Next Episode', 'Start date', 'End date',
                 'My start', 'My finish', 'Tags']
+        self.column_keys = {'id': 0,
+                            'title': 1,
+                            'progress': 2,
+                            'score': 3,
+                            'percent': 4,
+                            'next_ep': 5,
+                            'date_start': 6,
+                            'date_end': 7,
+                            'my_start': 8,
+                            'my_end': 9,
+                            'tag': 10}
 
         self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
@@ -294,6 +305,23 @@ class Trackma(QtGui.QMainWindow):
         self.notebook.currentChanged.connect(self.s_tab_changed)
         self.show_filter = QtGui.QLineEdit()
         self.show_filter.textChanged.connect(self.s_filter_changed)
+        filter_tooltip = QtCore.QString("General Search: All fields (columns) of each show will be matched against the search term."
+            "\nAdvanced Searching: A field can be specified by using its key followed by a colon"
+            " e.g. 'title:My_Show date_start:2016'."
+            "\n  Any field may be specified multiple times to match terms in any order e.g. 'tag:Battle+Shounen tag:Ecchi'. "
+            "\n  + and _ are replaced with spaces when searching specific fields."
+            "\n  If colon is used after something that is not a column key, it will treat it as a general term."
+            "\n  ALL terms not attached to a field will be combined into a single general search term"
+            "\n         - 'My date_end:2016 Show' will match shows that have 'My Show' in any field and 2016 in the End Date field."
+            "\n  Available field keys are: ")
+        colkeys = ', '.join(sorted(self.column_keys.keys()))
+        filter_tooltip.append(colkeys)
+        filter_tooltip.append('.')
+        self.show_filter.setToolTip(filter_tooltip)
+        self.show_filter_invert = QtGui.QCheckBox()
+        self.show_filter_invert.stateChanged.connect(self.s_filter_changed)
+        self.show_filter_casesens = QtGui.QCheckBox()
+        self.show_filter_casesens.stateChanged.connect(self.s_filter_changed)
 
         self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
@@ -353,9 +381,13 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(self.show_status)
         left_box.addRow(self.show_tags_btn)
 
-        list_box.addWidget(self.notebook, 0, 0, 1, 0)
+        list_box.addWidget(self.notebook, 0, 0, 1, 6)
         list_box.addWidget(QtGui.QLabel('Filter:'), 1, 0)
         list_box.addWidget(self.show_filter, 1, 1)
+        list_box.addWidget(QtGui.QLabel('Invert'), 1, 2)
+        list_box.addWidget(self.show_filter_invert, 1, 3)
+        list_box.addWidget(QtGui.QLabel('Case Sensitive'), 1, 4)
+        list_box.addWidget(self.show_filter_casesens, 1, 5)
 
         main_hbox.addLayout(left_box)
         main_hbox.addLayout(list_box, 1)
@@ -749,16 +781,31 @@ class Trackma(QtGui.QMainWindow):
         # Unblock signals
         self.show_status.blockSignals(False)
 
-    def _filter_check_row(self, table, row, expression):
+    def _filter_check_row(self, table, row, expression, case_sensitive=0):
         # Determine if a show matches a filter. True -> match -> do not hide
-        if not expression: # No filter
-            return True
-        # TODO: Separate the expression into specific field terms, fail if any are not met
+        # Advanced search: Separate the expression into specific field terms, fail if any are not met
+        if expression.contains(':'):
+            exprs = expression.split(' ')
+            expr_list = QtCore.QStringList()
+            for expr in exprs:
+                if expr.contains(':'):
+                    expr_terms = str(expr).split(':',1)
+                    if expr_terms[0] in self.column_keys:
+                        col = self.column_keys[expr_terms[0]]
+                        sub_expr = QtCore.QString(expr_terms[1]).replace(QtCore.QRegExp('[_+]'), ' ')
+                        item = table.item(row, col)
+                        if not item.text().contains(sub_expr, case_sensitive):
+                            return False
+                    else: # If it's not a field key, let it be a regular search term
+                        expr_list.append(expr)
+                else:
+                    expr_list.append(expr)
+            expression = expr_list.join(' ')
 
         # General case: if any fields match the remaining expression, success.
         for col in range(table.columnCount()):
             item = table.item(row, col)
-            if item.text().contains(expression):
+            if item.text().contains(expression, case_sensitive):
                 return True
         return False
 
@@ -919,8 +966,14 @@ class Trackma(QtGui.QMainWindow):
     def s_filter_changed(self):
         table = self.notebook.currentWidget()
         expr = self.show_filter.text()
+        casesens = int(self.show_filter_casesens.isChecked())
         for row in range(table.rowCount()):
-            table.setRowHidden(row, not self._filter_check_row(table, row, expr))
+            if not expr:
+                table.setRowHidden(row, False)
+            elif self.show_filter_invert.isChecked():
+                table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+            else:
+                table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
 
     def s_plus_episode(self):
         self._busy(True)
