@@ -339,11 +339,13 @@ qt_defaults = {
     'start_in_tray': False,
     'tray_api_icon': False,
     'remember_geometry': False,
+    'remember_columns': False,
     'last_x': 0,
     'last_y': 0,
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'columns_state': {},
     'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
@@ -363,4 +365,5 @@ qt_defaults = {
 
 qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'columns_state': {},
 }

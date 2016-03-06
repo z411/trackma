@@ -28,6 +28,7 @@ except ImportError:
 import os
 from cStringIO import StringIO
 import urllib2
+import base64
 
 import trackma.messenger as messenger
 import trackma.utils as utils
@@ -215,7 +216,18 @@ class Trackma(QtGui.QMainWindow):
         self.menu_columns = QtGui.QMenu()
         self.available_columns = ['ID', 'Title', 'Progress', 'Score',
                 'Percent', 'Next Episode', 'Start date', 'End date',
-                'My start', 'My finish']
+                'My start', 'My finish', 'Tags']
+        self.column_keys = {'id': 0,
+                            'title': 1,
+                            'progress': 2,
+                            'score': 3,
+                            'percent': 4,
+                            'next_ep': 5,
+                            'date_start': 6,
+                            'date_end': 7,
+                            'my_start': 8,
+                            'my_end': 9,
+                            'tag': 10}
 
         self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
@@ -224,6 +236,7 @@ class Trackma(QtGui.QMainWindow):
         self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
         if self.config['columns_per_api']:
             self.config['visible_columns'] = self.api_config['visible_columns']
+            self.config['columns_state'] = self.api_config['columns_state']
 
         for column_name in self.available_columns:
             action = QtGui.QAction(column_name, self, checkable=True)
@@ -271,6 +284,7 @@ class Trackma(QtGui.QMainWindow):
         main_layout = QtGui.QVBoxLayout()
         top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
+        list_box = QtGui.QGridLayout()
         left_box = QtGui.QFormLayout()
         small_btns_hbox = QtGui.QHBoxLayout()
 
@@ -289,6 +303,26 @@ class Trackma(QtGui.QMainWindow):
 
         self.notebook = QtGui.QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
+        self.show_filter = QtGui.QLineEdit()
+        self.show_filter.textChanged.connect(self.s_filter_changed)
+        filter_tooltip = QtCore.QString("General Search: All fields (columns) of each show will be matched against the search term."
+            "\nAdvanced Searching: A field can be specified by using its key followed by a colon"
+            " e.g. 'title:My_Show date_start:2016'."
+            "\n  Any field may be specified multiple times to match terms in any order e.g. 'tag:Battle+Shounen tag:Ecchi'. "
+            "\n  + and _ are replaced with spaces when searching specific fields."
+            "\n  If colon is used after something that is not a column key, it will treat it as a general term."
+            "\n  ALL terms not attached to a field will be combined into a single general search term"
+            "\n         - 'My date_end:2016 Show' will match shows that have 'My Show' in any field and 2016 in the End Date field."
+            "\n  Available field keys are: ")
+        colkeys = ', '.join(sorted(self.column_keys.keys()))
+        filter_tooltip.append(colkeys)
+        filter_tooltip.append('.')
+        self.show_filter.setToolTip(filter_tooltip)
+        self.show_filter_invert = QtGui.QCheckBox()
+        self.show_filter_invert.stateChanged.connect(self.s_filter_changed)
+        self.show_filter_casesens = QtGui.QCheckBox()
+        self.show_filter_casesens.stateChanged.connect(self.s_filter_changed)
+
         self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
             self.setGeometry(self.config['last_x'], self.config['last_y'],
@@ -325,6 +359,9 @@ class Trackma(QtGui.QMainWindow):
         self.show_score_btn = QtGui.QPushButton('Set')
         self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
+        self.show_tags_btn = QtGui.QPushButton('Edit Tags...')
+        self.show_tags_btn.setToolTip('Open a dialog to edit your tags for this show')
+        self.show_tags_btn.clicked.connect(self.s_set_tags)
         self.show_status = QtGui.QComboBox()
         self.show_status.setToolTip('Change your watching status of this show')
         self.show_status.currentIndexChanged.connect(self.s_set_status)
@@ -342,9 +379,18 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(show_score_label, self.show_score)
         left_box.addRow(self.show_score_btn)
         left_box.addRow(self.show_status)
+        left_box.addRow(self.show_tags_btn)
+
+        list_box.addWidget(self.notebook, 0, 0, 1, 6)
+        list_box.addWidget(QtGui.QLabel('Filter:'), 1, 0)
+        list_box.addWidget(self.show_filter, 1, 1)
+        list_box.addWidget(QtGui.QLabel('Invert'), 1, 2)
+        list_box.addWidget(self.show_filter_invert, 1, 3)
+        list_box.addWidget(QtGui.QLabel('Case Sensitive'), 1, 4)
+        list_box.addWidget(self.show_filter_casesens, 1, 5)
 
         main_hbox.addLayout(left_box)
-        main_hbox.addWidget(self.notebook, 1)
+        main_hbox.addLayout(list_box, 1)
 
         main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
@@ -437,6 +483,8 @@ class Trackma(QtGui.QMainWindow):
         self._busy()
         if self.config['remember_geometry']:
             self._store_geometry()
+        if self.config['remember_columns']:
+            self._store_columnstate()
         self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
@@ -447,6 +495,17 @@ class Trackma(QtGui.QMainWindow):
         self.config['last_height'] = self.height()
         utils.save_config(self.config, self.configfile)
 
+    def _store_columnstate(self):
+        self.config['columns_state'] = dict()
+        for status in self.statuses_nums:
+            state = self.show_lists[status].horizontalHeader().saveState()
+            self.config['columns_state'][status] = base64.b64encode(state)
+        if self.config['columns_per_api']:
+            self.api_config['columns_state'] = self.config['columns_state']
+            utils.save_config(self.api_config, self.api_configfile)
+        else:
+            utils.save_config(self.config, self.configfile)
+
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
         self.menuBar().setEnabled(enable)
@@ -454,6 +513,10 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
             self.show_score_btn.setEnabled(enable)
+            if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+                self.show_tags_btn.setEnabled(enable)
+            else:
+                self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(enable)
             self.show_inc_btn.setEnabled(enable)
             self.show_dec_btn.setEnabled(enable)
@@ -527,9 +590,15 @@ class Trackma(QtGui.QMainWindow):
                 widget.setColumnHidden(i, True)
 
         widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
+        widget.horizontalHeader().setResizeMode(2, QtGui.QHeaderView.Fixed)
         widget.horizontalHeader().resizeSection(2, 70)
+        widget.horizontalHeader().setResizeMode(3, QtGui.QHeaderView.Fixed)
         widget.horizontalHeader().resizeSection(3, 55)
         widget.horizontalHeader().resizeSection(4, 100)
+
+        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
+            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
+            widget.horizontalHeader().restoreState(state)
 
         i = 0
 
@@ -602,6 +671,13 @@ class Trackma(QtGui.QMainWindow):
         widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
         widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
         widget.setItem(row, 9, ShowItemDate( show['my_finish_date'], color ))
+        try:
+            tag_str = show['my_tags']
+            if not tag_str:
+                tag_str = '-'
+        except:
+            tag_str = '-'
+        widget.setItem(row, 10, ShowItem( tag_str, color ))
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
@@ -640,6 +716,7 @@ class Trackma(QtGui.QMainWindow):
             self.show_status.setEnabled(False)
             self.show_progress_btn.setEnabled(False)
             self.show_score_btn.setEnabled(False)
+            self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(False)
             self.show_inc_btn.setEnabled(False)
             self.show_dec_btn.setEnabled(False)
@@ -669,6 +746,8 @@ class Trackma(QtGui.QMainWindow):
         self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
+        if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+            self.show_tags_btn.setEnabled(True)
         self.show_inc_btn.setEnabled(True)
         self.show_dec_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
@@ -701,6 +780,34 @@ class Trackma(QtGui.QMainWindow):
 
         # Unblock signals
         self.show_status.blockSignals(False)
+
+    def _filter_check_row(self, table, row, expression, case_sensitive=0):
+        # Determine if a show matches a filter. True -> match -> do not hide
+        # Advanced search: Separate the expression into specific field terms, fail if any are not met
+        if expression.contains(':'):
+            exprs = expression.split(' ')
+            expr_list = QtCore.QStringList()
+            for expr in exprs:
+                if expr.contains(':'):
+                    expr_terms = str(expr).split(':',1)
+                    if expr_terms[0] in self.column_keys:
+                        col = self.column_keys[expr_terms[0]]
+                        sub_expr = QtCore.QString(expr_terms[1]).replace(QtCore.QRegExp('[_+]'), ' ')
+                        item = table.item(row, col)
+                        if not item.text().contains(sub_expr, case_sensitive):
+                            return False
+                    else: # If it's not a field key, let it be a regular search term
+                        expr_list.append(expr)
+                else:
+                    expr_list.append(expr)
+            expression = expr_list.join(' ')
+
+        # General case: if any fields match the remaining expression, success.
+        for col in range(table.columnCount()):
+            item = table.item(row, col)
+            if item.text().contains(expression, case_sensitive):
+                return True
+        return False
 
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
         bp_top = 5  # No more than this many submenus/episodes in the root menu
@@ -854,6 +961,19 @@ class Trackma(QtGui.QMainWindow):
         item = self.notebook.currentWidget().currentItem()
         if item:
             self.s_show_selected(item)
+        self.s_filter_changed() # Refresh filter
+
+    def s_filter_changed(self):
+        table = self.notebook.currentWidget()
+        expr = self.show_filter.text()
+        casesens = int(self.show_filter_casesens.isChecked())
+        for row in range(table.rowCount()):
+            if not expr:
+                table.setRowHidden(row, False)
+            elif self.show_filter_invert.isChecked():
+                table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+            else:
+                table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
 
     def s_plus_episode(self):
         self._busy(True)
@@ -876,6 +996,22 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
+
+    def s_set_tags(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        if show['my_tags']:
+            tags = show['my_tags']
+        else:
+            tags = ''
+        tags, ok = QtGui.QInputDialog.getText(self, 'Edit Tags',
+            'Enter desired tags (comma separated)',
+            text=tags)
+        if ok:
+            self.s_edit_tags(show, tags)
+
+    def s_edit_tags(self, show, tags):
+        self._busy(True)
+        self.worker_call('set_tags', self.r_generic, show['id'], tags)
 
     def s_play(self, play_next, episode=0):
         if self.selected_show_id:
@@ -1121,6 +1257,7 @@ class Trackma(QtGui.QMainWindow):
                 self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
                 self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
+                self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
                 self.show_lists[status].verticalHeader().hide()
@@ -1618,9 +1755,11 @@ class SettingsDialog(QtGui.QDialog):
         g_window = QtGui.QGroupBox('Window')
         g_window.setFlat(True)
         self.remember_geometry = QtGui.QCheckBox('Remember window size and position')
+        self.remember_columns = QtGui.QCheckBox('Remember column layouts and widths')
         self.columns_per_api = QtGui.QCheckBox('Use different visible columns per API')
         g_window_layout = QtGui.QVBoxLayout()
         g_window_layout.addWidget(self.remember_geometry)
+        g_window_layout.addWidget(self.remember_columns)
         g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
 
@@ -1778,6 +1917,7 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_api_icon.setChecked(self.config['tray_api_icon'])
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
+        self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
@@ -1846,6 +1986,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
+        self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
@@ -2446,6 +2587,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine = Engine(account, self._messagehandler)
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
+        self.engine.connect_signal('tags_changed', self._changed_show)
         self.engine.connect_signal('status_changed', self._changed_list)
         self.engine.connect_signal('playing', self._playing_show)
         self.engine.connect_signal('show_added', self._changed_list)
@@ -2461,6 +2603,7 @@ class Engine_Worker(QtCore.QThread):
             'set_episode': self._set_episode,
             'set_score': self._set_score,
             'set_status': self._set_status,
+            'set_tags': self._set_tags,
             'play_episode': self._play_episode,
             'play_random': self._play_random,
             'list_download': self._list_download,
@@ -2565,6 +2708,15 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
+        except utils.TrackmaError, e:
+            self._error(e.message)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _set_tags(self, showid, tags):
+        try:
+            self.engine.set_tags(showid, tags)
         except utils.TrackmaError, e:
             self._error(e.message)
             return {'success': False}
