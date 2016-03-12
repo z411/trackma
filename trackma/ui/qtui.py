@@ -784,29 +784,38 @@ class Trackma(QtGui.QMainWindow):
     def _filter_check_row(self, table, row, expression, case_sensitive=0):
         # Determine if a show matches a filter. True -> match -> do not hide
         # Advanced search: Separate the expression into specific field terms, fail if any are not met
-        if expression.contains(':'):
+        if ':' in expression:
             exprs = expression.split(' ')
-            expr_list = QtCore.QStringList()
+            expr_list = []
             for expr in exprs:
-                if expr.contains(':'):
-                    expr_terms = str(expr).split(':',1)
+                if ':' in expr:
+                    expr_terms = expr.split(':',1)
                     if expr_terms[0] in self.column_keys:
                         col = self.column_keys[expr_terms[0]]
-                        sub_expr = QtCore.QString(expr_terms[1]).replace(QtCore.QRegExp('[_+]'), ' ')
+                        sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
                         item = table.item(row, col)
-                        if not item.text().contains(sub_expr, case_sensitive):
-                            return False
+                        if case_sensitive:
+                            if not sub_expr in unicode(item.text()):
+                                return False
+                        else:
+                            if not sub_expr.lower() in unicode(item.text()).lower():
+                                return False
                     else: # If it's not a field key, let it be a regular search term
                         expr_list.append(expr)
                 else:
                     expr_list.append(expr)
-            expression = expr_list.join(' ')
+            expression = ' '.join(expr_list)
 
         # General case: if any fields match the remaining expression, success.
         for col in range(table.columnCount()):
             item = table.item(row, col)
-            if item.text().contains(expression, case_sensitive):
-                return True
+            itemtext = unicode(item.text())
+            if case_sensitive:
+                if expression in itemtext:
+                    return True
+            else:
+                if expression.lower() in itemtext.lower():
+                    return True
         return False
 
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
@@ -965,7 +974,7 @@ class Trackma(QtGui.QMainWindow):
 
     def s_filter_changed(self):
         table = self.notebook.currentWidget()
-        expr = self.show_filter.text()
+        expr = unicode(self.show_filter.text())
         casesens = int(self.show_filter_casesens.isChecked())
         for row in range(table.rowCount()):
             if not expr:
