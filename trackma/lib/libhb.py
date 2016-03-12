@@ -136,6 +136,7 @@ class libhb(lib):
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,
                     'image': show['anime']['cover_image'],
+                    'url': str("http://hummingbird.me/%s/%d" % (self.mediatype, showid)),
                 })
                 info = self._parse_info(show['anime'])
                 infolist.append(info)
