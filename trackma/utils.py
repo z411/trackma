@@ -143,6 +143,9 @@ def get_root_filename(filename):
 def get_root():
     return os.path.expanduser(os.path.join('~', '.trackma'))
 
+def change_permissions(filename, mode):
+    os.chmod(filename, mode)
+
 def estimate_aired_episodes(show):
     # Estimate how many episodes have passed since airing
 

@@ -24,7 +24,10 @@ class AccountManager(object):
                 self.accounts = cPickle.load(f)
 
     def _save(self):
+        is_new = not utils.file_exists(self.filename)
         with open(self.filename, 'wb') as f:
+            if is_new:
+                utils.change_permissions(self.filename, 0o600)
             cPickle.dump(self.accounts, f)
 
     def add_account(self, username, password, api):
