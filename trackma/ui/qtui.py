@@ -321,7 +321,9 @@ class Trackma(QMainWindow):
         main_layout = QVBoxLayout()
         top_hbox = QHBoxLayout()
         main_hbox = QHBoxLayout()
-        list_box = QGridLayout()
+        self.list_box = QVBoxLayout()
+        filter_bar_box_layout = QHBoxLayout()
+        self.filter_bar_box = QWidget()
         left_box = QFormLayout()
         small_btns_hbox = QHBoxLayout()
 
@@ -416,16 +418,26 @@ class Trackma(QMainWindow):
         left_box.addRow(self.show_status)
         left_box.addRow(self.show_tags_btn)
 
-        list_box.addWidget(self.notebook, 0, 0, 1, 6)
-        list_box.addWidget(QLabel('Filter:'), 1, 0)
-        list_box.addWidget(self.show_filter, 1, 1)
-        list_box.addWidget(QLabel('Invert'), 1, 2)
-        list_box.addWidget(self.show_filter_invert, 1, 3)
-        list_box.addWidget(QLabel('Case Sensitive'), 1, 4)
-        list_box.addWidget(self.show_filter_casesens, 1, 5)
+        filter_bar_box_layout.addWidget(QLabel('Filter:'))
+        filter_bar_box_layout.addWidget(self.show_filter)
+        filter_bar_box_layout.addWidget(QLabel('Invert'))
+        filter_bar_box_layout.addWidget(self.show_filter_invert)
+        filter_bar_box_layout.addWidget(QLabel('Case Sensitive'))
+        filter_bar_box_layout.addWidget(self.show_filter_casesens)
+        self.filter_bar_box.setLayout(filter_bar_box_layout)
+
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
         main_hbox.addLayout(left_box)
-        main_hbox.addLayout(list_box, 1)
+        main_hbox.addLayout(self.list_box, 1)
 
         main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
@@ -562,6 +574,7 @@ class Trackma(QMainWindow):
 
     def _update_config(self):
         self._tray()
+        self._filter_bar()
         # TODO: Reload listviews?
 
     def _tray(self):
@@ -574,6 +587,20 @@ class Trackma(QMainWindow):
                 self.tray.setIcon( QIcon( utils.available_libs[self.account['api']][1] ) )
             else:
                 self.tray.setIcon( self.windowIcon() )
+
+    def _filter_bar(self):
+        self.list_box.removeWidget(self.filter_bar_box)
+        self.list_box.removeWidget(self.notebook)
+        self.filter_bar_box.show()
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
         if wait:
@@ -1848,9 +1875,16 @@ class SettingsDialog(QDialog):
         # Group: Lists
         g_lists = QGroupBox('Lists')
         g_lists.setFlat(True)
+        self.filter_bar_position = QComboBox()
+        filter_bar_positions = [(FilterBar.PositionHidden,     'Hidden'),
+                                (FilterBar.PositionAboveLists, 'Above lists'),
+                                (FilterBar.PositionBelowLists, 'Below lists')]
+        for (n,label) in filter_bar_positions:
+            self.filter_bar_position.addItem(label, n)
         self.filter_global = QCheckBox('Update filter for all lists (slow)')
-        g_lists_layout = QVBoxLayout()
-        g_lists_layout.addWidget(self.filter_global)
+        g_lists_layout = QFormLayout()
+        g_lists_layout.addRow('Filter bar position:',self.filter_bar_position)
+        g_lists_layout.addRow(self.filter_global)
         g_lists.setLayout(g_lists_layout)
 
         # UI layout
@@ -1875,9 +1909,9 @@ class SettingsDialog(QDialog):
             self.ep_bar_style.addItem(label, n)
         self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
         self.ep_bar_text = QCheckBox('Show text label')
-        g_ep_bar_layout = QVBoxLayout()
-        g_ep_bar_layout.addWidget(self.ep_bar_style)
-        g_ep_bar_layout.addWidget(self.ep_bar_text)
+        g_ep_bar_layout = QFormLayout()
+        g_ep_bar_layout.addRow('Style:', self.ep_bar_style)
+        g_ep_bar_layout.addRow(self.ep_bar_text)
         g_ep_bar.setLayout(g_ep_bar_layout)
 
         # Group: Colour scheme
@@ -2011,6 +2045,7 @@ class SettingsDialog(QDialog):
         self.remember_geometry.setChecked(self.config['remember_geometry'])
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
+        self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
         self.filter_global.setChecked(self.config['filter_global'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
@@ -2081,6 +2116,7 @@ class SettingsDialog(QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
+        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex()).toInt()[0]
         self.config['filter_global'] = self.filter_global.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
@@ -2449,6 +2485,15 @@ class ShowItemDate(ShowItem):
             return self.date < other.date
         else:
             return True
+
+class FilterBar(object):
+    """
+    Constants relating to filter bar settings can live here.
+    """
+    # Position
+    PositionHidden = 0
+    PositionAboveLists = 1
+    PositionBelowLists = 2
 
 class EpisodeBar(QProgressBar):
     """
