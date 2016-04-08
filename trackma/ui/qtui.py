@@ -2230,7 +2230,7 @@ class AccountDialog(QDialog):
         self.edit_btns.addItem('Update')
         self.edit_btns.addItem('Delete')
         self.edit_btns.addItem('Purge')
-        self.edit_btns.setItemData( 1, 'Change the local password/PIN or friends list for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData( 1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
         self.edit_btns.setItemData( 2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
         self.edit_btns.setItemData( 3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
         self.edit_btns.setCurrentIndex(0)
@@ -2260,7 +2260,7 @@ class AccountDialog(QDialog):
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
         if result:
-            (username, password, api, friends) = result
+            (username, password, api) = result
             self.accountman.add_account(username, password, api)
             self.rebuild()
 
@@ -2275,10 +2275,9 @@ class AccountDialog(QDialog):
                                          edit=True,
                                          username=acct['username'],
                                          password=acct['password'],
-                                         api=acct['api'],
-                                         friends=[])
+                                         api=acct['api'])
             if result:
-                (username, password, api, friends) = result
+                (username, password, api) = result
                 self.accountman.edit_account(selected_account_num, username, password, api)
                 self.rebuild()
         except IndexError:
@@ -2530,7 +2529,7 @@ class EpisodeBar(QProgressBar):
         self._show_text = show_text
 
 class AccountAddDialog(QDialog):
-    def __init__(self, parent, icons, edit=False, username='', password='', api='', friends=''):
+    def __init__(self, parent, icons, edit=False, username='', password='', api=''):
         QDialog.__init__(self, parent)
         self.edit = edit
 
@@ -2552,12 +2551,10 @@ class AccountAddDialog(QDialog):
         self.api_auth.setOpenExternalLinks(True)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
-        self.friendlist = QLineEdit(', '.join(friends))
 
         formlayout.addRow( QLabel('Site:'), self.api )
         formlayout.addRow( self.lbl_username, self.username )
         formlayout.addRow( self.lbl_password, pin_layout )
-        formlayout.addRow( QLabel('Friends:'), self.friendlist )
 
         bottombox = QDialogButtonBox()
         bottombox.addButton(QDialogButtonBox.Save)
@@ -2589,17 +2586,12 @@ class AccountAddDialog(QDialog):
         elif len(self.password.text()) is 0:
             self._error('Please fill the password/PIN field.')
         else:
-            try:
-                self.friends = str(self.friendlist.text()).split(', ')
-                self.accept()
-            except:
-                self._error('Please ensure each friend in your friends list is separated by a comma and space.')
+            self.accept()
 
     def s_refresh(self, index):
         if not self.edit:
             self.username.setText("")
             self.password.setText("")
-            self.friendlist.setText("")
 
         if pyqt_version is 5:
             apiname = self.api.itemData(index)
@@ -2625,8 +2617,8 @@ class AccountAddDialog(QDialog):
         QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
 
     @staticmethod
-    def do(parent=None, icons=None, edit=False, username='', password='', api='', friends=''):
-        dialog = AccountAddDialog(parent, icons, edit, username, password, api, friends)
+    def do(parent=None, icons=None, edit=False, username='', password='', api=''):
+        dialog = AccountAddDialog(parent, icons, edit, username, password, api)
         result = dialog.exec_()
 
         if result == QDialog.Accepted:
@@ -2634,8 +2626,7 @@ class AccountAddDialog(QDialog):
             return (
                     str( dialog.username.text() ),
                     str( dialog.password.text() ),
-                    str( dialog.api.itemData(currentIndex).toString() ),
-                    dialog.friends
+                    str( dialog.api.itemData(currentIndex).toString() )
                    )
         else:
             return None
