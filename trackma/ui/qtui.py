@@ -17,9 +17,10 @@
 
 import sys
 
-pyqt_version = 4 # TODO: Make this a program argument or something
+pyqt_version = 0
+try_pyqt5 = True # TODO: Make this a program argument or something
 
-if pyqt_version is 5:
+if try_pyqt5:
     try:
         from PyQt5 import QtGui, QtCore
         from PyQt5.QtGui import QIcon, QPalette
@@ -36,11 +37,12 @@ if pyqt_version is 5:
                                     QFileDialog, QInputDialog, QMessageBox,
                                     QAction, QActionGroup, QLabel, QMenu, QStyle,
                                     QSystemTrayIcon)
+        pyqt_version = 5
     except ImportError:
-        print ("Couldn't import Qt dependencies. Make sure you "
+        print ("Couldn't import Qt5 dependencies. Make sure you "
             "installed the PyQt5 package.")
-        sys.exit(-1)
-else:
+        #sys.exit(-1)
+if pyqt_version is 0:
     try:
         from PyQt4 import QtGui, QtCore
         from PyQt4.QtGui import (QApplication, QMainWindow,
@@ -54,6 +56,7 @@ else:
                                 QDialog, QColorDialog, QDialogButtonBox, QFileDialog, QInputDialog, QMessageBox,
                                 QAction, QActionGroup, QLabel, QMenu, QStyle,
                                 QSystemTrayIcon, QIcon, QPalette)
+        pyqt_version = 4
     except ImportError:
         print ("Couldn't import Qt dependencies. Make sure you "
             "installed the PyQt4 package.")
