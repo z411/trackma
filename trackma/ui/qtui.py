@@ -974,8 +974,11 @@ class Trackma(QtGui.QMainWindow):
 
     def s_filter_changed(self):
         table = self.notebook.currentWidget()
+        tab_index = self.notebook.currentIndex()
         expr = unicode(self.show_filter.text())
         casesens = int(self.show_filter_casesens.isChecked())
+        shown = 0
+        total = 0
         for row in range(table.rowCount()):
             if not expr:
                 table.setRowHidden(row, False)
@@ -983,6 +986,16 @@ class Trackma(QtGui.QMainWindow):
                 table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
             else:
                 table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
+            if not table.isRowHidden(row):
+                shown += 1
+            total += 1
+        # Update tab name with matches out of total
+        status = self.statuses_nums[tab_index]
+        if expr:
+            tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
+        else:
+            tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
+        self.notebook.setTabText(tab_index, tab_name)
 
     def s_plus_episode(self):
         self._busy(True)
