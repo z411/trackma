@@ -1250,6 +1250,8 @@ class Trackma(QMainWindow):
 
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
+        # Refresh filter
+        self.s_filter_changed()
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
