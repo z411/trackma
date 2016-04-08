@@ -352,6 +352,7 @@ qt_defaults = {
     'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
+    'filter_global': False,
     'colors': {
         'is_airing': '#D2FAFA',
         'is_playing': '#9696FA',

@@ -973,29 +973,34 @@ class Trackma(QtGui.QMainWindow):
         self.s_filter_changed() # Refresh filter
 
     def s_filter_changed(self):
-        table = self.notebook.currentWidget()
-        tab_index = self.notebook.currentIndex()
-        expr = unicode(self.show_filter.text())
-        casesens = int(self.show_filter_casesens.isChecked())
-        shown = 0
-        total = 0
-        for row in range(table.rowCount()):
-            if not expr:
-                table.setRowHidden(row, False)
-            elif self.show_filter_invert.isChecked():
-                table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
-            else:
-                table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
-            if not table.isRowHidden(row):
-                shown += 1
-            total += 1
-        # Update tab name with matches out of total
-        status = self.statuses_nums[tab_index]
-        if expr:
-            tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
+        tabs = []
+        if self.config['filter_global']:
+            tabs = range(len(self.notebook))
         else:
-            tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
-        self.notebook.setTabText(tab_index, tab_name)
+            tabs = [self.notebook.currentIndex()]
+        for tab_index in tabs:
+            table = self.notebook.widget(tab_index)
+            expr = unicode(self.show_filter.text())
+            casesens = int(self.show_filter_casesens.isChecked())
+            shown = 0
+            total = 0
+            for row in range(table.rowCount()):
+                if not expr:
+                    table.setRowHidden(row, False)
+                elif self.show_filter_invert.isChecked():
+                    table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+                else:
+                    table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
+                if not table.isRowHidden(row):
+                    shown += 1
+                total += 1
+            # Update tab name with matches out of total
+            status = self.statuses_nums[tab_index]
+            if expr:
+                tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
+            else:
+                tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
+            self.notebook.setTabText(tab_index, tab_name)
 
     def s_plus_episode(self):
         self._busy(True)
@@ -1785,9 +1790,18 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
 
+        # Group: Lists
+        g_lists = QGroupBox('Lists')
+        g_lists.setFlat(True)
+        self.filter_global = QCheckBox('Update filter for all lists (slow)')
+        g_lists_layout = QVBoxLayout()
+        g_lists_layout.addWidget(self.filter_global)
+        g_lists.setLayout(g_lists_layout)
+
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_lists)
         page_ui.setLayout(page_ui_layout)
 
         # Theming tab
@@ -1941,6 +1955,7 @@ class SettingsDialog(QtGui.QDialog):
         self.remember_geometry.setChecked(self.config['remember_geometry'])
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
+        self.filter_global.setChecked(self.config['filter_global'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
@@ -2010,6 +2025,7 @@ class SettingsDialog(QtGui.QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
+        self.config['filter_global'] = self.filter_global.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
