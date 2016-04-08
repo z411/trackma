@@ -808,7 +808,7 @@ class Trackma(QtGui.QMainWindow):
         # Unblock signals
         self.show_status.blockSignals(False)
 
-    def _filter_check_row(self, table, row, expression, case_sensitive=0):
+    def _filter_check_row(self, table, row, expression, case_sensitive=False):
         # Determine if a show matches a filter. True -> match -> do not hide
         # Advanced search: Separate the expression into specific field terms, fail if any are not met
         if ':' in expression:
@@ -1005,10 +1005,10 @@ class Trackma(QtGui.QMainWindow):
             tabs = range(len(self.notebook))
         else:
             tabs = [self.notebook.currentIndex()]
+        expr = unicode(self.show_filter.text())
+        casesens = self.show_filter_casesens.isChecked()
         for tab_index in tabs:
             table = self.notebook.widget(tab_index)
-            expr = unicode(self.show_filter.text())
-            casesens = int(self.show_filter_casesens.isChecked())
             shown = 0
             total = 0
             for row in range(table.rowCount()):
