@@ -44,6 +44,8 @@ if try_pyqt5:
         #sys.exit(-1)
 if pyqt_version is 0:
     try:
+        import sip
+        sip.setapi('QVariant', 2)
         from PyQt4 import QtGui, QtCore
         from PyQt4.QtGui import (QApplication, QMainWindow,
                                 QFormLayout, QGridLayout, QHBoxLayout, QVBoxLayout,
@@ -2116,10 +2118,10 @@ class SettingsDialog(QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
-        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex()).toInt()[0]
+        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex())
         self.config['filter_global'] = self.filter_global.isChecked()
 
-        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
+        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex())
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
 
         self.config['colors'] = self.color_values
