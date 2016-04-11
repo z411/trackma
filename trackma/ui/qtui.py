@@ -284,7 +284,9 @@ class Trackma(QtGui.QMainWindow):
         main_layout = QtGui.QVBoxLayout()
         top_hbox = QtGui.QHBoxLayout()
         main_hbox = QtGui.QHBoxLayout()
-        list_box = QtGui.QGridLayout()
+        self.list_box = QtGui.QGridLayout()
+        filter_bar_box_layout = QtGui.QHBoxLayout()
+        self.filter_bar_box = QtGui.QWidget()
         left_box = QtGui.QFormLayout()
         small_btns_hbox = QtGui.QHBoxLayout()
 
@@ -381,16 +383,26 @@ class Trackma(QtGui.QMainWindow):
         left_box.addRow(self.show_status)
         left_box.addRow(self.show_tags_btn)
 
-        list_box.addWidget(self.notebook, 0, 0, 1, 6)
-        list_box.addWidget(QtGui.QLabel('Filter:'), 1, 0)
-        list_box.addWidget(self.show_filter, 1, 1)
-        list_box.addWidget(QtGui.QLabel('Invert'), 1, 2)
-        list_box.addWidget(self.show_filter_invert, 1, 3)
-        list_box.addWidget(QtGui.QLabel('Case Sensitive'), 1, 4)
-        list_box.addWidget(self.show_filter_casesens, 1, 5)
+        filter_bar_box_layout.addWidget(QtGui.QLabel('Filter:'))
+        filter_bar_box_layout.addWidget(self.show_filter)
+        filter_bar_box_layout.addWidget(QtGui.QLabel('Invert'))
+        filter_bar_box_layout.addWidget(self.show_filter_invert)
+        filter_bar_box_layout.addWidget(QtGui.QLabel('Case Sensitive'))
+        filter_bar_box_layout.addWidget(self.show_filter_casesens)
+        self.filter_bar_box.setLayout(filter_bar_box_layout)
+
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
         main_hbox.addLayout(left_box)
-        main_hbox.addLayout(list_box, 1)
+        main_hbox.addLayout(self.list_box, 1)
 
         main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
@@ -527,6 +539,7 @@ class Trackma(QtGui.QMainWindow):
 
     def _update_config(self):
         self._tray()
+        self._filter_bar()
         # TODO: Reload listviews?
 
     def _tray(self):
@@ -539,6 +552,20 @@ class Trackma(QtGui.QMainWindow):
                 self.tray.setIcon( QtGui.QIcon( utils.available_libs[self.account['api']][1] ) )
             else:
                 self.tray.setIcon( self.windowIcon() )
+
+    def _filter_bar(self):
+        self.list_box.removeWidget(self.filter_bar_box)
+        self.list_box.removeWidget(self.notebook)
+        self.filter_bar_box.show()
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
         if wait:
@@ -781,7 +808,7 @@ class Trackma(QtGui.QMainWindow):
         # Unblock signals
         self.show_status.blockSignals(False)
 
-    def _filter_check_row(self, table, row, expression, case_sensitive=0):
+    def _filter_check_row(self, table, row, expression, case_sensitive=False):
         # Determine if a show matches a filter. True -> match -> do not hide
         # Advanced search: Separate the expression into specific field terms, fail if any are not met
         if ':' in expression:
@@ -973,16 +1000,34 @@ class Trackma(QtGui.QMainWindow):
         self.s_filter_changed() # Refresh filter
 
     def s_filter_changed(self):
-        table = self.notebook.currentWidget()
+        tabs = []
+        if self.config['filter_global']:
+            tabs = range(len(self.notebook))
+        else:
+            tabs = [self.notebook.currentIndex()]
         expr = unicode(self.show_filter.text())
-        casesens = int(self.show_filter_casesens.isChecked())
-        for row in range(table.rowCount()):
-            if not expr:
-                table.setRowHidden(row, False)
-            elif self.show_filter_invert.isChecked():
-                table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+        casesens = self.show_filter_casesens.isChecked()
+        for tab_index in tabs:
+            table = self.notebook.widget(tab_index)
+            shown = 0
+            total = 0
+            for row in range(table.rowCount()):
+                if not expr:
+                    table.setRowHidden(row, False)
+                elif self.show_filter_invert.isChecked():
+                    table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+                else:
+                    table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
+                if not table.isRowHidden(row):
+                    shown += 1
+                total += 1
+            # Update tab name with matches out of total
+            status = self.statuses_nums[tab_index]
+            if expr:
+                tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
             else:
-                table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
+                tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
+            self.notebook.setTabText(tab_index, tab_name)
 
     def s_plus_episode(self):
         self._busy(True)
@@ -1777,9 +1822,25 @@ class SettingsDialog(QtGui.QDialog):
         g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
 
+        # Group: Lists
+        g_lists = QtGui.QGroupBox('Lists')
+        g_lists.setFlat(True)
+        self.filter_bar_position = QtGui.QComboBox()
+        filter_bar_positions = [(FilterBar.PositionHidden,     'Hidden'),
+                                (FilterBar.PositionAboveLists, 'Above lists'),
+                                (FilterBar.PositionBelowLists, 'Below lists')]
+        for (n,label) in filter_bar_positions:
+            self.filter_bar_position.addItem(label, n)
+        self.filter_global = QtGui.QCheckBox('Update filter for all lists (slow)')
+        g_lists_layout = QtGui.QFormLayout()
+        g_lists_layout.addRow('Filter bar position:',self.filter_bar_position)
+        g_lists_layout.addRow(self.filter_global)
+        g_lists.setLayout(g_lists_layout)
+
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_lists)
         page_ui.setLayout(page_ui_layout)
 
         # Theming tab
@@ -1798,9 +1859,9 @@ class SettingsDialog(QtGui.QDialog):
             self.ep_bar_style.addItem(label, n)
         self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
         self.ep_bar_text = QtGui.QCheckBox('Show text label')
-        g_ep_bar_layout = QtGui.QVBoxLayout()
-        g_ep_bar_layout.addWidget(self.ep_bar_style)
-        g_ep_bar_layout.addWidget(self.ep_bar_text)
+        g_ep_bar_layout = QtGui.QFormLayout()
+        g_ep_bar_layout.addRow('Style:', self.ep_bar_style)
+        g_ep_bar_layout.addRow(self.ep_bar_text)
         g_ep_bar.setLayout(g_ep_bar_layout)
 
         # Group: Colour scheme
@@ -1933,6 +1994,8 @@ class SettingsDialog(QtGui.QDialog):
         self.remember_geometry.setChecked(self.config['remember_geometry'])
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
+        self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
+        self.filter_global.setChecked(self.config['filter_global'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
@@ -2002,6 +2065,8 @@ class SettingsDialog(QtGui.QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
+        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex()).toInt()[0]
+        self.config['filter_global'] = self.filter_global.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
@@ -2331,6 +2396,15 @@ class ShowItemDate(ShowItem):
             return self.date < other.date
         else:
             return True
+
+class FilterBar(object):
+    """
+    Constants relating to filter bar settings can live here.
+    """
+    # Position
+    PositionHidden = 0
+    PositionAboveLists = 1
+    PositionBelowLists = 2
 
 class EpisodeBar(QtGui.QProgressBar):
     """
