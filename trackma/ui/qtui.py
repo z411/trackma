@@ -1251,8 +1251,6 @@ class Trackma(QtGui.QMainWindow):
 
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
-        # Refresh filter
-        self.s_filter_changed()
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
@@ -1614,9 +1612,6 @@ class AddDialog(QtGui.QDialog):
                 self.table.setItem(i, 2, ShowItem(str(res['total'])))
 
                 i += 1
-            if self.table.currentRow() is 0: # Row number hasn't changed but the data probably has!
-                self.s_show_selected(self.table.item(0,0))
-            self.table.setCurrentItem(self.table.item(0,0))
         else:
             self.table.setRowCount(0)
 
