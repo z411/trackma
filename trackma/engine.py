@@ -700,10 +700,16 @@ class Engine:
         library = self.library()
         newep = []
 
+        self.msg.info(self.name, 'Looking for random episode.')
+
         for showid, eps in library.iteritems():
             show = self.get_show_info(showid)
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
+
+
+        if not newep:
+            raise utils.EngineError('No new episodes found to pick from.')
 
         show = random.choice(newep)
         ep = self.play_episode(show)
