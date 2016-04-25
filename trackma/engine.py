@@ -290,7 +290,7 @@ class Engine:
         showdict = self.data_handler.get()
         # Do title lookup, slower
         for k, show in showdict.iteritems():
-            if show['title'] == pattern:
+            if show['title'].encode('utf-8') == pattern:
                 return show
         raise utils.EngineError("Show not found.")
 
