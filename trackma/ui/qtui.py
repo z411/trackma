@@ -2307,7 +2307,7 @@ class AccountDialog(QDialog):
         self.edit_btns.setItemData( 3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
-        self.edit_btns.currentIndexChanged.connect(self.s_edit)
+        self.edit_btns.activated.connect(self.s_edit)
         select_btn = QPushButton('Select')
         select_btn.clicked.connect(self.select)
         bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
@@ -2677,10 +2677,10 @@ class AccountAddDialog(QDialog):
         if pyqt_version is 5:
             apiname = self.api.itemData(index)
         else:
-            apiname = str(self.api.itemData(index).toString())
+            apiname = str(self.api.itemData(index))
         api = utils.available_libs[apiname]
         if api[2] == utils.LOGIN_OAUTH:
-            apiname = str(self.api.itemData(index).toString())
+            apiname = str(self.api.itemData(index))
             url = utils.available_libs[apiname][4]
             self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
             self.api_auth.show()
@@ -2705,9 +2705,9 @@ class AccountAddDialog(QDialog):
         if result == QDialog.Accepted:
             currentIndex = dialog.api.currentIndex()
             return (
-                    str( dialog.username.text() ),
-                    str( dialog.password.text() ),
-                    str( dialog.api.itemData(currentIndex).toString() )
+                    str(dialog.username.text()),
+                    str(dialog.password.text()),
+                    str(dialog.api.itemData(currentIndex))
                    )
         else:
             return None
