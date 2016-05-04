@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: Trackma
+Version: 0.4
+Summary: Open multi-site list manager
+Home-page: https://github.com/z411/trackma
+Author: z411
+Author-email: z411@krutt.org
+License: GPL-3
+Description: UNKNOWN
+Keywords: list manager,curses,gtk,qt,myanimelist,hummingbird,vndb
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Topic :: Internet
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Operating System :: POSIX
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
