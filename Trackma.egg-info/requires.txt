@@ -1,0 +1,10 @@
+
+[GTK]
+PyGTK
+Pillow
+
+[Qt]
+Pillow
+
+[curses]
+urwid

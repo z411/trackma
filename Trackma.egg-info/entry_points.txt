@@ -1,0 +1,8 @@
+[console_scripts]
+trackma = trackma.ui.cli:main
+trackma-curses = trackma.ui.curses:main
+
+[gui_scripts]
+trackma-gtk = trackma.ui.gtkui:main
+trackma-qt = trackma.ui.qtui:main
+

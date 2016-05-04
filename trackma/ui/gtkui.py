@@ -118,7 +118,7 @@ class Trackma_gtk(object):
         if self.config['remember_geometry']:
             self.main.resize(self.config['last_width'], self.config['last_height'])
 
-        # Menus
+        # Menus 
         mb_show = gtk.Menu()
         self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
         self.mb_play.connect("activate", self.do_play, True)
@@ -132,6 +132,8 @@ class Trackma_gtk(object):
         self.mb_copy.connect("activate", self.do_copytoclip)
         self.mb_alt_title = gtk.MenuItem("Set alternate title...")
         self.mb_alt_title.connect("activate", self.do_altname)
+        self.mb_folder = gtk.MenuItem("Open containing folder")
+        self.mb_folder.connect("activate", self.do_contatainerFolder)
         self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         self.mb_delete.connect("activate", self.do_delete)
         self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
@@ -152,6 +154,7 @@ class Trackma_gtk(object):
         mb_show.append(self.mb_delete)
         mb_show.append(gtk.SeparatorMenuItem())
         mb_show.append(self.mb_exit)
+        mb_show.append(self.mb_folder)
 
         mb_list = gtk.Menu()
         gtk.stock_add([(gtk.STOCK_REFRESH, "Sync", 0, 0, "")])
@@ -737,6 +740,13 @@ class Trackma_gtk(object):
             except utils.TrackmaError, e:
                 self.error(e.message)
 
+    def task_openContianingFolder(self):
+        show = self.engine.get_show_info(self.select_show)
+        titles = self.engine.data_handler.get_show_titles(show)
+        filename, ep = self.engine._search_video(titles, 1)
+
+        currentFolderProcess = subprocess.Popen(["/bin/nautilus", filename])
+
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
 
@@ -1054,6 +1064,12 @@ class Trackma_gtk(object):
 
         dialog.destroy()
 
+#    def do_play(self, widget, playnext, ep=None):
+#        threading.Thread(target=self.task_play, args=(playnext,ep)).start()
+
+    def do_contatainerFolder(self, widget):
+        threading.Thread(target=self.task_openContianingFolder).start()
+
     def altname_response(self, entry, dialog, response):
         dialog.response(response)
 
@@ -1084,6 +1100,8 @@ class Trackma_gtk(object):
                 mb_copy.connect("activate", self.do_copytoclip)
                 mb_alt_title = gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.do_altname)
+                mb_folder = gtk.MenuItem("Open containing folder")
+                mb_folder.connect("activate", self.do_contatainerFolder)
                 mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
                 mb_delete.connect("activate", self.do_delete)
 
@@ -1104,6 +1122,7 @@ class Trackma_gtk(object):
                 menu.append(gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
+                menu.append(mb_folder)
                 menu.append(gtk.SeparatorMenuItem())
                 menu.append(mb_delete)
 

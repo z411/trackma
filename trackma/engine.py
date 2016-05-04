@@ -577,6 +577,7 @@ class Engine:
         self._emit_signal('show_deleted', show)
 
     def _search_video(self, titles, episode):
+
         best_candidate = (None, 0, None)
 
         matcher = difflib.SequenceMatcher()
