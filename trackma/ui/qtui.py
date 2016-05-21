@@ -1216,10 +1216,7 @@ class Trackma(QMainWindow):
         self.addwindow.show()
 
     def s_mediatype(self, action):
-        if pyqt_version is 5:
-            index = action.data()
-        else:
-            index = action.data().toInt()[0]
+        index = action.data()
         mediatype = self.api_info['supported_mediatypes'][index]
         self.reload(None, mediatype)
 
