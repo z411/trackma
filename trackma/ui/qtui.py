@@ -829,7 +829,7 @@ class Trackma(QMainWindow):
                 self.image_worker.cancel()
 
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+            filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
@@ -1030,7 +1030,7 @@ class Trackma(QMainWindow):
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
-        filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+        filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
         self.image_worker = Image_Worker(show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)
@@ -1516,9 +1516,10 @@ class DetailsWidget(QWidget):
         # Load show info
         self.show_info.setText('Wait...')
         self.worker_call('get_show_details', self.r_details_loaded, show)
+        api_info = self.worker.engine.api_info
 
         # Load show image
-        filename = utils.get_filename('cache', "f_%s.jpg" % show['id'])
+        filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
 
         if os.path.isfile(filename):
             self.s_show_image(filename)

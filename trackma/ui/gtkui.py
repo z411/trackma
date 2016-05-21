@@ -917,7 +917,7 @@ class Trackma_gtk(object):
         # Image
         if show.get('image_thumb') or show.get('image'):
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s.jpg" % (show['id']))
+            filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.show_image.image_show(filename)
@@ -1693,6 +1693,8 @@ class InfoWidget(gtk.VBox):
 
         # Load image
         imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
+        imagefile = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
+
 
         if os.path.isfile(imagefile):
             self.w_image.image_show(imagefile)
