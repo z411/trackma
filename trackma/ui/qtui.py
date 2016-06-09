@@ -509,7 +509,7 @@ class Trackma(QMainWindow):
 
     def status(self, message):
         self.status_text.setText(message)
-        print(unicode(message).encode('utf-8'))
+        print(message)
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))
@@ -864,10 +864,10 @@ class Trackma(QMainWindow):
                         sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
                         item = table.item(row, col)
                         if case_sensitive:
-                            if not sub_expr in unicode(item.text()):
+                            if not sub_expr in item.text():
                                 return False
                         else:
-                            if not sub_expr.lower() in unicode(item.text()).lower():
+                            if not sub_expr.lower() in item.text().lower():
                                 return False
                     else: # If it's not a field key, let it be a regular search term
                         expr_list.append(expr)
@@ -878,7 +878,7 @@ class Trackma(QMainWindow):
         # General case: if any fields match the remaining expression, success.
         for col in range(table.columnCount()):
             item = table.item(row, col)
-            itemtext = unicode(item.text())
+            itemtext = item.text()
             if case_sensitive:
                 if expression in itemtext:
                     return True
@@ -1047,7 +1047,7 @@ class Trackma(QMainWindow):
             tabs = range(len(self.notebook))
         else:
             tabs = [self.notebook.currentIndex()]
-        expr = unicode(self.show_filter.text())
+        expr = self.show_filter.text()
         casesens = self.show_filter_casesens.isChecked()
         for tab_index in tabs:
             table = self.notebook.widget(tab_index)
@@ -2069,10 +2069,10 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
 
-        engine.set_config('player',     unicode(self.player.text()))
-        engine.set_config('searchdir',  unicode(self.searchdir.text()))
-        engine.set_config('plex_host',  unicode(self.plex_host.text()))
-        engine.set_config('plex_port',  unicode(self.plex_port.text()))
+        engine.set_config('player',    self.player.text())
+        engine.set_config('searchdir', self.searchdir.text())
+        engine.set_config('plex_host', self.plex_host.text())
+        engine.set_config('plex_port', self.plex_port.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -2961,7 +2961,7 @@ class Engine_Worker(QtCore.QThread):
 
     def _search(self, terms):
         try:
-            results = self.engine.search(unicode(terms).encode('utf-8'))
+            results = self.engine.search(terms)
         except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
