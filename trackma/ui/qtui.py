@@ -2836,7 +2836,7 @@ class Engine_Worker(QtCore.QThread):
     def _start(self):
         try:
             self.engine.start()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2845,7 +2845,7 @@ class Engine_Worker(QtCore.QThread):
     def _reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2854,7 +2854,7 @@ class Engine_Worker(QtCore.QThread):
     def _unload(self):
         try:
             self.engine.unload()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2863,7 +2863,7 @@ class Engine_Worker(QtCore.QThread):
     def _scan_library(self):
         try:
             self.engine.scan_library()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2873,7 +2873,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             showlist = self.engine.get_list()
             altnames = self.engine.altnames()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2882,7 +2882,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_episode(self, showid, episode):
         try:
             self.engine.set_episode(showid, episode)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2891,7 +2891,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_score(self, showid, score):
         try:
             self.engine.set_score(showid, score)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2900,7 +2900,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2909,7 +2909,7 @@ class Engine_Worker(QtCore.QThread):
     def _set_tags(self, showid, tags):
         try:
             self.engine.set_tags(showid, tags)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2918,7 +2918,7 @@ class Engine_Worker(QtCore.QThread):
     def _play_episode(self, show, episode):
         try:
             played_ep = self.engine.play_episode(show, episode)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2927,7 +2927,7 @@ class Engine_Worker(QtCore.QThread):
     def _play_random(self):
         try:
             (show, ep) = self.engine.play_random()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2936,7 +2936,7 @@ class Engine_Worker(QtCore.QThread):
     def _list_download(self):
         try:
             self.engine.list_download()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2945,7 +2945,7 @@ class Engine_Worker(QtCore.QThread):
     def _list_upload(self):
         try:
             self.engine.list_upload()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2954,7 +2954,7 @@ class Engine_Worker(QtCore.QThread):
     def _get_show_details(self, show):
         try:
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2963,7 +2963,7 @@ class Engine_Worker(QtCore.QThread):
     def _search(self, terms):
         try:
             results = self.engine.search(unicode(terms).encode('utf-8'))
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2972,7 +2972,7 @@ class Engine_Worker(QtCore.QThread):
     def _add_show(self, show, status):
         try:
             results = self.engine.add_show(show, status)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -2981,7 +2981,7 @@ class Engine_Worker(QtCore.QThread):
     def _delete_show(self, show):
         try:
             results = self.engine.delete_show(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self._error(e.message)
             return {'success': False}
 
@@ -3008,7 +3008,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             ret = self.function(*self.args,**self.kwargs)
             self.finished.emit(ret)
-        except utils.TrackmaFatal, e:
+        except utils.TrackmaFatal as e:
             self._fatal(e.message)
 
 def getIcon(icon_name):
@@ -3032,5 +3032,5 @@ def main():
     try:
         mainwindow = Trackma()
         sys.exit(app.exec_())
-    except utils.TrackmaFatal, e:
+    except utils.TrackmaFatal as e:
         QMessageBox.critical(None, 'Fatal Error', "{0}".format(e.message), QMessageBox.Ok)

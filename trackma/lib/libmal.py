@@ -110,7 +110,7 @@ class libmal(lib):
             request = urllib2.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
             response = self.opener.open(request, timeout = 10)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError(
                         "Unauthorized. Please check if your username and password are correct."
@@ -119,7 +119,7 @@ class libmal(lib):
                         "MAL bug (#138).")
             else:
                 raise utils.APIError("HTTP error %d: %s" % (e.code, e.reason))
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             raise utils.APIError("Connection error: %s" % e)
 
         if response.info().get('content-encoding') == 'gzip':
@@ -170,9 +170,9 @@ class libmal(lib):
                 return self._parse_manga(root)
             else:
                 raise utils.APIFatal('Attempted to parse unsupported media type.')
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError("Error getting list.")
-        except IOError, e:
+        except IOError as e:
             raise utils.APIError("Error reading list: %s" % e.message)
 
     def add_show(self, item):
@@ -187,7 +187,7 @@ class libmal(lib):
         data = self._urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
     def update_show(self, item):
@@ -202,7 +202,7 @@ class libmal(lib):
         data = self._urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -212,7 +212,7 @@ class libmal(lib):
 
         try:
             self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, criteria):
@@ -226,7 +226,7 @@ class libmal(lib):
         # Load the results into XML
         try:
             root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except ET.ParseError, e:
+        except ET.ParseError as e:
             if e.code == 3:
                 # Empty document; no results
                 return []

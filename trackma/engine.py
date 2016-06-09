@@ -201,9 +201,9 @@ class Engine:
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
-        except utils.DataError, e:
+        except utils.DataError as e:
             raise utils.DataFatal(e.message)
-        except utils.APIError, e:
+        except utils.APIError as e:
             raise utils.APIFatal(e.message)
 
         # Start tracker
@@ -400,7 +400,7 @@ class Engine:
                 elif newep == 1 and self.mediainfo.get('status_start'):
                     # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -415,7 +415,7 @@ class Engine:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since date change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
@@ -495,7 +495,7 @@ class Engine:
         ):
             try:
                 self.set_status(show['id'], self.mediainfo['status_finish'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 

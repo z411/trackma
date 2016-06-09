@@ -301,7 +301,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(args[0])
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
             return
 
@@ -329,7 +329,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             entries = self.engine.search(args[0])
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
             return
 
@@ -349,7 +349,7 @@ class Trackma_cmd(cmd.Cmd):
             # Tell the engine to add the show
             try:
                 self.engine.add_show(show, self.filter_num)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.display_error(e)
 
     def do_delete(self, args):
@@ -365,7 +365,7 @@ class Trackma_cmd(cmd.Cmd):
             do_delete = raw_input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
             if do_delete.lower() == 'y':
                 self.engine.delete_show(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_scaneps(self, args):
@@ -380,7 +380,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             self.engine.play_random()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_play(self, args):
@@ -407,7 +407,7 @@ class Trackma_cmd(cmd.Cmd):
                 playing_next = True
 
             played_episode = self.engine.play_episode(show, episode)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_update(self, args):
@@ -423,7 +423,7 @@ class Trackma_cmd(cmd.Cmd):
             self.engine.set_episode(show['id'], args[1])
         except IndexError:
             print "Missing arguments."
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_score(self, args):
@@ -439,7 +439,7 @@ class Trackma_cmd(cmd.Cmd):
             self.engine.set_score(show['id'], args[1])
         except IndexError:
             print "Missing arguments."
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_status(self, args):
@@ -467,7 +467,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(_showtitle)
             self.engine.set_status(show['id'], _filter_num)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_send(self, args):
@@ -476,7 +476,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             self.engine.list_upload()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_retrieve(self, args):
@@ -491,7 +491,7 @@ class Trackma_cmd(cmd.Cmd):
             else:
                 self.engine.list_download()
             self._load_list()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_undoall(self, args):
@@ -500,7 +500,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             self.engine.undoall()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_viewqueue(self, args):
@@ -526,7 +526,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             self.engine.unload()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.display_error(e)
 
         print 'Bye!'
@@ -772,7 +772,7 @@ class Trackma_accounts(AccountManager):
                 try:
                     self.add_account(username, password, api)
                     print 'Done.'
-                except utils.AccountError, e:
+                except utils.AccountError as e:
                     print 'Error: %s' % e.message
             elif key.lower() == 'd':
                 print "--- Delete account ---"
@@ -829,5 +829,5 @@ def main():
     try:
         main_cmd.start()
         main_cmd.cmdloop()
-    except utils.TrackmaFatal, e:
+    except utils.TrackmaFatal as e:
         print "%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET)

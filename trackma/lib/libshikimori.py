@@ -142,7 +142,7 @@ class libshikimori(lib):
         try:
             response = self.opener.open(request, timeout = 10)
             return json.load(response)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("400")
             else:

@@ -88,7 +88,7 @@ class Trackma_urwid():
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
-	self.header_order = urwid.Text('Order:d')
+        self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
             ('fixed', 23, self.header_filter),
@@ -286,11 +286,11 @@ class Trackma_urwid():
         self.status("Ready.")
 
     def change_sort_order(self):
-    	self.status("Sorting...")
-	_order = self.orders_iter.next()
-	self.cur_order = _order
-	self._rebuild_lists()
-	self.status("Ready.")
+        self.status("Sorting...")
+        _order = self.orders_iter.next()
+        self.cur_order = _order
+        self._rebuild_lists()
+        self.status("Ready.")
 
     def do_update(self):
         showid = self._get_selected_item().showid
@@ -311,7 +311,7 @@ class Trackma_urwid():
             self.engine.list_download()
             self._rebuild_lists()
             self.status("Ready.")
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_help(self):
@@ -403,7 +403,7 @@ class Trackma_urwid():
 
         try:
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
             return
 
@@ -437,7 +437,7 @@ class Trackma_urwid():
             self._rebuild_lists(self.engine.mediainfo['status_start'])
 
             self.status("Ready.")
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_quit(self):
@@ -449,7 +449,7 @@ class Trackma_urwid():
         if data:
             try:
                 shows = self.engine.search(data)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -467,7 +467,7 @@ class Trackma_urwid():
         _filter = self.filters_nums[self.cur_filter]
         try:
             self.engine.add_show(show, _filter)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def delete_request(self, data):
@@ -478,7 +478,7 @@ class Trackma_urwid():
 
             try:
                 show = self.engine.delete_show(show)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
 
     def status_request(self, widget, data=None):
@@ -488,7 +488,7 @@ class Trackma_urwid():
 
             try:
                 show = self.engine.set_status(item.showid, data)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -504,7 +504,7 @@ class Trackma_urwid():
 
             try:
                 show = self.engine.set_episode(item.showid, data)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -515,7 +515,7 @@ class Trackma_urwid():
 
             try:
                 show = self.engine.set_score(item.showid, data)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -527,7 +527,7 @@ class Trackma_urwid():
             try:
                 self.engine.altname(item.showid, data)
                 item.update_altname(self.engine.altname(item.showid))
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -539,7 +539,7 @@ class Trackma_urwid():
 
             try:
                 self.engine.play_episode(show, data)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
 
@@ -551,7 +551,7 @@ class Trackma_urwid():
         if data == 'y':
             try:
                 show = self.engine.set_episode(show['id'], episode)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
                 return
         else:
@@ -842,7 +842,7 @@ class AccountDialog(Dialog):
 
         try:
             self.manager.add_account(username, password, api)
-        except utils.AccountError, e:
+        except utils.AccountError as e:
             self.adding = False
             self.frame.footer = urwid.Text("Error: %s" % e.message)
             self.frame.set_focus('body')
@@ -1056,5 +1056,5 @@ class QuestionAsker(Asker):
 def main():
     try:
         Trackma_urwid()
-    except utils.TrackmaFatal, e:
+    except utils.TrackmaFatal as e:
         print "Fatal error: %s" % e.message

@@ -82,7 +82,7 @@ class libhb(lib):
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
@@ -143,7 +143,7 @@ class libhb(lib):
 
             self._emit_signal('show_info_changed', infolist)
             return showlist
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError("Error getting list.")
 
     def add_show(self, item):
@@ -168,7 +168,7 @@ class libhb(lib):
 
         try:
             self._request("/libraries/%s" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -179,7 +179,7 @@ class libhb(lib):
         values = {'auth_token': self.auth}
         try:
             self._request("/libraries/%s/remove" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, query):
@@ -202,7 +202,7 @@ class libhb(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
 
     def _str2date(self, string):

@@ -640,7 +640,7 @@ class Trackma_gtk():
         try:
             show = self.engine.get_show_info(self.selected_show)
             self.engine.delete_show(show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_info(self, widget, d1=None, d2=None):
@@ -651,14 +651,14 @@ class Trackma_gtk():
         show = self.engine.get_show_info(self.selected_show)
         try:
             show = self.engine.set_episode(self.selected_show, show['my_progress'] + 1)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_rem_epp(self, widget):
         show = self.engine.get_show_info(self.selected_show)
         try:
             show = self.engine.set_episode(self.selected_show, show['my_progress'] - 1)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_update(self, widget):
@@ -666,14 +666,14 @@ class Trackma_gtk():
         ep = self.show_ep_num.get_text()
         try:
             show = self.engine.set_episode(self.selected_show, ep)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_score(self, widget):
         score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_status(self, widget):
@@ -682,7 +682,7 @@ class Trackma_gtk():
 
         try:
             show = self.engine.set_status(self.selected_show, status)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
     def do_update_next(self, show, played_ep):
@@ -734,7 +734,7 @@ class Trackma_gtk():
                 show = self.engine.set_episode(show['id'], played_ep)
                 status = show['my_status']
                 self.show_lists[status].update(show)
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error(e.message)
 
     def task_play(self, playnext, ep):
@@ -749,7 +749,7 @@ class Trackma_gtk():
                 if not ep:
                     ep = self.show_ep_num.get_value_as_int()
                 self.engine.play_episode(show, ep)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
         self.status("Ready.")
@@ -760,7 +760,7 @@ class Trackma_gtk():
 
         try:
             result = self.engine.scan_library()
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
 
         gobject.idle_add(self.build_list, self.engine.mediainfo['status_start'])
@@ -823,7 +823,7 @@ class Trackma_gtk():
         if not self.engine.loaded:
             try:
                 self.engine.start()
-            except utils.TrackmaFatal, e:
+            except utils.TrackmaFatal as e:
                 print("Fatal engine error: %s" % e.message)
                 self.idle_restart()
                 self.error("Fatal engine error: %s" % e.message)
@@ -856,9 +856,9 @@ class Trackma_gtk():
     def task_reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.error(e.message)
-        except utils.TrackmaFatal, e:
+        except utils.TrackmaFatal as e:
             print("Fatal engine error: %s" % e.message)
             self.idle_restart()
             self.error("Fatal engine error: %s" % e.message)
@@ -1711,7 +1711,7 @@ class InfoWidget(gtk.VBox):
 
         try:
             self.details = self.engine.get_show_details(self.show)
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.details = None
             self.details_e = e
 
@@ -2358,7 +2358,7 @@ class ShowSearch(gtk.Window):
             try:
                 self.engine.add_show(show, self.current_status)
                 #self.do_close()
-            except utils.TrackmaError, e:
+            except utils.TrackmaError as e:
                 self.error_push(e.message)
 
     def do_search(self, widget):
@@ -2383,7 +2383,7 @@ class ShowSearch(gtk.Window):
 
         try:
             self.entries = self.engine.search(self.searchtext.get_text())
-        except utils.TrackmaError, e:
+        except utils.TrackmaError as e:
             self.entries = []
             self.error(e.message)
 
@@ -2580,7 +2580,7 @@ def main():
     try:
         gtk.gdk.threads_enter()
         app.main()
-    except utils.TrackmaFatal, e:
+    except utils.TrackmaFatal as e:
         md = gtk.MessageDialog(None,
             gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR,
             gtk.BUTTONS_CLOSE, e.message)

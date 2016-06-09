@@ -78,7 +78,7 @@ class Data():
             modulename = "trackma.lib.{0}".format(libname)
             __import__(modulename)
             apimodule = sys.modules[modulename]
-        except ImportError, e:
+        except ImportError as e:
             raise utils.DataFatal("Couldn't import API module: %s" % e.message)
 
         # Instance API
@@ -153,7 +153,7 @@ class Data():
                     # We don't want users losing their changes
                     self.process_queue()
                     self.download_data()
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
             elif not self.showlist:
@@ -162,7 +162,7 @@ class Data():
         else:
             try:
                 self.download_data()
-            except utils.APIError, e:
+            except utils.APIError as e:
                 raise utils.APIFatal(e.message)
 
         # Create autosend thread if needed
@@ -358,7 +358,7 @@ class Data():
             # Check log-in TODO
             #try:
             #    self.api.check_credentials()
-            #except utils.APIError, e:
+            #except utils.APIError as e:
             #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
 
             # Run through queue
@@ -393,7 +393,7 @@ class Data():
 
                     items_processed.append((show, item))
                     self._emit_signal('queue_changed', len(self.queue))
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
                     self.msg.debug(self.name, "Info: %s" % e.message)
                     self.queue.append(item)

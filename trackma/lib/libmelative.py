@@ -115,7 +115,7 @@ class libmelative(lib):
             self.userid = data['id']
 
             return True
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
 
     def fetch_list(self):
@@ -166,7 +166,7 @@ class libmelative(lib):
 
         return itemlist
 
-        #except urllib2.HTTPError, e:
+        #except urllib2.HTTPError as e:
         #    raise utils.APIError("Error getting list. %s" % e.message)
 
     def update_show(self, item):
@@ -183,7 +183,7 @@ class libmelative(lib):
             #
             #try:
             #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
-            #except urllib2.HTTPError, e:
+            #except urllib2.HTTPError as e:
             #    raise utils.APIError("Error scrobbling: " + str(e.code))
             changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
 
@@ -197,7 +197,7 @@ class libmelative(lib):
 
         try:
             response = self.opener.open("http://melative.com/api/scrobble.json", data)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             raise utils.APIError("Error updating: " + str(e.code))
 
         return True
