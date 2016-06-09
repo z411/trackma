@@ -18,7 +18,7 @@
 from trackma.lib.lib import lib
 import trackma.utils as utils
 
-import urllib, urllib2
+import urllib.parse, urllib.request
 import datetime
 import base64
 import gzip
@@ -87,13 +87,13 @@ class libmal(lib):
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
-        # together with the urllib2 opener.
+        # together with the urllib opener.
         super(libmal, self).__init__(messenger, account, userconfig)
 
         auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
 
         self.username = self._get_userconfig('username')
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
             ('User-Agent', self.useragent),
             ('Authorization', auth_string),
@@ -107,10 +107,10 @@ class libmal(lib):
 
         """
         try:
-            request = urllib2.Request(url)
+            request = urllib.request.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
             response = self.opener.open(request, timeout = 10)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError(
                         "Unauthorized. Please check if your username and password are correct."
@@ -119,7 +119,7 @@ class libmal(lib):
                         "MAL bug (#138).")
             else:
                 raise utils.APIError("HTTP error %d: %s" % (e.code, e.reason))
-        except urllib2.URLError as e:
+        except urllib.request.URLError as e:
             raise utils.APIError("Connection error: %s" % e)
 
         if response.info().get('content-encoding') == 'gzip':
@@ -170,7 +170,7 @@ class libmal(lib):
                 return self._parse_manga(root)
             else:
                 raise utils.APIFatal('Attempted to parse unsupported media type.')
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
         except IOError as e:
             raise utils.APIError("Error reading list: %s" % e.message)
@@ -187,7 +187,7 @@ class libmal(lib):
         data = self._urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
     def update_show(self, item):
@@ -202,7 +202,7 @@ class libmal(lib):
         data = self._urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -212,7 +212,7 @@ class libmal(lib):
 
         try:
             self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, criteria):
@@ -440,7 +440,7 @@ class libmal(lib):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)
 
     def _make_parser(self):
         # For some reason MAL returns an XML file with HTML exclusive

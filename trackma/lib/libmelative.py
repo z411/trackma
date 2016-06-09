@@ -17,7 +17,7 @@
 from trackma.lib.lib import lib
 import trackma.utils as utils
 
-import urllib, urllib2
+import urllib.parse, urllib.request
 import json
 
 class libmelative(lib):
@@ -93,13 +93,13 @@ class libmelative(lib):
 
         self.username = account['username']
 
-        self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        self.password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("Melative", "melative.com:80", account['username'], account['password']);
 
-        self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
-        self.opener = urllib2.build_opener(self.handler)
+        self.handler = urllib.request.HTTPBasicAuthHandler(self.password_mgr)
+        self.opener = urllib.request.build_opener(self.handler)
 
-        urllib2.install_opener(self.opener)
+        urllib.request.install_opener(self.opener)
 
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
@@ -115,7 +115,7 @@ class libmelative(lib):
             self.userid = data['id']
 
             return True
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
 
     def fetch_list(self):
@@ -166,7 +166,7 @@ class libmelative(lib):
 
         return itemlist
 
-        #except urllib2.HTTPError as e:
+        #except urllib.request.HTTPError as e:
         #    raise utils.APIError("Error getting list. %s" % e.message)
 
     def update_show(self, item):
@@ -183,7 +183,7 @@ class libmelative(lib):
             #
             #try:
             #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
-            #except urllib2.HTTPError as e:
+            #except urllib.request.HTTPError as e:
             #    raise utils.APIError("Error scrobbling: " + str(e.code))
             changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
 
@@ -197,7 +197,7 @@ class libmelative(lib):
 
         try:
             response = self.opener.open("http://melative.com/api/scrobble.json", data)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error updating: " + str(e.code))
 
         return True
@@ -210,4 +210,4 @@ class libmelative(lib):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)

@@ -65,8 +65,8 @@ if pyqt_version is 0:
         sys.exit(-1)
 
 import os
+import urllib.request
 from cStringIO import StringIO
-import urllib2
 import base64
 
 import trackma.messenger as messenger
@@ -2732,9 +2732,9 @@ class Image_Worker(QtCore.QThread):
     def run(self):
         self.cancelled = False
 
-        req = urllib2.Request(self.remote)
+        req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = StringIO(urllib2.urlopen(req).read())
+        img_file = StringIO(urllib.request.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)

@@ -18,7 +18,7 @@ from trackma.lib.lib import lib
 import trackma.utils as utils
 
 import json
-import urllib, urllib2, socket
+import urllib.parse, urllib.request, socket
 import time, datetime
 
 class libanilist(lib):
@@ -118,18 +118,18 @@ class libanilist(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        #handler=urllib2.HTTPHandler(debuglevel=1)
-        #self.opener = urllib2.build_opener(handler)
-        self.opener = urllib2.build_opener()
+        #handler=urllib.request.HTTPHandler(debuglevel=1)
+        #self.opener = urllib.request.build_opener(handler)
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
 
     def _request(self, method, url, get=None, post=None, auth=False):
         if get:
-            url = "{}?{}".format(url, urllib.urlencode(get))
+            url = "{}?{}".format(url, urllib.parse.urlencode(get))
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post).encode('utf-8')
 
-        request = urllib2.Request(self.url + url, post)
+        request = urllib.request.Request(self.url + url, post)
         request.get_method = lambda: method
 
         if auth:
@@ -142,7 +142,7 @@ class libanilist(lib):
         try:
             response = self.opener.open(request, timeout = 10)
             return json.load(response)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid PIN. It is either probably expired or meant for another application.")
             else:

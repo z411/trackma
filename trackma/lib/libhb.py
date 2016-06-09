@@ -19,7 +19,7 @@ from trackma.lib.lib import lib
 import trackma.utils as utils
 import datetime
 
-import urllib, urllib2
+import urllib.parse, urllib.request
 import json
 
 class libhb(lib):
@@ -72,17 +72,17 @@ class libhb(lib):
         self.password = account['password']
 
         # Build opener with the mashape API key
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
 
     def _request(self, url, get=None, post=None):
         if get:
-            url += "?%s" % urllib.urlencode(get)
+            url += "?%s" % urllib.parse.urlencode(get)
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post).encode('utf-8')
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
@@ -143,7 +143,7 @@ class libhb(lib):
 
             self._emit_signal('show_info_changed', infolist)
             return showlist
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
 
     def add_show(self, item):
@@ -168,7 +168,7 @@ class libhb(lib):
 
         try:
             self._request("/libraries/%s" % item['id'], post=values)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -179,7 +179,7 @@ class libhb(lib):
         values = {'auth_token': self.auth}
         try:
             self._request("/libraries/%s/remove" % item['id'], post=values)
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, query):
@@ -202,7 +202,7 @@ class libhb(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
 
     def _str2date(self, string):
@@ -244,4 +244,4 @@ class libhb(lib):
                 out_dict[k] = v.encode('utf8')
             elif isinstance(v, str):
                 out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
+        return urllib.parse.urlencode(out_dict)
