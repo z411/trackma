@@ -2486,7 +2486,7 @@ class ShowItemDate(ShowItem):
         else:
             return True
 
-class FilterBar(object):
+class FilterBar():
     """
     Constants relating to filter bar settings can live here.
     """

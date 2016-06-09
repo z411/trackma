@@ -52,7 +52,7 @@ import trackma.utils as utils
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
 
-class Trackma_gtk(object):
+class Trackma_gtk():
     engine = None
     config = None
     show_lists = dict()

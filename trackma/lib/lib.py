@@ -16,7 +16,7 @@
 
 import trackma.utils as utils
 
-class lib(object):
+class lib():
     """
     Base interface for creating API implementations for Trackma.
 

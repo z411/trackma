@@ -36,7 +36,7 @@ import trackma.utils as utils
 from operator import itemgetter
 from itertools import cycle
 
-class Trackma_urwid(object):
+class Trackma_urwid():
     """
     Main class for the urwid version of Trackma
     """

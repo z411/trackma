@@ -17,7 +17,7 @@
 import re
 from decimal import Decimal
 
-class AnimeInfoExtractor(object):
+class AnimeInfoExtractor():
     """
     Extracts lots of information about anime from filename alone
     @author: Tyris

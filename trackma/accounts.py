@@ -1,7 +1,7 @@
 import utils
 import cPickle
 
-class AccountManager(object):
+class AccountManager():
     """
     This is the account manager.
 

@@ -42,7 +42,7 @@ except ImportError:
     pass # If we ignore this the tracker will just use lsof
 
 
-class Tracker(object):
+class Tracker():
     msg = None
     active = True
     list = None

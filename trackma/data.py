@@ -23,7 +23,7 @@ import sys
 import threading
 import time
 
-class Data(object):
+class Data():
     """
     Data Handler Class
 
