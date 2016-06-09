@@ -3033,3 +3033,6 @@ def main():
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
         QMessageBox.critical(None, 'Fatal Error', "{0}".format(e.message), QMessageBox.Ok)
+
+if __name__ == '__main__':
+    main()

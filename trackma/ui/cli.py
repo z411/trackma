@@ -830,3 +830,6 @@ def main():
         main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET))
+
+if __name__ == '__main__':
+    main()

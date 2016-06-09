@@ -2588,3 +2588,5 @@ def main():
     finally:
         gtk.gdk.threads_leave()
 
+if __name__ == '__main__':
+    main()
