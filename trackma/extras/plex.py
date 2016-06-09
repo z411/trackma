@@ -37,7 +37,7 @@ def last_watched():
 
     # compare timestamps in the sections to get the filename
     tstamps = []
-    for item in xrange(leng):
+    for item in range(leng):
         key = sedoc.getElementsByTagName("Directory")[item].getAttribute("key")
         xd = xdmd.parse(urllib.request.urlopen(sections+"/"+key+"/recentlyViewed"))
         tstamps.append(xd.getElementsByTagName("Video")[0].getAttribute("lastViewedAt"))

@@ -362,7 +362,7 @@ class Data():
 
             # Run through queue
             items_processed = []
-            for i in xrange(len(self.queue)):
+            for i in range(len(self.queue)):
                 item = self.queue.pop(0)
                 showid = item['id']
 

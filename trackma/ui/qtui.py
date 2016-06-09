@@ -764,7 +764,7 @@ class Trackma(QMainWindow):
 
     def _get_row_from_showid(self, widget, showid):
         # identify the row this show is in the table
-        for row in xrange(0, widget.rowCount()):
+        for row in range(0, widget.rowCount()):
             if widget.item(row, 0).text() == str(showid):
                 return row
 
