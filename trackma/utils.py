@@ -19,7 +19,7 @@ import subprocess
 import datetime
 import json
 import difflib
-import cPickle as pickle
+import pickle
 
 VERSION = '0.4'
 
