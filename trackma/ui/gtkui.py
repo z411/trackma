@@ -932,7 +932,7 @@ class Trackma_gtk():
         self.statusbox.handler_unblock(self.statusbox_handler)
 
     def build_all_lists(self):
-        for status in self.show_lists.iterkeys():
+        for status in self.show_lists.keys():
             self.build_list(status)
 
     def build_list(self, status):

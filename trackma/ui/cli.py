@@ -742,7 +742,7 @@ class Trackma_accounts(AccountManager):
             key = input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
-                available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+                available_libs = ', '.join(sorted(utils.available_libs.keys()))
 
                 print("--- Add account ---")
                 import getpass

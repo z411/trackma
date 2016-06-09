@@ -277,7 +277,7 @@ class Trackma_urwid():
 
     def do_sort(self):
         self.status("Sorting...")
-        _sort = self.sorts_iter.next()
+        _sort = next(self.sorts_iter)
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
         self._rebuild_lists()
@@ -285,7 +285,7 @@ class Trackma_urwid():
 
     def change_sort_order(self):
         self.status("Sorting...")
-        _order = self.orders_iter.next()
+        _order = next(self.orders_iter)
         self.cur_order = _order
         self._rebuild_lists()
         self.status("Ready.")
@@ -785,7 +785,7 @@ class AccountDialog(Dialog):
 
     def do_add_api(self):
         self.adding = True
-        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+        available_libs = ', '.join(sorted(utils.available_libs.keys()))
         ask = Asker("API (%s): " % available_libs)
         self.frame.footer = ask
         self.frame.set_focus('footer')
