@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
 import datetime
-
-import urllib.parse, urllib.request
+import urllib.parse
+import urllib.request
 import json
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libhb(lib):
     """

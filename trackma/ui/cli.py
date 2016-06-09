@@ -27,9 +27,8 @@ from operator import itemgetter # Used for sorting list
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
-
-import trackma.messenger as messenger
-import trackma.utils as utils
+from trackma import messenger
+from trackma import utils
 
 _DEBUG = False
 _COLOR_RESET = '\033[0m'

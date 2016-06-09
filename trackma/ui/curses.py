@@ -26,15 +26,13 @@ except ImportError:
 import re
 import urwid
 import webbrowser
+from operator import itemgetter
+from itertools import cycle
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
-
-import trackma.messenger as messenger
-import trackma.utils as utils
-
-from operator import itemgetter
-from itertools import cycle
+from trackma import messenger
+from trackma import utils
 
 class Trackma_urwid():
     """

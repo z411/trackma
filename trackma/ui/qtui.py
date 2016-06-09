@@ -69,11 +69,10 @@ import urllib.request
 from cStringIO import StringIO
 import base64
 
-import trackma.messenger as messenger
-import trackma.utils as utils
-
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
+from trackma import messenger
+from trackma import utils
 
 try:
     from PIL import Image

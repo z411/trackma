@@ -14,12 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
 import json
-import urllib.parse, urllib.request, socket
-import time, datetime
+import urllib.parse
+import urllib.request
+import socket
+import time
+import datetime
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libanilist(lib):
     """

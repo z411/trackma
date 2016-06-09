@@ -46,11 +46,10 @@ except ImportError:
         print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
-import trackma.messenger as messenger
-import trackma.utils as utils
-
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
+from trackma import utils
+from trackma import messenger
 
 class Trackma_gtk():
     engine = None

@@ -15,15 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
-import urllib.parse, urllib.request
+import urllib.parse
+import urllib.request
 import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
 from cStringIO import StringIO
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libmal(lib):
     """

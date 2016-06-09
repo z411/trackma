@@ -15,13 +15,12 @@
 #
 
 import os.path
-
-import messenger
-import utils
-
 import sys
 import threading
 import time
+
+from trackma import messenger
+from trackma import utils
 
 class Data():
     """

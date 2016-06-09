@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import trackma.utils as utils
+from trackma import utils
 
 class lib():
     """

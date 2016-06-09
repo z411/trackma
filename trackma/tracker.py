@@ -21,12 +21,12 @@ import time
 import os
 import difflib
 
-import messenger
-import utils
-import extras.plex as plex
-import extras.AnimeInfoExtractor
-
 import ctypes
+
+from trackma import messenger
+from trackma import utils
+from trackma.extras import plex
+from trackma.extras import AnimeInfoExtractor
 
 inotify_available = False
 
@@ -333,7 +333,7 @@ class Tracker():
 
             # Do a regex to the filename to get
             # the show title and episode number
-            aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
+            aie = AnimeInfoExtractor(filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
                 return (STATE_UNRECOGNIZED, None) # Format not recognized

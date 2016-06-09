@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
 import socket
 import json
 import datetime
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libvndb(lib):
     """
