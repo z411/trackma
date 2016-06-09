@@ -50,7 +50,7 @@ The documentation for Trackma is [available on ReadTheDocs](http://trackma.readt
 Requirements
 ------------
 
-- Python 2.6/2.7
+- Python 3.4/3.5
 - lsof - for the media player detection tracker.
 - (Optional) inotifyx - for instant media recognition (Linux only)
 - (Optional) PyQt - for the Qt Interface
@@ -72,7 +72,7 @@ Or download the source code and install:
 
 <pre># git clone https://github.com/z411/trackma.git
 # cd trackma
-# sudo python2.7 setup.py install</pre>
+# sudo python3 setup.py install</pre>
 
 Then you can run the program with the interface you like.
 

@@ -6,7 +6,7 @@ Pre-requisites
 ==============
 To run Trackma you only need:
 
-* Python >= 2.6
+* Python >= 3.4
 * lsof
 
 To use any of the interfaces you need to install any of these depending on the interface you want to use:
@@ -33,7 +33,7 @@ For example, installing Trackma with its GTK interface on Debian-based systems l
     sudo apt-get install git python python-gtk2 python-imaging
     git clone https://github.com/z411/trackma.git
     cd trackma
-    sudo python2 setup.py install
+    sudo python3 setup.py install
 
 Then, you can run Trackma's GTK interface by running:
 
