@@ -79,7 +79,7 @@ class lib():
             raise utils.APIFatal('Unsupported mediatype %s.' % userconfig['mediatype'])
 
         self.api_info['mediatype'] = self.mediatype
-        self.api_info['supported_mediatypes'] = self.mediatypes.keys()
+        self.api_info['supported_mediatypes'] = list(self.mediatypes.keys())
 
     def _emit_signal(self, signal, *args):
         try:
