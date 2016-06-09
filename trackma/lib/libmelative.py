@@ -110,7 +110,7 @@ class libmelative(lib):
             self.logged_in = True
 
             # Parse user information
-            data = json.load(response)
+            data = json.loads(response.read().decode('utf-8'))
 
             self.username = data['name']
             self.userid = data['id']
@@ -125,7 +125,7 @@ class libmelative(lib):
 
         # Get a JSON list from API
         response = self.opener.open("http://melative.com/api/library.json?user={0}&context_type={1}".format(self.username, self.mediatype))
-        data = json.load(response)
+        data = json.loads(response.read().decode('utf-8'))
 
         # Load data from the JSON stream into a parsed dictionary
         statuses = self.media_info()['statuses_dict']
@@ -183,7 +183,7 @@ class libmelative(lib):
             #data = self._urlencode(values)
             #
             #try:
-            #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
+            #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
             #except urllib.request.HTTPError as e:
             #    raise utils.APIError("Error scrobbling: " + str(e.code))
             changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
@@ -197,7 +197,7 @@ class libmelative(lib):
         data = self._urlencode(changes)
 
         try:
-            response = self.opener.open("http://melative.com/api/scrobble.json", data)
+            response = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
             raise utils.APIError("Error updating: " + str(e.code))
 

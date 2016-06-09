@@ -75,12 +75,12 @@ def save_config(config_dict, filename):
         os.mkdir(path)
 
     with open(filename, 'wb') as configfile:
-        json.dump(config_dict, configfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
+        configfile.write(json.dumps(config_dict, sort_keys=True,
+                  indent=4, separators=(',', ': ')).encode('utf-8'))
 
 def load_data(filename):
     with open(filename, 'rb') as datafile:
-        return pickle.load(datafile)
+        return pickle.load(datafile, encoding='bytes')
 
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
@@ -88,7 +88,7 @@ def save_data(data, filename):
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg.encode('utf-8'))
+        logfile.write(msg)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)

@@ -90,7 +90,8 @@ class libmal(lib):
         # together with the urllib opener.
         super(libmal, self).__init__(messenger, account, userconfig)
 
-        auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
+        token = '%s:%s' % (account['username'], account['password'])
+        auth_string = 'Basic ' + base64.b64encode(token.encode('utf-8')).decode('ascii').replace('\n', '')
 
         self.username = self._get_userconfig('username')
         self.opener = urllib.request.build_opener()
@@ -123,11 +124,13 @@ class libmal(lib):
             raise utils.APIError("Connection error: %s" % e)
 
         if response.info().get('content-encoding') == 'gzip':
-            compressed_stream = StringIO(response.read())
-            return gzip.GzipFile(fileobj=compressed_stream)
+            ret = gzip.decompress(response.read())
         else:
             # If the content is not gzipped return it as-is
-            return response
+            ret = response.read()
+        if isinstance(ret, bytes):
+            return ret.decode('utf-8')
+        return ret
 
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -186,7 +189,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
+            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
@@ -201,7 +204,7 @@ class libmal(lib):
         values = {'data': xml}
         data = self._urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
+            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 

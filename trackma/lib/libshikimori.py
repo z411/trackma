@@ -131,7 +131,7 @@ class libshikimori(lib):
         if post:
             post = urllib.parse.urlencode(post)
         if jsondata:
-            post = json.dumps(jsondata, separators=(',',':'))
+            post = json.dumps(jsondata, separators=(',',':')).encode('utf-8')
 
         request = urllib.request.Request(self.url + url, post)
         request.get_method = lambda: method
@@ -143,7 +143,7 @@ class libshikimori(lib):
 
         try:
             response = self.opener.open(request, timeout = 10)
-            return json.load(response)
+            return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("400")

@@ -547,7 +547,7 @@ class Trackma(QMainWindow):
         self.config['columns_state'] = dict()
         for status in self.statuses_nums:
             state = self.show_lists[status].horizontalHeader().saveState()
-            self.config['columns_state'][status] = base64.b64encode(state)
+            self.config['columns_state'][status] = base64.b64encode(state).decode('ascii')
         if self.config['columns_per_api']:
             self.api_config['columns_state'] = self.config['columns_state']
             utils.save_config(self.api_config, self.api_configfile)

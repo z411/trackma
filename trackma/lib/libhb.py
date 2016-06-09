@@ -96,7 +96,7 @@ class libhb(lib):
 
         self.msg.info(self.name, 'Logging in...')
 
-        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read().decode('utf-8')
         self.auth = response.strip('"')
         self._set_userconfig('username', self.username)
         self.logged_in = True
@@ -110,7 +110,7 @@ class libhb(lib):
 
         try:
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             showlist = dict()
             infolist = list()
@@ -189,7 +189,7 @@ class libhb(lib):
         values = {'query': query}
         try:
             data = self._request("/search/anime", get=values)
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             infolist = []
             for show in shows:
