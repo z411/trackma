@@ -28,7 +28,7 @@ class AccountManager():
         with open(self.filename, 'wb') as f:
             if is_new:
                 utils.change_permissions(self.filename, 0o600)
-            pickle.dump(self.accounts, f)
+            pickle.dump(self.accounts, f, protocol=2)
 
     def add_account(self, username, password, api):
         """

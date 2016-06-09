@@ -84,7 +84,7 @@ def load_data(filename):
 
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
-        pickle.dump(data, datafile)
+        pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
