@@ -19,8 +19,8 @@ import sys
 try:
     import urwid
 except ImportError:
-    print ("urwid not found. Make sure you installed the "
-           "urwid package.")
+    print("urwid not found. Make sure you installed the "
+          "urwid package.")
     sys.exit(-1)
 
 import re
@@ -1004,7 +1004,7 @@ class ShowItem(urwid.WidgetWrap):
             # Update color
             self.highlight(show)
         else:
-            print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
+            print("Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid))
 
     def update_altname(self, altname):
         # Update title
@@ -1057,4 +1057,4 @@ def main():
     try:
         Trackma_urwid()
     except utils.TrackmaFatal as e:
-        print "Fatal error: %s" % e.message
+        print("Fatal error: %s" % e.message)

@@ -39,7 +39,7 @@ if try_pyqt5:
                                     QSystemTrayIcon)
         pyqt_version = 5
     except ImportError:
-        print ("Couldn't import Qt5 dependencies. Make sure you "
+        print("Couldn't import Qt5 dependencies. Make sure you "
             "installed the PyQt5 package.")
         #sys.exit(-1)
 if pyqt_version is 0:
@@ -60,7 +60,7 @@ if pyqt_version is 0:
                                 QSystemTrayIcon, QIcon, QPalette)
         pyqt_version = 4
     except ImportError:
-        print ("Couldn't import Qt dependencies. Make sure you "
+        print("Couldn't import Qt dependencies. Make sure you "
             "installed the PyQt4 package.")
         sys.exit(-1)
 
@@ -83,7 +83,7 @@ except ImportError:
         import Image
         imaging_available = True
     except ImportError:
-        print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
+        print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
 try:
@@ -92,7 +92,7 @@ try:
     import datetime
     dateutil_available = True
 except ImportError:
-    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    print("Warning: DateUtil is unavailable. Next episode countdown will be disabled.")
     dateutil_available = False
 
 class Trackma(QMainWindow):
@@ -510,7 +510,7 @@ class Trackma(QMainWindow):
 
     def status(self, message):
         self.status_text.setText(message)
-        print unicode(message).encode('utf-8')
+        print(unicode(message).encode('utf-8'))
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))

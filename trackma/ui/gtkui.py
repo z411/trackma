@@ -22,8 +22,8 @@ try:
     import gtk
     import pango
 except ImportError:
-    print ("Couldn't import GTK dependencies. Make sure you "
-           "installed the PyGTK package.")
+    print("Couldn't import GTK dependencies. Make sure you "
+          "installed the PyGTK package.")
     sys.exit(-1)
 
 gtk.gdk.threads_init() # We'll use threads
@@ -43,7 +43,7 @@ except ImportError:
         from PIL import Image
         imaging_available = True
     except ImportError:
-        print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
+        print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
 import trackma.messenger as messenger
@@ -962,7 +962,7 @@ class Trackma_gtk():
 
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
-        print "%s: %s" % (classname, msg)
+        print("%s: %s" % (classname, msg))
         if msgtype == messenger.TYPE_WARN:
             gobject.idle_add(self.status_push, "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
@@ -1396,7 +1396,7 @@ class ShowView(gtk.TreeView):
                 row[9] = self._get_color(show, row[8])
                 return
 
-        #print "Warning: Show ID not found in ShowView (%d)" % show['id']
+        #print("Warning: Show ID not found in ShowView (%d)" % show['id'])
 
     def update_title(self, show, altname=None):
         for row in self.store:
