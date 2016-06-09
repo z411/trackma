@@ -21,9 +21,9 @@ try:
     pygtk.require('2.0')
     import gtk
     import pango
-except ImportError:
+except ImportError as ex:
     print("Couldn't import GTK dependencies. Make sure you "
-          "installed the PyGTK package.")
+          "installed the PyGTK package and %s module." % ex.name)
     sys.exit(-1)
 
 gtk.gdk.threads_init() # We'll use threads
