@@ -513,7 +513,7 @@ class Trackma(QMainWindow):
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))
-        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
     def fatal(self, msg):
         QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
@@ -2417,7 +2417,7 @@ class AccountDialog(QDialog):
         self.close()
 
     def _error(self, msg):
-        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
 class AccountItem(QTableWidgetItem):
     """
@@ -2811,10 +2811,10 @@ class Engine_Worker(QtCore.QThread):
         self.changed_status.emit("%s: %s" % (classname, msg))
 
     def _error(self, msg):
-        self.raised_error.emit(msg)
+        self.raised_error.emit(str(msg))
 
     def _fatal(self, msg):
-        self.raised_fatal.emit(msg)
+        self.raised_fatal.emit(str(msg))
 
     def _changed_show(self, show, changes=None):
         self.changed_show.emit(show)
@@ -2836,7 +2836,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.start()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2845,7 +2845,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.reload(account, mediatype)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2854,7 +2854,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.unload()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2863,7 +2863,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.scan_library()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2873,7 +2873,7 @@ class Engine_Worker(QtCore.QThread):
             showlist = self.engine.get_list()
             altnames = self.engine.altnames()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'showlist': showlist, 'altnames': altnames}
@@ -2882,7 +2882,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.set_episode(showid, episode)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2891,7 +2891,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.set_score(showid, score)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2900,7 +2900,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.set_status(showid, status)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2909,7 +2909,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.set_tags(showid, tags)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2918,7 +2918,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             played_ep = self.engine.play_episode(show, episode)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'show': show, 'played_ep': played_ep}
@@ -2927,7 +2927,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             (show, ep) = self.engine.play_random()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'played_show': show, 'played_ep': ep}
@@ -2936,7 +2936,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.list_download()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2945,7 +2945,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             self.engine.list_upload()
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2954,7 +2954,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             details = self.engine.get_show_details(show)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'details': details}
@@ -2963,7 +2963,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             results = self.engine.search(terms)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'results': results}
@@ -2972,7 +2972,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             results = self.engine.add_show(show, status)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2981,7 +2981,7 @@ class Engine_Worker(QtCore.QThread):
         try:
             results = self.engine.delete_show(show)
         except utils.TrackmaError as e:
-            self._error(e.message)
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -3008,7 +3008,7 @@ class Engine_Worker(QtCore.QThread):
             ret = self.function(*self.args,**self.kwargs)
             self.finished.emit(ret)
         except utils.TrackmaFatal as e:
-            self._fatal(e.message)
+            self._fatal(e)
 
 def getIcon(icon_name):
     fallback = QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
@@ -3032,7 +3032,7 @@ def main():
         mainwindow = Trackma()
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
-        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e.message), QMessageBox.Ok)
+        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
 
 if __name__ == '__main__':
     main()

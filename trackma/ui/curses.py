@@ -310,7 +310,7 @@ class Trackma_urwid():
             self._rebuild_lists()
             self.status("Ready.")
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_help(self):
         helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
@@ -402,7 +402,7 @@ class Trackma_urwid():
         try:
             details = self.engine.get_show_details(show)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
             return
 
         title = urwid.Text( ('info_title', show['title']), 'center', 'any')
@@ -436,7 +436,7 @@ class Trackma_urwid():
 
             self.status("Ready.")
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_quit(self):
         self.engine.unload()
@@ -448,7 +448,7 @@ class Trackma_urwid():
             try:
                 shows = self.engine.search(data)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
             if len(shows) > 0:
@@ -466,7 +466,7 @@ class Trackma_urwid():
         try:
             self.engine.add_show(show, _filter)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
@@ -477,7 +477,7 @@ class Trackma_urwid():
             try:
                 show = self.engine.delete_show(show)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
 
     def status_request(self, widget, data=None):
         self.dialog.close()
@@ -487,7 +487,7 @@ class Trackma_urwid():
             try:
                 show = self.engine.set_status(item.showid, data)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
     def reload_request(self, widget, selected, data):
@@ -503,7 +503,7 @@ class Trackma_urwid():
             try:
                 show = self.engine.set_episode(item.showid, data)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
     def score_request(self, data):
@@ -514,7 +514,7 @@ class Trackma_urwid():
             try:
                 show = self.engine.set_score(item.showid, data)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
     def altname_request(self, data):
@@ -526,7 +526,7 @@ class Trackma_urwid():
                 self.engine.altname(item.showid, data)
                 item.update_altname(self.engine.altname(item.showid))
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
     def play_request(self, data):
@@ -538,7 +538,7 @@ class Trackma_urwid():
             try:
                 self.engine.play_episode(show, data)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
 
             self.status('Ready.')
@@ -550,7 +550,7 @@ class Trackma_urwid():
             try:
                 show = self.engine.set_episode(show['id'], episode)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
                 return
         else:
             self.status('Ready.')
@@ -842,7 +842,7 @@ class AccountDialog(Dialog):
             self.manager.add_account(username, password, api)
         except utils.AccountError as e:
             self.adding = False
-            self.frame.footer = urwid.Text("Error: %s" % e.message)
+            self.frame.footer = urwid.Text("Error: %s" % e)
             self.frame.set_focus('body')
             return
 
@@ -1055,7 +1055,7 @@ def main():
     try:
         Trackma_urwid()
     except utils.TrackmaFatal as e:
-        print("Fatal error: %s" % e.message)
+        print("Fatal error: %s" % e)
 
 if __name__ == '__main__':
     main()

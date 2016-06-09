@@ -78,7 +78,7 @@ class Data():
             __import__(modulename)
             apimodule = sys.modules[modulename]
         except ImportError as e:
-            raise utils.DataFatal("Couldn't import API module: %s" % e.message)
+            raise utils.DataFatal("Couldn't import API module: %s" % e)
 
         # Instance API
         libclass = getattr(apimodule, libname)
@@ -162,7 +162,7 @@ class Data():
             try:
                 self.download_data()
             except utils.APIError as e:
-                raise utils.APIFatal(e.message)
+                raise utils.APIFatal(str(e))
 
         # Create autosend thread if needed
         if self.config['autosend'] == 'hours':
@@ -358,7 +358,7 @@ class Data():
             #try:
             #    self.api.check_credentials()
             #except utils.APIError as e:
-            #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
+            #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e)
 
             # Run through queue
             items_processed = []
@@ -394,7 +394,7 @@ class Data():
                     self._emit_signal('queue_changed', len(self.queue))
                 except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
-                    self.msg.debug(self.name, "Info: %s" % e.message)
+                    self.msg.debug(self.name, "Info: %s" % e)
                     self.queue.append(item)
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")

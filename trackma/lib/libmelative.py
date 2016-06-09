@@ -168,7 +168,7 @@ class libmelative(lib):
         return itemlist
 
         #except urllib.request.HTTPError as e:
-        #    raise utils.APIError("Error getting list. %s" % e.message)
+        #    raise utils.APIError("Error getting list. %s" % e)
 
     def update_show(self, item):
         self.check_credentials()

@@ -177,7 +177,7 @@ class libmal(lib):
         except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
         except IOError as e:
-            raise utils.APIError("Error reading list: %s" % e.message)
+            raise utils.APIError("Error reading list: %s" % e)
 
     def add_show(self, item):
         """Adds a new show in the server"""
@@ -235,9 +235,9 @@ class libmal(lib):
                 # Empty document; no results
                 return []
             else:
-                raise utils.APIError("Parser error: %s" % repr(e.message))
+                raise utils.APIError("Parser error: %r" % e)
         except IOError:
-            raise utils.APIError("IO error: %s" % repr(e.message))
+            raise utils.APIError("IO error: %r" % e)
 
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':

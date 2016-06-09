@@ -201,9 +201,9 @@ class Engine:
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
         except utils.DataError as e:
-            raise utils.DataFatal(e.message)
+            raise utils.DataFatal(str(e))
         except utils.APIError as e:
-            raise utils.APIFatal(e.message)
+            raise utils.APIFatal(str(e))
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:

@@ -606,7 +606,7 @@ class Trackma_cmd(cmd.Cmd):
             print("Incorrent number of arguments. See `help %s`" % cmd)
 
     def display_error(self, e):
-        print("%s%s: %s%s" % (_COLOR_ERROR, type(e), e.message, _COLOR_RESET))
+        print("%s%s: %s%s" % (_COLOR_ERROR, type(e), e, _COLOR_RESET))
 
     def messagehandler(self, classname, msgtype, msg):
         """
@@ -772,7 +772,7 @@ class Trackma_accounts(AccountManager):
                     self.add_account(username, password, api)
                     print('Done.')
                 except utils.AccountError as e:
-                    print('Error: %s' % e.message)
+                    print('Error: %s' % e)
             elif key.lower() == 'd':
                 print("--- Delete account ---")
                 num = input('Account number to delete: ')
@@ -829,7 +829,7 @@ def main():
         main_cmd.start()
         main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
-        print("%s%s: %s%s" % (_COLOR_FATAL, type(e), e.message, _COLOR_RESET))
+        print("%s%s: %s%s" % (_COLOR_FATAL, type(e), e, _COLOR_RESET))
 
 if __name__ == '__main__':
     main()

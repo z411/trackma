@@ -640,7 +640,7 @@ class Trackma_gtk():
             show = self.engine.get_show_info(self.selected_show)
             self.engine.delete_show(show)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_info(self, widget, d1=None, d2=None):
         show = self.engine.get_show_info(self.selected_show)
@@ -651,14 +651,14 @@ class Trackma_gtk():
         try:
             show = self.engine.set_episode(self.selected_show, show['my_progress'] + 1)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_rem_epp(self, widget):
         show = self.engine.get_show_info(self.selected_show)
         try:
             show = self.engine.set_episode(self.selected_show, show['my_progress'] - 1)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_update(self, widget):
         self._hide_episode_entry()
@@ -666,14 +666,14 @@ class Trackma_gtk():
         try:
             show = self.engine.set_episode(self.selected_show, ep)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_score(self, widget):
         score = self.show_score.get_value()
         try:
             show = self.engine.set_score(self.selected_show, score)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_status(self, widget):
         statusiter = self.statusbox.get_active_iter()
@@ -682,7 +682,7 @@ class Trackma_gtk():
         try:
             show = self.engine.set_status(self.selected_show, status)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
     def do_update_next(self, show, played_ep):
         # Thread safe
@@ -734,7 +734,7 @@ class Trackma_gtk():
                 status = show['my_status']
                 self.show_lists[status].update(show)
             except utils.TrackmaError as e:
-                self.error(e.message)
+                self.error(e)
 
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
@@ -749,7 +749,7 @@ class Trackma_gtk():
                     ep = self.show_ep_num.get_value_as_int()
                 self.engine.play_episode(show, ep)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
         self.status("Ready.")
         self.allow_buttons(True)
@@ -760,7 +760,7 @@ class Trackma_gtk():
         try:
             result = self.engine.scan_library()
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
 
         gobject.idle_add(self.build_list, self.engine.mediainfo['status_start'])
 
@@ -823,9 +823,9 @@ class Trackma_gtk():
             try:
                 self.engine.start()
             except utils.TrackmaFatal as e:
-                print("Fatal engine error: %s" % e.message)
+                print("Fatal engine error: %s" % e)
                 self.idle_restart()
-                self.error("Fatal engine error: %s" % e.message)
+                self.error("Fatal engine error: %s" % e)
                 return
 
         gtk.threads_enter()
@@ -856,11 +856,11 @@ class Trackma_gtk():
         try:
             self.engine.reload(account, mediatype)
         except utils.TrackmaError as e:
-            self.error(e.message)
+            self.error(e)
         except utils.TrackmaFatal as e:
-            print("Fatal engine error: %s" % e.message)
+            print("Fatal engine error: %s" % e)
             self.idle_restart()
-            self.error("Fatal engine error: %s" % e.message)
+            self.error("Fatal engine error: %s" % e)
             return
 
         if account:
@@ -972,7 +972,7 @@ class Trackma_gtk():
         gobject.idle_add(self.error_push, msg, icon)
 
     def error_push(self, msg, icon=gtk.MESSAGE_ERROR):
-        dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, icon, gtk.BUTTONS_OK, msg)
+        dialog = gtk.MessageDialog(self.main, gtk.DIALOG_MODAL, icon, gtk.BUTTONS_OK, str(msg))
         dialog.show_all()
         dialog.connect("response", self.modal_close)
 
@@ -1591,7 +1591,7 @@ class AccountSelect(gtk.Window):
     def error(self, msg):
         md = gtk.MessageDialog(None,
             gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR,
-            gtk.BUTTONS_CLOSE, msg)
+            gtk.BUTTONS_CLOSE, str(msg))
         md.run()
         md.destroy()
 
@@ -1735,7 +1735,7 @@ class InfoWidget(gtk.VBox):
         else:
             self.w_title.set_text('Error while getting details.')
             if self.details_e:
-                self.w_content.set_text(self.details_e.message)
+                self.w_content.set_text(str(self.details_e))
 
         self.w_content.set_alignment(0, 0)
         self.w_content.set_line_wrap(True)
@@ -2358,7 +2358,7 @@ class ShowSearch(gtk.Window):
                 self.engine.add_show(show, self.current_status)
                 #self.do_close()
             except utils.TrackmaError as e:
-                self.error_push(e.message)
+                self.error_push(e)
 
     def do_search(self, widget):
         threading.Thread(target=self.task_search).start()
@@ -2384,7 +2384,7 @@ class ShowSearch(gtk.Window):
             self.entries = self.engine.search(self.searchtext.get_text())
         except utils.TrackmaError as e:
             self.entries = []
-            self.error(e.message)
+            self.error(e)
 
         self.showdict = dict()
 
@@ -2411,7 +2411,7 @@ class ShowSearch(gtk.Window):
         gobject.idle_add(self.error_push, msg)
 
     def error_push(self, msg):
-        dialog = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
+        dialog = gtk.MessageDialog(self, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, str(msg))
         dialog.show_all()
         dialog.connect("response", self.modal_close)
 
@@ -2582,7 +2582,7 @@ def main():
     except utils.TrackmaFatal as e:
         md = gtk.MessageDialog(None,
             gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR,
-            gtk.BUTTONS_CLOSE, e.message)
+            gtk.BUTTONS_CLOSE, str(e))
         md.run()
         md.destroy()
     finally:
