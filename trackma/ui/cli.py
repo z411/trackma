@@ -113,7 +113,7 @@ class Trackma_cmd(cmd.Cmd):
             return self.engine.get_show_info_title(title)
 
     def _ask_update(self, show, episode):
-        do_update = raw_input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
+        do_update = input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
         if do_update.lower() == 'y':
             self.engine.set_episode(show['id'], episode)
 
@@ -334,7 +334,7 @@ class Trackma_cmd(cmd.Cmd):
 
         for i, entry in enumerate(entries, start=1):
             print("%d: (%s) %s" % (i, entry['type'], entry['title']))
-        do_update = raw_input("Choose show to add (blank to cancel): ")
+        do_update = input("Choose show to add (blank to cancel): ")
         if do_update != '':
             try:
                 show = entries[int(do_update)-1]
@@ -361,7 +361,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(args[0])
 
-            do_delete = raw_input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
+            do_delete = input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
             if do_delete.lower() == 'y':
                 self.engine.delete_show(show)
         except utils.TrackmaError as e:
@@ -484,7 +484,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             if self.engine.get_queue():
-                answer = raw_input("There are unqueued changes. Overwrite local list? [y/N] ")
+                answer = input("There are unqueued changes. Overwrite local list? [y/N] ")
                 if answer.lower() == 'y':
                     self.engine.list_download()
             else:
@@ -739,14 +739,14 @@ class Trackma_accounts(AccountManager):
         while True:
             print('--- Accounts ---')
             self.list_accounts()
-            key = raw_input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
+            key = input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
 
                 print("--- Add account ---")
                 import getpass
-                api = raw_input('Enter API (%s): ' % available_libs)
+                api = input('Enter API (%s): ' % available_libs)
                 try:
                     selected_api = utils.available_libs[api]
                 except KeyError:
@@ -754,10 +754,10 @@ class Trackma_accounts(AccountManager):
                     continue
 
                 if selected_api[2] == utils.LOGIN_PASSWD:
-                    username = raw_input('Enter username: ')
+                    username = input('Enter username: ')
                     password = getpass.getpass('Enter password (no echo): ')
                 elif selected_api[2] == utils.LOGIN_OAUTH:
-                    username = raw_input('Enter account name: ')
+                    username = input('Enter account name: ')
                     print('OAuth Authentication')
                     print('--------------------')
                     print('This website requires OAuth authentication.')
@@ -766,7 +766,7 @@ class Trackma_accounts(AccountManager):
                     print()
                     print(selected_api[3])
                     print()
-                    password = raw_input('PIN: ')
+                    password = input('PIN: ')
 
                 try:
                     self.add_account(username, password, api)
@@ -775,11 +775,11 @@ class Trackma_accounts(AccountManager):
                     print('Error: %s' % e.message)
             elif key.lower() == 'd':
                 print("--- Delete account ---")
-                num = raw_input('Account number to delete: ')
+                num = input('Account number to delete: ')
                 try:
                     num = int(num)
                     account_id = self._get_id(num)
-                    confirm = raw_input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(account_id)['username']))
+                    confirm = input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(account_id)['username']))
                     if confirm.lower() == 'y':
                         self.delete_account(account_id)
                         print('Account %d deleted.' % num)
