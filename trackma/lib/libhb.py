@@ -239,7 +239,7 @@ class libhb(lib):
     def _urlencode(self, in_dict):
         """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
         out_dict = {}
-        for k, v in in_dict.iteritems():
+        for k, v in in_dict.items():
             out_dict[k] = v
             if isinstance(v, unicode):
                 out_dict[k] = v.encode('utf8')

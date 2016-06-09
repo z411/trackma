@@ -1256,7 +1256,7 @@ class Trackma(QMainWindow):
             self.api_config['visible_columns'] = self.config['visible_columns']
             utils.save_config(self.api_config, self.api_configfile)
 
-        for showlist in self.show_lists.itervalues():
+        for showlist in self.show_lists.values():
             showlist.setColumnHidden(index, not visible)
 
     ### Worker slots
@@ -2315,7 +2315,7 @@ class AccountDialog(QDialog):
 
         # Get icons
         self.icons = dict()
-        for libname, lib in utils.available_libs.iteritems():
+        for libname, lib in utils.available_libs.items():
             self.icons[libname] = QIcon(lib[1])
 
         # Populate list
@@ -2641,7 +2641,7 @@ class AccountAddDialog(QDialog):
         bottombox.rejected.connect(self.reject)
 
         # Populate APIs
-        for libname, lib in sorted(utils.available_libs.iteritems()):
+        for libname, lib in sorted(utils.available_libs.items()):
             self.api.addItem(icons[libname], lib[0], libname)
 
         if self.edit:

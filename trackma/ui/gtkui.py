@@ -523,7 +523,7 @@ class Trackma_gtk():
             # Make column visible
             self.config['visible_columns'].append(column_name)
 
-            for view in self.show_lists.itervalues():
+            for view in self.show_lists.values():
                 view.cols[column_name].set_visible(True)
         else:
             # Make column invisible
@@ -531,7 +531,7 @@ class Trackma_gtk():
                 return # There should be at least 1 column visible
 
             self.config['visible_columns'].remove(column_name)
-            for view in self.show_lists.itervalues():
+            for view in self.show_lists.values():
                 view.cols[column_name].set_visible(False)
 
         utils.save_config(self.config, self.configfile)
@@ -992,7 +992,7 @@ class Trackma_gtk():
 
     def allow_buttons_push(self, boolean, lists_too=True):
         if lists_too:
-            for widget in self.show_lists.itervalues():
+            for widget in self.show_lists.values():
                 widget.set_sensitive(boolean)
 
         if self.selected_show or not boolean:
@@ -1439,7 +1439,7 @@ class AccountSelect(gtk.Window):
 
     def create(self):
         self.pixbufs = {}
-        for (libname, lib) in utils.available_libs.iteritems():
+        for (libname, lib) in utils.available_libs.items():
             self.pixbufs[libname] = gtk.gdk.pixbuf_new_from_file(lib[1])
 
         self.set_position(gtk.WIN_POS_CENTER)
@@ -2212,7 +2212,7 @@ class AccountSelectAdd(gtk.Window):
         # Combobox
         self.model_api = gtk.ListStore(str, str, gtk.gdk.Pixbuf)
 
-        for (libname, lib) in sorted(utils.available_libs.iteritems()):
+        for (libname, lib) in sorted(utils.available_libs.items()):
             self.model_api.append([libname, lib[0], pixbufs[libname]])
 
         self.cmb_api = gtk.ComboBox(self.model_api)

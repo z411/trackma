@@ -272,7 +272,7 @@ class Engine:
         Returns the full show list requested from the data handler as a list of show dictionaries.
         If you only need shows in a specified status, use :func:`filter_list`.
         """
-        return self.data_handler.get().itervalues()
+        return self.data_handler.get().values()
 
     def get_show_info(self, showid):
         """
@@ -288,7 +288,7 @@ class Engine:
     def get_show_info_title(self, pattern):
         showdict = self.data_handler.get()
         # Do title lookup, slower
-        for k, show in showdict.iteritems():
+        for k, show in showdict.items():
             if show['title'].encode('utf-8') == pattern:
                 return show
         raise utils.EngineError("Show not found.")
@@ -305,13 +305,13 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if re.match(regex, v['title'], re.I))
+        return list(v for k, v in showlist.items() if re.match(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
         showlist = self.data_handler.get()
         newlist = list()
-        for k, v in showlist.iteritems():
+        for k, v in showlist.items():
             if re.match(pattern, v['title'], re.I):
                 if ' ' in v['title']:
                     newlist.append('"' + v['title'] + '" ')
@@ -701,7 +701,7 @@ class Engine:
 
         self.msg.info(self.name, 'Looking for random episode.')
 
-        for showid, eps in library.iteritems():
+        for showid, eps in library.items():
             show = self.get_show_info(showid)
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
@@ -792,7 +792,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
+        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
 
     def list_download(self):
         """Asks the data handler to download the remote list."""

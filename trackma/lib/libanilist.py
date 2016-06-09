@@ -233,7 +233,7 @@ class libanilist(lib):
             # No lists returned so no need to continue
             return showlist
 
-        for remotelist in data["lists"].itervalues():
+        for remotelist in data["lists"].values():
             for item in remotelist:
                 if item['list_status'] not in self.media_info()['statuses']:
                     continue

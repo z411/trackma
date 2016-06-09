@@ -113,7 +113,7 @@ class AccountManager():
         """
         Returns an iterator of available accounts.
         """
-        return self.accounts['accounts'].iteritems()
+        return self.accounts['accounts'].items()
 
     def get_default(self):
         """

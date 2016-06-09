@@ -524,7 +524,7 @@ class Data():
             # The API needs information to be merged from the
             # info database
             missing = []
-            for k, show in self.showlist.iteritems():
+            for k, show in self.showlist.items():
                 # Here we search the information in the local
                 # info database. If it isn't available, add it
                 # to the missing list for them to be requested
