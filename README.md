@@ -54,7 +54,7 @@ Requirements
 - lsof - for the media player detection tracker.
 - (Optional) inotifyx - for instant media recognition (Linux only)
 - (Optional) PyQt - for the Qt Interface
-- (Optional) PyGTK (python-gtk2) - for the GTK interface.
+- (Optional) PyGTK (python-gtk3 and python-cairo) - for the GTK interface.
 - (Optional) Urwid (python-urwid) - for the curses/urwid interface.
 - (Optional/Recommended) PIL (python-imaging) - for showing preview images in the Qt/GTK interfaces.
 - python-pip (to install through pip) *or* python-setuptools (to install through setup.py)
