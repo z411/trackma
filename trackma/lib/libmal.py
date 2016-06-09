@@ -95,9 +95,9 @@ class libmal(lib):
         self.username = self._get_userconfig('username')
         self.opener = urllib2.build_opener()
         self.opener.addheaders = [
-			('User-Agent', self.useragent),
-			('Authorization', auth_string),
-		]
+            ('User-Agent', self.useragent),
+            ('Authorization', auth_string),
+        ]
 
     def _request(self, url):
         """

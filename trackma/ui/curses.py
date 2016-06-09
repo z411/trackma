@@ -131,7 +131,7 @@ class Trackma_urwid(object):
                     'prev_filter': self.do_prev_filter,
                     'next_filter': self.do_next_filter,
                     'sort': self.do_sort,
-		    'sort_order': self.change_sort_order,
+                    'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
                     'status': self.do_status,
