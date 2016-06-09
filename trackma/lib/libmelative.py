@@ -180,7 +180,7 @@ class libmelative(lib):
             #values = dict()
             #values = {'attribute_type': _self.media_info['segment_type'],
             #          'attribute_name': item['my_progress']}
-            #data = self._urlencode(values)
+            #data = urllib.parse.urlencode(values)
             #
             #try:
             #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
@@ -194,7 +194,7 @@ class libmelative(lib):
         if 'my_score' in item.keys():
             changes['rating'] = item['my_score']
 
-        data = self._urlencode(changes)
+        data = urllib.parse.urlencode(changes)
 
         try:
             response = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
@@ -202,13 +202,3 @@ class libmelative(lib):
             raise utils.APIError("Error updating: " + str(e.code))
 
         return True
-
-    def _urlencode(self, in_dict):
-        out_dict = {}
-        for k, v in in_dict.items():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.parse.urlencode(out_dict)

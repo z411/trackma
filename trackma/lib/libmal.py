@@ -188,7 +188,7 @@ class libmal(lib):
 
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
-        data = self._urlencode(values)
+        data = urllib.parse.urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
@@ -203,7 +203,7 @@ class libmal(lib):
 
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
-        data = self._urlencode(values)
+        data = urllib.parse.urlencode(values)
         try:
             self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
@@ -224,7 +224,7 @@ class libmal(lib):
         self.msg.info(self.name, "Searching for %s..." % criteria)
 
         # Send the urlencoded query to the search API
-        query = self._urlencode({'q': criteria})
+        query = urllib.parse.urlencode({'q': criteria})
         data = self._request(self.url + self.mediatype + "/search.xml?" + query)
 
         # Load the results into XML
@@ -434,17 +434,6 @@ class libmal(lib):
                 return None # Ignore date if it's invalid
         else:
             return None
-
-    def _urlencode(self, in_dict):
-        """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
-        out_dict = {}
-        for k, v in in_dict.items():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.parse.urlencode(out_dict)
 
     def _parse_xml(self, data):
         # For some reason MAL returns an XML file with HTML exclusive
