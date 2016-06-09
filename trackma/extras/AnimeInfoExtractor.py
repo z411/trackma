@@ -34,10 +34,10 @@ class AnimeInfoExtractor():
         self.audioType = []
         self.releaseSource = []
         self.extension = ''
-        self.episodeStart = ''
-        self.episodeEnd = ''
-        self.volumeStart = ''
-        self.volumeEnd = ''
+        self.episodeStart = None
+        self.episodeEnd = None
+        self.volumeStart = None
+        self.volumeEnd = None
         self.version = 1
         self.name = ''
         self.pv = -1
@@ -50,8 +50,8 @@ class AnimeInfoExtractor():
         return self.episodeStart, self.episodeEnd
 
     def getEpisode(self):
-        ep = self.episodeStart if self.episodeEnd == '' else self.episodeEnd
-        ep = ep if ep != '' else '1'
+        ep = self.episodeStart if self.episodeEnd is None else self.episodeEnd
+        ep = ep if ep is not None else 1
 
         return int(ep)
 

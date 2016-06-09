@@ -587,13 +587,19 @@ class Engine:
             candidate_title = aie.getName()
             candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
-            # Skip this file if we couldn't analyze it or it isn't the episode we want
-            if (
-                not candidate_title or
-                not (episode >= candidate_episode_start and episode <= candidate_episode_end) or
-                (candidate_episode_end == '' and episode != candidate_episode_start)
-               ):
+            # Skip this file if we couldn't analyze it
+            if not candidate_title:
                 continue
+            if candidate_episode_start is None:
+                continue
+
+            # Skip this file if it isn't the episode we want
+            if candidate_episode_end is None:
+                if episode != candidate_episode_start:
+                    continue
+            else:
+                if not (candidate_episode_start <= episode <= candidate_episode_end):
+                    continue
 
             matcher.set_seq1(candidate_title.lower())
 
