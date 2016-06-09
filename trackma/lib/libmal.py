@@ -21,7 +21,6 @@ import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
-from cStringIO import StringIO
 
 from trackma.lib.lib import lib
 from trackma import utils

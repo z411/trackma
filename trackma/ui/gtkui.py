@@ -33,7 +33,7 @@ import cgi
 import time
 import threading
 import urllib.request
-from cStringIO import StringIO
+from io import BytesIO
 
 try:
     import Image
@@ -1133,7 +1133,7 @@ class ImageTask(threading.Thread):
         # otherwise download and save it as it is
         req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = StringIO(urllib.request.urlopen(req).read())
+        img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)

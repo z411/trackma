@@ -66,8 +66,8 @@ if pyqt_version is 0:
 
 import os
 import urllib.request
-from cStringIO import StringIO
 import base64
+from io import BytesIO
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
@@ -2733,7 +2733,7 @@ class Image_Worker(QtCore.QThread):
 
         req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = StringIO(urllib.request.urlopen(req).read())
+        img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
