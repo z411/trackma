@@ -243,7 +243,7 @@ class Trackma_gtk():
         api_hbox.pack_start(self.api_icon, True, True, 0)
         api_hbox.pack_start(self.api_user, True, True, 0)
 
-        alignment1 = Gtk.Alignment(xalign=1, yalign=0)
+        alignment1 = Gtk.Alignment(xalign=1, yalign=0, xscale=0)
         alignment1.add(api_hbox)
         line1.pack_start(alignment1, False, False, 0)
 
@@ -331,10 +331,10 @@ class Trackma_gtk():
         self.statusbox_handler = self.statusbox.connect("changed", self.__do_status)
         self.statusbox.set_sensitive(False)
 
-        alignment = Gtk.Alignment(xalign=0, yalign=0.5)
+        alignment = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0)
         alignment.add(self.statusbox)
 
-        line4.pack_start(alignment, True, True, 0)
+        line4.pack_start(alignment, False, False, 0)
 
         top_right_box.pack_start(line4, True, False, 0)
 
@@ -1159,6 +1159,8 @@ class ImageView(Gtk.HBox):
     def __init__(self, w, h):
         Gtk.HBox.__init__(self)
 
+        self.w = w
+        self.h = h
         self.showing_pholder = False
 
         self.w_image = Gtk.Image()
@@ -1176,7 +1178,10 @@ class ImageView(Gtk.HBox):
             self.w_image.show()
             self.showing_pholder = False
 
-        self.w_image.set_from_file(filename)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
+        w, h = scale(pixbuf.get_width(), pixbuf.get_height(), self.w, self.h)
+        scaled_buf = pixbuf.scale_simple(w, h, GdkPixbuf.InterpType.BILINEAR)
+        self.w_image.set_from_pixbuf(scaled_buf)
 
     def pholder_show(self, msg):
         if not self.showing_pholder:
@@ -1248,6 +1253,7 @@ class ShowView(Gtk.TreeView):
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
         self.cols['Title'].add_attribute(renderer_title, 'foreground', 9) # Using foreground-gdk does not work, possibly due to the timing of it being set
+        renderer_title.set_property('ellipsize', Pango.EllipsizeMode.END)
 
         renderer_progress = Gtk.CellRendererText()
         self.cols['Progress'].pack_start(renderer_progress, False)
@@ -1490,7 +1496,7 @@ class AccountSelect(Gtk.Window):
         self.accountlist.connect("row-activated", self.on_row_activated)
 
         # Bottom buttons
-        alignment = Gtk.Alignment(xalign=1.0)
+        alignment = Gtk.Alignment(xalign=1.0, xscale=0)
         bottombar = Gtk.HBox(False, 5)
 
         self.remember = Gtk.CheckButton('Remember')
@@ -1637,7 +1643,7 @@ class InfoDialog(Gtk.Window):
         info.set_size(600, 500)
 
         # Bottom line (buttons)
-        alignment = Gtk.Alignment(xalign=1.0)
+        alignment = Gtk.Alignment(xalign=1.0, xscale=0)
         bottombar = Gtk.HBox(False, 5)
 
         web_button = Gtk.Button('Open web')
@@ -1650,7 +1656,7 @@ class InfoDialog(Gtk.Window):
         alignment.add(bottombar)
 
         fullbox.pack_start(info, True, True, 0)
-        fullbox.pack_start(alignment, True, True, 0)
+        fullbox.pack_start(alignment, False, False, 0)
 
         self.add(fullbox)
         self.show_all()
@@ -1681,13 +1687,13 @@ class InfoWidget(Gtk.VBox):
         self.scrolled_sidebox.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sidebox = Gtk.HBox()
 
-        alignment_image = Gtk.Alignment(yalign=0.0)
+        alignment_image = Gtk.Alignment(yalign=0.0, xscale=0, yscale=0)
         self.w_image = ImageView(225, 350)
         alignment_image.add(self.w_image)
 
         self.w_content = Gtk.Label()
 
-        sidebox.pack_start(alignment_image, True, True, 5)
+        sidebox.pack_start(alignment_image, False, False, 5)
         sidebox.pack_start(self.w_content, True, True, 5)
 
         eventbox_sidebox.add(sidebox)
@@ -1826,7 +1832,7 @@ class Settings(Gtk.Window):
         self.rbtn_tracker_local.connect("toggled", self.tracker_type_sensitive)
 
         # Buttons
-        alignment = Gtk.Alignment(xalign=0.5)
+        alignment = Gtk.Alignment(xalign=0.5, xscale=0)
         bottombar = Gtk.HBox(False, 5)
         self.apply_button = Gtk.Button(stock=Gtk.STOCK_APPLY)
         self.apply_button.connect("clicked", self.__do_apply)
@@ -2046,7 +2052,7 @@ class Settings(Gtk.Window):
         notebook.append_page(page0, Gtk.Label('Media'))
         notebook.append_page(page1, Gtk.Label('Sync'))
         notebook.append_page(page2, Gtk.Label('User Interface'))
-        mainbox.pack_start(notebook, False, False, 0)
+        mainbox.pack_start(notebook, True, True, 0)
         mainbox.pack_start(alignment, False, False, 0)
 
         self.add(mainbox)
@@ -2252,7 +2258,7 @@ class AccountSelectAdd(Gtk.Window):
         self.btn_auth = Gtk.Button("Request PIN")
         self.btn_auth.connect("clicked", self.__do_auth)
 
-        alignment = Gtk.Alignment(xalign=0.5)
+        alignment = Gtk.Alignment(xalign=0.5, xscale=0)
         bottombar = Gtk.HBox(False, 5)
         self.add_button = Gtk.Button(stock=Gtk.STOCK_APPLY)
         close_button = Gtk.Button(stock=Gtk.STOCK_CLOSE)
@@ -2345,7 +2351,7 @@ class ShowSearch(Gtk.Window):
         sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sw.set_size_request(450, 350)
 
-        alignment = Gtk.Alignment(xalign=1.0)
+        alignment = Gtk.Alignment(xalign=1.0, xscale=0)
         bottombar = Gtk.HBox(False, 5)
         self.add_button = Gtk.Button('Add')
         self.add_button.set_image(Gtk.Image.new_from_icon_name(Gtk.STOCK_APPLY, 0))
@@ -2615,6 +2621,13 @@ def getColor(colorString):
         #else:
             ## Failsafe - return black
             #return QtGui.QColor()
+
+def scale(w, h, x, y, maximum=True):
+    nw = y * w / h
+    nh = x * h / w
+    if maximum ^ (nw >= x):
+        return nw or 1, y
+    return x, nh or 1
 
 def main():
     app = Trackma_gtk()
