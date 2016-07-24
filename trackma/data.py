@@ -36,7 +36,7 @@ class Data():
 
     """
     name = 'Data'
-    version = 4
+    version = 5
 
     msg = None
     api = None
@@ -129,7 +129,7 @@ class Data():
         if self._meta_exists():
             self._load_meta()
 
-        if self._queue_exists():
+        if self._queue_exists() and self.meta.get('version') == self.version:
             self._load_queue()
 
         if self._info_exists() and self.meta.get('version') == self.version:
@@ -138,7 +138,7 @@ class Data():
 
         # If there is a list cache, load from it
         # otherwise query the API for a remote list
-        if self._cache_exists():
+        if self._cache_exists() and self.meta.get('version') == self.version:
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
             if self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600:
                 self.process_queue()
