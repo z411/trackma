@@ -21,7 +21,7 @@ import json
 import difflib
 import cPickle as pickle
 
-VERSION = '0.4'
+VERSION = '0.5'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -286,29 +286,34 @@ userconfig_defaults = {
     'userid': 0,
     'username': '',
 }
-keymap_defaults = {
-    'help': 'f1',
-    'prev_filter': 'left',
-    'next_filter': 'right',
-    'sort': 'f3',
-    'sort_order': 'r',
-    'update': 'f4',
-    'play': 'f5',
-    'status': 'f6',
-    'score': 'f7',
-    'send': 's',
-    'retrieve': 'R',
-    'addsearch': 'a',
-    'reload': 'c',
-    'switch_account': 'f9',
-    'delete': 'd',
-    'quit': 'f12',
-    'altname': 'A',
-    'search': '/',
-    'neweps': 'N',
-    'details': 'enter',
-    'details_exit': 'esc',
-    'open_web': 'O',
+curses_defaults = {
+    'keymap': {
+        'help': 'f1',
+        'prev_filter': 'left',
+        'next_filter': 'right',
+        'sort': 'f3',
+        'sort_order': 'r',
+        'update': 'f4',
+        'play': 'f5',
+        'status': 'f6',
+        'score': 'f7',
+        'send': 's',
+        'retrieve': 'R',
+        'addsearch': 'a',
+        'reload': 'c',
+        'switch_account': 'f9',
+        'delete': 'd',
+        'quit': 'f12',
+        'altname': 'A',
+        'search': '/',
+        'neweps': 'N',
+        'details': 'enter',
+        'details_exit': 'esc',
+        'open_web': 'O',
+    },
+    'palette': {
+        
+    }
 }
 
 gtk_defaults = {
