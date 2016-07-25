@@ -12,7 +12,7 @@ To run Trackma you only need:
 To use any of the interfaces you need to install any of these depending on the interface you want to use:
 
 * PyQT4 *(for the Qt interface)*
-* PyGObject and Cairo *(for the Gtk interface)*
+* PyGI and Cairo *(for the Gtk interface)*
 * urwid *(for the curses interface)*
 
 (lsof is optional if you plan to disable the media tracker)
@@ -23,14 +23,14 @@ Installation
 Generic install
 ---------------
 
-Installation is done by getting the dependencies, cloning the Trackma repository, navigating to the directory and running (as root) ``python setup.py install``.
+Installation is done by getting the dependencies, cloning the Trackma repository, navigating to the directory and running (as root) ``python3 setup.py install``.
 Then you can run the interface you like by using its respective command ``trackma-qt``, ``trackma-gtk``, ``trackma-curses`` or ``trackma``.
 
 For example, installing Trackma with its GTK interface on Debian-based systems like Ubuntu can be done by entering the following commands:
 
 .. code-block:: bash
 
-    sudo apt-get install git python python-gtk3 python-imaging
+    sudo apt-get install git python3 python3-gi python3-pil
     git clone https://github.com/z411/trackma.git
     cd trackma
     sudo python3 setup.py install
