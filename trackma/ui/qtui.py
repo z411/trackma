@@ -36,7 +36,7 @@ if try_pyqt5:
                                     QDialog, QColorDialog, QDialogButtonBox,
                                     QFileDialog, QInputDialog, QMessageBox,
                                     QAction, QActionGroup, QLabel, QMenu, QStyle,
-                                    QSystemTrayIcon)
+                                    QSystemTrayIcon, QStyleOptionProgressBar)
         pyqt_version = 5
     except ImportError:
         print("Couldn't import Qt5 dependencies. Make sure you "
@@ -58,6 +58,7 @@ if pyqt_version is 0:
                                 QDialog, QColorDialog, QDialogButtonBox, QFileDialog, QInputDialog, QMessageBox,
                                 QAction, QActionGroup, QLabel, QMenu, QStyle,
                                 QSystemTrayIcon, QIcon, QPalette)
+        from PyQt4.QtGui import QStyleOptionProgressBarV2 as QStyleOptionProgressBar
         pyqt_version = 4
     except ImportError:
         print("Couldn't import Qt dependencies. Make sure you "
@@ -2520,7 +2521,7 @@ class EpisodeBar(QProgressBar):
 
         if self._bar_style is self.BarStyleBasic:
             painter = QtGui.QPainter(self)
-            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options = QStyleOptionProgressBar()
             prog_options.maximum = self.maximum()
             prog_options.progress = self.value()
             prog_options.rect = rect
@@ -2551,7 +2552,7 @@ class EpisodeBar(QProgressBar):
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
             painter.fillRect(rect, QtCore.Qt.transparent)
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options = QStyleOptionProgressBar()
             prog_options.maximum = self.maximum()
             prog_options.progress = self.value()
             prog_options.rect = rect
