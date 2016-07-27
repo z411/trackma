@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
 import socket
 import json
 import datetime
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libvndb(lib):
     """
@@ -99,7 +99,8 @@ class libvndb(lib):
         msg = cmd
         if options:
             msg += " " + json.dumps(options, separators=(',',':'))
-        msg += "\x04" # EOT
+        msg = msg.encode('utf-8')
+        msg += b"\x04" # EOT
 
         # Send message
         self.s.sendall(msg)
@@ -108,10 +109,10 @@ class libvndb(lib):
         lines = []
         while True:
             line = self.s.recv(65536)
-            if line.endswith("\x04"):
-                line = line.strip("\x04")
+            if line.endswith(b"\x04"):
+                line = line.strip(b"\x04")
                 lines.append(line)
-                response = "".join(lines)
+                response = b"".join(lines).decode('utf-8')
                 break
             else:
                 lines.append(line)

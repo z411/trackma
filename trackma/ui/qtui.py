@@ -39,7 +39,7 @@ if try_pyqt5:
                                     QSystemTrayIcon)
         pyqt_version = 5
     except ImportError:
-        print ("Couldn't import Qt5 dependencies. Make sure you "
+        print("Couldn't import Qt5 dependencies. Make sure you "
             "installed the PyQt5 package.")
         #sys.exit(-1)
 if pyqt_version is 0:
@@ -60,20 +60,19 @@ if pyqt_version is 0:
                                 QSystemTrayIcon, QIcon, QPalette)
         pyqt_version = 4
     except ImportError:
-        print ("Couldn't import Qt dependencies. Make sure you "
+        print("Couldn't import Qt dependencies. Make sure you "
             "installed the PyQt4 package.")
         sys.exit(-1)
 
 import os
-from cStringIO import StringIO
-import urllib2
+import urllib.request
 import base64
-
-import trackma.messenger as messenger
-import trackma.utils as utils
+from io import BytesIO
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
+from trackma import messenger
+from trackma import utils
 
 try:
     from PIL import Image
@@ -83,7 +82,7 @@ except ImportError:
         import Image
         imaging_available = True
     except ImportError:
-        print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
+        print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
 try:
@@ -92,7 +91,7 @@ try:
     import datetime
     dateutil_available = True
 except ImportError:
-    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    print("Warning: DateUtil is unavailable. Next episode countdown will be disabled.")
     dateutil_available = False
 
 class Trackma(QMainWindow):
@@ -510,11 +509,11 @@ class Trackma(QMainWindow):
 
     def status(self, message):
         self.status_text.setText(message)
-        print unicode(message).encode('utf-8')
+        print(message)
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))
-        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
     def fatal(self, msg):
         QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
@@ -548,7 +547,7 @@ class Trackma(QMainWindow):
         self.config['columns_state'] = dict()
         for status in self.statuses_nums:
             state = self.show_lists[status].horizontalHeader().saveState()
-            self.config['columns_state'][status] = base64.b64encode(state)
+            self.config['columns_state'][status] = base64.b64encode(state).decode('ascii')
         if self.config['columns_per_api']:
             self.api_config['columns_state'] = self.config['columns_state']
             utils.save_config(self.api_config, self.api_configfile)
@@ -765,7 +764,7 @@ class Trackma(QMainWindow):
 
     def _get_row_from_showid(self, widget, showid):
         # identify the row this show is in the table
-        for row in xrange(0, widget.rowCount()):
+        for row in range(0, widget.rowCount()):
             if widget.item(row, 0).text() == str(showid):
                 return row
 
@@ -865,10 +864,10 @@ class Trackma(QMainWindow):
                         sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
                         item = table.item(row, col)
                         if case_sensitive:
-                            if not sub_expr in unicode(item.text()):
+                            if not sub_expr in item.text():
                                 return False
                         else:
-                            if not sub_expr.lower() in unicode(item.text()).lower():
+                            if not sub_expr.lower() in item.text().lower():
                                 return False
                     else: # If it's not a field key, let it be a regular search term
                         expr_list.append(expr)
@@ -879,7 +878,7 @@ class Trackma(QMainWindow):
         # General case: if any fields match the remaining expression, success.
         for col in range(table.columnCount()):
             item = table.item(row, col)
-            itemtext = unicode(item.text())
+            itemtext = item.text()
             if case_sensitive:
                 if expression in itemtext:
                     return True
@@ -1048,7 +1047,7 @@ class Trackma(QMainWindow):
             tabs = range(len(self.notebook))
         else:
             tabs = [self.notebook.currentIndex()]
-        expr = unicode(self.show_filter.text())
+        expr = self.show_filter.text()
         casesens = self.show_filter_casesens.isChecked()
         for tab_index in tabs:
             table = self.notebook.widget(tab_index)
@@ -1257,7 +1256,7 @@ class Trackma(QMainWindow):
             self.api_config['visible_columns'] = self.config['visible_columns']
             utils.save_config(self.api_config, self.api_configfile)
 
-        for showlist in self.show_lists.itervalues():
+        for showlist in self.show_lists.values():
             showlist.setColumnHidden(index, not visible)
 
     ### Worker slots
@@ -2070,10 +2069,10 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
 
-        engine.set_config('player',     unicode(self.player.text()))
-        engine.set_config('searchdir',  unicode(self.searchdir.text()))
-        engine.set_config('plex_host',  unicode(self.plex_host.text()))
-        engine.set_config('plex_port',  unicode(self.plex_port.text()))
+        engine.set_config('player',    self.player.text())
+        engine.set_config('searchdir', self.searchdir.text())
+        engine.set_config('plex_host', self.plex_host.text())
+        engine.set_config('plex_port', self.plex_port.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -2316,7 +2315,7 @@ class AccountDialog(QDialog):
 
         # Get icons
         self.icons = dict()
-        for libname, lib in utils.available_libs.iteritems():
+        for libname, lib in utils.available_libs.items():
             self.icons[libname] = QIcon(lib[1])
 
         # Populate list
@@ -2418,7 +2417,7 @@ class AccountDialog(QDialog):
         self.close()
 
     def _error(self, msg):
-        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
 class AccountItem(QTableWidgetItem):
     """
@@ -2486,7 +2485,7 @@ class ShowItemDate(ShowItem):
         else:
             return True
 
-class FilterBar(object):
+class FilterBar():
     """
     Constants relating to filter bar settings can live here.
     """
@@ -2642,7 +2641,7 @@ class AccountAddDialog(QDialog):
         bottombox.rejected.connect(self.reject)
 
         # Populate APIs
-        for libname, lib in sorted(utils.available_libs.iteritems()):
+        for libname, lib in sorted(utils.available_libs.items()):
             self.api.addItem(icons[libname], lib[0], libname)
 
         if self.edit:
@@ -2732,9 +2731,9 @@ class Image_Worker(QtCore.QThread):
     def run(self):
         self.cancelled = False
 
-        req = urllib2.Request(self.remote)
+        req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = StringIO(urllib2.urlopen(req).read())
+        img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
@@ -2812,10 +2811,10 @@ class Engine_Worker(QtCore.QThread):
         self.changed_status.emit("%s: %s" % (classname, msg))
 
     def _error(self, msg):
-        self.raised_error.emit(msg)
+        self.raised_error.emit(str(msg))
 
     def _fatal(self, msg):
-        self.raised_fatal.emit(msg)
+        self.raised_fatal.emit(str(msg))
 
     def _changed_show(self, show, changes=None):
         self.changed_show.emit(show)
@@ -2836,8 +2835,8 @@ class Engine_Worker(QtCore.QThread):
     def _start(self):
         try:
             self.engine.start()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2845,8 +2844,8 @@ class Engine_Worker(QtCore.QThread):
     def _reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2854,8 +2853,8 @@ class Engine_Worker(QtCore.QThread):
     def _unload(self):
         try:
             self.engine.unload()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2863,8 +2862,8 @@ class Engine_Worker(QtCore.QThread):
     def _scan_library(self):
         try:
             self.engine.scan_library()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2873,8 +2872,8 @@ class Engine_Worker(QtCore.QThread):
         try:
             showlist = self.engine.get_list()
             altnames = self.engine.altnames()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'showlist': showlist, 'altnames': altnames}
@@ -2882,8 +2881,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_episode(self, showid, episode):
         try:
             self.engine.set_episode(showid, episode)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2891,8 +2890,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_score(self, showid, score):
         try:
             self.engine.set_score(showid, score)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2900,8 +2899,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2909,8 +2908,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_tags(self, showid, tags):
         try:
             self.engine.set_tags(showid, tags)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2918,8 +2917,8 @@ class Engine_Worker(QtCore.QThread):
     def _play_episode(self, show, episode):
         try:
             played_ep = self.engine.play_episode(show, episode)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'show': show, 'played_ep': played_ep}
@@ -2927,8 +2926,8 @@ class Engine_Worker(QtCore.QThread):
     def _play_random(self):
         try:
             (show, ep) = self.engine.play_random()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'played_show': show, 'played_ep': ep}
@@ -2936,8 +2935,8 @@ class Engine_Worker(QtCore.QThread):
     def _list_download(self):
         try:
             self.engine.list_download()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2945,8 +2944,8 @@ class Engine_Worker(QtCore.QThread):
     def _list_upload(self):
         try:
             self.engine.list_upload()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2954,17 +2953,17 @@ class Engine_Worker(QtCore.QThread):
     def _get_show_details(self, show):
         try:
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'details': details}
 
     def _search(self, terms):
         try:
-            results = self.engine.search(unicode(terms).encode('utf-8'))
-        except utils.TrackmaError, e:
-            self._error(e.message)
+            results = self.engine.search(terms)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'results': results}
@@ -2972,8 +2971,8 @@ class Engine_Worker(QtCore.QThread):
     def _add_show(self, show, status):
         try:
             results = self.engine.add_show(show, status)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2981,8 +2980,8 @@ class Engine_Worker(QtCore.QThread):
     def _delete_show(self, show):
         try:
             results = self.engine.delete_show(show)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -3008,8 +3007,8 @@ class Engine_Worker(QtCore.QThread):
         try:
             ret = self.function(*self.args,**self.kwargs)
             self.finished.emit(ret)
-        except utils.TrackmaFatal, e:
-            self._fatal(e.message)
+        except utils.TrackmaFatal as e:
+            self._fatal(e)
 
 def getIcon(icon_name):
     fallback = QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
@@ -3032,5 +3031,8 @@ def main():
     try:
         mainwindow = Trackma()
         sys.exit(app.exec_())
-    except utils.TrackmaFatal, e:
-        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e.message), QMessageBox.Ok)
+    except utils.TrackmaFatal as e:
+        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
+
+if __name__ == '__main__':
+    main()

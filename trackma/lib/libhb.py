@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
 import datetime
-
-import urllib, urllib2
+import urllib.parse
+import urllib.request
 import json
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libhb(lib):
     """
@@ -72,17 +73,17 @@ class libhb(lib):
         self.password = account['password']
 
         # Build opener with the mashape API key
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
 
     def _request(self, url, get=None, post=None):
         if get:
-            url += "?%s" % urllib.urlencode(get)
+            url += "?%s" % urllib.parse.urlencode(get)
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post).encode('utf-8')
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
@@ -95,7 +96,7 @@ class libhb(lib):
 
         self.msg.info(self.name, 'Logging in...')
 
-        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read().decode('utf-8')
         self.auth = response.strip('"')
         self._set_userconfig('username', self.username)
         self.logged_in = True
@@ -109,7 +110,7 @@ class libhb(lib):
 
         try:
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             showlist = dict()
             infolist = list()
@@ -143,7 +144,7 @@ class libhb(lib):
 
             self._emit_signal('show_info_changed', infolist)
             return showlist
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
 
     def add_show(self, item):
@@ -168,7 +169,7 @@ class libhb(lib):
 
         try:
             self._request("/libraries/%s" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -179,7 +180,7 @@ class libhb(lib):
         values = {'auth_token': self.auth}
         try:
             self._request("/libraries/%s/remove" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, query):
@@ -188,7 +189,7 @@ class libhb(lib):
         values = {'query': query}
         try:
             data = self._request("/search/anime", get=values)
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             infolist = []
             for show in shows:
@@ -202,7 +203,7 @@ class libhb(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
 
     def _str2date(self, string):
@@ -234,14 +235,3 @@ class libhb(lib):
             ]
         })
         return info
-
-    def _urlencode(self, in_dict):
-        """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
-        out_dict = {}
-        for k, v in in_dict.iteritems():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)

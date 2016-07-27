@@ -19,7 +19,7 @@ import subprocess
 import datetime
 import json
 import difflib
-import cPickle as pickle
+import pickle
 
 VERSION = '0.5'
 
@@ -75,20 +75,20 @@ def save_config(config_dict, filename):
         os.mkdir(path)
 
     with open(filename, 'wb') as configfile:
-        json.dump(config_dict, configfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
+        configfile.write(json.dumps(config_dict, sort_keys=True,
+                  indent=4, separators=(',', ': ')).encode('utf-8'))
 
 def load_data(filename):
     with open(filename, 'rb') as datafile:
-        return pickle.load(datafile)
+        return pickle.load(datafile, encoding='bytes')
 
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
-        pickle.dump(data, datafile)
+        pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg.encode('utf-8'))
+        logfile.write(msg)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -161,7 +161,7 @@ def estimate_aired_episodes(show):
             if days <= 0:
                 return 0
 
-            eps = days / 7 + 1
+            eps = days // 7 + 1
             if eps > show['total'] and show['total'] > 0:
                 return show['total']
             return eps

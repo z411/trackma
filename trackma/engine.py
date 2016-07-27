@@ -17,20 +17,19 @@
 import re
 import os
 import subprocess
-from decimal import Decimal
-
 import threading
 import difflib
 import time
 import datetime
 import random
 import shlex
+from decimal import Decimal
 
-import messenger
-import data
-import tracker
-import utils
-import extras.AnimeInfoExtractor
+from trackma import messenger
+from trackma import data
+from trackma import tracker
+from trackma import utils
+from trackma.extras import AnimeInfoExtractor
 
 class Engine:
     """
@@ -201,10 +200,10 @@ class Engine:
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
-        except utils.DataError, e:
-            raise utils.DataFatal(e.message)
-        except utils.APIError, e:
-            raise utils.APIFatal(e.message)
+        except utils.DataError as e:
+            raise utils.DataFatal(str(e))
+        except utils.APIError as e:
+            raise utils.APIFatal(str(e))
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -273,7 +272,7 @@ class Engine:
         Returns the full show list requested from the data handler as a list of show dictionaries.
         If you only need shows in a specified status, use :func:`filter_list`.
         """
-        return self.data_handler.get().itervalues()
+        return self.data_handler.get().values()
 
     def get_show_info(self, showid):
         """
@@ -289,7 +288,7 @@ class Engine:
     def get_show_info_title(self, pattern):
         showdict = self.data_handler.get()
         # Do title lookup, slower
-        for k, show in showdict.iteritems():
+        for k, show in showdict.items():
             if show['title'].encode('utf-8') == pattern:
                 return show
         raise utils.EngineError("Show not found.")
@@ -306,13 +305,13 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if re.match(regex, v['title'], re.I))
+        return list(v for k, v in showlist.items() if re.match(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
         showlist = self.data_handler.get()
         newlist = list()
-        for k, v in showlist.iteritems():
+        for k, v in showlist.items():
             if re.match(pattern, v['title'], re.I):
                 if ' ' in v['title']:
                     newlist.append('"' + v['title'] + '" ')
@@ -400,7 +399,7 @@ class Engine:
                 elif newep == 1 and self.mediainfo.get('status_start'):
                     # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -415,7 +414,7 @@ class Engine:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since date change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
@@ -495,7 +494,7 @@ class Engine:
         ):
             try:
                 self.set_status(show['id'], self.mediainfo['status_finish'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -584,17 +583,23 @@ class Engine:
         # Check over video files and propose our best candidate
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
             # Analyze what's the title and episode of the file
-            aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
+            aie = AnimeInfoExtractor(filename)
             candidate_title = aie.getName()
             candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
-            # Skip this file if we couldn't analyze it or it isn't the episode we want
-            if (
-                not candidate_title or
-                not (episode >= candidate_episode_start and episode <= candidate_episode_end) or
-                (candidate_episode_end == '' and episode != candidate_episode_start)
-               ):
+            # Skip this file if we couldn't analyze it
+            if not candidate_title:
                 continue
+            if candidate_episode_start is None:
+                continue
+
+            # Skip this file if it isn't the episode we want
+            if candidate_episode_end is None:
+                if episode != candidate_episode_start:
+                    continue
+            else:
+                if not (candidate_episode_start <= episode <= candidate_episode_end):
+                    continue
 
             matcher.set_seq1(candidate_title.lower())
 
@@ -669,7 +674,7 @@ class Engine:
                 # the information from the filename and do a fuzzy search
                 # on the user's list. Cache the information.
                 # If it fails, cache it as None.
-                aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
+                aie = AnimeInfoExtractor(filename)
                 (show_title, show_ep) = (aie.getName(), aie.getEpisode())
                 if show_title:
                     show = utils.guess_show(show_title, tracker_list)
@@ -702,7 +707,7 @@ class Engine:
 
         self.msg.info(self.name, 'Looking for random episode.')
 
-        for showid, eps in library.iteritems():
+        for showid, eps in library.items():
             show = self.get_show_info(showid)
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
@@ -793,7 +798,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
+        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
 
     def list_download(self):
         """Asks the data handler to download the remote list."""

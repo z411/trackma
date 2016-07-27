@@ -17,7 +17,7 @@
 import re
 from decimal import Decimal
 
-class AnimeInfoExtractor(object):
+class AnimeInfoExtractor():
     """
     Extracts lots of information about anime from filename alone
     @author: Tyris
@@ -34,10 +34,10 @@ class AnimeInfoExtractor(object):
         self.audioType = []
         self.releaseSource = []
         self.extension = ''
-        self.episodeStart = ''
-        self.episodeEnd = ''
-        self.volumeStart = ''
-        self.volumeEnd = ''
+        self.episodeStart = None
+        self.episodeEnd = None
+        self.volumeStart = None
+        self.volumeEnd = None
         self.version = 1
         self.name = ''
         self.pv = -1
@@ -50,8 +50,8 @@ class AnimeInfoExtractor(object):
         return self.episodeStart, self.episodeEnd
 
     def getEpisode(self):
-        ep = self.episodeStart if self.episodeEnd == '' else self.episodeEnd
-        ep = ep if ep != '' else '1'
+        ep = self.episodeStart if self.episodeEnd is None else self.episodeEnd
+        ep = ep if ep is not None else 1
 
         return int(ep)
 
@@ -79,7 +79,7 @@ class AnimeInfoExtractor(object):
         tags = {'video': ['H264', 'H.264', 'x264', 'XviD', 'DivX', 'MP4'],
             'audio': ['AC3', 'AAC', 'MP3', 'FLAC'],
             'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV']}
-        for k, v in tags.iteritems():
+        for k, v in tags.items():
             for tag in v:
                 m = re.search('(?:[\(\[](?:|[^\)\]]*?[^0-9a-zA-Z\)\]]))(' + tag + ')(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
                 if m:
