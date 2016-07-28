@@ -113,7 +113,7 @@ class Trackma_cmd(cmd.Cmd):
             return self.engine.get_show_info_title(title)
 
     def _ask_update(self, show, episode):
-        do_update = input("Should I update %s to episode %d? [y/N] " % (show['title'].encode('utf-8'), episode))
+        do_update = input("Should I update %s to episode %d? [y/N] " % (show['title'], episode))
         if do_update.lower() == 'y':
             self.engine.set_episode(show['id'], episode)
 
@@ -361,7 +361,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(args[0])
 
-            do_delete = input("Delete %s? [y/N] " % show['title'].encode('utf-8'))
+            do_delete = input("Delete %s? [y/N] " % show['title'])
             if do_delete.lower() == 'y':
                 self.engine.delete_show(show)
         except utils.TrackmaError as e:
@@ -510,7 +510,7 @@ class Trackma_cmd(cmd.Cmd):
         if len(queue):
             print("Queue:")
             for show in queue:
-                print("- %s" % show['title'].encode('utf-8'))
+                print("- %s" % show['title'])
         else:
             print("Queue is empty.")
 
@@ -703,7 +703,7 @@ class Trackma_cmd(cmd.Cmd):
                 episodes_str = "-"
 
             # Truncate title if needed
-            title_str = show['title'].encode('utf-8')
+            title_str = show['title']
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
