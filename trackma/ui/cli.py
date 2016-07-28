@@ -556,7 +556,7 @@ class Trackma_cmd(cmd.Cmd):
             return self.engine.regex_list_titles(text)
 
     def complete_filter(self, text, line, begidx, endidx):
-        return (v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values())
+        return [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
 
     def parse_args(self, arg):
         if arg:
