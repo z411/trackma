@@ -155,7 +155,7 @@ class libmelative(lib):
 
             show = utils.show()
             show['id'] = itemid
-            show['title'] = entity['aliases'][0].encode('utf-8')
+            show['title'] = entity['aliases'][0]
             show['my_status'] = _status
             show['my_score'] = int(record['rating'] or 0)
             show['my_progress'] =_progress
