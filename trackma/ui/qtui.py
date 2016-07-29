@@ -1248,6 +1248,7 @@ class Trackma(QMainWindow):
     def s_toggle_column(self, w):
         (column_name, visible) = (w.text(), w.isChecked())
         index = self.available_columns.index(column_name)
+        MIN_WIDTH = 30  # Width to restore columns to if too small to see
 
         if visible:
             if column_name not in self.config['visible_columns']:
@@ -1263,6 +1264,8 @@ class Trackma(QMainWindow):
 
         for showlist in self.show_lists.values():
             showlist.setColumnHidden(index, not visible)
+            if visible and showlist.columnWidth(index) < MIN_WIDTH:
+                showlist.setColumnWidth(index, MIN_WIDTH)
 
     ### Worker slots
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
