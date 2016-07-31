@@ -28,7 +28,9 @@ from trackma import utils
 from trackma.extras import plex
 from trackma.extras import AnimeInfoExtractor
 
-inotify_available = False
+inotify_available = 0
+INOTIFY_PYINOTIFY = 1  # seb-m/pyinotify - pyinotify on PyPi
+INOTIFY_INOTIFY = 2    # dsoprea/PyInotify - inotify on PyPi
 
 STATE_PLAYING = 0
 STATE_NOVIDEO = 1
@@ -36,10 +38,15 @@ STATE_UNRECOGNIZED = 2
 STATE_NOT_FOUND = 3
 
 try:
-    import inotifyx
-    inotify_available = True
+    import inotify.adapters
+    import inotify.constants
+    inotify_available = INOTIFY_INOTIFY
 except ImportError:
-    pass # If we ignore this the tracker will just use lsof
+    try:
+        import pyinotify
+        inotify_available = INOTIFY_PYINOTIFY
+    except:
+        pass  # If we ignore this the tracker will just use lsof
 
 
 class Tracker():
@@ -57,8 +64,8 @@ class Tracker():
 
     name = 'Tracker'
 
-    signals = { 'playing' : None,
-                 'update': None, }
+    signals = {'playing': None,
+               'update': None, }
 
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close):
         self.msg = messenger
@@ -157,49 +164,82 @@ class Tracker():
         playing_file = plex.playing_file()
         return playing_file
 
-    def _inotify_watch_recursive(self, fd, watch_dir):
-        self.msg.debug(self.name, 'inotify: Watching %s' % watch_dir)
-        inotifyx.add_watch(fd, watch_dir.encode('utf-8'), inotifyx.IN_OPEN | inotifyx.IN_CLOSE)
-
-        for path in os.listdir(watch_dir):
-            if os.path.isdir(os.path.join(watch_dir, path)):
-                self._inotify_watch_recursive(fd, os.path.join(watch_dir, path))
+    def _poll_lsof(self):
+        filename = self._get_playing_file_lsof(self.process_name)
+        (state, show_tuple) = self._get_playing_show(filename)
+        self.update_show_if_needed(state, show_tuple)
 
     def _observe_inotify(self, watch_dir):
         self.msg.info(self.name, 'Using inotify.')
-
-        timeout = -1
-        fd = inotifyx.init()
+        mask = inotify.constants.IN_OPEN | inotify.constants.IN_CLOSE
+        i = inotify.adapters.InotifyTree(watch_dir, mask=mask)
         try:
-            self._inotify_watch_recursive(fd, watch_dir)
-            while True:
-                events = inotifyx.get_events(fd, timeout)
-                if events:
-                    for event in events:
-                        if not event.mask & inotifyx.IN_ISDIR:
-                            filename = self._get_playing_file_lsof(self.process_name)
-                            (state, show_tuple) = self._get_playing_show(filename)
-                            self.update_show_if_needed(state, show_tuple)
+            for event in i.event_gen():
+                if event is not None:
+                    # With inotifyx impl., only the event type was used,
+                    # such that it only served to poll lsof when an
+                    # open or close event was received.
+                    (header, types, path, ev_filename) = event
+                    if 'IN_ISDIR' not in types\
+                            and ('IN_OPEN' in types
+                                 or 'IN_CLOSE_NOWRITE' in types
+                                 or 'IN_CLOSE_WRITE' in types):
+                        self._poll_lsof()
+                elif self.last_state != STATE_NOVIDEO:
+                    # Default blocking duration is 1 second
+                    # This will count down like inotifyx impl. did
+                    self.update_show_if_needed(self.last_state, self.last_show_tuple)
+        finally:
+            self.msg.info(self.name, 'Tracker has stopped.')
+            # inotify resource is cleaned-up automatically
 
-                            if self.last_state == STATE_NOVIDEO:
-                                # Make get_events block indifinitely
-                                timeout = -1
-                            else:
-                                timeout = 1
+    def _observe_pyinotify(self, watch_dir):
+        self.msg.info(self.name, 'Using pyinotify.')
+        wm = pyinotify.WatchManager()  # Watch Manager
+        mask = pyinotify.IN_OPEN | pyinotify.IN_CLOSE_NOWRITE | pyinotify.IN_CLOSE_WRITE
+
+        class EventHandler(pyinotify.ProcessEvent):
+            def my_init(self, parent=None):
+                self.parent = parent
+
+            def process_IN_OPEN(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._poll_lsof()
+
+            def process_IN_CLOSE_NOWRITE(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._poll_lsof()
+
+            def process_IN_CLOSE_WRITE(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._poll_lsof()
+
+        handler = EventHandler(parent=self)
+        notifier = pyinotify.Notifier(wm, handler)
+        wdd = wm.add_watch(watch_dir, mask, rec=True, auto_add=True)
+
+        try:
+            #notifier.loop()
+            timeout = None
+            while True:
+                if notifier.check_events(timeout):
+                    notifier.read_events()
+                    notifier.process_events()
+                    if self.last_state == STATE_NOVIDEO:
+                        timeout = None  # Block indefinitely
+                    else:
+                        timeout = 1000  # Check each second for counting
                 else:
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
-        except IOError:
-            self.msg.warn(self.name, 'Watch directory not found! Tracker will stop.')
         finally:
-            os.close(fd)
+            notifier.stop()
+            self.msg.info(self.name, 'Tracker has stopped.')
 
     def _observe_polling(self, interval):
-        self.msg.info(self.name, "inotifyx not available; using polling (slow).")
+        self.msg.info(self.name, "pyinotify not available; using polling (slow).")
         while True:
             # This runs the tracker and update the playing show if necessary
-            filename = self._get_playing_file_lsof(self.process_name)
-            (state, show_tuple) = self._get_playing_show(filename)
-            self.update_show_if_needed(state, show_tuple)
+            self._poll_lsof()
 
             # Wait for the interval before running check again
             time.sleep(interval)
@@ -243,8 +283,10 @@ class Tracker():
         else:
             if os.name == 'nt':
                 self._observe_win32(interval)
-            elif inotify_available:
-                self._observe_inotify(watch_dir)
+            elif inotify_available == INOTIFY_INOTIFY:
+                self._observe_inotify(watch_dir.encode('utf-8'))
+            elif inotify_available == INOTIFY_PYINOTIFY:
+                self._observe_pyinotify(watch_dir)
             else:
                 self._observe_polling(interval)
 
