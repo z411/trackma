@@ -78,7 +78,7 @@ class Trackma_urwid():
         ('info_section', 'dark blue', ''),
         ]
 
-        keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
+        keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.curses_defaults['keymap'])
         self.keymapping = self.map_key_to_func(keymap)
 
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
@@ -412,7 +412,7 @@ class Trackma_urwid():
                 widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
                 if isinstance(line[1], dict):
                     linestr = repr(line[1])
-                elif isinstance(line[1], int):
+                elif isinstance(line[1], int) or isinstance(line[1], list):
                     linestr = str(line[1])
                 else:
                     linestr = line[1]
