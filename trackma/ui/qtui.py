@@ -362,7 +362,7 @@ class Trackma(QMainWindow):
         self.show_filter_casesens = QCheckBox()
         self.show_filter_casesens.stateChanged.connect(self.s_filter_changed)
 
-        self.setMinimumSize(740, 480)
+        #self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
             self.setGeometry(self.config['last_x'], self.config['last_y'],
                              self.config['last_width'], self.config['last_height'])
@@ -372,7 +372,7 @@ class Trackma(QMainWindow):
         self.show_image.setFixedWidth( 100 )
         self.show_image.setAlignment( QtCore.Qt.AlignCenter )
         self.show_image.setStyleSheet("border: 1px solid #777;background-color:#999;text-align:center")
-        show_progress_label = QLabel('Progress')
+        show_progress_label = QLabel('Progress:')
         self.show_progress = QSpinBox()
         self.show_progress_bar = QProgressBar()
         self.show_progress_btn = QPushButton('Update')
@@ -393,7 +393,7 @@ class Trackma(QMainWindow):
         self.show_dec_btn.clicked.connect(self.s_rem_episode)
         self.show_dec_btn.setShortcut('Ctrl+Left')
         self.show_dec_btn.setToolTip('Decrement number of episodes watched')
-        show_score_label = QLabel('Score')
+        show_score_label = QLabel('Score:')
         self.show_score = QDoubleSpinBox()
         self.show_score_btn = QPushButton('Set')
         self.show_score_btn.setToolTip('Set score to the value entered above')
@@ -413,10 +413,10 @@ class Trackma(QMainWindow):
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar)
         left_box.addRow(small_btns_hbox)
-        left_box.addRow(show_progress_label, self.show_progress)
-        left_box.addRow(self.show_progress_btn)
-        left_box.addRow(show_score_label, self.show_score)
-        left_box.addRow(self.show_score_btn)
+        left_box.addRow(show_progress_label)
+        left_box.addRow(self.show_progress, self.show_progress_btn)
+        left_box.addRow(show_score_label)
+        left_box.addRow(self.show_score, self.show_score_btn)
         left_box.addRow(self.show_status)
         left_box.addRow(self.show_tags_btn)
 
