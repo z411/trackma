@@ -287,6 +287,7 @@ userconfig_defaults = {
     'username': '',
 }
 curses_defaults = {
+    'show_help': True,
     'keymap': {
         'help': 'f1',
         'prev_filter': 'left',

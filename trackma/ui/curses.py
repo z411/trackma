@@ -78,15 +78,16 @@ class Trackma_urwid():
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
 
+        top_pile = [self.header]
 
-        top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
-                   keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
-                   keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
-                   keymap['quit'] + ':Quit'
-        self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text(top_text), 'status')
-        ])
+        if config['show_help']:
+            top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
+                       keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
+                       keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
+                       keymap['quit'] + ':Quit'
+            top_pile.append(urwid.AttrMap(urwid.Text(top_text), 'status'))
 
+        self.top_pile = urwid.Pile(top_pile)
         self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
 
         self.listheader = urwid.AttrMap(
