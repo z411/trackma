@@ -305,7 +305,7 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if re.match(regex, v['title'], re.I))
+        return list(v for k, v in showlist.items() if re.search(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function

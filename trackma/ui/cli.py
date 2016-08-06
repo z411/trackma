@@ -316,7 +316,7 @@ class Trackma_cmd(cmd.Cmd):
         :param pattern Regex pattern to search for.
         :usage search <pattern>
         """
-        sortedlist = list(v for v in self.sortedlist if re.match(args[0], v[1]['title'], re.I))
+        sortedlist = list(v for v in self.sortedlist if re.search(args[0], v[1]['title'], re.I))
         self._make_list(sortedlist)
 
     def do_add(self, args):
