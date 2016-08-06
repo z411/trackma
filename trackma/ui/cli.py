@@ -109,7 +109,7 @@ class Trackma_cmd(cmd.Cmd):
         # otherwise use title
         try:
             index = int(title)-1
-            return self.sortedlist[index]
+            return self.sortedlist[index][1]
         except (ValueError, AttributeError, IndexError):
             return self.engine.get_show_info_title(title)
 
