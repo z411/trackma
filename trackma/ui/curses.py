@@ -58,28 +58,13 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-
-        palette = [
-        ('body','', ''),
-        ('focus','standout', ''),
-        ('head','light red', 'black'),
-        ('header','bold', ''),
-        ('status', 'white', 'dark blue'),
-        ('error', 'light red', 'dark blue'),
-        ('window', 'white', 'dark blue'),
-        ('button', 'black', 'light gray'),
-        ('button hilight', 'white', 'dark red'),
-        ('item_airing', 'dark blue', ''),
-        ('item_notaired', 'yellow', ''),
-        ('item_neweps', 'white', 'brown'),
-        ('item_updated', 'white', 'dark green'),
-        ('item_playing', 'white', 'dark blue'),
-        ('info_title', 'light red', ''),
-        ('info_section', 'dark blue', ''),
-        ]
-
-        keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.curses_defaults['keymap'])
+        config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
+        keymap = config['keymap']
         self.keymapping = self.map_key_to_func(keymap)
+
+        palette = []
+        for k, color in config['palette'].items():
+            palette.append( (k, color[0], color[1]) )
 
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
         self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)

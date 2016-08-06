@@ -312,7 +312,22 @@ curses_defaults = {
         'open_web': 'O',
     },
     'palette': {
-        
+        'body':             ('', ''),
+        'focus':            ('standout', ''),
+        'head':             ('light red', 'black'),
+        'header':           ('bold', ''),
+        'status':           ('white', 'dark blue'),
+        'error':            ('light red', 'dark blue'),
+        'window':           ('white', 'dark blue'),
+        'button':           ('black', 'light gray'),
+        'button hilight':   ('white', 'dark red'),
+        'item_airing':      ('dark blue', ''),
+        'item_notaired':    ('yellow', ''),
+        'item_neweps':      ('white', 'brown'),
+        'item_updated':     ('white', 'dark green'),
+        'item_playing':     ('white', 'dark blue'),
+        'info_title':       ('light red', ''),
+        'info_section':     ('dark blue', ''),
     }
 }
 
