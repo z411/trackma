@@ -101,7 +101,8 @@ class Trackma_cmd(cmd.Cmd):
 
     def _load_list(self, *args):
         showlist = self.engine.filter_list(self.filter_num)
-        self.sortedlist = sorted(showlist, key=itemgetter(self.sort))
+        sortedlist = sorted(showlist, key=itemgetter(self.sort))
+        self.sortedlist = list(enumerate(sortedlist, 1))
 
     def _get_show(self, title):
         # Attempt parsing list index
@@ -315,8 +316,7 @@ class Trackma_cmd(cmd.Cmd):
         :param pattern Regex pattern to search for.
         :usage search <pattern>
         """
-        showlist = self.engine.regex_list(args[0])
-        sortedlist = sorted(showlist, key=itemgetter(self.sort))
+        sortedlist = list(v for v in self.sortedlist if re.match(args[0], v[1]['title'], re.I))
         self._make_list(sortedlist)
 
     def do_add(self, args):
@@ -679,7 +679,7 @@ class Trackma_cmd(cmd.Cmd):
         max_title_length = width - col_id_length - col_episodes_length - col_score_length - col_index_length - 5
 
         # Find the widest title so we can adjust the title column
-        for show in showlist:
+        for index, show in showlist:
             if len(show['title']) > col_title_length:
                 if len(show['title']) > max_title_length:
                     # Stop if we exceeded the maximum column width
@@ -696,7 +696,7 @@ class Trackma_cmd(cmd.Cmd):
                 'Score',    col_score_length))
 
         # List shows
-        for index, show in enumerate(showlist, 1):
+        for index, show in showlist:
             if self.engine.mediainfo['has_progress']:
                 episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
             else:
