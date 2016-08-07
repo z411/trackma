@@ -127,6 +127,12 @@ class Engine:
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
 
+    def _tracker_detected(self, path, filename):
+        self.add_to_library(path, filename)
+
+    def _tracker_removed(self, path, filename):
+        self.remove_from_library(path, filename)
+
     def _tracker_playing(self, showid, playing, episode):
         show = self.get_show_info(showid)
         self._emit_signal('playing', show, playing, episode)
@@ -215,6 +221,8 @@ class Engine:
                                    int(self.config['tracker_update_wait_s']),
                                    self.config['tracker_update_close'],
                                   )
+            self.tracker.connect_signal('detected', self._tracker_detected)
+            self.tracker.connect_signal('removed', self._tracker_removed)
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)
 
@@ -658,44 +666,81 @@ class Engine:
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            show_id = None
-            if not ignorecache and filename in library_cache.keys():
-                # If the filename was already seen before
-                # use the cached information, if there's no information (None)
-                # then it means it doesn't correspond to any show in the list
-                # and can be safely skipped.
-                if library_cache[filename]:
-                    show_id = library_cache[filename][0]
-                    show_ep = library_cache[filename][1]
-                else:
-                    continue
-            else:
-                # If the filename has not been seen, extract
-                # the information from the filename and do a fuzzy search
-                # on the user's list. Cache the information.
-                # If it fails, cache it as None.
-                aie = AnimeInfoExtractor(filename)
-                (show_title, show_ep) = (aie.getName(), aie.getEpisode())
-                if show_title:
-                    show = utils.guess_show(show_title, tracker_list)
-                    if show:
-                        show_id = show['id']
-                        library_cache[filename] = (show['id'], show_ep)
-                    else:
-                        library_cache[filename] = None
-                else:
-                    library_cache[filename] = None
-
-            # After we got our information, add it to our library
-            if show_id:
-                if show_id not in library.keys():
-                    library[show_id] = {}
-                library[show_id][show_ep] = fullpath
+            (library, library_cache) = self._add_show_to_library(library, library_cache, ignorecache, fullpath, filename, tracker_list)
 
         self.msg.debug(self.name, "Time: %s" % (time.time() - t))
         self.data_handler.library_save(library)
         self.data_handler.library_cache_save(library_cache)
         return library
+
+    def remove_from_library(self, path, filename):
+        library = self.data_handler.library_get()
+        library_cache = self.data_handler.library_cache_get()
+        tracker_list = self._get_tracker_list()
+        fullpath = path+"/"+filename
+        # Only remove if the filename matches library entry
+        if filename in library_cache.keys() and library_cache[filename]:
+            (show_id, show_ep) = library_cache[filename]
+            if show_id and show_id in library.keys() \
+                    and show_ep and show_ep in library[show_id].keys():
+                if library[show_id][show_ep] == fullpath:
+                    self.msg.debug(self.name, "File removed from local library: %s" % fullpath)
+                    library_cache.pop(filename, None)
+                    library[show_id].pop(show_ep, None)
+
+    def add_to_library(self, path, filename, ignorecache=False):
+        # The inotify tracker tells us when files are created in
+        # or moved within our library directory, so we call this.
+        library = self.data_handler.library_get()
+        library_cache = self.data_handler.library_cache_get()
+        tracker_list = self._get_tracker_list()
+        fullpath = path+"/"+filename
+        self._add_show_to_library(library, library_cache, ignorecache, fullpath, filename, tracker_list)
+
+    def _add_show_to_library(self, library, library_cache, ignorecache, fullpath, filename, tracker_list):
+        show_id = None
+        if not ignorecache and filename in library_cache.keys():
+            # If the filename was already seen before
+            # use the cached information, if there's no information (None)
+            # then it means it doesn't correspond to any show in the list
+            # and can be safely skipped.
+            if library_cache[filename]:
+                (show_id, show_ep) = library_cache[filename]
+                if type(show_ep) is tuple:
+                    (show_ep_start, show_ep_end) = show_ep
+                else:
+                    show_ep_start = show_ep_end = show_ep
+            else:
+                return library, library_cache
+        else:
+            # If the filename has not been seen, extract
+            # the information from the filename and do a fuzzy search
+            # on the user's list. Cache the information.
+            # If it fails, cache it as None.
+            aie = AnimeInfoExtractor(filename)
+            show_title = aie.getName()
+            (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
+            if show_title:
+                show = utils.guess_show(show_title, tracker_list)
+                if show:
+                    show_id = show['id']
+                    if show_ep_start == show_ep_end:
+                        library_cache[filename] = (show['id'], show_ep_start)
+                    else:
+                        library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+                else:
+                    library_cache[filename] = None
+            else:
+                library_cache[filename] = None
+
+        # After we got our information, add it to our library
+        if show_id:
+            if show_id not in library.keys():
+                library[show_id] = {}
+            for show_ep in range(show_ep_start, show_ep_end+1):
+                library[show_id][show_ep] = fullpath
+            self.msg.debug(self.name, "File added to local library: %s" % fullpath)
+        return library, library_cache
 
     def play_random(self):
         """
@@ -711,7 +756,6 @@ class Engine:
             show = self.get_show_info(showid)
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
-
 
         if not newep:
             raise utils.EngineError('No new episodes found to pick from.')

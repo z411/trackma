@@ -46,8 +46,17 @@ class AnimeInfoExtractor():
     def getName(self):
         return self.name
 
-    def getEpisodeNumbers(self):
-        return self.episodeStart, self.episodeEnd
+    def getEpisodeNumbers(self, force_numbers=False):
+        ep_start = self.episodeStart
+        ep_end = self.episodeEnd
+        if force_numbers:
+            if ep_start is None:
+                ep_start = 1
+            if ep_end is None:
+                ep_end = ep_start
+            ep_start = int(ep_start)
+            ep_end = int(ep_end)
+        return ep_start, ep_end
 
     def getEpisode(self):
         ep = self.episodeStart if self.episodeEnd is None else self.episodeEnd
@@ -209,8 +218,8 @@ class AnimeInfoExtractor():
         return filename
 
     def __extractEpisodeNumbers(self, filename):
-        # First check for concurrent episodes (with a +)
-        m = re.search('[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?s?(?: |\.)?)?(\d{1,4})\+(\d{1,4})(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+        # First check for concurrent episodes (with a + or &)
+        m = re.search('[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?s?(?: |\.)?)?(\d{1,4})[\+\&](\d{1,4})(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
         if m:
             start = int(m.group(1))
             end = int(m.group(2))
