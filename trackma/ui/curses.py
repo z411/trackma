@@ -58,12 +58,13 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-        config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
-        keymap = config['keymap']
+        self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
+        keymap = self.config['keymap']
+        self.keymap_str = self.get_keymap_str(keymap)
         self.keymapping = self.map_key_to_func(keymap)
 
         palette = []
-        for k, color in config['palette'].items():
+        for k, color in self.config['palette'].items():
             palette.append( (k, color[0], color[1]) )
 
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
@@ -80,11 +81,12 @@ class Trackma_urwid():
 
         top_pile = [self.header]
 
-        if config['show_help']:
-            top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
-                       keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
-                       keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
-                       keymap['quit'] + ':Quit'
+        if self.config['show_help']:
+            top_text = "{help}:Help  {sort}:Sort  " + \
+                       "{update}:Update  {play}:Play  " + \
+                       "{status}:Status  {score}:Score  " + \
+                       "{quit}:Quit"
+            top_text = top_text.format(**self.keymap_str)
             top_pile.append(urwid.AttrMap(urwid.Text(top_text), 'status'))
 
         self.top_pile = urwid.Pile(top_pile)
@@ -135,13 +137,26 @@ class Trackma_urwid():
                     'open_web': self.do_open_web,
                     }
 
-        for key, value in keymap.items():
+        for func, keybind in keymap.items():
             try:
-                keymapping.update({value: funcmap[key]})
+                if isinstance(keybind, list):
+                    for keybindm in keybind:
+                        keymapping[keybindm] = funcmap[func]
+                else:
+                    keymapping[keybind] = funcmap[func]
             except KeyError:
                 # keymap.json requested an action not available in funcmap
                 pass
         return keymapping
+
+    def get_keymap_str(self, keymap):
+        stringed = {}
+        for k, keybind in keymap.items():
+            if isinstance(keybind, list):
+                stringed[k] = ','.join(keybind)
+            else:
+                stringed[k] = keybind
+        return stringed
 
     def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
@@ -303,8 +318,9 @@ class Trackma_urwid():
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
-        helptext += "More controls:\n  Left/Right:Change Filter\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  r:Change sort order\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
+        helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {switch_account}: Change account"
+        helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
