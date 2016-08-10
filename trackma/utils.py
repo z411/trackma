@@ -273,7 +273,7 @@ config_defaults = {
     'autosend_hours': 5,
     'autosend_size': 5,
     'autosend_at_exit': True,
-    'autoscan': True,
+    'library_autoscan': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
     'auto_status_change_if_scored': True,

@@ -211,6 +211,13 @@ class Engine:
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
 
+        # Rescan library if necessary
+        if self.config['library_autoscan']:
+            try:
+                self.scan_library()
+            except utils.TrackmaError as e:
+                self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
+
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
             self.tracker = tracker.Tracker(self.msg,
@@ -710,6 +717,7 @@ class Engine:
                     (show_ep_start, show_ep_end) = show_ep
                 else:
                     show_ep_start = show_ep_end = show_ep
+                self.msg.debug(self.name, "File already in library: {}".format(fullpath))
             else:
                 return library, library_cache
         else:
@@ -728,6 +736,8 @@ class Engine:
                         library_cache[filename] = (show['id'], show_ep_start)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+
+                    self.msg.debug(self.name, "New file added to local library: {}".format(fullpath))
                 else:
                     library_cache[filename] = None
             else:
@@ -739,7 +749,6 @@ class Engine:
                 library[show_id] = {}
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
-            self.msg.debug(self.name, "File added to local library: %s" % fullpath)
         return library, library_cache
 
     def play_random(self):

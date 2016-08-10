@@ -1420,9 +1420,6 @@ class Trackma(QMainWindow):
 
         self._unbusy()
 
-        if self.worker.engine.config['autoscan']:
-            self.s_scan_library()
-
     def r_list_retrieved(self, result):
         if result['success']:
             showlist = self.worker.engine.get_list()
@@ -2030,7 +2027,7 @@ class SettingsDialog(QDialog):
 
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
-        self.library_autoscan.setChecked(engine.get_config('autoscan'))
+        self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
 
@@ -2101,11 +2098,11 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
 
-        engine.set_config('player',    self.player.text())
-        engine.set_config('searchdir', self.searchdir.text())
-        engine.set_config('autoscan',  self.library_autoscan.isChecked())
-        engine.set_config('plex_host', self.plex_host.text())
-        engine.set_config('plex_port', self.plex_port.text())
+        engine.set_config('player',            self.player.text())
+        engine.set_config('searchdir',         self.searchdir.text())
+        engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
+        engine.set_config('plex_host',         self.plex_host.text())
+        engine.set_config('plex_port',         self.plex_port.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
