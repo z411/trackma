@@ -12,7 +12,7 @@ NAME = "Trackma"
 REQUIREMENTS = []
 EXTRA_REQUIREMENTS = {
     'curses': ['urwid'],
-    'GTK' : ['PyGTK', 'Pillow'],
+    'GTK': ['gi', 'Pillow'],
     'Qt': ['Pillow'],
 }
 
@@ -35,11 +35,12 @@ setup(
     entry_points={
         'console_scripts': [
             'trackma = trackma.ui.cli:main',
-            'trackma-curses = trackma.ui.curses:main',
+            'trackma-curses = trackma.ui.curses:main [curses]',
         ],
         'gui_scripts': [
-            'trackma-gtk = trackma.ui.gtkui:main',
-            'trackma-qt = trackma.ui.qtui:main',
+            'trackma-gtk = trackma.ui.gtkui:main [GTK]',
+            'trackma-qt = trackma.ui.qtui:main [Qt]',
+            'trackma-qt4 = trackma.ui.qt4ui [Qt]',
         ]
     },
     classifiers=[

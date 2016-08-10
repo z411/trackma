@@ -16,11 +16,12 @@
 
 
 import sys
+import os
 
 pyqt_version = 0
-try_pyqt5 = True  # TODO: Make this a program argument or something
+skip_pyqt5 = "PYQT4" in os.environ  # TODO: Make this a program argument or something
 
-if try_pyqt5:
+if not skip_pyqt5:
     try:
         from PyQt5 import QtGui, QtCore
         from PyQt5.QtGui import QIcon, QPalette
@@ -71,7 +72,6 @@ if pyqt_version is 0:
               "Make sure you installed the PyQt4 package.")
         sys.exit(-1)
 
-import os
 import urllib.request
 import base64
 from io import BytesIO
