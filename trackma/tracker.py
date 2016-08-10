@@ -64,7 +64,9 @@ class Tracker():
 
     name = 'Tracker'
 
-    signals = {'playing': None,
+    signals = {'detected': None,
+               'playing': None,
+               'removed': None,
                'update': None, }
 
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close):
@@ -170,8 +172,13 @@ class Tracker():
         self.update_show_if_needed(state, show_tuple)
 
     def _observe_inotify(self, watch_dir):
+        # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
-        mask = inotify.constants.IN_OPEN | inotify.constants.IN_CLOSE
+        mask = (inotify.constants.IN_OPEN
+                | inotify.constants.IN_CLOSE
+                | inotify.constants.IN_CREATE
+                | inotify.constants.IN_MOVE
+                | inotify.constants.IN_DELETE)
         i = inotify.adapters.InotifyTree(watch_dir, mask=mask)
         try:
             for event in i.event_gen():
@@ -179,12 +186,20 @@ class Tracker():
                     # With inotifyx impl., only the event type was used,
                     # such that it only served to poll lsof when an
                     # open or close event was received.
-                    (header, types, path, ev_filename) = event
-                    if 'IN_ISDIR' not in types\
-                            and ('IN_OPEN' in types
-                                 or 'IN_CLOSE_NOWRITE' in types
-                                 or 'IN_CLOSE_WRITE' in types):
-                        self._poll_lsof()
+                    (header, types, path, filename) = event
+                    if 'IN_ISDIR' not in types:
+                        # If the file is gone, we remove from library
+                        if ('IN_MOVED_FROM' in types
+                                or 'IN_DELETE' in types):
+                            self._emit_signal('removed', str(path, 'utf-8'), str(filename, 'utf-8'))
+                        # Otherwise we attempt to add it to library
+                        # Would check for IN_MOVED_TO or IN_CREATE but no need
+                        else:
+                            self._emit_signal('detected', str(path, 'utf-8'), str(filename, 'utf-8'))
+                        if ('IN_OPEN' in types
+                                or 'IN_CLOSE_NOWRITE' in types
+                                or 'IN_CLOSE_WRITE' in types):
+                            self._poll_lsof()
                 elif self.last_state != STATE_NOVIDEO:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
@@ -196,7 +211,13 @@ class Tracker():
     def _observe_pyinotify(self, watch_dir):
         self.msg.info(self.name, 'Using pyinotify.')
         wm = pyinotify.WatchManager()  # Watch Manager
-        mask = pyinotify.IN_OPEN | pyinotify.IN_CLOSE_NOWRITE | pyinotify.IN_CLOSE_WRITE
+        mask = (pyinotify.IN_OPEN
+                | pyinotify.IN_CLOSE_NOWRITE
+                | pyinotify.IN_CLOSE_WRITE
+                | pyinotify.IN_CREATE
+                | pyinotify.IN_MOVED_FROM
+                | pyinotify.IN_MOVED_TO
+                | pyinotify.IN_DELETE)
 
         class EventHandler(pyinotify.ProcessEvent):
             def my_init(self, parent=None):
@@ -204,15 +225,34 @@ class Tracker():
 
             def process_IN_OPEN(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('detected', event.path, event.name)
                     self.parent._poll_lsof()
 
             def process_IN_CLOSE_NOWRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('detected', event.path, event.name)
                     self.parent._poll_lsof()
 
             def process_IN_CLOSE_WRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('detected', event.path, event.name)
                     self.parent._poll_lsof()
+
+            def process_IN_CREATE(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('detected', event.path, event.name)
+
+            def process_IN_MOVED_TO(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('detected', event.path, event.name)
+
+            def process_IN_MOVED_FROM(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('removed', event.path, event.name)
+
+            def process_IN_DELETE(self, event):
+                if not event.mask & pyinotify.IN_ISDIR:
+                    self.parent._emit_signal('removed', event.path, event.name)
 
         handler = EventHandler(parent=self)
         notifier = pyinotify.Notifier(wm, handler)
