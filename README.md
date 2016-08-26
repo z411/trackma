@@ -19,7 +19,7 @@ Currently supported websites
 - [Anilist](http://anilist.co/) (Anime, Manga)
 - [Hummingbird](http://hummingbird.me/) (Anime)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
-- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
 
