@@ -32,8 +32,8 @@ class libmal(lib):
     Should inherit a base library interface.
 
     Website: http://www.myanimelist.net
-    API documentation: http://myanimelist.net/modules.php?go=api
-    Designed by: Garrett Gyssler (http://myanimelist.net/profile/Xinil)
+    API documentation: https://myanimelist.net/modules.php?go=api
+    Designed by: Garrett Gyssler (https://myanimelist.net/profile/Xinil)
 
     """
     name = 'libmal'
@@ -82,7 +82,7 @@ class libmal(lib):
     }
 
     # Authorized User-Agent for Trackma
-    url = 'http://myanimelist.net/api/'
+    url = 'https://myanimelist.net/api/'
     useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
 
     def __init__(self, messenger, account, userconfig):
@@ -160,7 +160,7 @@ class libmal(lib):
 
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
+            data = self._request("https://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
 
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
@@ -266,7 +266,7 @@ class libmal(lib):
                 'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
-                'url':          "http://myanimelist.net/anime/%d" % showid,
+                'url':          "https://myanimelist.net/anime/%d" % showid,
                 'start_date':   self._str2date( child.find('start_date').text ),
                 'end_date':     self._str2date( child.find('end_date').text ),
                 'extra': [
@@ -343,7 +343,7 @@ class libmal(lib):
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/anime/%d" % show_id,
+                'url':          "https://myanimelist.net/anime/%d" % show_id,
             })
             showlist[show_id] = show
         return showlist
@@ -373,7 +373,7 @@ class libmal(lib):
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/manga/%d" % manga_id,
+                'url':          "https://myanimelist.net/manga/%d" % manga_id,
             })
             mangalist[manga_id] = show
         return mangalist
@@ -384,8 +384,8 @@ class libmal(lib):
         add, update and delete methods.
 
         More information:
-          http://myanimelist.net/modules.php?go=api#animevalues
-          http://myanimelist.net/modules.php?go=api#mangavalues
+          https://myanimelist.net/modules.php?go=api#animevalues
+          https://myanimelist.net/modules.php?go=api#mangavalues
 
         """
 
