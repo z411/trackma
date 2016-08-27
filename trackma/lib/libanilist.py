@@ -106,7 +106,7 @@ class libanilist(lib):
             self.airing_str = "publishing_status"
             self.status_translate = {
                 'publishing': utils.STATUS_AIRING,
-                'finished': utils.STATUS_FINISHED,
+                'finished publishing': utils.STATUS_FINISHED,
                 'not yet published': utils.STATUS_NOTYET,
                 'cancelled': utils.STATUS_CANCELLED,
             }
