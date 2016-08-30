@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import datetime
@@ -28,7 +28,7 @@ class libhb(lib):
     API class to communicate with Hummingbird
     Should inherit a base library interface.
 
-    Website: http://hummingbird.me/
+    Website: https://hummingbird.me/
     API documentation:
     Designed by:
 
@@ -59,7 +59,7 @@ class libhb(lib):
         'score_step': 0.5,
     }
 
-    url = "http://hummingbird.me/api/v1"
+    url = "https://hummingbird.me/api/v1"
 
     status_translate = {'Currently Airing': utils.STATUS_AIRING,
             'Finished Airing': utils.STATUS_FINISHED,
@@ -137,7 +137,7 @@ class libhb(lib):
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,
                     'image': show['anime']['cover_image'],
-                    'url': str("http://hummingbird.me/%s/%d" % (self.mediatype, showid)),
+                    'url': str("https://hummingbird.me/%s/%d" % (self.mediatype, showid)),
                 })
                 info = self._parse_info(show['anime'])
                 infolist.append(info)
