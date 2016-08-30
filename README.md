@@ -13,6 +13,7 @@ Features
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
 - Highly scalable, easy to code new interfaces and support for other sites
+- Secure, uses HTTPS wherever possible.
 
 Currently supported websites
 ----------------------------
