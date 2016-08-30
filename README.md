@@ -13,11 +13,12 @@ Features
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
 - Highly scalable, easy to code new interfaces and support for other sites
+- Secure, uses HTTPS wherever possible.
 
 Currently supported websites
 ----------------------------
-- [Anilist](http://anilist.co/) (Anime, Manga)
-- [Hummingbird](http://hummingbird.me/) (Anime)
+- [Anilist](https://anilist.co/) (Anime, Manga)
+- [Hummingbird](https://hummingbird.me/) (Anime)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
