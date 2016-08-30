@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import json
@@ -28,7 +28,7 @@ class libanilist(lib):
     """
     API class to communicate with Anilist
 
-    Website: http://anilist.co
+    Website: https://anilist.co
 
     messenger: Messenger object to send useful messages to
     """
@@ -86,7 +86,7 @@ class libanilist(lib):
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
-    url = "http://anilist.co/api/"
+    url = "https://anilist.co/api/"
     client_id = "z411-gdjc3"
     _client_secret = "MyzwuYoMqPPglXwCTcexG1i"
 
@@ -252,7 +252,7 @@ class libanilist(lib):
                     'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
-                    'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+                    'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
                 }
                 show.update({k:v for k,v in showdata.items() if v})
 
@@ -326,7 +326,7 @@ class libanilist(lib):
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
-                'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+                'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
             }
             show.update({k:v for k,v in showdata.items() if v})
 
@@ -370,7 +370,7 @@ class libanilist(lib):
             'title': item['title_romaji'],
             'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
-            'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+            'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
             'start_date': self._str2date(item.get('start_date')),
             'end_date': self._str2date(item.get('end_date')),
             'extra': [
