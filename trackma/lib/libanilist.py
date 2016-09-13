@@ -304,15 +304,19 @@ class libanilist(lib):
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        try:
-            data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
-        except ValueError:
-            # An empty document, without any JSON, is returned
-            # when there are no results.
-            return []
+        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
+
+        if type(data) == dict:
+            # In case of error API returns a small JSON payload
+            # which translates into a dict with the key 'error'
+            # instead of a list.
+            if data['error']['messages'][0] == 'No Results.':
+                data = []
+            else:
+                raise utils.APIError("Error while searching for \
+                        {0}: {1}".format(criteria, str(data)))
 
         showlist = []
-
         for item in data:
             show = utils.show()
             showid = item['id']
