@@ -1,0 +1,10 @@
+
+[GTK]
+pygobject
+Pillow
+
+[Qt]
+Pillow
+
+[curses]
+urwid
