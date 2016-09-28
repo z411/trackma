@@ -1115,23 +1115,6 @@ class Trackma_gtk():
                 treeview.set_cursor(path, col, 0)
                 show = self.engine.get_show_info(self.selected_show)
 
-<<<<<<< HEAD
-                menu = gtk.Menu()
-                mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
-                mb_play.connect("activate", self.do_play, True)
-                mb_info = gtk.MenuItem("Show details...")
-                mb_info.connect("activate", self.do_info)
-                mb_web = gtk.MenuItem("Open web site")
-                mb_web.connect("activate", self.do_web)
-                mb_copy = gtk.MenuItem("Copy title to clipboard")
-                mb_copy.connect("activate", self.do_copytoclip)
-                mb_alt_title = gtk.MenuItem("Set alternate title...")
-                mb_alt_title.connect("activate", self.do_altname)
-                mb_folder = gtk.MenuItem("Open containing folder")
-                mb_folder.connect("activate", self.do_contatainerFolder)
-                mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
-                mb_delete.connect("activate", self.do_delete)
-=======
                 menu = Gtk.Menu()
                 mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
                 mb_play.connect("activate", self.__do_play, True)
@@ -1143,9 +1126,11 @@ class Trackma_gtk():
                 mb_copy.connect("activate", self.__do_copytoclip)
                 mb_alt_title = Gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.__do_altname)
+                mb_folder = gtk.MenuItem("Open containing folder")
+                mb_folder.connect("activate", self.do_contatainerFolder)
                 mb_delete = Gtk.ImageMenuItem('Delete', Gtk.Image.new_from_icon_name(Gtk.STOCK_DELETE, 0))
                 mb_delete.connect("activate", self.__do_delete)
->>>>>>> refs/remotes/z411/master
+
 
                 menu.append(mb_play)
 
@@ -1164,12 +1149,10 @@ class Trackma_gtk():
                 menu.append(Gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
-<<<<<<< HEAD
+
                 menu.append(mb_folder)
-                menu.append(gtk.SeparatorMenuItem())
-=======
                 menu.append(Gtk.SeparatorMenuItem())
->>>>>>> refs/remotes/z411/master
+
                 menu.append(mb_delete)
 
                 menu.show_all()
