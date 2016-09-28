@@ -120,36 +120,13 @@ class Trackma_gtk():
         if self.config['remember_geometry']:
             self.main.resize(self.config['last_width'], self.config['last_height'])
 
-<<<<<<< HEAD
-        # Menus 
-        mb_show = gtk.Menu()
-        self.mb_play = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
-        self.mb_play.connect("activate", self.do_play, True)
-        mb_scanlibrary = gtk.MenuItem('Re-scan library')
-        mb_scanlibrary.connect("activate", self.do_scanlibrary)
-        self.mb_info = gtk.MenuItem('Show details...')
-        self.mb_info.connect("activate", self.do_info)
-        self.mb_web = gtk.MenuItem("Open web site")
-        self.mb_web.connect("activate", self.do_web)
-        self.mb_copy = gtk.MenuItem("Copy title to clipboard")
-        self.mb_copy.connect("activate", self.do_copytoclip)
-        self.mb_alt_title = gtk.MenuItem("Set alternate title...")
-        self.mb_alt_title.connect("activate", self.do_altname)
-        self.mb_folder = gtk.MenuItem("Open containing folder")
-        self.mb_folder.connect("activate", self.do_contatainerFolder)
-        self.mb_delete = gtk.ImageMenuItem(gtk.STOCK_DELETE)
-        self.mb_delete.connect("activate", self.do_delete)
-        self.mb_exit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        self.mb_exit.connect("activate", self.do_quit, None)
-        gtk.stock_add([(gtk.STOCK_ADD, "Add/Search Shows", 0, 0, "")])
-        self.mb_addsearch = gtk.ImageMenuItem(gtk.STOCK_ADD)
-        self.mb_addsearch.connect("activate", self.do_addsearch)
-=======
         # Menus
         mb_show = Gtk.Menu()
         self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
         self.mb_play.connect("activate", self.__do_play, True)
         mb_scanlibrary = Gtk.MenuItem('Re-scan library')
+        self.mb_folder = Gtk.MenuItem("Open containing folder")
+        self.mb_folder.connect("activate", self.do_contatainerFolder)
         mb_scanlibrary.connect("activate", self.__do_scanlibrary)
         self.mb_info = Gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.__do_info)
@@ -165,7 +142,6 @@ class Trackma_gtk():
         self.mb_exit.connect("activate", self.__do_quit, None)
         self.mb_addsearch = Gtk.ImageMenuItem("Add/Search Shows", Gtk.Image.new_from_icon_name(Gtk.STOCK_ADD, 0))
         self.mb_addsearch.connect("activate", self._do_addsearch)
->>>>>>> refs/remotes/z411/master
 
         mb_show.append(self.mb_addsearch)
         mb_show.append(Gtk.SeparatorMenuItem())
