@@ -19,9 +19,9 @@ import subprocess
 import datetime
 import json
 import difflib
-import cPickle as pickle
+import pickle
 
-VERSION = '0.4'
+VERSION = '0.6.1'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -75,20 +75,20 @@ def save_config(config_dict, filename):
         os.mkdir(path)
 
     with open(filename, 'wb') as configfile:
-        json.dump(config_dict, configfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
+        configfile.write(json.dumps(config_dict, sort_keys=True,
+                  indent=4, separators=(',', ': ')).encode('utf-8'))
 
 def load_data(filename):
     with open(filename, 'rb') as datafile:
-        return pickle.load(datafile)
+        return pickle.load(datafile, encoding='bytes')
 
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
-        pickle.dump(data, datafile)
+        pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg.encode('utf-8'))
+        logfile.write(msg)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -161,7 +161,7 @@ def estimate_aired_episodes(show):
             if days <= 0:
                 return 0
 
-            eps = days / 7 + 1
+            eps = days // 7 + 1
             if eps > show['total'] and show['total'] > 0:
                 return show['total']
             return eps
@@ -273,6 +273,7 @@ config_defaults = {
     'autosend_hours': 5,
     'autosend_size': 5,
     'autosend_at_exit': True,
+    'library_autoscan': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
@@ -286,29 +287,50 @@ userconfig_defaults = {
     'userid': 0,
     'username': '',
 }
-keymap_defaults = {
-    'help': 'f1',
-    'prev_filter': 'left',
-    'next_filter': 'right',
-    'sort': 'f3',
-    'sort_order': 'r',
-    'update': 'f4',
-    'play': 'f5',
-    'status': 'f6',
-    'score': 'f7',
-    'send': 's',
-    'retrieve': 'R',
-    'addsearch': 'a',
-    'reload': 'c',
-    'switch_account': 'f9',
-    'delete': 'd',
-    'quit': 'f12',
-    'altname': 'A',
-    'search': '/',
-    'neweps': 'N',
-    'details': 'enter',
-    'details_exit': 'esc',
-    'open_web': 'O',
+curses_defaults = {
+    'show_help': True,
+    'keymap': {
+        'help': 'f1',
+        'prev_filter': 'left',
+        'next_filter': 'right',
+        'sort': 'f3',
+        'sort_order': 'r',
+        'update': 'f4',
+        'play': 'f5',
+        'status': 'f6',
+        'score': 'f7',
+        'send': 's',
+        'retrieve': 'R',
+        'addsearch': 'a',
+        'reload': 'c',
+        'switch_account': 'f9',
+        'delete': 'd',
+        'quit': 'f12',
+        'altname': 'A',
+        'search': '/',
+        'neweps': 'N',
+        'details': 'enter',
+        'details_exit': 'esc',
+        'open_web': 'O',
+    },
+    'palette': {
+        'body':             ('', ''),
+        'focus':            ('standout', ''),
+        'head':             ('light red', 'black'),
+        'header':           ('bold', ''),
+        'status':           ('white', 'dark blue'),
+        'error':            ('light red', 'dark blue'),
+        'window':           ('white', 'dark blue'),
+        'button':           ('black', 'light gray'),
+        'button hilight':   ('white', 'dark red'),
+        'item_airing':      ('dark blue', ''),
+        'item_notaired':    ('yellow', ''),
+        'item_neweps':      ('white', 'brown'),
+        'item_updated':     ('white', 'dark green'),
+        'item_playing':     ('white', 'dark blue'),
+        'info_title':       ('light red', ''),
+        'info_section':     ('dark blue', ''),
+    }
 }
 
 gtk_defaults = {

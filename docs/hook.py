@@ -65,11 +65,11 @@ def show_synced(engine, show, change):
     """
 
     if change['action'] == 'add':
-        print "Show ID %d, title %s, was added to the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was added to the remote list." % (show['id'], show['title']))
     elif change['action'] == 'update':
-        print "Show ID %d, title %s, was updated in the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was updated in the remote list." % (show['id'], show['title']))
     elif change['action'] == 'delete':
-        print "Show ID %d, title %s, was deleted from the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was deleted from the remote list." % (show['id'], show['title']))
 
 def sync_complete(engine, items):
     """This is called after the entire queue has been processed.
@@ -78,7 +78,7 @@ def sync_complete(engine, items):
     processed correctly.
     """
 
-    print "Finished. List of changes made: "
+    print("Finished. List of changes made: ")
     for item in items:
         (show, change) = item
-        print "Action: %s, show ID: %d" % (change['action'], show['id'])
+        print("Action: %s, show ID: %d" % (change['action'], show['id']))

@@ -27,8 +27,8 @@ Porting to PyQt5 is planned.
 
 `trackma-gtk` -- GTK Interface
 ------------------------------
-The GTK interface is coded using PyGTK 2, and it provides a feature complete interface for GTK users.
-A GTK 3 interface is not planned.
+The GTK interface is coded using Python-GI, and it provides a feature complete interface for GTK users.
+Currently it uses GTK 3.
 
 .. image:: ./images/gtk.png
 

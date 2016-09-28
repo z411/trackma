@@ -1,5 +1,6 @@
 v0.5
 - New: Shikimori support
+- New: Qt5 support
 - New: User hooks (~/.trackma/hook.py)
 - Improvement: (Qt) Configurable list colors
 - Improvement: (Qt) Interface improvements

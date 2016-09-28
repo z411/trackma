@@ -1,7 +1,7 @@
-import utils
-import cPickle
+import pickle
+from trackma import utils
 
-class AccountManager(object):
+class AccountManager():
     """
     This is the account manager.
 
@@ -21,14 +21,14 @@ class AccountManager(object):
     def _load(self):
         if utils.file_exists(self.filename):
             with open(self.filename, 'rb') as f:
-                self.accounts = cPickle.load(f)
+                self.accounts = pickle.load(f)
 
     def _save(self):
         is_new = not utils.file_exists(self.filename)
         with open(self.filename, 'wb') as f:
             if is_new:
                 utils.change_permissions(self.filename, 0o600)
-            cPickle.dump(self.accounts, f)
+            pickle.dump(self.accounts, f, protocol=2)
 
     def add_account(self, username, password, api):
         """
@@ -113,7 +113,7 @@ class AccountManager(object):
         """
         Returns an iterator of available accounts.
         """
-        return self.accounts['accounts'].iteritems()
+        return self.accounts['accounts'].items()
 
     def get_default(self):
         """
