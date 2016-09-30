@@ -32,6 +32,7 @@ Gdk.threads_init() # We'll use threads
 
 import webbrowser
 import os
+import subprocess
 import cgi
 import time
 import threading
@@ -120,7 +121,6 @@ class Trackma_gtk():
         if self.config['remember_geometry']:
             self.main.resize(self.config['last_width'], self.config['last_height'])
 
-<<<<<<< HEAD
         # Menus
         mb_show = Gtk.Menu()
         self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
@@ -149,6 +149,7 @@ class Trackma_gtk():
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
         mb_show.append(self.mb_web)
+        mb_show.append(self.mb_folder)
         mb_show.append(Gtk.SeparatorMenuItem())
         mb_show.append(self.mb_copy)
         mb_show.append(self.mb_alt_title)
@@ -156,7 +157,6 @@ class Trackma_gtk():
         mb_show.append(self.mb_delete)
         mb_show.append(Gtk.SeparatorMenuItem())
         mb_show.append(self.mb_exit)
-        mb_show.append(self.mb_folder)
 
         mb_list = Gtk.Menu()
         self.mb_sync = Gtk.ImageMenuItem('Sync', Gtk.Image.new_from_icon_name(Gtk.STOCK_REFRESH, 0))
@@ -743,12 +743,19 @@ class Trackma_gtk():
             except utils.TrackmaError as e:
                 self.error(e)
 
-    def task_openContianingFolder(self):
-        show = self.engine.get_show_info(self.select_show)
+    def task_openContainingFolder(self):
+        
+        #get needed show info
+        show = self.engine.get_show_info(self.selected_show)
         titles = self.engine.data_handler.get_show_titles(show)
-        filename, ep = self.engine._search_video(titles, 1)
+        filename, *ep = self.engine._search_video(titles, 1)
 
-        currentFolderProcess = subprocess.Popen(["/bin/nautilus", filename])
+        try:
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            raise utils.EngineError("Could not open folder.")
 
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
@@ -1071,7 +1078,7 @@ class Trackma_gtk():
 #        threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
     def do_contatainerFolder(self, widget):
-        threading.Thread(target=self.task_openContianingFolder).start()
+        threading.Thread(target=self.task_openContainingFolder).start()
 
     def altname_response(self, entry, dialog, response):
         dialog.response(response)
@@ -1092,7 +1099,6 @@ class Trackma_gtk():
                 treeview.set_cursor(path, col, 0)
                 show = self.engine.get_show_info(self.selected_show)
 
-<<<<<<< HEAD
                 menu = Gtk.Menu()
                 mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
                 mb_play.connect("activate", self.__do_play, True)
@@ -1100,12 +1106,12 @@ class Trackma_gtk():
                 mb_info.connect("activate", self.__do_info)
                 mb_web = Gtk.MenuItem("Open web site")
                 mb_web.connect("activate", self.__do_web)
+                mb_folder = Gtk.MenuItem("Open containing folder")
+                mb_folder.connect("activate", self.do_contatainerFolder)
                 mb_copy = Gtk.MenuItem("Copy title to clipboard")
                 mb_copy.connect("activate", self.__do_copytoclip)
                 mb_alt_title = Gtk.MenuItem("Set alternate title...")
                 mb_alt_title.connect("activate", self.__do_altname)
-                mb_folder = gtk.MenuItem("Open containing folder")
-                mb_folder.connect("activate", self.do_contatainerFolder)
                 mb_delete = Gtk.ImageMenuItem('Delete', Gtk.Image.new_from_icon_name(Gtk.STOCK_DELETE, 0))
                 mb_delete.connect("activate", self.__do_delete)
 
@@ -1123,10 +1129,10 @@ class Trackma_gtk():
 
                 menu.append(mb_info)
                 menu.append(mb_web)
+                menu.append(mb_folder)
                 menu.append(Gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
-                menu.append(mb_folder)
                 menu.append(Gtk.SeparatorMenuItem())
                 menu.append(mb_delete)
 
