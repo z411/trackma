@@ -750,12 +750,16 @@ class Trackma_gtk():
         titles = self.engine.data_handler.get_show_titles(show)
         filename, *ep = self.engine._search_video(titles, 1)
 
-        try:
-            with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-        except OSError:
-            raise utils.EngineError("Could not open folder.")
+        if filename:
+            try:
+                with open(os.devnull, 'wb') as DEVNULL:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+            except OSError:
+                raise utils.EngineError("Could not open folder.")
+        else:
+            self.error("No folder found.")
+
 
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
@@ -1073,9 +1077,6 @@ class Trackma_gtk():
             self.changed_show_title(show, text)
 
         dialog.destroy()
-
-#    def do_play(self, widget, playnext, ep=None):
-#        threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
     def do_contatainerFolder(self, widget):
         threading.Thread(target=self.task_openContainingFolder).start()
