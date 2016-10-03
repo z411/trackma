@@ -672,6 +672,7 @@ class Trackma_cmd(cmd.Cmd):
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
+        altnames = self.engine.altnames()
 
         # Calculate maximum width for the title column
         # based on the width of the terminal
@@ -691,7 +692,7 @@ class Trackma_cmd(cmd.Cmd):
         # Print header
         print("| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
                 'Index',    col_index_length,
-                'Title',    col_title_length,
+                'Title',    max_title_length,
                 'Progress', col_episodes_length,
                 'Score',    col_score_length))
 
@@ -702,8 +703,10 @@ class Trackma_cmd(cmd.Cmd):
             else:
                 episodes_str = "-"
 
-            # Truncate title if needed
+            #Get title (and alt. title) and if need be, truncate it
             title_str = show['title']
+            if altnames.get(show['id']):
+                title_str += "[{}]".format(altnames.get(show['id']))
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
@@ -715,7 +718,7 @@ class Trackma_cmd(cmd.Cmd):
             print("| {0:^{1}} {2}{3} {4:{5}} {6:^{7}} |".format(
                 index, col_index_length,
                 colored_title,
-                '.' * (col_title_length-len(show['title'])),
+                '.' * (max_title_length-len(title_str)),
                 episodes_str, col_episodes_length,
                 show['my_score'], col_score_length))
 
