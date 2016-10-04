@@ -435,7 +435,8 @@ class Data():
         self.meta['altnames'][showid] = altname
 
     def altname_clear(self, showid):
-        del self.meta['altnames'][showid]
+        if showid in self.meta['altnames']:
+            del self.meta['altnames'][showid]
 
     def altnames_get(self):
         return self.meta['altnames']
