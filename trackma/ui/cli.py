@@ -63,6 +63,7 @@ class Trackma_cmd(cmd.Cmd):
     stdout = sys.stdout
     sortedlist = []
     needed_args = {
+        'altname':      (1, 2),
         'filter':       (0, 1),
         'sort':         1,
         'mediatype':    (0, 1),
@@ -469,6 +470,27 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
+    def do_altname(self, args):
+        """
+        Changes the alternative name of a show.
+        Use the command 'altname' without arguments to clear the alternative
+        name.
+
+        :param show Show index or name
+        :param alt  The alternative name. Use `altname` without alt to clear it
+        :usage altname <show index or name> <alternative name>
+        """
+        try:
+            altnames = self.engine.altnames()
+            show = self._get_show(args[0])
+            altname = args[1] if len(args) > 1 else ''
+            self.engine.altname(show['id'],altname)
+        except IndexError:
+            print("Missing arguments")
+            return
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
     def do_send(self, args):
         """
         Sends queued changes to the remote service.
@@ -672,6 +694,7 @@ class Trackma_cmd(cmd.Cmd):
         col_title_length = 5
         col_episodes_length = 9
         col_score_length = 6
+        altnames = self.engine.altnames()
 
         # Calculate maximum width for the title column
         # based on the width of the terminal
@@ -691,7 +714,7 @@ class Trackma_cmd(cmd.Cmd):
         # Print header
         print("| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
                 'Index',    col_index_length,
-                'Title',    col_title_length,
+                'Title',    max_title_length,
                 'Progress', col_episodes_length,
                 'Score',    col_score_length))
 
@@ -702,8 +725,10 @@ class Trackma_cmd(cmd.Cmd):
             else:
                 episodes_str = "-"
 
-            # Truncate title if needed
+            #Get title (and alt. title) and if need be, truncate it
             title_str = show['title']
+            if altnames.get(show['id']):
+                title_str += "[{}]".format(altnames.get(show['id']))
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
@@ -715,7 +740,7 @@ class Trackma_cmd(cmd.Cmd):
             print("| {0:^{1}} {2}{3} {4:{5}} {6:^{7}} |".format(
                 index, col_index_length,
                 colored_title,
-                '.' * (col_title_length-len(show['title'])),
+                '.' * (max_title_length-len(title_str)),
                 episodes_str, col_episodes_length,
                 show['my_score'], col_score_length))
 
