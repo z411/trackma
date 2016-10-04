@@ -63,6 +63,7 @@ class Trackma_cmd(cmd.Cmd):
     stdout = sys.stdout
     sortedlist = []
     needed_args = {
+        'altname':      (1, 2),
         'filter':       (0, 1),
         'sort':         1,
         'mediatype':    (0, 1),
@@ -466,6 +467,27 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(_showtitle)
             self.engine.set_status(show['id'], _filter_num)
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
+    def do_altname(self, args):
+        """
+        Changes the alternative name of a show.
+        Use the command 'altname' without arguments to clear the alternative
+        name.
+
+        :param show Show index or name
+        :param alt  The alternative name. Use `altname` without alt to clear it
+        :usage altname <show index or name> <alternative name>
+        """
+        try:
+            altnames = self.engine.altnames()
+            show = self._get_show(args[0])
+            altname = args[1] if len(args) > 1 else ''
+            self.engine.altname(show['id'],altname)
+        except IndexError:
+            print("Missing arguments")
+            return
         except utils.TrackmaError as e:
             self.display_error(e)
 
