@@ -32,6 +32,7 @@ Gdk.threads_init() # We'll use threads
 
 import webbrowser
 import os
+import subprocess
 import cgi
 import time
 import threading
@@ -125,6 +126,8 @@ class Trackma_gtk():
         self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
         self.mb_play.connect("activate", self.__do_play, True)
         mb_scanlibrary = Gtk.MenuItem('Re-scan library')
+        self.mb_folder = Gtk.MenuItem("Open containing folder")
+        self.mb_folder.connect("activate", self.do_containingFolder)
         mb_scanlibrary.connect("activate", self.__do_scanlibrary)
         self.mb_info = Gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.__do_info)
@@ -146,6 +149,7 @@ class Trackma_gtk():
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
         mb_show.append(self.mb_web)
+        mb_show.append(self.mb_folder)
         mb_show.append(Gtk.SeparatorMenuItem())
         mb_show.append(self.mb_copy)
         mb_show.append(self.mb_alt_title)
@@ -1017,6 +1021,7 @@ class Trackma_gtk():
             self.mb_alt_title.set_sensitive(boolean)
             self.mb_info.set_sensitive(boolean)
             self.mb_web.set_sensitive(boolean)
+            self.mb_folder.set_sensitive(boolean)
 
     def __do_copytoclip(self, widget):
         # Copy selected show title to clipboard
@@ -1056,6 +1061,23 @@ class Trackma_gtk():
 
         dialog.destroy()
 
+    def do_containingFolder(self, widget):
+
+        #get needed show info
+        show = self.engine.get_show_info(self.selected_show)
+        try:
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+            self.error("No folder found.")
+
     def altname_response(self, entry, dialog, response):
         dialog.response(response)
 
@@ -1082,6 +1104,8 @@ class Trackma_gtk():
                 mb_info.connect("activate", self.__do_info)
                 mb_web = Gtk.MenuItem("Open web site")
                 mb_web.connect("activate", self.__do_web)
+                mb_folder = Gtk.MenuItem("Open containing folder")
+                mb_folder.connect("activate", self.do_containingFolder)
                 mb_copy = Gtk.MenuItem("Copy title to clipboard")
                 mb_copy.connect("activate", self.__do_copytoclip)
                 mb_alt_title = Gtk.MenuItem("Set alternate title...")
@@ -1103,6 +1127,7 @@ class Trackma_gtk():
 
                 menu.append(mb_info)
                 menu.append(mb_web)
+                menu.append(mb_folder)
                 menu.append(Gtk.SeparatorMenuItem())
                 menu.append(mb_copy)
                 menu.append(mb_alt_title)
