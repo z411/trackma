@@ -591,6 +591,9 @@ class Engine:
         self._emit_signal('show_deleted', show)
 
     def _search_video(self, titles, episode):
+        # DEPRECATED !!!
+        self.msg.debug(self.name, "DEPRECATED: _search_video")
+
         best_candidate = (None, 0, None)
 
         matcher = difflib.SequenceMatcher()
@@ -652,7 +655,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None, ignorecache=False):
+    def scan_library(self, my_status=None, rescan=False):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
@@ -669,11 +672,12 @@ class Engine:
             my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
+        self.msg.debug(self.name, "Directory: %s" % self.config['searchdir'])
         tracker_list = self._get_tracker_list(my_status)
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            (library, library_cache) = self._add_show_to_library(library, library_cache, ignorecache, fullpath, filename, tracker_list)
+            (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
         self.msg.debug(self.name, "Time: %s" % (time.time() - t))
         self.data_handler.library_save(library)
@@ -695,18 +699,18 @@ class Engine:
                     library_cache.pop(filename, None)
                     library[show_id].pop(show_ep, None)
 
-    def add_to_library(self, path, filename, ignorecache=False):
+    def add_to_library(self, path, filename, rescan=False):
         # The inotify tracker tells us when files are created in
         # or moved within our library directory, so we call this.
         library = self.data_handler.library_get()
         library_cache = self.data_handler.library_cache_get()
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
-        self._add_show_to_library(library, library_cache, ignorecache, fullpath, filename, tracker_list)
+        self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
-    def _add_show_to_library(self, library, library_cache, ignorecache, fullpath, filename, tracker_list):
+    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
         show_id = None
-        if not ignorecache and filename in library_cache.keys():
+        if not rescan and filename in library_cache.keys():
             # If the filename was already seen before
             # use the cached information, if there's no information (None)
             # then it means it doesn't correspond to any show in the list
@@ -719,6 +723,7 @@ class Engine:
                     show_ep_start = show_ep_end = show_ep
                 self.msg.debug(self.name, "File already in library: {}".format(fullpath))
             else:
+                self.msg.debug(self.name, "???: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
@@ -750,6 +755,21 @@ class Engine:
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
         return library, library_cache
+
+    def get_episode_path(self, show, episode):
+        """
+        This function returns the full path of the requested episode from the requested show.
+        """
+
+        library = self.library()
+        showid = show['id']
+
+        if showid not in library:
+            raise utils.EngineError('Show not in library.')
+        if episode not in library[showid]:
+            raise utils.EngineError('Episode not in library.')
+
+        return library[showid][episode]
 
     def play_random(self):
         """
@@ -802,11 +822,16 @@ class Engine:
             if show['total'] and playep > show['total']:
                 raise utils.EngineError('Episode beyond limits.')
 
-            self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
+            if self.config.get('debug_oldsearch'):
+                # Deprecated
+                self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
+                titles = self.data_handler.get_show_titles(show)
+                filename, endep = self._search_video(titles, playep)
+            else:
+                self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
+                filename = self.get_episode_path(show, playep)
+                endep = playep
 
-            titles = self.data_handler.get_show_titles(show)
-
-            filename, endep = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 arg_list = shlex.split(self.config['player'])

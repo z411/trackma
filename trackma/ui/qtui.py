@@ -2912,7 +2912,7 @@ class Engine_Worker(QtCore.QThread):
 
     def _scan_library(self):
         try:
-            self.engine.scan_library()
+            self.engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
             self._error(e)
             return {'success': False}

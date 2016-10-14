@@ -761,7 +761,7 @@ class Trackma_gtk():
         self.allow_buttons(False)
 
         try:
-            result = self.engine.scan_library()
+            result = self.engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
             self.error(e)
 
