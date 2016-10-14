@@ -747,18 +747,18 @@ class Trackma_gtk():
 
         #get needed show info
         show = self.engine.get_show_info(self.selected_show)
-        filename = self.engine.get_episode_path(show, 1)
+        try:
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
 
-        if filename:
-            try:
-                with open(os.devnull, 'wb') as DEVNULL:
-                    subprocess.Popen(["/usr/bin/xdg-open",
-                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-            except OSError:
-                raise utils.EngineError("Could not open folder.")
-        else:
+        except utils.EngineError:
+            # Show not in library.
             self.error("No folder found.")
-
 
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
