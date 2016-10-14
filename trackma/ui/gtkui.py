@@ -1038,6 +1038,7 @@ class Trackma_gtk():
             self.mb_alt_title.set_sensitive(boolean)
             self.mb_info.set_sensitive(boolean)
             self.mb_web.set_sensitive(boolean)
+            self.mb_folder.set_sensitive(boolean)
 
     def __do_copytoclip(self, widget):
         # Copy selected show title to clipboard
