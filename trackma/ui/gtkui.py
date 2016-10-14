@@ -743,23 +743,6 @@ class Trackma_gtk():
             except utils.TrackmaError as e:
                 self.error(e)
 
-    def task_openContainingFolder(self):
-
-        #get needed show info
-        show = self.engine.get_show_info(self.selected_show)
-        try:
-            filename = self.engine.get_episode_path(show, 1)
-            with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-        except OSError:
-            # xdg-open failed.
-            raise utils.EngineError("Could not open folder.")
-
-        except utils.EngineError:
-            # Show not in library.
-            self.error("No folder found.")
-
     def task_play(self, playnext, ep):
         self.allow_buttons(False)
 
@@ -1079,7 +1062,21 @@ class Trackma_gtk():
         dialog.destroy()
 
     def do_containingFolder(self, widget):
-        self.task_openContainingFolder()
+
+        #get needed show info
+        show = self.engine.get_show_info(self.selected_show)
+        try:
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+            self.error("No folder found.")
 
     def altname_response(self, entry, dialog, response):
         dialog.response(response)
