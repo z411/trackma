@@ -733,14 +733,14 @@ class Trackma(QMainWindow):
 
         tooltip += "Total: %d" % show['total']
         percent_widget.setToolTip(tooltip)
-        percent = percent_widget.value() * 100 / percent_widget.maximum()
+        percent = percent_widget.value() / percent_widget.maximum()
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
         widget.setItem(row, 1, ShowItem( title_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
-        widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
+        widget.setItem(row, 4, ShowItemNum( percent, "{:.0%}".format(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
