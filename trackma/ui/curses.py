@@ -433,7 +433,7 @@ class Trackma_urwid():
 
     def do_neweps(self):
         try:
-            shows = self.engine.scan_library()
+            shows = self.engine.scan_library(rescan=True)
             self._rebuild_lists(self.engine.mediainfo['status_start'])
 
             self.status("Ready.")

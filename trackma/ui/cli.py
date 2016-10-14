@@ -368,11 +368,11 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
-    def do_scaneps(self, args):
+    def do_rescan(self, args):
         """
         Re-scans the local library.
         """
-        self.engine.scan_library()
+        self.engine.scan_library(rescan=True)
 
     def do_random(self, args):
         """
