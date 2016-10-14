@@ -50,11 +50,11 @@ class Engine:
     """
     data_handler = None
     tracker = None
-    config = dict()
+    config = {}
     msg = None
     loaded = False
     playing = False
-    hooks_available = False
+    hooks_available = []
 
     name = 'Engine'
 
@@ -95,18 +95,26 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
 
-        # Load hook file
-        if os.path.exists(utils.get_root_filename('hook.py')):
+        # Load hook files
+        hooks_dir = utils.get_root_filename('hooks')
+        if os.path.isdir(hooks_dir):
             import sys
-            sys.path[0:0] = [utils.get_root()]
-            try:
-                self.msg.info(self.name, "Importing user hooks (hook.py)...")
-                global hook
-                import hook
-                self.hooks_available = True
-            except ImportError:
-                self.msg.warn(self.name, "Error importing hooks.")
-            del sys.path[0]
+            import pkgutil
+
+            self.msg.info(self.name, "Importing user hooks...")
+            for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                # List all the hook files in the hooks folder, import them
+                # and call the init() function if they have them
+                # We build the list "hooks available" with the loaded modules
+                # for later calls.
+                try:
+                    self.msg.debug(self.name, "Importing hook {}...".format(name))
+                    module = loader.find_module(name).load_module(name)
+                    if hasattr(module, 'init'):
+                        module.init(self)
+                    self.hooks_available.append(module)
+                except ImportError:
+                    self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -146,14 +154,21 @@ class Engine:
 
     def _emit_signal(self, signal, *args):
         try:
+            # Call the signal function
             if self.signals[signal]:
                 self.signals[signal](*args)
-            if self.hooks_available:
-                method = getattr(hook, signal)
-                self.msg.debug(self.name, "Calling hook %s..." % signal)
-                method(self, *args)
         except AttributeError:
             pass
+
+        # If there are loaded hooks, call the functions in all of them
+        for module in self.hooks_available:
+            method = getattr(module, signal, None)
+            if method is not None:
+                self.msg.info(self.name, "Calling hook {}:{}...".format(module.__name__, signal))
+                try:
+                    method(self, *args)
+                except Exception as err:
+                    self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__name__, signal, err))
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
