@@ -744,11 +744,10 @@ class Trackma_gtk():
                 self.error(e)
 
     def task_openContainingFolder(self):
-        
+
         #get needed show info
         show = self.engine.get_show_info(self.selected_show)
-        titles = self.engine.data_handler.get_show_titles(show)
-        filename, *ep = self.engine._search_video(titles, 1)
+        filename = self.engine.get_episode_path(show, 1)
 
         if filename:
             try:
