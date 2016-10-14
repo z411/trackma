@@ -3,7 +3,7 @@
 # This configuration file is licensed under the same terms as Trackma.
 # ===================================
 #
-# To use this file, you must move it to ~/.trackma/hook.py
+# To use this file, you must move it to ~/.trackma/hooks/my_hook.py
 #
 # ===================================
 # This Python file contains hook functions for Trackma's engine signals.
@@ -13,6 +13,8 @@
 # These functions are called upon immediately by Trackma after the
 # signal of the same name has been triggered. A reference to the Engine
 # and the relevant arguments are also passed to the function.
+#
+# You can have several hook files in the "hooks" directory.
 # ===================================
 
 # These functions are called when changes are made locally.
