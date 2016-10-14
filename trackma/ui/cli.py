@@ -23,6 +23,7 @@ import cmd
 import shlex
 import textwrap
 import re
+import getopt
 from operator import itemgetter # Used for sorting list
 
 from trackma.engine import Engine
@@ -30,7 +31,6 @@ from trackma.accounts import AccountManager
 from trackma import messenger
 from trackma import utils
 
-_DEBUG = False
 _COLOR_RESET = '\033[0m'
 _COLOR_ENGINE = '\033[0;32m'
 _COLOR_DATA = '\033[0;33m'
@@ -77,15 +77,24 @@ class Trackma_cmd(cmd.Cmd):
         'status':       2,
     }
 
-    def __init__(self):
+    def __init__(self, account_num=None, debug=False):
         print('Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411')
         print('This program comes with ABSOLUTELY NO WARRANTY; for details type `info\'')
         print('This is free software, and you are welcome to redistribute it')
         print('under certain conditions; see the file COPYING for details.')
         print()
 
+        self.debug = debug
+
         self.accountman = Trackma_accounts()
-        self.account = self.accountman.select_account(False)
+        if account_num:
+            try:
+                self.account = self.accountman.get_account(account_num)
+            except KeyError:
+                print("Account {} doesn't exist.".format(account_num))
+                self.account = self.accountman.select_account(True)
+        else:
+            self.account = self.accountman.select_account(False)
 
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
@@ -653,7 +662,7 @@ class Trackma_cmd(cmd.Cmd):
             print("%s%s: %s%s" % (color_escape, classname, msg, color_reset))
         elif msgtype == messenger.TYPE_WARN:
             print("%s%s warning: %s%s" % (color_escape, classname, msg, color_reset))
-        elif _DEBUG and msgtype == messenger.TYPE_DEBUG:
+        elif self.debug and msgtype == messenger.TYPE_DEBUG:
             print("%s%s: %s%s" % (color_escape, classname, msg, color_reset))
 
     def _guess_status(self, string):
@@ -848,8 +857,43 @@ class Trackma_accounts(AccountManager):
             print("No accounts.")
 
 
+def usage():
+    print("Usage: trackma [options]")
+    print()
+    print("Options:")
+    print("  -a --acount\tPre-selects account number")
+    print("  -d --debug\tShows debugging information")
+    print("  -h --help\tShows this help")
+    print()
+    print("Example:")
+    print("  trackma -a3")
+    print("or:")
+    print("  trackma --account=3")
+    sys.exit()
+
 def main():
-    main_cmd = Trackma_cmd()
+    # Process args
+    debug = False
+    account_num = None
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "ha:d", ["help", "account=", "debug"])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+
+    for o, a in opts:
+        if o in ('-a', '--account'):
+            print("Using account {}.".format(a))
+            account_num = a
+        elif o in ('-d', '--debug'):
+            print("Enabling debug messages.")
+            debug = True
+        elif o in ('-h', '--help'):
+            usage()
+
+    # Boot Trackma CLI
+    main_cmd = Trackma_cmd(account_num, debug)
     try:
         main_cmd.start()
         main_cmd.cmdloop()
