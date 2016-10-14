@@ -89,9 +89,12 @@ class Trackma_cmd(cmd.Cmd):
         self.accountman = Trackma_accounts()
         if account_num:
             try:
-                self.account = self.accountman.get_account(account_num)
+                self.account = self.accountman.get_account(int(account_num))
             except KeyError:
                 print("Account {} doesn't exist.".format(account_num))
+                self.account = self.accountman.select_account(True)
+            except ValueError:
+                print("Account {} must be numeric.".format(account_num))
                 self.account = self.accountman.select_account(True)
         else:
             self.account = self.accountman.select_account(False)
