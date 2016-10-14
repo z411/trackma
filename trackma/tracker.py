@@ -261,7 +261,7 @@ class Tracker():
         try:
             #notifier.loop()
             timeout = None
-            while True:
+            while self.active:
                 if notifier.check_events(timeout):
                     notifier.read_events()
                     notifier.process_events()
@@ -277,7 +277,7 @@ class Tracker():
 
     def _observe_polling(self, interval):
         self.msg.info(self.name, "pyinotify not available; using polling (slow).")
-        while True:
+        while self.active:
             # This runs the tracker and update the playing show if necessary
             self._poll_lsof()
 
@@ -287,7 +287,7 @@ class Tracker():
     def _observe_win32(self, interval):
         self.msg.info(self.name, "Using Win32.")
 
-        while True:
+        while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self._get_playing_file_win32()
             (state, show_tuple) = self._get_playing_show(filename)
@@ -299,7 +299,7 @@ class Tracker():
     def _observe_plex(self, interval):
         self.msg.info(self.name, "Using Plex.")
 
-        while True:
+        while self.active:
             # This stores the last two states of the plex server and only
             # updates if it's ACTIVE.
             plex_status = plex.status()
