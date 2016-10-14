@@ -127,7 +127,7 @@ class Trackma_gtk():
         self.mb_play.connect("activate", self.__do_play, True)
         mb_scanlibrary = Gtk.MenuItem('Re-scan library')
         self.mb_folder = Gtk.MenuItem("Open containing folder")
-        self.mb_folder.connect("activate", self.do_contatainerFolder)
+        self.mb_folder.connect("activate", self.do_containingFolder)
         mb_scanlibrary.connect("activate", self.__do_scanlibrary)
         self.mb_info = Gtk.MenuItem('Show details...')
         self.mb_info.connect("activate", self.__do_info)
@@ -1077,8 +1077,8 @@ class Trackma_gtk():
 
         dialog.destroy()
 
-    def do_contatainerFolder(self, widget):
-        threading.Thread(target=self.task_openContainingFolder).start()
+    def do_containingFolder(self, widget):
+        self.task_openContainingFolder()
 
     def altname_response(self, entry, dialog, response):
         dialog.response(response)
@@ -1107,7 +1107,7 @@ class Trackma_gtk():
                 mb_web = Gtk.MenuItem("Open web site")
                 mb_web.connect("activate", self.__do_web)
                 mb_folder = Gtk.MenuItem("Open containing folder")
-                mb_folder.connect("activate", self.do_contatainerFolder)
+                mb_folder.connect("activate", self.do_containingFolder)
                 mb_copy = Gtk.MenuItem("Copy title to clipboard")
                 mb_copy.connect("activate", self.__do_copytoclip)
                 mb_alt_title = Gtk.MenuItem("Set alternate title...")
