@@ -88,6 +88,8 @@ class libhb(lib):
                 raise utils.APIError("Incorrect credentials.")
             else:
                 raise utils.APIError("Connection error: %s" % e)
+        except urllib.request.URLError as e:
+            raise utils.APIError("URL error: %s" % e)
 
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
