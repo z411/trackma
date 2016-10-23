@@ -6,7 +6,7 @@
 # https://github.com/matoro/
 # https://myanimelist.net/profile/Matoro_Mahri
 #
-# To use, copy this file to ~/.trackma/hooks/notification.py
+# To use, copy this file to ~/.trackma/hooks/
 
 import os
 import trackma.utils as utils
