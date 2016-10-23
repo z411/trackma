@@ -2,7 +2,7 @@
 #
 # This hook sends episode updates to monthly.moe and marks them as watched.
 #
-# To use, copy this file to ~/.trackma/hooks/monthly.py and fill in the access token.
+# To use, copy this file to ~/.trackma/hooks/ and fill in the access token.
 
 ACCESS_TOKEN = ""
 

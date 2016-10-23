@@ -666,7 +666,7 @@ class Trackma_cmd(cmd.Cmd):
         elif msgtype == messenger.TYPE_WARN:
             print("%s%s warning: %s%s" % (color_escape, classname, msg, color_reset))
         elif self.debug and msgtype == messenger.TYPE_DEBUG:
-            print("%s%s: %s%s" % (color_escape, classname, msg, color_reset))
+            print("[D] %s%s: %s%s" % (color_escape, classname, msg, color_reset))
 
     def _guess_status(self, string):
         for k, v in self.engine.mediainfo['statuses_dict'].items():
