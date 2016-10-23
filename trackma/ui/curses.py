@@ -862,8 +862,8 @@ class AccountDialog(Dialog):
             self.manager.set_default(accountitem.num)
         else:
             self.manager.set_default(None)
-        urwid.emit_signal(self, 'done', accountitem.account)
         self.close()
+        urwid.emit_signal(self, 'done', accountitem.account)
 
 class AccountItem(urwid.WidgetWrap):
     def __init__(self, num, account):
