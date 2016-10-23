@@ -640,7 +640,7 @@ class Trackma_cmd(cmd.Cmd):
             print("Incorrent number of arguments. See `help %s`" % cmd)
 
     def display_error(self, e):
-        print("%s%s: %s%s" % (_COLOR_ERROR, type(e), e, _COLOR_RESET))
+        print("%s%s: %s%s" % (_COLOR_ERROR, type(e).__name__, e, _COLOR_RESET))
 
     def messagehandler(self, classname, msgtype, msg):
         """
@@ -901,7 +901,7 @@ def main():
         main_cmd.start()
         main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
-        print("%s%s: %s%s" % (_COLOR_FATAL, type(e), e, _COLOR_RESET))
+        print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))
 
 if __name__ == '__main__':
     main()
