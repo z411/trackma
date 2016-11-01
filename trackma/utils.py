@@ -21,7 +21,7 @@ import json
 import difflib
 import pickle
 
-VERSION = '0.6.1'
+VERSION = '0.6.2'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
