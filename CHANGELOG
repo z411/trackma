@@ -3,7 +3,7 @@ v0.6.2
 - New: Library auto-rescanning at start
 - New: (CLI) command line options
 - New: (CLI) new `altname` command
-- New: (Qt) Open containing folder functionality
+- New: (GTK) Open containing folder functionality
 - Improvement: Support for multiple hooks (~/.trackma/hooks/*.py). Please move your hook.py file into the `hooks` directory; you can now separate them into several files. See git's `hooks` directory for the modified hook files that reflect this change.
 - Improvement: Tracker now can auto add or removes files from library
 - Improvement: Now Trackma uses HTTPS for all sites.
