@@ -485,6 +485,7 @@ class Trackma(QMainWindow):
         self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.playing_show.connect(self.ws_changed_show)
         self.worker.prompt_for_update.connect(self.ws_prompt_update)
+        self.worker.prompt_for_add.connect(self.ws_prompt_add)
 
         # Show main window
         if not (self.config['show_tray'] and self.config['start_in_tray']):
@@ -1325,6 +1326,12 @@ class Trackma(QMainWindow):
         if reply == QMessageBox.Yes:
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
 
+    def ws_prompt_add(self, show_title, episode):
+        addwindow = AddDialog(None, self.worker, None, default=show_title)
+        addwindow.setModal(True)
+        if addwindow.exec_():
+            self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
+
     ### Responses from the engine thread
     def r_generic(self):
         self._unbusy()
@@ -1580,12 +1587,15 @@ class AddDialog(QDialog):
     worker = None
     selected_show = None
 
-    def __init__(self, parent, worker, current_status):
+    def __init__(self, parent, worker, current_status, default=None):
         QMainWindow.__init__(self, parent)
         self.setMinimumSize(700, 500)
         self.setWindowTitle('Search/Add from Remote')
         self.worker = worker
         self.current_status = current_status
+        self.default = default
+        if default:
+            self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
 
         layout = QGridLayout()
 
@@ -1595,6 +1605,8 @@ class AddDialog(QDialog):
         self.search_txt = QLineEdit(self)
         self.search_txt.returnPressed.connect(self.s_search)
         self.search_txt.setFocus()
+        if default:
+            self.search_txt.setText(default)
         self.search_btn = QPushButton('Search')
         self.search_btn.clicked.connect(self.s_search)
         top_layout.addWidget(search_lbl)
@@ -1694,7 +1706,8 @@ class AddDialog(QDialog):
 
     def r_added(self, result):
         if result['success']:
-            pass
+            if self.default:
+                self.accept()
 
 
 class SettingsDialog(QDialog):
@@ -1752,6 +1765,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_wait.setMaximumWidth(60)
         self.tracker_update_close = QCheckBox()
         self.tracker_update_prompt = QCheckBox()
+        self.tracker_not_found_prompt = QCheckBox()
 
         g_media_layout.addRow('Enable tracker', self.tracker_enabled)
         g_media_layout.addRow(self.tracker_type_local)
@@ -1763,6 +1777,7 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
         g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
         g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
+        g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
 
@@ -2024,6 +2039,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait_s'))
         self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
         self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
+        self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
 
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
@@ -2097,6 +2113,7 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_wait_s', self.tracker_update_wait.value())
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
+        engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
 
         engine.set_config('player',            self.player.text())
         engine.set_config('searchdir',         self.searchdir.text())
@@ -2823,6 +2840,7 @@ class Engine_Worker(QtCore.QThread):
     changed_queue = QtCore.pyqtSignal(int)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
+    prompt_for_add = QtCore.pyqtSignal(str, int)
 
     def __init__(self, account):
         super(Engine_Worker, self).__init__()
@@ -2837,6 +2855,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('show_synced', self._changed_show)
         self.engine.connect_signal('queue_changed', self._changed_queue)
         self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+        self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
 
         self.function_list = {
             'start': self._start,
@@ -2881,6 +2900,9 @@ class Engine_Worker(QtCore.QThread):
 
     def _prompt_for_update(self, show, episode):
         self.prompt_for_update.emit(show, episode)
+
+    def _prompt_for_add(self, show_title, episode):
+        self.prompt_for_add.emit(show_title, episode)
 
     # Callable functions
     def _start(self):
