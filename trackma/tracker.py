@@ -67,9 +67,10 @@ class Tracker():
     signals = {'detected': None,
                'playing': None,
                'removed': None,
-               'update': None, }
+               'update': None,
+               'unrecognised': None, }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close):
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
@@ -80,6 +81,7 @@ class Tracker():
         tracker_args = (watch_dir, interval)
         self.wait_s = update_wait
         self.wait_close = update_close
+        self.not_found_prompt = not_found_prompt
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
         self.msg.debug(self.name, 'Enabling tracker...')
@@ -331,59 +333,67 @@ class Tracker():
                 self._observe_polling(interval)
 
     def update_show_if_needed(self, state, show_tuple):
+        if self.last_show_tuple:
+            (last_show, last_show_ep) = self.last_show_tuple
+        else:
+            self.last_show_tuple = None
+
         if show_tuple:
+            # In order to keep this consistent with last_show_tuple, this uses show
+            # for STATE_NOT_FOUND even though show_title would be more informative
             (show, episode) = show_tuple
 
-            if not self.last_show_tuple or show['id'] != self.last_show_tuple[0]['id'] or episode != self.last_show_tuple[1]:
-                # There's a new show detected, so
-                # let's save the show information and
-                # the time we detected it first
-
-                # But if we're watching a new show, let's make sure turn off
-                # the Playing flag on that one first
-                if self.last_show_tuple and self.last_show_tuple[0] != show:
-                    self._emit_signal('playing', self.last_show_tuple[0]['id'], False, 0)
-
-                self.last_show_tuple = (show, episode)
-                self._emit_signal('playing', show['id'], True, episode)
-
+            if show_tuple != self.last_show_tuple:
+                # Turn off the old Playing flag
+                if self.last_state == STATE_PLAYING:
+                    self._emit_signal('playing', last_show['id'], False, 0)
+                # There's a new show/ep detected, so let's save the show
+                # information and the time we detected it
+                self.last_show_tuple = show_tuple
+                if state == STATE_PLAYING:
+                    self._emit_signal('playing', show['id'], True, episode)
                 self.last_time = time.time()
                 self.last_updated = False
 
             if not self.last_updated:
                 # Check if we need to update the show yet
-                if episode == (show['my_progress'] + 1):
-                    timedif = time.time() - self.last_time
-
-                    if timedif > self.wait_s:
+                if state == STATE_PLAYING and episode != (show['my_progress'] + 1):
+                    # We shouldn't update to this episode!
+                    self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
+                    self.last_updated = True
+                else:
+                    # We are either going to update a show or consider adding it
+                    countdown = 1 + self.wait_s - (time.time() - self.last_time)
+                    if countdown > 0:
+                        if state == STATE_PLAYING:
+                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, countdown))
+                        else:
+                            self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, countdown))
+                    else:
                         # Time has passed, let's update
+                        self.last_updated = True
                         if self.wait_close:
                             # Queue update for when the player closes
                             self.msg.info(self.name, 'Waiting for the player to close.')
                             self.last_close_queue = True
-                            self.last_updated = True
                         else:
                             # Update now
-                            self._emit_signal('update', show['id'], episode)
-                            self.last_updated = True
-                    else:
-                        self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s-timedif+1))
-                else:
-                    # We shouldn't update to this episode!
-                    self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
-                    self.last_updated = True
-            else:
-                # The episode was updated already. do nothing
-                pass
+                            if state == STATE_PLAYING:
+                                self._emit_signal('update', show['id'], episode)
+                            else:  # Assume state is STATE_NOT_FOUND
+                                self._emit_signal('unrecognised', show, episode)
         elif self.last_state != state:
             # React depending on state
-            # STATE_NOVIDEO : No video is playing anymroe
+            # STATE_NOVIDEO : No video is playing anymore
             # STATE_UNRECOGNIZED : There's a new video playing but the regex didn't recognize the format
             # STATE_NOT_FOUND : There's a new video playing but an associated show wasn't found
             if state == STATE_NOVIDEO and self.last_show_tuple:
                 # Update now if there's an update queued
                 if self.last_close_queue:
-                    self._emit_signal('update', self.last_show_tuple[0]['id'], self.last_show_tuple[1])
+                    if self.last_state == STATE_PLAYING:
+                        self._emit_signal('update', last_show['id'], last_show_ep)
+                    else:  # Assume state is STATE_NOT_FOUND
+                        self._emit_signal('unrecognised', last_show, last_show_ep)
                 elif not self.last_updated:
                     self.msg.info(self.name, 'Player was closed before update.')
             elif state == STATE_UNRECOGNIZED:
@@ -393,7 +403,8 @@ class Tracker():
 
             # Clear any show previously playing
             if self.last_show_tuple:
-                self._emit_signal('playing', self.last_show_tuple[0]['id'], False, self.last_show_tuple[1])
+                if self.last_state == STATE_PLAYING:
+                    self._emit_signal('playing', last_show['id'], False, last_show_ep)
                 self.last_updated = False
                 self.last_close_queue = False
                 self.last_time = 0
@@ -418,13 +429,17 @@ class Tracker():
             aie = AnimeInfoExtractor(filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
-                return (STATE_UNRECOGNIZED, None) # Format not recognized
+                return (STATE_UNRECOGNIZED, None)  # Format not recognized
 
             playing_show = utils.guess_show(show_title, self.list)
             if playing_show:
                 return (STATE_PLAYING, (playing_show, show_ep))
             else:
-                return (STATE_NOT_FOUND, None) # Show not in list
+                # Show not in list
+                if self.not_found_prompt:
+                    return (STATE_NOT_FOUND, (show_title, show_ep))
+                else:
+                    return (STATE_NOT_FOUND, None)
         else:
             self.last_filename = None
-            return (STATE_NOVIDEO, None) # Not playing
+            return (STATE_NOVIDEO, None)  # Not playing
