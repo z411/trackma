@@ -367,7 +367,7 @@ class Tracker():
                     if countdown > 0:
                         if state == STATE_PLAYING:
                             self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, countdown))
-                        else:
+                        elif state == STATE_NOT_FOUND:
                             self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, countdown))
                     else:
                         # Time has passed, let's update
@@ -392,7 +392,7 @@ class Tracker():
                 if self.last_close_queue:
                     if self.last_state == STATE_PLAYING:
                         self._emit_signal('update', last_show['id'], last_show_ep)
-                    else:  # Assume state is STATE_NOT_FOUND
+                    elif self.last_state == STATE_NOT_FOUND:
                         self._emit_signal('unrecognised', last_show, last_show_ep)
                 elif not self.last_updated:
                     self.msg.info(self.name, 'Player was closed before update.')
