@@ -230,7 +230,6 @@ class Tracker():
             def process_IN_OPEN(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
                     self.parent._emit_signal('detected', event.path, event.name)
-                    print(repr(event.name))
                     self.parent._update_playing(event.name)
 
             def process_IN_CLOSE_NOWRITE(self, event):
