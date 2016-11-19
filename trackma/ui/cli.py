@@ -127,9 +127,14 @@ class Trackma_cmd(cmd.Cmd):
             return self.engine.get_show_info_title(title)
 
     def _ask_update(self, show, episode):
-        do_update = input("Should I update %s to episode %d? [y/N] " % (show['title'], episode))
-        if do_update.lower() == 'y':
+        do = input("Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
+        if do.lower() == 'y':
             self.engine.set_episode(show['id'], episode)
+
+    def _ask_add(self, show_title, episode):
+        do = input("Should I search for the show {}? [y/N] ".format(show_title))
+        if do.lower() == 'y':
+            self.do_add(show_title)
 
     def start(self):
         """
@@ -144,6 +149,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.connect_signal('prompt_for_update', self._ask_update)
+        self.engine.connect_signal('prompt_for_add', self._ask_add)
         self.engine.start()
 
         # Start with default filter selected
