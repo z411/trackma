@@ -134,7 +134,7 @@ class Trackma_cmd(cmd.Cmd):
     def _ask_add(self, show_title, episode):
         do = input("Should I search for the show {}? [y/N] ".format(show_title))
         if do.lower() == 'y':
-            self.do_add(show_title)
+            self.do_add([show_title])
 
     def start(self):
         """
