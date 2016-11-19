@@ -119,7 +119,7 @@ class Tracker():
         except OSError:
             self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
             self.disable()
-            return None
+            return False
 
         output = lsof.communicate()[0].decode('utf-8')
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
@@ -129,7 +129,7 @@ class Tracker():
             if match is not None:
                 return os.path.basename(match.group(1))
 
-        return None
+        return False
 
     def _foreach_window(self, hwnd, lParam):
         # Get class name and window title of the current hwnd
@@ -168,7 +168,8 @@ class Tracker():
         playing_file = plex.playing_file()
         return playing_file
 
-    def _update_playing(self, filename):
+    def _poll_lsof(self):
+        filename = self._get_playing_file_lsof(self.process_name)
         (state, show_tuple) = self._get_playing_show(filename)
         self.update_show_if_needed(state, show_tuple)
 
@@ -188,22 +189,19 @@ class Tracker():
                     # such that it only served to poll lsof when an
                     # open or close event was received.
                     (header, types, path, filename) = event
-                    (path, filename) = str(path, 'utf-8'), str(filename, 'utf-8')
-
                     if 'IN_ISDIR' not in types:
                         # If the file is gone, we remove from library
                         if ('IN_MOVED_FROM' in types
                                 or 'IN_DELETE' in types):
-                            self._emit_signal('removed', path, filename)
+                            self._emit_signal('removed', str(path, 'utf-8'), str(filename, 'utf-8'))
                         # Otherwise we attempt to add it to library
                         # Would check for IN_MOVED_TO or IN_CREATE but no need
                         else:
-                            self._emit_signal('detected', path, filename)
-                        if 'IN_OPEN' in types:
-                            self._update_playing(filename)
-                        elif ('IN_CLOSE_NOWRITE' in types
+                            self._emit_signal('detected', str(path, 'utf-8'), str(filename, 'utf-8'))
+                        if ('IN_OPEN' in types
+                                or 'IN_CLOSE_NOWRITE' in types
                                 or 'IN_CLOSE_WRITE' in types):
-                            self._update_playing(None)
+                            self._poll_lsof()
                 elif self.last_state != STATE_NOVIDEO:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
@@ -230,17 +228,17 @@ class Tracker():
             def process_IN_OPEN(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
                     self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._update_playing(event.name)
+                    self.parent._poll_lsof()
 
             def process_IN_CLOSE_NOWRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
                     self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._update_playing(None)
+                    self.parent._poll_lsof()
 
             def process_IN_CLOSE_WRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
                     self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._update_playing(None)
+                    self.parent._poll_lsof()
 
             def process_IN_CREATE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
@@ -283,8 +281,7 @@ class Tracker():
         self.msg.info(self.name, "pyinotify not available; using polling (slow).")
         while self.active:
             # This runs the tracker and update the playing show if necessary
-            filename = self._get_playing_file_lsof(self.process_name)
-            self._update_playing(filename)
+            self._poll_lsof()
 
             # Wait for the interval before running check again
             time.sleep(interval)
