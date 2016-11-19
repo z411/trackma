@@ -67,7 +67,8 @@ class Engine:
                 'sync_complete':     None,
                 'queue_changed':     None,
                 'playing':           None,
-                'prompt_for_update': None, }
+                'prompt_for_update': None,
+                'prompt_for_add':    None, }
 
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -152,6 +153,10 @@ class Engine:
         else:
             self.set_episode(show['id'], episode)
 
+    def _tracker_unrecognised(self, show_title, episode):
+        if self.config['tracker_not_found_prompt']:
+            self._emit_signal('prompt_for_add', show_title, episode)
+
     def _emit_signal(self, signal, *args):
         try:
             # Call the signal function
@@ -182,8 +187,8 @@ class Engine:
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
                                  'type': None,
-                             'titles': self.data_handler.get_show_titles(show),
-                             }) # TODO types
+                                 'titles': self.data_handler.get_show_titles(show),
+                                 })  # TODO types
 
         return tracker_list
 
@@ -242,11 +247,13 @@ class Engine:
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait_s']),
                                    self.config['tracker_update_close'],
+                                   self.config['tracker_not_found_prompt'],
                                   )
             self.tracker.connect_signal('detected', self._tracker_detected)
             self.tracker.connect_signal('removed', self._tracker_removed)
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)
+            self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
 
         self.loaded = True
         return True
@@ -738,7 +745,7 @@ class Engine:
                     show_ep_start = show_ep_end = show_ep
                 self.msg.debug(self.name, "File already in library: {}".format(fullpath))
             else:
-                self.msg.debug(self.name, "???: {}".format(fullpath))
+                self.msg.debug(self.name, "File not in library cache: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
