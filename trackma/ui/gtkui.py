@@ -692,21 +692,32 @@ class Trackma_gtk():
             self.error(e)
 
     def __do_update_next(self, show, played_ep):
-        # Thread safe
         GObject.idle_add(self.task_update_next, show, played_ep)
 
     def changed_show(self, show):
+        GObject.idle_add(self.task_changed_show, show)
+
+    def changed_show_title(self, show, altname):
+        GObject.idle_add(self.task_changed_show_title, show, altname)
+
+    def changed_show_status(self, show, old_status=None):
+        GObject.idle_add(self.task_changed_show_status, show, old_status)
+
+    def playing_show(self, show, is_playing, episode):
+        GObject.idle_add(self.task_playing_show, show, is_playing, episode)
+
+    def task_changed_show(self, show):
         status = show['my_status']
         self.show_lists[status].update(show)
         if show['id'] == self.selected_show:
             self.show_ep_button.set_label(str(show['my_progress']))
             self.show_score.set_value(show['my_score'])
 
-    def changed_show_title(self, show, altname):
+    def task_changed_show_title(self, show, altname):
         status = show['my_status']
         self.show_lists[status].update_title(show, altname)
 
-    def changed_show_status(self, show, old_status=None):
+    def task_changed_show_status(self, show, old_status):
         # Rebuild lists
         status = show['my_status']
 
@@ -719,7 +730,7 @@ class Trackma_gtk():
 
         self.show_lists[status].select(show)
 
-    def playing_show(self, show, is_playing, episode):
+    def task_playing_show(self, show, is_playing, episode):
         status = show['my_status']
         self.show_lists[status].playing(show, is_playing)
 
