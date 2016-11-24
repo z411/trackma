@@ -15,15 +15,14 @@
 #
 
 import os.path
-
-import messenger
-import utils
-
 import sys
 import threading
 import time
 
-class Data(object):
+from trackma import messenger
+from trackma import utils
+
+class Data():
     """
     Data Handler Class
 
@@ -37,7 +36,7 @@ class Data(object):
 
     """
     name = 'Data'
-    version = 3
+    version = 5
 
     msg = None
     api = None
@@ -78,8 +77,8 @@ class Data(object):
             modulename = "trackma.lib.{0}".format(libname)
             __import__(modulename)
             apimodule = sys.modules[modulename]
-        except ImportError, e:
-            raise utils.DataFatal("Couldn't import API module: %s" % e.message)
+        except ImportError as e:
+            raise utils.DataFatal("Couldn't import API module: %s" % e)
 
         # Instance API
         libclass = getattr(apimodule, libname)
@@ -130,7 +129,7 @@ class Data(object):
         if self._meta_exists():
             self._load_meta()
 
-        if self._queue_exists():
+        if self._queue_exists() and self.meta.get('version') == self.version:
             self._load_queue()
 
         if self._info_exists() and self.meta.get('version') == self.version:
@@ -139,7 +138,7 @@ class Data(object):
 
         # If there is a list cache, load from it
         # otherwise query the API for a remote list
-        if self._cache_exists():
+        if self._cache_exists() and self.meta.get('version') == self.version:
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
             if self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600:
                 self.process_queue()
@@ -153,7 +152,7 @@ class Data(object):
                     # We don't want users losing their changes
                     self.process_queue()
                     self.download_data()
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Couldn't download list! Using cache.")
                     self._load_cache()
             elif not self.showlist:
@@ -162,8 +161,8 @@ class Data(object):
         else:
             try:
                 self.download_data()
-            except utils.APIError, e:
-                raise utils.APIFatal(e.message)
+            except utils.APIError as e:
+                raise utils.APIFatal(str(e))
 
         # Create autosend thread if needed
         if self.config['autosend'] == 'hours':
@@ -358,12 +357,12 @@ class Data(object):
             # Check log-in TODO
             #try:
             #    self.api.check_credentials()
-            #except utils.APIError, e:
-            #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e.message)
+            #except utils.APIError as e:
+            #    raise utils.DataError("Can't process queue, will leave unsynced. Reason: %s" % e)
 
             # Run through queue
             items_processed = []
-            for i in xrange(len(self.queue)):
+            for i in range(len(self.queue)):
                 item = self.queue.pop(0)
                 showid = item['id']
 
@@ -393,9 +392,9 @@ class Data(object):
 
                     items_processed.append((show, item))
                     self._emit_signal('queue_changed', len(self.queue))
-                except utils.APIError, e:
+                except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
-                    self.msg.debug(self.name, "Info: %s" % e.message)
+                    self.msg.debug(self.name, "Info: %s" % e)
                     self.queue.append(item)
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
@@ -436,7 +435,8 @@ class Data(object):
         self.meta['altnames'][showid] = altname
 
     def altname_clear(self, showid):
-        del self.meta['altnames'][showid]
+        if showid in self.meta['altnames']:
+            del self.meta['altnames'][showid]
 
     def altnames_get(self):
         return self.meta['altnames']
@@ -525,7 +525,7 @@ class Data(object):
             # The API needs information to be merged from the
             # info database
             missing = []
-            for k, show in self.showlist.iteritems():
+            for k, show in self.showlist.items():
                 # Here we search the information in the local
                 # info database. If it isn't available, add it
                 # to the missing list for them to be requested

@@ -6,9 +6,8 @@
 # We should probably create an application and provide a access token
 # generator script.
 #
-# To use, copy this file to ~/.trackma/hook.py and fill in the consumer/access tokens.
+# To use, copy this file to ~/.trackma/hooks/ and fill in the consumer/access tokens.
 
-##### Hook start #####
 import twitter
 CONSUMER_KEY    = ""
 CONSUMER_SECRET = ""
@@ -23,7 +22,7 @@ api = twitter.Api(consumer_key=CONSUMER_KEY,
         access_token_key=ACCESS_KEY,
         access_token_secret=ACCESS_SECRET)
 
-def twitter_send(engine, show):
+def status_changed(engine, show, old_status):
     api_name        = engine.api_info['name']
     finished_status = engine.mediainfo['status_finish']
     score_max       = engine.mediainfo['score_max']
@@ -40,8 +39,4 @@ def twitter_send(engine, show):
         else:
             engine.msg.warn('Twitter', "Tweet too long.")
 
-##### HOOK END #####
-
-def status_changed(engine, show, old_status):
-    twitter_send(engine, show)
 

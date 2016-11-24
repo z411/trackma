@@ -17,21 +17,19 @@
 import re
 import os
 import subprocess
-from decimal import Decimal
-
 import threading
 import difflib
 import time
 import datetime
 import random
 import shlex
+from decimal import Decimal
 
-import messenger
-import data
-import tracker
-import torrents
-import utils
-import extras.AnimeInfoExtractor
+from trackma import messenger
+from trackma import data
+from trackma import tracker
+from trackma import utils
+from trackma.extras import AnimeInfoExtractor
 
 class Engine:
     """
@@ -52,11 +50,11 @@ class Engine:
     """
     data_handler = None
     tracker = None
-    config = dict()
+    config = {}
     msg = None
     loaded = False
     playing = False
-    hooks_available = False
+    hooks_available = []
 
     name = 'Engine'
 
@@ -69,7 +67,8 @@ class Engine:
                 'sync_complete':     None,
                 'queue_changed':     None,
                 'playing':           None,
-                'prompt_for_update': None, }
+                'prompt_for_update': None,
+                'prompt_for_add':    None, }
 
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -97,18 +96,26 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
 
-        # Load hook file
-        if os.path.exists(utils.get_root_filename('hook.py')):
+        # Load hook files
+        hooks_dir = utils.get_root_filename('hooks')
+        if os.path.isdir(hooks_dir):
             import sys
-            sys.path[0:0] = [utils.get_root()]
-            try:
-                self.msg.info(self.name, "Importing user hooks (hook.py)...")
-                global hook
-                import hook
-                self.hooks_available = True
-            except ImportError:
-                self.msg.warn(self.name, "Error importing hooks.")
-            del sys.path[0]
+            import pkgutil
+
+            self.msg.info(self.name, "Importing user hooks...")
+            for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                # List all the hook files in the hooks folder, import them
+                # and call the init() function if they have them
+                # We build the list "hooks available" with the loaded modules
+                # for later calls.
+                try:
+                    self.msg.debug(self.name, "Importing hook {}...".format(name))
+                    module = loader.find_module(name).load_module(name)
+                    if hasattr(module, 'init'):
+                        module.init(self)
+                    self.hooks_available.append(module)
+                except ImportError:
+                    self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -129,6 +136,12 @@ class Engine:
     def _data_queue_changed(self, queue):
         self._emit_signal('queue_changed', queue)
 
+    def _tracker_detected(self, path, filename):
+        self.add_to_library(path, filename)
+
+    def _tracker_removed(self, path, filename):
+        self.remove_from_library(path, filename)
+
     def _tracker_playing(self, showid, playing, episode):
         show = self.get_show_info(showid)
         self._emit_signal('playing', show, playing, episode)
@@ -140,16 +153,27 @@ class Engine:
         else:
             self.set_episode(show['id'], episode)
 
+    def _tracker_unrecognised(self, show_title, episode):
+        if self.config['tracker_not_found_prompt']:
+            self._emit_signal('prompt_for_add', show_title, episode)
+
     def _emit_signal(self, signal, *args):
         try:
+            # Call the signal function
             if self.signals[signal]:
                 self.signals[signal](*args)
-            if self.hooks_available:
-                method = getattr(hook, signal)
-                self.msg.debug(self.name, "Calling hook %s..." % signal)
-                method(self, *args)
         except AttributeError:
             pass
+
+        # If there are loaded hooks, call the functions in all of them
+        for module in self.hooks_available:
+            method = getattr(module, signal, None)
+            if method is not None:
+                self.msg.info(self.name, "Calling hook {}:{}...".format(module.__name__, signal))
+                try:
+                    method(self, *args)
+                except Exception as err:
+                    self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__name__, signal, err))
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
@@ -163,8 +187,8 @@ class Engine:
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
                                  'type': None,
-                             'titles': self.data_handler.get_show_titles(show),
-                             }) # TODO types
+                                 'titles': self.data_handler.get_show_titles(show),
+                                 })  # TODO types
 
         return tracker_list
 
@@ -202,10 +226,17 @@ class Engine:
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
-        except utils.DataError, e:
-            raise utils.DataFatal(e.message)
-        except utils.APIError, e:
-            raise utils.APIFatal(e.message)
+        except utils.DataError as e:
+            raise utils.DataFatal(str(e))
+        except utils.APIError as e:
+            raise utils.APIFatal(str(e))
+
+        # Rescan library if necessary
+        if self.config['library_autoscan']:
+            try:
+                self.scan_library()
+            except utils.TrackmaError as e:
+                self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -216,9 +247,13 @@ class Engine:
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait_s']),
                                    self.config['tracker_update_close'],
+                                   self.config['tracker_not_found_prompt'],
                                   )
+            self.tracker.connect_signal('detected', self._tracker_detected)
+            self.tracker.connect_signal('removed', self._tracker_removed)
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)
+            self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
 
         self.loaded = True
         return True
@@ -274,7 +309,7 @@ class Engine:
         Returns the full show list requested from the data handler as a list of show dictionaries.
         If you only need shows in a specified status, use :func:`filter_list`.
         """
-        return self.data_handler.get().itervalues()
+        return self.data_handler.get().values()
 
     def get_show_info(self, showid):
         """
@@ -290,7 +325,7 @@ class Engine:
     def get_show_info_title(self, pattern):
         showdict = self.data_handler.get()
         # Do title lookup, slower
-        for k, show in showdict.iteritems():
+        for k, show in showdict.items():
             if show['title'] == pattern:
                 return show
         raise utils.EngineError("Show not found.")
@@ -307,13 +342,13 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if re.match(regex, v['title'], re.I))
+        return list(v for k, v in showlist.items() if re.search(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
         showlist = self.data_handler.get()
         newlist = list()
-        for k, v in showlist.iteritems():
+        for k, v in showlist.items():
             if re.match(pattern, v['title'], re.I):
                 if ' ' in v['title']:
                     newlist.append('"' + v['title'] + '" ')
@@ -401,7 +436,7 @@ class Engine:
                 elif newep == 1 and self.mediainfo.get('status_start'):
                     # Change to watching status
                     self.set_status(show['id'], self.mediainfo['status_start'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -416,7 +451,7 @@ class Engine:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since date change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
@@ -496,7 +531,7 @@ class Engine:
         ):
             try:
                 self.set_status(show['id'], self.mediainfo['status_finish'])
-            except utils.EngineError, e:
+            except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -537,6 +572,30 @@ class Engine:
 
         return show
 
+    def set_tags(self, showid, newtags):
+        """
+        Updates the tags of the specified **showid** to **newtags**
+        and queues the list update for the next sync.
+        """
+        # Check if operation is supported by the API
+        if 'can_tag' not in self.mediainfo or not self.mediainfo.get('can_tag'):
+            raise utils.EngineError('Operation not supported by API.')
+
+        # Get the show and update it
+        show = self.get_show_info(showid)
+        # More checks
+        if show['my_tags'] == newtags:
+            raise utils.EngineError("Tags already %s" % newtags)
+
+        # Change score
+        self.msg.info(self.name, "Updating show %s to tags '%s'..." % (show['title'], newtags))
+        self.data_handler.queue_update(show, 'my_tags', newtags)
+
+        # Emit signal
+        self._emit_signal('tags_changed', show)
+
+        return show
+
     def delete_show(self, show):
         """
         Deletes **show** completely from the list and queues the list update for the next sync.
@@ -554,6 +613,9 @@ class Engine:
         self._emit_signal('show_deleted', show)
 
     def _search_video(self, titles, episode):
+        # DEPRECATED !!!
+        self.msg.debug(self.name, "DEPRECATED: _search_video")
+
         best_candidate = (None, 0, None)
 
         matcher = difflib.SequenceMatcher()
@@ -561,17 +623,23 @@ class Engine:
         # Check over video files and propose our best candidate
         for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
             # Analyze what's the title and episode of the file
-            aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
+            aie = AnimeInfoExtractor(filename)
             candidate_title = aie.getName()
             candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
 
-            # Skip this file if we couldn't analyze it or it isn't the episode we want
-            if (
-                not candidate_title or
-                not (episode >= candidate_episode_start and episode <= candidate_episode_end) or
-                (candidate_episode_end == '' and episode != candidate_episode_start)
-               ):
+            # Skip this file if we couldn't analyze it
+            if not candidate_title:
                 continue
+            if candidate_episode_start is None:
+                continue
+
+            # Skip this file if it isn't the episode we want
+            if candidate_episode_end is None:
+                if episode != candidate_episode_start:
+                    continue
+            else:
+                if not (candidate_episode_start <= episode <= candidate_episode_end):
+                    continue
 
             matcher.set_seq1(candidate_title.lower())
 
@@ -609,7 +677,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None, ignorecache=False):
+    def scan_library(self, my_status=None, rescan=False):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
@@ -626,48 +694,104 @@ class Engine:
             my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
+        self.msg.debug(self.name, "Directory: %s" % self.config['searchdir'])
         tracker_list = self._get_tracker_list(my_status)
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            show_id = None
-            if not ignorecache and filename in library_cache.keys():
-                # If the filename was already seen before
-                # use the cached information, if there's no information (None)
-                # then it means it doesn't correspond to any show in the list
-                # and can be safely skipped.
-                if library_cache[filename]:
-                    show_id = library_cache[filename][0]
-                    show_ep = library_cache[filename][1]
-                else:
-                    continue
-            else:
-                # If the filename has not been seen, extract
-                # the information from the filename and do a fuzzy search
-                # on the user's list. Cache the information.
-                # If it fails, cache it as None.
-                aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(filename)
-                (show_title, show_ep) = (aie.getName(), aie.getEpisode())
-                if show_title:
-                    show = utils.guess_show(show_title, tracker_list)
-                    if show:
-                        show_id = show['id']
-                        library_cache[filename] = (show['id'], show_ep)
-                    else:
-                        library_cache[filename] = None
-                else:
-                    library_cache[filename] = None
-
-            # After we got our information, add it to our library
-            if show_id:
-                if show_id not in library.keys():
-                    library[show_id] = {}
-                library[show_id][show_ep] = fullpath
+            (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
         self.msg.debug(self.name, "Time: %s" % (time.time() - t))
         self.data_handler.library_save(library)
         self.data_handler.library_cache_save(library_cache)
         return library
+
+    def remove_from_library(self, path, filename):
+        library = self.data_handler.library_get()
+        library_cache = self.data_handler.library_cache_get()
+        tracker_list = self._get_tracker_list()
+        fullpath = path+"/"+filename
+        # Only remove if the filename matches library entry
+        if filename in library_cache.keys() and library_cache[filename]:
+            (show_id, show_ep) = library_cache[filename]
+            if show_id and show_id in library.keys() \
+                    and show_ep and show_ep in library[show_id].keys():
+                if library[show_id][show_ep] == fullpath:
+                    self.msg.debug(self.name, "File removed from local library: %s" % fullpath)
+                    library_cache.pop(filename, None)
+                    library[show_id].pop(show_ep, None)
+
+    def add_to_library(self, path, filename, rescan=False):
+        # The inotify tracker tells us when files are created in
+        # or moved within our library directory, so we call this.
+        library = self.data_handler.library_get()
+        library_cache = self.data_handler.library_cache_get()
+        tracker_list = self._get_tracker_list()
+        fullpath = path+"/"+filename
+        self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
+
+    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
+        show_id = None
+        if not rescan and filename in library_cache.keys():
+            # If the filename was already seen before
+            # use the cached information, if there's no information (None)
+            # then it means it doesn't correspond to any show in the list
+            # and can be safely skipped.
+            if library_cache[filename]:
+                (show_id, show_ep) = library_cache[filename]
+                if type(show_ep) is tuple:
+                    (show_ep_start, show_ep_end) = show_ep
+                else:
+                    show_ep_start = show_ep_end = show_ep
+                self.msg.debug(self.name, "File already in library: {}".format(fullpath))
+            else:
+                self.msg.debug(self.name, "File not in library cache: {}".format(fullpath))
+                return library, library_cache
+        else:
+            # If the filename has not been seen, extract
+            # the information from the filename and do a fuzzy search
+            # on the user's list. Cache the information.
+            # If it fails, cache it as None.
+            aie = AnimeInfoExtractor(filename)
+            show_title = aie.getName()
+            (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
+            if show_title:
+                show = utils.guess_show(show_title, tracker_list)
+                if show:
+                    show_id = show['id']
+                    if show_ep_start == show_ep_end:
+                        library_cache[filename] = (show['id'], show_ep_start)
+                    else:
+                        library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+
+                    self.msg.debug(self.name, "New file added to local library: {}".format(fullpath))
+                else:
+                    library_cache[filename] = None
+            else:
+                library_cache[filename] = None
+
+        # After we got our information, add it to our library
+        if show_id:
+            if show_id not in library.keys():
+                library[show_id] = {}
+            for show_ep in range(show_ep_start, show_ep_end+1):
+                library[show_id][show_ep] = fullpath
+        return library, library_cache
+
+    def get_episode_path(self, show, episode):
+        """
+        This function returns the full path of the requested episode from the requested show.
+        """
+
+        library = self.library()
+        showid = show['id']
+
+        if showid not in library:
+            raise utils.EngineError('Show not in library.')
+        if episode not in library[showid]:
+            raise utils.EngineError('Episode not in library.')
+
+        return library[showid][episode]
 
     def play_random(self):
         """
@@ -677,10 +801,15 @@ class Engine:
         library = self.library()
         newep = []
 
-        for showid, eps in library.iteritems():
+        self.msg.info(self.name, 'Looking for random episode.')
+
+        for showid, eps in library.items():
             show = self.get_show_info(showid)
             if show['my_progress'] + 1 in eps.keys():
                 newep.append(show)
+
+        if not newep:
+            raise utils.EngineError('No new episodes found to pick from.')
 
         show = random.choice(newep)
         ep = self.play_episode(show)
@@ -715,11 +844,16 @@ class Engine:
             if show['total'] and playep > show['total']:
                 raise utils.EngineError('Episode beyond limits.')
 
-            self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
+            if self.config.get('debug_oldsearch'):
+                # Deprecated
+                self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
+                titles = self.data_handler.get_show_titles(show)
+                filename, endep = self._search_video(titles, playep)
+            else:
+                self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
+                filename = self.get_episode_path(show, playep)
+                endep = playep
 
-            titles = self.data_handler.get_show_titles(show)
-
-            filename, endep = self._search_video(titles, playep)
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 arg_list = shlex.split(self.config['player'])
@@ -764,7 +898,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.iteritems() if v['my_status'] == status_num)
+        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
 
     def list_download(self):
         """Asks the data handler to download the remote list."""

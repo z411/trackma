@@ -19,9 +19,9 @@ import subprocess
 import datetime
 import json
 import difflib
-import cPickle as pickle
+import pickle
 
-VERSION = '0.4'
+VERSION = '0.6.2'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -75,20 +75,20 @@ def save_config(config_dict, filename):
         os.mkdir(path)
 
     with open(filename, 'wb') as configfile:
-        json.dump(config_dict, configfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
+        configfile.write(json.dumps(config_dict, sort_keys=True,
+                  indent=4, separators=(',', ': ')).encode('utf-8'))
 
 def load_data(filename):
     with open(filename, 'rb') as datafile:
-        return pickle.load(datafile)
+        return pickle.load(datafile, encoding='bytes')
 
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
-        pickle.dump(data, datafile)
+        pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
-        logfile.write(msg.encode('utf-8'))
+        logfile.write(msg)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -143,6 +143,9 @@ def get_root_filename(filename):
 def get_root():
     return os.path.expanduser(os.path.join('~', '.trackma'))
 
+def change_permissions(filename, mode):
+    os.chmod(filename, mode)
+
 def estimate_aired_episodes(show):
     # Estimate how many episodes have passed since airing
 
@@ -158,7 +161,7 @@ def estimate_aired_episodes(show):
             if days <= 0:
                 return 0
 
-            eps = days / 7 + 1
+            eps = days // 7 + 1
             if eps > show['total'] and show['total'] > 0:
                 return show['total']
             return eps
@@ -262,6 +265,7 @@ config_defaults = {
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
     'tracker_update_prompt': False,
+    'tracker_not_found_prompt': False,
     'tracker_interval': 10,
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',
@@ -270,6 +274,7 @@ config_defaults = {
     'autosend_hours': 5,
     'autosend_size': 5,
     'autosend_at_exit': True,
+    'library_autoscan': True,
     'debug_disable_lock': True,
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
@@ -283,29 +288,50 @@ userconfig_defaults = {
     'userid': 0,
     'username': '',
 }
-keymap_defaults = {
-    'help': 'f1',
-    'prev_filter': 'left',
-    'next_filter': 'right',
-    'sort': 'f3',
-    'sort_order': 'r',
-    'update': 'f4',
-    'play': 'f5',
-    'status': 'f6',
-    'score': 'f7',
-    'send': 's',
-    'retrieve': 'R',
-    'addsearch': 'a',
-    'reload': 'c',
-    'switch_account': 'f9',
-    'delete': 'd',
-    'quit': 'f12',
-    'altname': 'A',
-    'search': '/',
-    'neweps': 'N',
-    'details': 'enter',
-    'details_exit': 'esc',
-    'open_web': 'O',
+curses_defaults = {
+    'show_help': True,
+    'keymap': {
+        'help': 'f1',
+        'prev_filter': 'left',
+        'next_filter': 'right',
+        'sort': 'f3',
+        'sort_order': 'r',
+        'update': 'f4',
+        'play': 'f5',
+        'status': 'f6',
+        'score': 'f7',
+        'send': 's',
+        'retrieve': 'R',
+        'addsearch': 'a',
+        'reload': 'c',
+        'switch_account': 'f9',
+        'delete': 'd',
+        'quit': 'f12',
+        'altname': 'A',
+        'search': '/',
+        'neweps': 'N',
+        'details': 'enter',
+        'details_exit': 'esc',
+        'open_web': 'O',
+    },
+    'palette': {
+        'body':             ('', ''),
+        'focus':            ('standout', ''),
+        'head':             ('light red', 'black'),
+        'header':           ('bold', ''),
+        'status':           ('white', 'dark blue'),
+        'error':            ('light red', 'dark blue'),
+        'window':           ('white', 'dark blue'),
+        'button':           ('black', 'light gray'),
+        'button hilight':   ('white', 'dark red'),
+        'item_airing':      ('dark blue', ''),
+        'item_notaired':    ('yellow', ''),
+        'item_neweps':      ('white', 'brown'),
+        'item_updated':     ('white', 'dark green'),
+        'item_playing':     ('white', 'dark blue'),
+        'info_title':       ('light red', ''),
+        'info_section':     ('dark blue', ''),
+    }
 }
 
 gtk_defaults = {
@@ -316,7 +342,7 @@ gtk_defaults = {
     'remember_geometry': False,
     'last_width': 740,
     'last_height': 480,
-    'visible_columns': [],
+    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
@@ -339,13 +365,18 @@ qt_defaults = {
     'start_in_tray': False,
     'tray_api_icon': False,
     'remember_geometry': False,
+    'remember_columns': False,
     'last_x': 0,
     'last_y': 0,
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'columns_state': {},
+    'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
+    'filter_bar_position': 2,
+    'filter_global': False,
     'colors': {
         'is_airing': '#D2FAFA',
         'is_playing': '#9696FA',
@@ -358,4 +389,9 @@ qt_defaults = {
         'progress_sub_fg': '#5187B1',
         'progress_complete': '#00D200',
     },
+}
+
+qt_per_api_defaults = {
+    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'columns_state': {},
 }

@@ -11,21 +11,24 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
 import json
-import urllib, urllib2, socket
-import time, datetime
+import urllib.parse
+import urllib.request
+import socket
+import time
+import datetime
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libanilist(lib):
     """
     API class to communicate with Anilist
 
-    Website: http://anilist.co
+    Website: https://anilist.co
 
     messenger: Messenger object to send useful messages to
     """
@@ -83,7 +86,7 @@ class libanilist(lib):
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
-    url = "http://anilist.co/api/"
+    url = "https://anilist.co/api/"
     client_id = "z411-gdjc3"
     _client_secret = "MyzwuYoMqPPglXwCTcexG1i"
 
@@ -103,7 +106,7 @@ class libanilist(lib):
             self.airing_str = "publishing_status"
             self.status_translate = {
                 'publishing': utils.STATUS_AIRING,
-                'finished': utils.STATUS_FINISHED,
+                'finished publishing': utils.STATUS_FINISHED,
                 'not yet published': utils.STATUS_NOTYET,
                 'cancelled': utils.STATUS_CANCELLED,
             }
@@ -118,18 +121,18 @@ class libanilist(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        #handler=urllib2.HTTPHandler(debuglevel=1)
-        #self.opener = urllib2.build_opener(handler)
-        self.opener = urllib2.build_opener()
+        #handler=urllib.request.HTTPHandler(debuglevel=1)
+        #self.opener = urllib.request.build_opener(handler)
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
 
     def _request(self, method, url, get=None, post=None, auth=False):
         if get:
-            url = "{}?{}".format(url, urllib.urlencode(get))
+            url = "{}?{}".format(url, urllib.parse.urlencode(get))
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post).encode('utf-8')
 
-        request = urllib2.Request(self.url + url, post)
+        request = urllib.request.Request(self.url + url, post)
         request.get_method = lambda: method
 
         if auth:
@@ -141,8 +144,8 @@ class libanilist(lib):
 
         try:
             response = self.opener.open(request, timeout = 10)
-            return json.load(response)
-        except urllib2.HTTPError, e:
+            return json.loads(response.read().decode('utf-8'))
+        except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid PIN. It is either probably expired or meant for another application.")
             else:
@@ -230,14 +233,14 @@ class libanilist(lib):
             # No lists returned so no need to continue
             return showlist
 
-        for remotelist in data["lists"].itervalues():
+        for remotelist in data["lists"].values():
             for item in remotelist:
                 if item['list_status'] not in self.media_info()['statuses']:
                     continue
 
                 show = utils.show()
                 showid = item[self.mediatype]['id']
-                show.update({
+                showdata = {
                     'id': showid,
                     'title': item[self.mediatype]['title_romaji'],
                     'aliases': [item[self.mediatype]['title_english']],
@@ -249,8 +252,9 @@ class libanilist(lib):
                     'total': self._c(item[self.mediatype][self.total_str]),
                     'image': item[self.mediatype]['image_url_lge'],
                     'image_thumb': item[self.mediatype]['image_url_med'],
-                    'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
-                })
+                    'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
+                }
+                show.update({k:v for k,v in showdata.items() if v})
 
                 if show['status'] == 1:
                     airinglist.append(showid)
@@ -300,19 +304,23 @@ class libanilist(lib):
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        try:
-            data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
-        except ValueError:
-            # An empty document, without any JSON, is returned
-            # when there are no results.
-            return []
+        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
+
+        if type(data) == dict:
+            # In case of error API returns a small JSON payload
+            # which translates into a dict with the key 'error'
+            # instead of a list.
+            if data['error']['messages'][0] == 'No Results.':
+                data = []
+            else:
+                raise utils.APIError("Error while searching for \
+                        {0}: {1}".format(criteria, str(data)))
 
         showlist = []
-
         for item in data:
             show = utils.show()
             showid = item['id']
-            show.update({
+            showdata = {
                 'id': showid,
                 'title': item['title_romaji'],
                 'aliases': [item['title_english']],
@@ -322,8 +330,9 @@ class libanilist(lib):
                 'total': item[self.total_str],
                 'image': item['image_url_lge'],
                 'image_thumb': item['image_url_med'],
-                'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
-            })
+                'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
+            }
+            show.update({k:v for k,v in showdata.items() if v})
 
             showlist.append( show )
 
@@ -365,7 +374,7 @@ class libanilist(lib):
             'title': item['title_romaji'],
             'status': self.status_translate[item[self.airing_str]],
             'image': item['image_url_lge'],
-            'url': str("http://anilist.co/%s/%d" % (self.mediatype, showid)),
+            'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
             'start_date': self._str2date(item.get('start_date')),
             'end_date': self._str2date(item.get('end_date')),
             'extra': [

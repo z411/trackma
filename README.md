@@ -13,13 +13,14 @@ Features
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
 - Highly scalable, easy to code new interfaces and support for other sites
+- Secure, uses HTTPS wherever possible.
 
 Currently supported websites
 ----------------------------
-- [Anilist](http://anilist.co/) (Anime, Manga)
-- [Hummingbird](http://hummingbird.me/) (Anime)
+- [Anilist](https://anilist.co/) (Anime, Manga)
+- [Hummingbird](https://hummingbird.me/) (Anime)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
-- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
 
@@ -50,14 +51,14 @@ The documentation for Trackma is [available on ReadTheDocs](http://trackma.readt
 Requirements
 ------------
 
-- Python 2.6/2.7
+- Python 3.4/3.5
 - lsof - for the media player detection tracker.
 - (Optional) inotifyx - for instant media recognition (Linux only)
 - (Optional) PyQt - for the Qt Interface
-- (Optional) PyGTK (python-gtk2) - for the GTK interface.
-- (Optional) Urwid (python-urwid) - for the curses/urwid interface.
-- (Optional/Recommended) PIL (python-imaging) - for showing preview images in the Qt/GTK interfaces.
-- python-pip (to install through pip) *or* python-setuptools (to install through setup.py)
+- (Optional) PyGI (python3-gi and python3-cairo) - for the GTK interface.
+- (Optional) Urwid (python3-urwid) - for the curses/urwid interface.
+- (Optional/Recommended) PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
+- python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
 
 Installation
 ------------
@@ -66,13 +67,13 @@ Make sure you've installed the proper dependencies (listed above)
 according to the user interface you plan to use, and then run the
 following command:
 
-<pre># pip install Trackma</pre>
+<pre># pip3 install Trackma</pre>
 
 Or download the source code and install:
 
 <pre># git clone https://github.com/z411/trackma.git
 # cd trackma
-# sudo python2.7 setup.py install</pre>
+# sudo python3 setup.py install</pre>
 
 Then you can run the program with the interface you like.
 
@@ -110,7 +111,7 @@ http://github.com/z411/trackma
 If you plan to make changes to the code, I suggest using the following method to install Trackma
 instead of the normal way, so the changes you make get reflected immediately:
 
-<pre># python setup.py develop</pre>
+<pre># python3 setup.py develop</pre>
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the github issue tracker:

@@ -16,34 +16,81 @@
 
 
 import sys
-
-try:
-    from PyQt4 import QtGui, QtCore
-    from PyQt4.QtGui import QPalette, QIcon
-except ImportError:
-    print ("Couldn't import Qt dependencies. Make sure you "
-           "installed the PyQt4 package.")
-    sys.exit(-1)
-
 import os
-from cStringIO import StringIO
-import urllib2
 
-import trackma.messenger as messenger
-import trackma.utils as utils
+pyqt_version = 0
+skip_pyqt5 = "PYQT4" in os.environ  # TODO: Make this a program argument or something
+
+if not skip_pyqt5:
+    try:
+        from PyQt5 import QtGui, QtCore
+        from PyQt5.QtGui import QIcon, QPalette
+        from PyQt5.QtWidgets import (
+            QApplication, QMainWindow, QFormLayout,
+            QGridLayout, QHBoxLayout, QVBoxLayout,
+            QAbstractItemView, QHeaderView, QListWidget,
+            QListWidgetItem, QTabWidget, QTableWidget,
+            QTableWidgetItem, QFrame, QScrollArea,
+            QStackedWidget, QWidget, QCheckBox, QComboBox,
+            QDoubleSpinBox, QGroupBox, QLineEdit,
+            QPushButton, QRadioButton, QSpinBox,
+            QStyleOptionButton, QToolButton, QProgressBar,
+            QDialog, QColorDialog, QDialogButtonBox,
+            QFileDialog, QInputDialog, QMessageBox,
+            QAction, QActionGroup, QLabel, QMenu, QStyle,
+            QSystemTrayIcon, QStyleOptionProgressBar
+        )
+        pyqt_version = 5
+    except ImportError:
+        print("Couldn't import Qt5 dependencies. "
+              "Make sure you installed the PyQt5 package.")
+if pyqt_version is 0:
+    try:
+        import sip
+        sip.setapi('QVariant', 2)
+        from PyQt4 import QtGui, QtCore
+        from PyQt4.QtGui import (
+            QApplication, QMainWindow, QFormLayout,
+            QGridLayout, QHBoxLayout, QVBoxLayout,
+            QAbstractItemView, QHeaderView, QListWidget,
+            QListWidgetItem, QTabWidget, QTableWidget,
+            QTableWidgetItem, QFrame, QScrollArea,
+            QStackedWidget, QWidget, QCheckBox,
+            QComboBox, QDoubleSpinBox, QGroupBox,
+            QLineEdit, QPushButton, QRadioButton,
+            QSpinBox, QStyleOptionButton, QToolButton,
+            QProgressBar, QDialog, QColorDialog,
+            QDialogButtonBox, QFileDialog, QInputDialog,
+            QMessageBox, QAction, QActionGroup,
+            QLabel, QMenu, QStyle,
+            QSystemTrayIcon, QIcon, QPalette
+        )
+        from PyQt4.QtGui import QStyleOptionProgressBarV2 as QStyleOptionProgressBar
+        pyqt_version = 4
+    except ImportError:
+        print("Couldn't import Qt dependencies. "
+              "Make sure you installed the PyQt4 package.")
+        sys.exit(-1)
+
+import urllib.request
+import base64
+from io import BytesIO
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
+from trackma import messenger
+from trackma import utils
 
 try:
-    import Image
+    from PIL import Image
     imaging_available = True
 except ImportError:
     try:
-        from PIL import Image
+        import Image
         imaging_available = True
     except ImportError:
-        print "Warning: PIL or Pillow isn't available. Preview images will be disabled."
+        print("Warning: PIL or Pillow isn't available. "
+              "Preview images will be disabled.")
         imaging_available = False
 
 try:
@@ -52,10 +99,12 @@ try:
     import datetime
     dateutil_available = True
 except ImportError:
-    print "Warning: DateUtil is unavailable. Next episode countdown will be disabled."
+    print("Warning: DateUtil is unavailable. "
+          "Next episode countdown will be disabled.")
     dateutil_available = False
 
-class Trackma(QtGui.QMainWindow):
+
+class Trackma(QMainWindow):
     """
     Main GUI class
 
@@ -72,14 +121,16 @@ class Trackma(QtGui.QMainWindow):
     was_maximized = False
 
     def __init__(self):
-        QtGui.QMainWindow.__init__(self, None)
+        QMainWindow.__init__(self, None)
 
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
+        self.api_configfile = utils.get_root_filename('ui-qt.0.json')
+        self.api_config = {}
 
         # Build UI
-        QtGui.QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
+        QApplication.setWindowIcon(QIcon(utils.datadir + '/data/icon.png'))
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
@@ -128,58 +179,58 @@ class Trackma(QtGui.QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
 
         # Build menus
-        action_play_next = QtGui.QAction(getIcon('media-playback-start'), 'Play &Next', self)
+        action_play_next = QAction(getIcon('media-playback-start'), 'Play &Next', self)
         action_play_next.setStatusTip('Play the next unwatched episode.')
         action_play_next.setShortcut('Ctrl+N')
         action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog = QAction('Play Episode...', self)
         action_play_dialog.setStatusTip('Select an episode to play.')
         action_play_dialog.triggered.connect(self.s_play_number)
-        action_details = QtGui.QAction('Show &details...', self)
+        action_details = QAction('Show &details...', self)
         action_details.setStatusTip('Show detailed information about the selected show.')
         action_details.triggered.connect(self.s_show_details)
-        action_altname = QtGui.QAction('Change &alternate name...', self)
+        action_altname = QAction('Change &alternate name...', self)
         action_altname.setStatusTip('Set an alternate title for the tracker.')
         action_altname.triggered.connect(self.s_altname)
-        action_play_random = QtGui.QAction('Play &random show', self)
+        action_play_random = QAction('Play &random show', self)
         action_play_random.setStatusTip('Pick a random show with a new episode and play it.')
         action_play_random.setShortcut('Ctrl+R')
         action_play_random.triggered.connect(self.s_play_random)
-        action_add = QtGui.QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
+        action_add = QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
         action_add.setShortcut('Ctrl+A')
         action_add.triggered.connect(self.s_add)
-        action_delete = QtGui.QAction(getIcon('edit-delete'), '&Delete', self)
+        action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
         action_delete.setStatusTip('Remove this show from your list.')
         action_delete.triggered.connect(self.s_delete)
-        action_quit = QtGui.QAction(getIcon('application-exit'), '&Quit', self)
+        action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
-        action_sync = QtGui.QAction('&Sync', self)
+        action_sync = QAction('&Sync', self)
         action_sync.setStatusTip('Send changes and then retrieve remote list')
         action_sync.setShortcut('Ctrl+S')
         action_sync.triggered.connect(lambda: self.s_send(True))
-        action_send = QtGui.QAction('S&end changes', self)
+        action_send = QAction('S&end changes', self)
         action_send.setShortcut('Ctrl+E')
         action_send.setStatusTip('Upload any changes made to the list immediately.')
         action_send.triggered.connect(self.s_send)
-        action_retrieve = QtGui.QAction('Re&download list', self)
+        action_retrieve = QAction('Re&download list', self)
         action_retrieve.setShortcut('Ctrl+D')
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
-        action_scan_library = QtGui.QAction('Rescan &Library', self)
+        action_scan_library = QAction('Rescan &Library', self)
         action_scan_library.triggered.connect(self.s_scan_library)
 
-        action_reload = QtGui.QAction('Switch &Account', self)
+        action_reload = QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
         action_reload.triggered.connect(self.s_switch_account)
-        action_settings = QtGui.QAction('&Settings...', self)
+        action_settings = QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
-        action_about = QtGui.QAction(getIcon('help-about'), 'About...', self)
+        action_about = QAction(getIcon('help-about'), 'About...', self)
         action_about.triggered.connect(self.s_about)
-        action_about_qt = QtGui.QAction('About Qt...', self)
+        action_about_qt = QAction('About Qt...', self)
         action_about_qt.triggered.connect(self.s_about_qt)
 
         menubar = self.menuBar()
@@ -196,10 +247,10 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
 
-        self.menu_play = QtGui.QMenu('Play')
+        self.menu_play = QMenu('Play')
 
         # Context menu for right click on list item
-        self.menu_show_context = QtGui.QMenu()
+        self.menu_show_context = QMenu()
         #self.menu_show_context.addAction(action_play_next)
         #self.menu_show_context.addAction(action_play_dialog)
         self.menu_show_context.addMenu(self.menu_play)
@@ -209,16 +260,33 @@ class Trackma(QtGui.QMainWindow):
         self.menu_show_context.addAction(action_delete)
 
         # Context menu for right click on list header
-        self.menu_columns = QtGui.QMenu()
+        self.menu_columns = QMenu()
         self.available_columns = ['ID', 'Title', 'Progress', 'Score',
                 'Percent', 'Next Episode', 'Start date', 'End date',
-                'My start', 'My finish']
+                'My start', 'My finish', 'Tags']
+        self.column_keys = {'id': 0,
+                            'title': 1,
+                            'progress': 2,
+                            'score': 3,
+                            'percent': 4,
+                            'next_ep': 5,
+                            'date_start': 6,
+                            'date_end': 7,
+                            'my_start': 8,
+                            'my_end': 9,
+                            'tag': 10}
 
-        self.menu_columns_group = QtGui.QActionGroup(self, exclusive=False)
+        self.menu_columns_group = QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
 
+        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % account['api'])
+        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
+        if self.config['columns_per_api']:
+            self.config['visible_columns'] = self.api_config['visible_columns']
+            self.config['columns_state'] = self.api_config['columns_state']
+
         for column_name in self.available_columns:
-            action = QtGui.QAction(column_name, self, checkable=True)
+            action = QAction(column_name, self, checkable=True)
             if column_name in self.config['visible_columns']:
                 action.setChecked(True)
 
@@ -228,17 +296,17 @@ class Trackma(QtGui.QMainWindow):
         # Make icons for viewed episodes
         rect = QtCore.QSize(16,16)
         buffer = QtGui.QPixmap(rect)
-        ep_icon_states = {'all': QtGui.QStyle.State_On,
-                          'part': QtGui.QStyle.State_NoChange,
-                          'none': QtGui.QStyle.State_Off}
+        ep_icon_states = {'all': QStyle.State_On,
+                          'part': QStyle.State_NoChange,
+                          'none': QStyle.State_Off}
         self.ep_icons = {}
         for key, state in ep_icon_states.items():
             buffer.fill(QtCore.Qt.transparent)
             painter = QtGui.QPainter(buffer)
-            opt = QtGui.QStyleOptionButton()
+            opt = QStyleOptionButton()
             opt.state = state
-            self.style().drawPrimitive(QtGui.QStyle.PE_IndicatorMenuCheckMark, opt, painter)
-            self.ep_icons[key] = QtGui.QIcon(buffer)
+            self.style().drawPrimitive(QStyle.PE_IndicatorMenuCheckMark, opt, painter)
+            self.ep_icons[key] = QIcon(buffer)
             painter.end()
 
         menu_list = menubar.addMenu('&List')
@@ -249,7 +317,7 @@ class Trackma(QtGui.QMainWindow):
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
-        self.mediatype_actiongroup = QtGui.QActionGroup(self, exclusive=True)
+        self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(action_reload)
@@ -260,105 +328,150 @@ class Trackma(QtGui.QMainWindow):
         menu_help.addAction(action_about_qt)
 
         # Build layout
-        main_layout = QtGui.QVBoxLayout()
-        top_hbox = QtGui.QHBoxLayout()
-        main_hbox = QtGui.QHBoxLayout()
-        left_box = QtGui.QFormLayout()
-        small_btns_hbox = QtGui.QHBoxLayout()
+        main_layout = QVBoxLayout()
+        top_hbox = QHBoxLayout()
+        main_hbox = QHBoxLayout()
+        self.list_box = QVBoxLayout()
+        filter_bar_box_layout = QHBoxLayout()
+        self.filter_bar_box = QWidget()
+        left_box = QFormLayout()
+        small_btns_hbox = QHBoxLayout()
 
-        self.show_title = QtGui.QLabel('Trackma-qt')
+        self.show_title = QLabel('Trackma-qt')
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
         self.show_title.setFont(show_title_font)
 
-        self.api_icon = QtGui.QLabel('icon')
-        self.api_user = QtGui.QLabel('user')
+        self.api_icon = QLabel('icon')
+        self.api_user = QLabel('user')
 
         top_hbox.addWidget(self.show_title, 1)
         top_hbox.addWidget(self.api_icon)
         top_hbox.addWidget(self.api_user)
 
-        self.notebook = QtGui.QTabWidget()
+        self.notebook = QTabWidget()
         self.notebook.currentChanged.connect(self.s_tab_changed)
-        self.setMinimumSize(740, 480)
+        self.show_filter = QLineEdit()
+        self.show_filter.textChanged.connect(self.s_filter_changed)
+        filter_tooltip = (
+            "General Search: All fields (columns) of each show will be matched against the search term."
+            "\nAdvanced Searching: A field can be specified by using its key followed by a colon"
+            " e.g. 'title:My_Show date_start:2016'."
+            "\n  Any field may be specified multiple times to match terms in any order e.g. 'tag:Battle+Shounen tag:Ecchi'. "
+            "\n  + and _ are replaced with spaces when searching specific fields."
+            "\n  If colon is used after something that is not a column key, it will treat it as a general term."
+            "\n  ALL terms not attached to a field will be combined into a single general search term"
+            "\n         - 'My date_end:2016 Show' will match shows that have 'My Show' in any field and 2016 in the End Date field."
+            "\n  Available field keys are: "
+        )
+        colkeys = ', '.join(sorted(self.column_keys.keys()))
+        self.show_filter.setToolTip(filter_tooltip + colkeys + '.')
+        self.show_filter_invert = QCheckBox()
+        self.show_filter_invert.stateChanged.connect(self.s_filter_changed)
+        self.show_filter_casesens = QCheckBox()
+        self.show_filter_casesens.stateChanged.connect(self.s_filter_changed)
+
+        #self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
             self.setGeometry(self.config['last_x'], self.config['last_y'],
                              self.config['last_width'], self.config['last_height'])
 
-        self.show_image = QtGui.QLabel('Trackma-qt')
-        self.show_image.setFixedHeight( 149 )
-        self.show_image.setFixedWidth( 100 )
-        self.show_image.setAlignment( QtCore.Qt.AlignCenter )
+        self.show_image = QLabel('Trackma-qt')
+        self.show_image.setFixedHeight(149)
+        self.show_image.setMinimumWidth(100)
+        self.show_image.setAlignment(QtCore.Qt.AlignCenter)
         self.show_image.setStyleSheet("border: 1px solid #777;background-color:#999;text-align:center")
-        show_progress_label = QtGui.QLabel('Progress')
-        self.show_progress = QtGui.QSpinBox()
-        self.show_progress_bar = QtGui.QProgressBar()
-        self.show_progress_btn = QtGui.QPushButton('Update')
+        show_progress_label = QLabel('Progress:')
+        self.show_progress = QSpinBox()
+        self.show_progress_bar = QProgressBar()
+        self.show_progress_btn = QPushButton('Update')
         self.show_progress_btn.setToolTip('Set number of episodes watched to the value entered above')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
-        self.show_play_btn = QtGui.QToolButton()
+        self.show_play_btn = QToolButton()
         self.show_play_btn.setIcon(getIcon('media-playback-start'))
         self.show_play_btn.setToolTip('Play the next unwatched episode\nHold to play other episodes')
         self.show_play_btn.clicked.connect(lambda: self.s_play(True))
         self.show_play_btn.setMenu(self.menu_play)
-        self.show_inc_btn = QtGui.QToolButton()
+        self.show_inc_btn = QToolButton()
         self.show_inc_btn.setIcon(getIcon('list-add'))
         self.show_inc_btn.setShortcut('Ctrl+Right')
         self.show_inc_btn.setToolTip('Increment number of episodes watched')
         self.show_inc_btn.clicked.connect(self.s_plus_episode)
-        self.show_dec_btn = QtGui.QToolButton()
+        self.show_dec_btn = QToolButton()
         self.show_dec_btn.setIcon(getIcon('list-remove'))
         self.show_dec_btn.clicked.connect(self.s_rem_episode)
         self.show_dec_btn.setShortcut('Ctrl+Left')
         self.show_dec_btn.setToolTip('Decrement number of episodes watched')
-        show_score_label = QtGui.QLabel('Score')
-        self.show_score = QtGui.QDoubleSpinBox()
-        self.show_score_btn = QtGui.QPushButton('Set')
+        show_score_label = QLabel('Score:')
+        self.show_score = QDoubleSpinBox()
+        self.show_score_btn = QPushButton('Set')
         self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
-        self.show_status = QtGui.QComboBox()
+        self.show_tags_btn = QPushButton('Edit Tags...')
+        self.show_tags_btn.setToolTip('Open a dialog to edit your tags for this show')
+        self.show_tags_btn.clicked.connect(self.s_set_tags)
+        self.show_status = QComboBox()
         self.show_status.setToolTip('Change your watching status of this show')
         self.show_status.currentIndexChanged.connect(self.s_set_status)
 
         small_btns_hbox.addWidget(self.show_dec_btn)
         small_btns_hbox.addWidget(self.show_play_btn)
         small_btns_hbox.addWidget(self.show_inc_btn)
-        small_btns_hbox.setAlignment( QtCore.Qt.AlignCenter )
+        small_btns_hbox.setAlignment(QtCore.Qt.AlignCenter)
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar)
         left_box.addRow(small_btns_hbox)
-        left_box.addRow(show_progress_label, self.show_progress)
-        left_box.addRow(self.show_progress_btn)
-        left_box.addRow(show_score_label, self.show_score)
-        left_box.addRow(self.show_score_btn)
+        left_box.addRow(show_progress_label)
+        left_box.addRow(self.show_progress, self.show_progress_btn)
+        left_box.addRow(show_score_label)
+        left_box.addRow(self.show_score, self.show_score_btn)
         left_box.addRow(self.show_status)
+        left_box.addRow(self.show_tags_btn)
+
+        filter_bar_box_layout.addWidget(QLabel('Filter:'))
+        filter_bar_box_layout.addWidget(self.show_filter)
+        filter_bar_box_layout.addWidget(QLabel('Invert'))
+        filter_bar_box_layout.addWidget(self.show_filter_invert)
+        filter_bar_box_layout.addWidget(QLabel('Case Sensitive'))
+        filter_bar_box_layout.addWidget(self.show_filter_casesens)
+        self.filter_bar_box.setLayout(filter_bar_box_layout)
+
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
         main_hbox.addLayout(left_box)
-        main_hbox.addWidget(self.notebook, 1)
+        main_hbox.addLayout(self.list_box, 1)
 
         main_layout.addLayout(top_hbox)
         main_layout.addLayout(main_hbox)
 
-        self.main_widget = QtGui.QWidget(self)
+        self.main_widget = QWidget(self)
         self.main_widget.setLayout(main_layout)
         self.setCentralWidget(self.main_widget)
 
         # Statusbar
-        self.status_text = QtGui.QLabel('Trackma-qt')
-        self.queue_text = QtGui.QLabel('Unsynced items: N/A')
+        self.status_text = QLabel('Trackma-qt')
+        self.queue_text = QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
         self.statusBar().addWidget(self.queue_text)
 
         # Tray icon
-        tray_menu = QtGui.QMenu(self)
-        action_hide = QtGui.QAction('Show/Hide', self)
+        tray_menu = QMenu(self)
+        action_hide = QAction('Show/Hide', self)
         action_hide.triggered.connect(self.s_hide)
         tray_menu.addAction(action_hide)
         tray_menu.addAction(action_quit)
 
-        self.tray = QtGui.QSystemTrayIcon(self.windowIcon())
+        self.tray = QSystemTrayIcon(self.windowIcon())
         self.tray.setContextMenu(tray_menu)
         self.tray.activated.connect(self.s_tray_clicked)
         self._tray()
@@ -372,6 +485,7 @@ class Trackma(QtGui.QMainWindow):
         self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.playing_show.connect(self.ws_changed_show)
         self.worker.prompt_for_update.connect(self.ws_prompt_update)
+        self.worker.prompt_for_add.connect(self.ws_prompt_add)
 
         # Show main window
         if not (self.config['show_tray'] and self.config['start_in_tray']):
@@ -385,6 +499,15 @@ class Trackma(QtGui.QMainWindow):
     def reload(self, account=None, mediatype=None):
         if account:
             self.account = account
+
+        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % self.account['api'])
+        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
+        if self.config['columns_per_api']:
+            self.config['visible_columns'] = self.api_config['visible_columns']
+        self.menu_columns_group.setEnabled(False)
+        for action in self.menu_columns_group.actions():
+            action.setChecked(action.text() in self.config['visible_columns'])
+        self.menu_columns_group.setEnabled(True)
 
         self.show()
         self._busy(False)
@@ -402,14 +525,14 @@ class Trackma(QtGui.QMainWindow):
 
     def status(self, message):
         self.status_text.setText(message)
-        print unicode(message).encode('utf-8')
+        print(message)
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))
-        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
     def fatal(self, msg):
-        QtGui.QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QtGui.QMessageBox.Ok)
+        QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
         self._busy()
         self.finish = False
         self.worker_call('unload', self.r_engine_unloaded)
@@ -424,6 +547,8 @@ class Trackma(QtGui.QMainWindow):
         self._busy()
         if self.config['remember_geometry']:
             self._store_geometry()
+        if self.config['remember_columns']:
+            self._store_columnstate()
         self.finish = True
         self.worker_call('unload', self.r_engine_unloaded)
 
@@ -434,6 +559,17 @@ class Trackma(QtGui.QMainWindow):
         self.config['last_height'] = self.height()
         utils.save_config(self.config, self.configfile)
 
+    def _store_columnstate(self):
+        self.config['columns_state'] = dict()
+        for status in self.statuses_nums:
+            state = self.show_lists[status].horizontalHeader().saveState()
+            self.config['columns_state'][status] = base64.b64encode(state).decode('ascii')
+        if self.config['columns_per_api']:
+            self.api_config['columns_state'] = self.config['columns_state']
+            utils.save_config(self.api_config, self.api_configfile)
+        else:
+            utils.save_config(self.config, self.configfile)
+
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
         self.menuBar().setEnabled(enable)
@@ -441,6 +577,10 @@ class Trackma(QtGui.QMainWindow):
         if self.selected_show_id:
             self.show_progress_btn.setEnabled(enable)
             self.show_score_btn.setEnabled(enable)
+            if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+                self.show_tags_btn.setEnabled(enable)
+            else:
+                self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(enable)
             self.show_inc_btn.setEnabled(enable)
             self.show_dec_btn.setEnabled(enable)
@@ -451,6 +591,7 @@ class Trackma(QtGui.QMainWindow):
 
     def _update_config(self):
         self._tray()
+        self._filter_bar()
         # TODO: Reload listviews?
 
     def _tray(self):
@@ -460,9 +601,23 @@ class Trackma(QtGui.QMainWindow):
             self.tray.show()
         if self.tray.isVisible():
             if self.config['tray_api_icon']:
-                self.tray.setIcon( QtGui.QIcon( utils.available_libs[self.account['api']][1] ) )
+                self.tray.setIcon( QIcon( utils.available_libs[self.account['api']][1] ) )
             else:
                 self.tray.setIcon( self.windowIcon() )
+
+    def _filter_bar(self):
+        self.list_box.removeWidget(self.filter_bar_box)
+        self.list_box.removeWidget(self.notebook)
+        self.filter_bar_box.show()
+        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
+            self.list_box.addWidget(self.notebook)
+            self.filter_bar_box.hide()
+        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
+            self.list_box.addWidget(self.filter_bar_box)
+            self.list_box.addWidget(self.notebook)
+        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
+            self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
         if wait:
@@ -513,10 +668,22 @@ class Trackma(QtGui.QMainWindow):
             if column not in self.config['visible_columns']:
                 widget.setColumnHidden(i, True)
 
-        widget.horizontalHeader().setResizeMode(1, QtGui.QHeaderView.Stretch)
+        if pyqt_version is 5:
+            widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            widget.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
+            widget.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+        else:
+            widget.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
+            widget.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
+            widget.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
+
         widget.horizontalHeader().resizeSection(2, 70)
         widget.horizontalHeader().resizeSection(3, 55)
         widget.horizontalHeader().resizeSection(4, 100)
+
+        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
+            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
+            widget.horizontalHeader().restoreState(state)
 
         i = 0
 
@@ -567,14 +734,14 @@ class Trackma(QtGui.QMainWindow):
 
         tooltip += "Total: %d" % show['total']
         percent_widget.setToolTip(tooltip)
-        percent = percent_widget.value() * 100 / percent_widget.maximum()
+        percent = percent_widget.value() / percent_widget.maximum()
 
         widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
         widget.setItem(row, 0, ShowItem( str(show['id']), color ))
         widget.setItem(row, 1, ShowItem( title_str, color ))
         widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
         widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
-        widget.setItem(row, 4, ShowItemNum( percent, str(percent), color ))
+        widget.setItem(row, 4, ShowItemNum( percent, "{:.0%}".format(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
@@ -582,11 +749,20 @@ class Trackma(QtGui.QMainWindow):
         and dateutil_available:
             next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
             delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
-            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color ))
+            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
+        else:
+            widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))
         widget.setItem(row, 6, ShowItemDate( show['start_date'], color ))
         widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
         widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
         widget.setItem(row, 9, ShowItemDate( show['my_finish_date'], color ))
+        try:
+            tag_str = show['my_tags']
+            if not tag_str:
+                tag_str = '-'
+        except:
+            tag_str = '-'
+        widget.setItem(row, 10, ShowItem( tag_str, color ))
 
     def _get_color(self, is_playing, show, eps):
         if is_playing:
@@ -604,7 +780,7 @@ class Trackma(QtGui.QMainWindow):
 
     def _get_row_from_showid(self, widget, showid):
         # identify the row this show is in the table
-        for row in xrange(0, widget.rowCount()):
+        for row in range(0, widget.rowCount()):
             if widget.item(row, 0).text() == str(showid):
                 return row
 
@@ -625,6 +801,7 @@ class Trackma(QtGui.QMainWindow):
             self.show_status.setEnabled(False)
             self.show_progress_btn.setEnabled(False)
             self.show_score_btn.setEnabled(False)
+            self.show_tags_btn.setEnabled(False)
             self.show_play_btn.setEnabled(False)
             self.show_inc_btn.setEnabled(False)
             self.show_dec_btn.setEnabled(False)
@@ -654,6 +831,8 @@ class Trackma(QtGui.QMainWindow):
         self.show_score.setEnabled(True)
         self.show_progress_btn.setEnabled(True)
         self.show_score_btn.setEnabled(True)
+        if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
+            self.show_tags_btn.setEnabled(True)
         self.show_inc_btn.setEnabled(True)
         self.show_dec_btn.setEnabled(True)
         self.show_play_btn.setEnabled(True)
@@ -665,7 +844,7 @@ class Trackma(QtGui.QMainWindow):
                 self.image_worker.cancel()
 
             utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+            filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
@@ -687,6 +866,43 @@ class Trackma(QtGui.QMainWindow):
         # Unblock signals
         self.show_status.blockSignals(False)
 
+    def _filter_check_row(self, table, row, expression, case_sensitive=False):
+        # Determine if a show matches a filter. True -> match -> do not hide
+        # Advanced search: Separate the expression into specific field terms, fail if any are not met
+        if ':' in expression:
+            exprs = expression.split(' ')
+            expr_list = []
+            for expr in exprs:
+                if ':' in expr:
+                    expr_terms = expr.split(':',1)
+                    if expr_terms[0] in self.column_keys:
+                        col = self.column_keys[expr_terms[0]]
+                        sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
+                        item = table.item(row, col)
+                        if case_sensitive:
+                            if not sub_expr in item.text():
+                                return False
+                        else:
+                            if not sub_expr.lower() in item.text().lower():
+                                return False
+                    else: # If it's not a field key, let it be a regular search term
+                        expr_list.append(expr)
+                else:
+                    expr_list.append(expr)
+            expression = ' '.join(expr_list)
+
+        # General case: if any fields match the remaining expression, success.
+        for col in range(table.columnCount()):
+            item = table.item(row, col)
+            itemtext = item.text()
+            if case_sensitive:
+                if expression in itemtext:
+                    return True
+            else:
+                if expression.lower() in itemtext.lower():
+                    return True
+        return False
+
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
         bp_top = 5  # No more than this many submenus/episodes in the root menu
         bp_mid = 10 # No more than this many submenus in submenus
@@ -696,11 +912,11 @@ class Trackma(QtGui.QMainWindow):
 
         menu.clear()
         # Make basic actions
-        action_play_next = QtGui.QAction(getIcon('media-skip-forward'), 'Play &Next Episode', self)
+        action_play_next = QAction(getIcon('media-skip-forward'), 'Play &Next Episode', self)
         action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_last = QtGui.QAction(getIcon('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
+        action_play_last = QAction(getIcon('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
         action_play_last.triggered.connect(lambda: self.s_play(False))
-        action_play_dialog = QtGui.QAction('Play Episode...', self)
+        action_play_dialog = QAction('Play Episode...', self)
         action_play_dialog.setStatusTip('Select an episode to play.')
         action_play_dialog.triggered.connect(self.s_play_number)
 
@@ -714,7 +930,7 @@ class Trackma(QtGui.QMainWindow):
 
         ep_actions = []
         for ep in range(1, max_eps+1):
-                action = QtGui.QAction('Ep. %d' % ep, self)
+                action = QAction('Ep. %d' % ep, self)
                 action.triggered.connect(self.s_play_ep_number(action, ep))
                 if ep <= watched_eps:
                     action.setIcon(self.ep_icons['all'])
@@ -735,7 +951,7 @@ class Trackma(QtGui.QMainWindow):
                 if current_actions >= bp_btm:
                     current_actions = 0
                     l = len(self.play_ep_submenus)
-                    self.play_ep_submenus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
+                    self.play_ep_submenus.append(QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
                     if watched_eps > min((l+1)*bp_btm, max_eps):
                         self.play_ep_submenus[-1].setIcon(self.ep_icons['all'])
                     elif watched_eps > l*bp_btm:
@@ -756,7 +972,7 @@ class Trackma(QtGui.QMainWindow):
                     if current_menus >= bp_mid:
                         current_menus = 0
                         l = len(self.play_ep_sub2menus)
-                        self.play_ep_sub2menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
+                        self.play_ep_sub2menus.append(QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
                     self.play_ep_sub2menus[-1].addMenu(s)
                     if watched_eps > min((l+1)*bp_btm*bp_mid, max_eps):
                         self.play_ep_sub2menus[-1].setIcon(self.ep_icons['all'])
@@ -777,7 +993,7 @@ class Trackma(QtGui.QMainWindow):
                         if current_menus >= bp_mid:
                             current_menus = 0
                             l = len(self.play_ep_sub3menus)
-                            self.play_ep_sub3menus.append(QtGui.QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
+                            self.play_ep_sub3menus.append(QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
                         self.play_ep_sub3menus[-1].addMenu(s)
                         if watched_eps > min((l+1)*bp_btm*bp_mid*bp_mid, max_eps):
                             self.play_ep_sub3menus[-1].setIcon(self.ep_icons['all'])
@@ -804,7 +1020,7 @@ class Trackma(QtGui.QMainWindow):
                 self.show()
 
     def s_tray_clicked(self, reason):
-        if reason == QtGui.QSystemTrayIcon.Trigger:
+        if reason == QSystemTrayIcon.Trigger:
             self.s_hide()
 
     def s_busy(self):
@@ -829,7 +1045,7 @@ class Trackma(QtGui.QMainWindow):
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
-        filename = utils.get_filename('cache', "%s.jpg" % show['id'])
+        filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
         self.image_worker = Image_Worker(show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)
@@ -839,6 +1055,37 @@ class Trackma(QtGui.QMainWindow):
         item = self.notebook.currentWidget().currentItem()
         if item:
             self.s_show_selected(item)
+        self.s_filter_changed() # Refresh filter
+
+    def s_filter_changed(self):
+        tabs = []
+        if self.config['filter_global']:
+            tabs = range(len(self.notebook))
+        else:
+            tabs = [self.notebook.currentIndex()]
+        expr = self.show_filter.text()
+        casesens = self.show_filter_casesens.isChecked()
+        for tab_index in tabs:
+            table = self.notebook.widget(tab_index)
+            shown = 0
+            total = 0
+            for row in range(table.rowCount()):
+                if not expr:
+                    table.setRowHidden(row, False)
+                elif self.show_filter_invert.isChecked():
+                    table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+                else:
+                    table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
+                if not table.isRowHidden(row):
+                    shown += 1
+                total += 1
+            # Update tab name with matches out of total
+            status = self.statuses_nums[tab_index]
+            if expr:
+                tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
+            else:
+                tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
+            self.notebook.setTabText(tab_index, tab_name)
 
     def s_plus_episode(self):
         self._busy(True)
@@ -862,6 +1109,22 @@ class Trackma(QtGui.QMainWindow):
             self._busy(True)
             self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
 
+    def s_set_tags(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        if show['my_tags']:
+            tags = show['my_tags']
+        else:
+            tags = ''
+        tags, ok = QInputDialog.getText(self, 'Edit Tags',
+            'Enter desired tags (comma separated)',
+            text=tags)
+        if ok:
+            self.s_edit_tags(show, tags)
+
+    def s_edit_tags(self, show, tags):
+        self._busy(True)
+        self.worker_call('set_tags', self.r_generic, show['id'], tags)
+
     def s_play(self, play_next, episode=0):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -884,7 +1147,7 @@ class Trackma(QtGui.QMainWindow):
         ep_max = utils.estimate_aired_episodes(show)
         if ep_max is None:
             ep_max = max(show['total'],1)
-        episode, ok = QtGui.QInputDialog.getInt(self, 'Play Episode',
+        episode, ok = QInputDialog.getInt(self, 'Play Episode',
             'Enter an episode number of %s to play:' % show['title'],
             ep_default, ep_min, ep_max)
         if ok:
@@ -895,11 +1158,11 @@ class Trackma(QtGui.QMainWindow):
 
     def s_delete(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
-        reply = QtGui.QMessageBox.question(self, 'Confirmation',
+        reply = QMessageBox.question(self, 'Confirmation',
             'Are you sure you want to delete %s?' % show['title'],
-            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            QMessageBox.Yes, QMessageBox.No)
 
-        if reply == QtGui.QMessageBox.Yes:
+        if reply == QMessageBox.Yes:
             self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
@@ -910,7 +1173,7 @@ class Trackma(QtGui.QMainWindow):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         current_altname = self.worker.engine.altname(self.selected_show_id)
 
-        new_altname, ok = QtGui.QInputDialog.getText(self, 'Alternative title',
+        new_altname, ok = QInputDialog.getText(self, 'Alternative title',
             'Set the new alternative title for %s (blank to remove):' % show['title'],
             text=current_altname)
 
@@ -922,13 +1185,13 @@ class Trackma(QtGui.QMainWindow):
         queue = self.worker.engine.get_queue()
 
         if queue:
-            reply = QtGui.QMessageBox.question(self, 'Confirmation',
+            reply = QMessageBox.question(self, 'Confirmation',
                 'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
-                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No, QtGui.QMessageBox.Cancel)
+                QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
 
-            if reply == QtGui.QMessageBox.Yes:
+            if reply == QMessageBox.Yes:
                 self.s_send(True)
-            elif reply == QtGui.QMessageBox.No:
+            elif reply == QMessageBox.No:
                 self._busy(True)
                 self.worker_call('list_download', self.r_list_retrieved)
         else:
@@ -960,12 +1223,15 @@ class Trackma(QtGui.QMainWindow):
         self.detailswindow.show()
 
     def s_add(self):
-        self.addwindow = AddDialog(None, self.worker)
+        page = self.notebook.currentIndex()
+        current_status = self.statuses_nums[page]
+
+        self.addwindow = AddDialog(None, self.worker, current_status)
         self.addwindow.setModal(True)
         self.addwindow.show()
 
     def s_mediatype(self, action):
-        index = action.data().toInt()[0]
+        index = action.data()
         mediatype = self.api_info['supported_mediatypes'][index]
         self.reload(None, mediatype)
 
@@ -975,7 +1241,7 @@ class Trackma(QtGui.QMainWindow):
         dialog.exec_()
 
     def s_about(self):
-        QtGui.QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
+        QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
             '<p><b>About Trackma-qt %s</b></p><p>Trackma is an open source client for media tracking websites.</p>'
             '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
             '<p>Thanks to all contributors. To see all contributors see AUTHORS file.</p>'
@@ -983,7 +1249,7 @@ class Trackma(QtGui.QMainWindow):
             '<p><a href="http://github.com/z411/trackma">http://github.com/z411/trackma</a></p>' % utils.VERSION)
 
     def s_about_qt(self):
-        QtGui.QMessageBox.aboutQt(self, 'About Qt')
+        QMessageBox.aboutQt(self, 'About Qt')
 
     def s_show_menu_columns(self, pos):
         globalPos = self.sender().mapToGlobal(pos)
@@ -993,6 +1259,7 @@ class Trackma(QtGui.QMainWindow):
     def s_toggle_column(self, w):
         (column_name, visible) = (w.text(), w.isChecked())
         index = self.available_columns.index(column_name)
+        MIN_WIDTH = 30  # Width to restore columns to if too small to see
 
         if visible:
             if column_name not in self.config['visible_columns']:
@@ -1002,9 +1269,14 @@ class Trackma(QtGui.QMainWindow):
                 self.config['visible_columns'].remove(column_name)
 
         utils.save_config(self.config, self.configfile)
+        if self.config['columns_per_api']:
+            self.api_config['visible_columns'] = self.config['visible_columns']
+            utils.save_config(self.api_config, self.api_configfile)
 
-        for showlist in self.show_lists.itervalues():
+        for showlist in self.show_lists.values():
             showlist.setColumnHidden(index, not visible)
+            if visible and showlist.columnWidth(index) < MIN_WIDTH:
+                showlist.setColumnWidth(index, MIN_WIDTH)
 
     ### Worker slots
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
@@ -1040,17 +1312,25 @@ class Trackma(QtGui.QMainWindow):
 
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
+        # Refresh filter
+        self.s_filter_changed()
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
 
     def ws_prompt_update(self, show, episode):
-        reply = QtGui.QMessageBox.question(self, 'Message',
+        reply = QMessageBox.question(self, 'Message',
             'Do you want to update %s to %d?' % (show['title'], episode),
-            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            QMessageBox.Yes, QMessageBox.No)
 
-        if reply == QtGui.QMessageBox.Yes:
+        if reply == QMessageBox.Yes:
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
+
+    def ws_prompt_add(self, show_title, episode):
+        addwindow = AddDialog(None, self.worker, None, default=show_title)
+        addwindow.setModal(True)
+        if addwindow.exec_():
+            self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
 
     ### Responses from the engine thread
     def r_generic(self):
@@ -1082,7 +1362,7 @@ class Trackma(QtGui.QMainWindow):
 
             # Set allowed ranges (this should be reported by the engine later)
             decimal_places = 0
-            if isinstance( self.mediainfo['score_step'], float ):
+            if isinstance(self.mediainfo['score_step'], float):
                 decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
 
             self.show_score.setRange(0, self.mediainfo['score_max'])
@@ -1095,11 +1375,15 @@ class Trackma(QtGui.QMainWindow):
 
                 self.show_lists[status] = ShowsTableWidget()
                 self.show_lists[status].context_menu = self.menu_show_context
-                self.show_lists[status].setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+                self.show_lists[status].setSelectionMode(QAbstractItemView.SingleSelection)
                 #self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
-                self.show_lists[status].setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-                self.show_lists[status].setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+                self.show_lists[status].setSelectionBehavior(QAbstractItemView.SelectRows)
+                self.show_lists[status].setEditTriggers(QAbstractItemView.NoEditTriggers)
                 self.show_lists[status].horizontalHeader().setHighlightSections(False)
+                if pyqt_version is 5:
+                    self.show_lists[status].horizontalHeader().setSectionsMovable(True)
+                else:
+                    self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
                 self.show_lists[status].verticalHeader().hide()
@@ -1118,7 +1402,7 @@ class Trackma(QtGui.QMainWindow):
                 self.mediatype_actiongroup.removeAction(action)
 
             for n, mediatype in enumerate(self.api_info['supported_mediatypes']):
-                action = QtGui.QAction(mediatype, self, checkable=True)
+                action = QAction(mediatype, self, checkable=True)
                 if mediatype == self.api_info['mediatype']:
                     action.setChecked(True)
                 else:
@@ -1127,17 +1411,17 @@ class Trackma(QtGui.QMainWindow):
                 self.menu_mediatype.addAction(action)
 
             # Show API info
-            self.api_icon.setPixmap( QtGui.QPixmap( utils.available_libs[self.account['api']][1] ) )
+            self.api_icon.setPixmap(QtGui.QPixmap(utils.available_libs[self.account['api']][1]))
             if self.config['tray_api_icon']:
-                self.tray.setIcon( QtGui.QIcon( utils.available_libs[self.account['api']][1] ) )
-            self.api_user.setText( self.worker.engine.get_userconfig('username') )
-            self.setWindowTitle( "Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']) )
+                self.tray.setIcon(QIcon(utils.available_libs[self.account['api']][1]))
+            self.api_user.setText(self.worker.engine.get_userconfig('username'))
+            self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
 
             # Rebuild lists
             self._rebuild_lists(showlist, altnames, library)
 
             self.s_show_selected(None)
-            self._update_queue_counter( len( self.worker.engine.get_queue() ) )
+            self._update_queue_counter(len(self.worker.engine.get_queue()))
 
             self.status('Ready.')
 
@@ -1174,17 +1458,17 @@ class Trackma(QtGui.QMainWindow):
                 self.s_switch_account()
 
 
-class DetailsDialog(QtGui.QDialog):
+class DetailsDialog(QDialog):
     def __init__(self, parent, worker, show):
-        QtGui.QDialog.__init__(self, parent)
+        QDialog.__init__(self, parent)
         self.setMinimumSize(530, 550)
         self.setWindowTitle('Details')
         self.worker = worker
 
-        main_layout = QtGui.QVBoxLayout()
+        main_layout = QVBoxLayout()
         details = DetailsWidget(self, worker)
 
-        bottom_buttons = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Close)
+        bottom_buttons = QDialogButtonBox(QDialogButtonBox.Close)
         bottom_buttons.setCenterButtons(True)
         bottom_buttons.rejected.connect(self.close)
 
@@ -1194,32 +1478,33 @@ class DetailsDialog(QtGui.QDialog):
         self.setLayout(main_layout)
         details.load(show)
 
-class DetailsWidget(QtGui.QWidget):
+
+class DetailsWidget(QWidget):
     def __init__(self, parent, worker):
         self.worker = worker
 
-        QtGui.QWidget.__init__(self, parent)
+        QWidget.__init__(self, parent)
 
         # Build layout
-        main_layout = QtGui.QVBoxLayout()
+        main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.show_title = QtGui.QLabel()
+        self.show_title = QLabel()
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
         self.show_title.setAlignment( QtCore.Qt.AlignCenter )
         self.show_title.setFont(show_title_font)
 
-        info_area = QtGui.QWidget()
-        info_layout = QtGui.QGridLayout()
+        info_area = QWidget()
+        info_layout = QGridLayout()
 
-        self.show_image = QtGui.QLabel()
+        self.show_image = QLabel()
         self.show_image.setAlignment( QtCore.Qt.AlignTop )
-        self.show_info = QtGui.QLabel()
+        self.show_info = QLabel()
         self.show_info.setWordWrap(True)
         self.show_info.setAlignment( QtCore.Qt.AlignTop )
-        self.show_description = QtGui.QLabel()
+        self.show_description = QLabel()
         self.show_description.setWordWrap(True)
         self.show_description.setAlignment( QtCore.Qt.AlignTop )
 
@@ -1229,8 +1514,8 @@ class DetailsWidget(QtGui.QWidget):
 
         info_area.setLayout(info_layout)
 
-        scroll_area = QtGui.QScrollArea()
-        scroll_area.setBackgroundRole(QtGui.QPalette.Light)
+        scroll_area = QScrollArea()
+        scroll_area.setBackgroundRole(QPalette.Light)
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
 
@@ -1253,9 +1538,10 @@ class DetailsWidget(QtGui.QWidget):
         # Load show info
         self.show_info.setText('Wait...')
         self.worker_call('get_show_details', self.r_details_loaded, show)
+        api_info = self.worker.engine.api_info
 
         # Load show image
-        filename = utils.get_filename('cache', "f_%s.jpg" % show['id'])
+        filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
 
         if os.path.isfile(filename):
             self.s_show_image(filename)
@@ -1296,25 +1582,32 @@ class DetailsWidget(QtGui.QWidget):
         else:
             self.show_info.setText( 'There was an error while getting details.' )
 
-class AddDialog(QtGui.QDialog):
+
+class AddDialog(QDialog):
     worker = None
     selected_show = None
 
-    def __init__(self, parent, worker):
-        QtGui.QMainWindow.__init__(self, parent)
+    def __init__(self, parent, worker, current_status, default=None):
+        QMainWindow.__init__(self, parent)
         self.setMinimumSize(700, 500)
         self.setWindowTitle('Search/Add from Remote')
         self.worker = worker
+        self.current_status = current_status
+        self.default = default
+        if default:
+            self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
 
-        layout = QtGui.QGridLayout()
+        layout = QGridLayout()
 
         # Create top layout
-        top_layout = QtGui.QHBoxLayout()
-        search_lbl = QtGui.QLabel('Search terms:')
-        self.search_txt = QtGui.QLineEdit(self)
+        top_layout = QHBoxLayout()
+        search_lbl = QLabel('Search terms:')
+        self.search_txt = QLineEdit(self)
         self.search_txt.returnPressed.connect(self.s_search)
         self.search_txt.setFocus()
-        self.search_btn = QtGui.QPushButton('Search')
+        if default:
+            self.search_txt.setText(default)
+        self.search_btn = QPushButton('Search')
         self.search_btn.clicked.connect(self.s_search)
         top_layout.addWidget(search_lbl)
         top_layout.addWidget(self.search_txt)
@@ -1322,22 +1615,25 @@ class AddDialog(QtGui.QDialog):
 
         # Create table
         columns = ['Title', 'Type', 'Total']
-        self.table = QtGui.QTableWidget()
+        self.table = QTableWidget()
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setHighlightSections(False)
-        self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
-        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
+        if pyqt_version is 5:
+            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        else:
+            self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
         self.table.currentItemChanged.connect(self.s_show_selected)
         #self.table.doubleClicked.connect(self.s_show_details)
 
-        bottom_buttons = QtGui.QDialogButtonBox(self)
-        bottom_buttons.addButton("Cancel", QtGui.QDialogButtonBox.RejectRole)
-        self.select_btn = bottom_buttons.addButton("Add", QtGui.QDialogButtonBox.AcceptRole)
+        bottom_buttons = QDialogButtonBox(self)
+        bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
+        self.select_btn = bottom_buttons.addButton("Add", QDialogButtonBox.AcceptRole)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
@@ -1380,7 +1676,7 @@ class AddDialog(QtGui.QDialog):
 
     def s_add(self):
         if self.selected_show:
-            self.worker_call('add_show', self.r_added, self.selected_show)
+            self.worker_call('add_show', self.r_added, self.selected_show, self.current_status)
 
     # Worker responses
     def r_searched(self, result):
@@ -1399,6 +1695,9 @@ class AddDialog(QtGui.QDialog):
                 self.table.setItem(i, 2, ShowItem(str(res['total'])))
 
                 i += 1
+            if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!
+                self.s_show_selected(self.table.item(0, 0))
+            self.table.setCurrentItem(self.table.item(0, 0))
         else:
             self.table.setRowCount(0)
 
@@ -1407,10 +1706,11 @@ class AddDialog(QtGui.QDialog):
 
     def r_added(self, result):
         if result['success']:
-            pass
+            if self.default:
+                self.accept()
 
 
-class SettingsDialog(QtGui.QDialog):
+class SettingsDialog(QDialog):
     worker = None
     config = None
     configfile = None
@@ -1418,84 +1718,89 @@ class SettingsDialog(QtGui.QDialog):
     saved = QtCore.pyqtSignal()
 
     def __init__(self, parent, worker, config, configfile):
-        QtGui.QDialog.__init__(self, parent)
+        QDialog.__init__(self, parent)
 
         self.worker = worker
         self.config = config
         self.configfile = configfile
         self.setStyleSheet("QGroupBox { font-weight: bold; } ")
         self.setWindowTitle('Settings')
-        layout = QtGui.QGridLayout()
+        layout = QGridLayout()
 
         # Categories
-        self.category_list = QtGui.QListWidget()
-        category_media = QtGui.QListWidgetItem(getIcon('media-playback-start'), 'Media', self.category_list)
-        category_sync = QtGui.QListWidgetItem(getIcon('view-refresh'), 'Sync', self.category_list)
-        category_ui = QtGui.QListWidgetItem(getIcon('window-new'), 'User Interface', self.category_list)
-        category_theme = QtGui.QListWidgetItem(getIcon('applications-graphics'), 'Theme', self.category_list)
-        self.category_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.category_list = QListWidget()
+        category_media = QListWidgetItem(getIcon('media-playback-start'), 'Media', self.category_list)
+        category_sync = QListWidgetItem(getIcon('view-refresh'), 'Sync', self.category_list)
+        category_ui = QListWidgetItem(getIcon('window-new'), 'User Interface', self.category_list)
+        category_theme = QListWidgetItem(getIcon('applications-graphics'), 'Theme', self.category_list)
+        self.category_list.setSelectionMode(QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
         self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
         self.category_list.setFocus()
         self.category_list.currentItemChanged.connect(self.s_switch_page)
 
         # Media tab
-        page_media = QtGui.QWidget()
-        page_media_layout = QtGui.QVBoxLayout()
+        page_media = QWidget()
+        page_media_layout = QVBoxLayout()
         page_media_layout.setAlignment(QtCore.Qt.AlignTop)
 
         # Group: Media settings
-        g_media = QtGui.QGroupBox('Media settings')
+        g_media = QGroupBox('Media settings')
         g_media.setFlat(True)
-        g_media_layout = QtGui.QFormLayout()
-        self.tracker_enabled = QtGui.QCheckBox()
+        g_media_layout = QFormLayout()
+        self.tracker_enabled = QCheckBox()
         self.tracker_enabled.toggled.connect(self.tracker_type_change)
-        self.tracker_type_local = QtGui.QRadioButton('Local')
+        self.tracker_type_local = QRadioButton('Local')
         self.tracker_type_local.toggled.connect(self.tracker_type_change)
-        self.tracker_type_plex = QtGui.QRadioButton('Plex media server')
+        self.tracker_type_plex = QRadioButton('Plex media server')
         self.tracker_type_plex.toggled.connect(self.tracker_type_change)
-        self.plex_host = QtGui.QLineEdit()
-        self.plex_port = QtGui.QLineEdit()
-        self.tracker_interval = QtGui.QSpinBox()
+        self.plex_host = QLineEdit()
+        self.plex_port = QLineEdit()
+        self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
-        self.tracker_process = QtGui.QLineEdit()
-        self.tracker_update_wait = QtGui.QSpinBox()
+        self.tracker_process = QLineEdit()
+        self.tracker_update_wait = QSpinBox()
         self.tracker_update_wait.setRange(0, 1000)
         self.tracker_update_wait.setMaximumWidth(60)
-        self.tracker_update_close = QtGui.QCheckBox()
-        self.tracker_update_prompt = QtGui.QCheckBox()
+        self.tracker_update_close = QCheckBox()
+        self.tracker_update_prompt = QCheckBox()
+        self.tracker_not_found_prompt = QCheckBox()
 
-        g_media_layout.addRow( 'Enable tracker', self.tracker_enabled )
-        g_media_layout.addRow( self.tracker_type_local )
-        g_media_layout.addRow( self.tracker_type_plex )
-        g_media_layout.addRow( 'Tracker interval (seconds)', self.tracker_interval )
-        g_media_layout.addRow( 'Process name (regex)', self.tracker_process )
-        g_media_layout.addRow( 'Plex host', self.plex_host )
-        g_media_layout.addRow( 'Plex port', self.plex_port )
-        g_media_layout.addRow( 'Wait before updating (seconds)', self.tracker_update_wait )
-        g_media_layout.addRow( 'Wait until the player is closed', self.tracker_update_close )
-        g_media_layout.addRow( 'Ask before updating', self.tracker_update_prompt )
+        g_media_layout.addRow('Enable tracker', self.tracker_enabled)
+        g_media_layout.addRow(self.tracker_type_local)
+        g_media_layout.addRow(self.tracker_type_plex)
+        g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
+        g_media_layout.addRow('Process name (regex)', self.tracker_process)
+        g_media_layout.addRow('Plex host', self.plex_host)
+        g_media_layout.addRow('Plex port', self.plex_port)
+        g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
+        g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
+        g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
+        g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
 
         # Group: Play Next
-        g_playnext = QtGui.QGroupBox('Play Next')
+        g_playnext = QGroupBox('Play Next')
         g_playnext.setFlat(True)
-        self.player = QtGui.QLineEdit()
-        self.player_browse = QtGui.QPushButton('Browse...')
+        self.player = QLineEdit()
+        self.player_browse = QPushButton('Browse...')
         self.player_browse.clicked.connect(self.s_player_browse)
-        self.searchdir = QtGui.QLineEdit()
-        self.searchdir_browse = QtGui.QPushButton('Browse...')
+        self.searchdir = QLineEdit()
+        self.searchdir_browse = QPushButton('Browse...')
         self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
+        self.library_autoscan = QCheckBox()
 
-        g_playnext_layout = QtGui.QGridLayout()
-        g_playnext_layout.addWidget( QtGui.QLabel('Player'),            0, 0, 1, 1)
-        g_playnext_layout.addWidget( self.player,                       0, 1, 1, 1)
-        g_playnext_layout.addWidget( self.player_browse,                0, 2, 1, 1)
-        g_playnext_layout.addWidget( QtGui.QLabel('Media directory'),   1, 0, 1, 1)
-        g_playnext_layout.addWidget( self.searchdir,                    1, 1, 1, 1)
-        g_playnext_layout.addWidget( self.searchdir_browse,             1, 2, 1, 1)
+        g_playnext_layout = QGridLayout()
+        g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
+        g_playnext_layout.addWidget(self.player,                         0, 1, 1, 1)
+        g_playnext_layout.addWidget(self.player_browse,                  0, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Media directory'),           1, 0, 1, 1)
+        g_playnext_layout.addWidget(self.searchdir,                      1, 1, 1, 1)
+        g_playnext_layout.addWidget(self.searchdir_browse,               1, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Rescan Library at startup'), 2, 0, 1, 2)
+        g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
@@ -1505,42 +1810,42 @@ class SettingsDialog(QtGui.QDialog):
         page_media.setLayout(page_media_layout)
 
         # Sync tab
-        page_sync = QtGui.QWidget()
-        page_sync_layout = QtGui.QVBoxLayout()
+        page_sync = QWidget()
+        page_sync_layout = QVBoxLayout()
         page_sync_layout.setAlignment(QtCore.Qt.AlignTop)
 
         # Group: Autoretrieve
-        g_autoretrieve = QtGui.QGroupBox('Autoretrieve')
+        g_autoretrieve = QGroupBox('Autoretrieve')
         g_autoretrieve.setFlat(True)
-        self.autoretrieve_off = QtGui.QRadioButton('Disabled')
-        self.autoretrieve_always = QtGui.QRadioButton('Always at start')
-        self.autoretrieve_days = QtGui.QRadioButton('After n days')
+        self.autoretrieve_off = QRadioButton('Disabled')
+        self.autoretrieve_always = QRadioButton('Always at start')
+        self.autoretrieve_days = QRadioButton('After n days')
         self.autoretrieve_days.toggled.connect(self.s_autoretrieve_days)
-        self.autoretrieve_days_n = QtGui.QSpinBox()
+        self.autoretrieve_days_n = QSpinBox()
         self.autoretrieve_days_n.setRange(1, 100)
-        g_autoretrieve_layout = QtGui.QGridLayout()
+        g_autoretrieve_layout = QGridLayout()
         g_autoretrieve_layout.setColumnStretch(0, 1)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_off,      0, 0, 1, 1)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_always,   1, 0, 1, 1)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_days,     2, 0, 1, 1)
-        g_autoretrieve_layout.addWidget(self.autoretrieve_days_n,   2, 1, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_off,    0, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_always, 1, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days,   2, 0, 1, 1)
+        g_autoretrieve_layout.addWidget(self.autoretrieve_days_n, 2, 1, 1, 1)
         g_autoretrieve.setLayout(g_autoretrieve_layout)
 
         # Group: Autosend
-        g_autosend = QtGui.QGroupBox('Autosend')
+        g_autosend = QGroupBox('Autosend')
         g_autosend.setFlat(True)
-        self.autosend_off = QtGui.QRadioButton('Disabled')
-        self.autosend_always = QtGui.QRadioButton('Immediately after every change')
-        self.autosend_hours = QtGui.QRadioButton('After n hours')
+        self.autosend_off = QRadioButton('Disabled')
+        self.autosend_always = QRadioButton('Immediately after every change')
+        self.autosend_hours = QRadioButton('After n hours')
         self.autosend_hours.toggled.connect(self.s_autosend_hours)
-        self.autosend_hours_n = QtGui.QSpinBox()
+        self.autosend_hours_n = QSpinBox()
         self.autosend_hours_n.setRange(1, 1000)
-        self.autosend_size = QtGui.QRadioButton('After the queue reaches n items')
+        self.autosend_size = QRadioButton('After the queue reaches n items')
         self.autosend_size.toggled.connect(self.s_autosend_size)
-        self.autosend_size_n = QtGui.QSpinBox()
+        self.autosend_size_n = QSpinBox()
         self.autosend_size_n.setRange(2, 20)
-        self.autosend_at_exit = QtGui.QCheckBox('At exit')
-        g_autosend_layout = QtGui.QGridLayout()
+        self.autosend_at_exit = QCheckBox('At exit')
+        g_autosend_layout = QGridLayout()
         g_autosend_layout.setColumnStretch(0, 1)
         g_autosend_layout.addWidget(self.autosend_off,      0, 0, 1, 1)
         g_autosend_layout.addWidget(self.autosend_always,   1, 0, 1, 1)
@@ -1552,39 +1857,39 @@ class SettingsDialog(QtGui.QDialog):
         g_autosend.setLayout(g_autosend_layout)
 
         # Group: Extra
-        g_extra = QtGui.QGroupBox('Additional options')
+        g_extra = QGroupBox('Additional options')
         g_extra.setFlat(True)
-        self.auto_status_change = QtGui.QCheckBox('Change status automatically')
+        self.auto_status_change = QCheckBox('Change status automatically')
         self.auto_status_change.toggled.connect(self.s_auto_status_change)
-        self.auto_status_change_if_scored = QtGui.QCheckBox('Change status automatically only if scored')
-        self.auto_date_change = QtGui.QCheckBox('Change start and finish dates automatically')
-        g_extra_layout = QtGui.QVBoxLayout()
+        self.auto_status_change_if_scored = QCheckBox('Change status automatically only if scored')
+        self.auto_date_change = QCheckBox('Change start and finish dates automatically')
+        g_extra_layout = QVBoxLayout()
         g_extra_layout.addWidget(self.auto_status_change)
         g_extra_layout.addWidget(self.auto_status_change_if_scored)
         g_extra_layout.addWidget(self.auto_date_change)
         g_extra.setLayout(g_extra_layout)
 
         # Sync layout
-        page_sync_layout.addWidget( g_autoretrieve )
-        page_sync_layout.addWidget( g_autosend )
-        page_sync_layout.addWidget( g_extra )
+        page_sync_layout.addWidget(g_autoretrieve)
+        page_sync_layout.addWidget(g_autosend)
+        page_sync_layout.addWidget(g_extra)
         page_sync.setLayout(page_sync_layout)
 
         # UI tab
-        page_ui = QtGui.QWidget()
-        page_ui_layout = QtGui.QFormLayout()
+        page_ui = QWidget()
+        page_ui_layout = QFormLayout()
         page_ui_layout.setAlignment(QtCore.Qt.AlignTop)
 
         # Group: Icon
-        g_icon = QtGui.QGroupBox('Notification Icon')
+        g_icon = QGroupBox('Notification Icon')
         g_icon.setFlat(True)
-        self.tray_icon = QtGui.QCheckBox('Show tray icon')
+        self.tray_icon = QCheckBox('Show tray icon')
         self.tray_icon.toggled.connect(self.s_tray_icon)
-        self.close_to_tray = QtGui.QCheckBox('Close to tray')
-        self.start_in_tray = QtGui.QCheckBox('Start minimized to tray')
-        self.tray_api_icon = QtGui.QCheckBox('Use API icon as tray icon')
-        self.notifications = QtGui.QCheckBox('Show notification when tracker detects new media')
-        g_icon_layout = QtGui.QVBoxLayout()
+        self.close_to_tray = QCheckBox('Close to tray')
+        self.start_in_tray = QCheckBox('Start minimized to tray')
+        self.tray_api_icon = QCheckBox('Use API icon as tray icon')
+        self.notifications = QCheckBox('Show notification when tracker detects new media')
+        g_icon_layout = QVBoxLayout()
         g_icon_layout.addWidget(self.tray_icon)
         g_icon_layout.addWidget(self.close_to_tray)
         g_icon_layout.addWidget(self.start_in_tray)
@@ -1593,41 +1898,61 @@ class SettingsDialog(QtGui.QDialog):
         g_icon.setLayout(g_icon_layout)
 
         # Group: Window
-        g_window = QtGui.QGroupBox('Window')
+        g_window = QGroupBox('Window')
         g_window.setFlat(True)
-        self.remember_geometry = QtGui.QCheckBox('Remember window size and position')
-        g_window_layout = QtGui.QVBoxLayout()
+        self.remember_geometry = QCheckBox('Remember window size and position')
+        self.remember_columns = QCheckBox('Remember column layouts and widths')
+        self.columns_per_api = QCheckBox('Use different visible columns per API')
+        g_window_layout = QVBoxLayout()
         g_window_layout.addWidget(self.remember_geometry)
+        g_window_layout.addWidget(self.remember_columns)
+        g_window_layout.addWidget(self.columns_per_api)
         g_window.setLayout(g_window_layout)
+
+        # Group: Lists
+        g_lists = QGroupBox('Lists')
+        g_lists.setFlat(True)
+        self.filter_bar_position = QComboBox()
+        filter_bar_positions = [(FilterBar.PositionHidden,     'Hidden'),
+                                (FilterBar.PositionAboveLists, 'Above lists'),
+                                (FilterBar.PositionBelowLists, 'Below lists')]
+        for (n, label) in filter_bar_positions:
+            self.filter_bar_position.addItem(label, n)
+        self.filter_global = QCheckBox('Update filter for all lists (slow)')
+        g_lists_layout = QFormLayout()
+        g_lists_layout.addRow('Filter bar position:', self.filter_bar_position)
+        g_lists_layout.addRow(self.filter_global)
+        g_lists.setLayout(g_lists_layout)
 
         # UI layout
         page_ui_layout.addWidget(g_icon)
         page_ui_layout.addWidget(g_window)
+        page_ui_layout.addWidget(g_lists)
         page_ui.setLayout(page_ui_layout)
 
         # Theming tab
-        page_theme = QtGui.QWidget()
-        page_theme_layout = QtGui.QFormLayout()
+        page_theme = QWidget()
+        page_theme_layout = QFormLayout()
         page_theme_layout.setAlignment(QtCore.Qt.AlignTop)
 
         # Group: Episode Bar
-        g_ep_bar = QtGui.QGroupBox('Episode Bar')
+        g_ep_bar = QGroupBox('Episode Bar')
         g_ep_bar.setFlat(True)
-        self.ep_bar_style = QtGui.QComboBox()
+        self.ep_bar_style = QComboBox()
         ep_bar_styles = [(EpisodeBar.BarStyleBasic,  'Basic'),
                          (EpisodeBar.BarStyle04,     'Trackma v0.4 Dual'),
                          (EpisodeBar.BarStyleHybrid, 'Hybrid Dual')]
-        for (n,label) in ep_bar_styles:
+        for (n, label) in ep_bar_styles:
             self.ep_bar_style.addItem(label, n)
         self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
-        self.ep_bar_text = QtGui.QCheckBox('Show text label')
-        g_ep_bar_layout = QtGui.QVBoxLayout()
-        g_ep_bar_layout.addWidget(self.ep_bar_style)
-        g_ep_bar_layout.addWidget(self.ep_bar_text)
+        self.ep_bar_text = QCheckBox('Show text label')
+        g_ep_bar_layout = QFormLayout()
+        g_ep_bar_layout.addRow('Style:', self.ep_bar_style)
+        g_ep_bar_layout.addRow(self.ep_bar_text)
         g_ep_bar.setLayout(g_ep_bar_layout)
 
         # Group: Colour scheme
-        g_scheme = QtGui.QGroupBox('Color Scheme')
+        g_scheme = QGroupBox('Color Scheme')
         g_scheme.setFlat(True)
         col_tabs = [('rows',     '&Row highlights'),
                     ('progress', '&Progress widget')]
@@ -1644,25 +1969,26 @@ class SettingsDialog(QtGui.QDialog):
                                    ('progress_complete', 'Complete')]
         self.color_buttons = []
         self.syscolor_buttons = []
-        g_scheme_layout = QtGui.QGridLayout()
-        tw_scheme = QtGui.QTabWidget()
-        for (key,tab_title) in col_tabs:
-            page = QtGui.QFrame()
-            page_layout = QtGui.QGridLayout()
+        g_scheme_layout = QGridLayout()
+        tw_scheme = QTabWidget()
+        for (key, tab_title) in col_tabs:
+            page = QFrame()
+            page_layout = QGridLayout()
             col = 0
-            for (key,label) in self.colors[key]: # Generate widgets from the keys and values
-                self.color_buttons.append( QtGui.QPushButton() )
+            # Generate widgets from the keys and values
+            for (key, label) in self.colors[key]:
+                self.color_buttons.append(QPushButton())
                 # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
                 self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
-                self.color_buttons[-1].clicked.connect( self.s_color_picker(key,False) )
-                self.syscolor_buttons.append( QtGui.QPushButton('System Colors') )
-                self.syscolor_buttons[-1].clicked.connect( self.s_color_picker(key,True) )
-                page_layout.addWidget( QtGui.QLabel(label),     col, 0, 1, 1 )
-                page_layout.addWidget( self.color_buttons[-1],  col, 1, 1, 1 )
-                page_layout.addWidget( self.syscolor_buttons[-1], col, 2, 1, 1 )
-                col+=1
+                self.color_buttons[-1].clicked.connect(self.s_color_picker(key, False))
+                self.syscolor_buttons.append(QPushButton('System Colors'))
+                self.syscolor_buttons[-1].clicked.connect(self.s_color_picker(key, True))
+                page_layout.addWidget(QLabel(label),             col, 0, 1, 1)
+                page_layout.addWidget(self.color_buttons[-1],    col, 1, 1, 1)
+                page_layout.addWidget(self.syscolor_buttons[-1], col, 2, 1, 1)
+                col += 1
             page.setLayout(page_layout)
-            tw_scheme.addTab(page,tab_title)
+            tw_scheme.addTab(page, tab_title)
         g_scheme_layout.addWidget(tw_scheme)
         g_scheme.setLayout(g_scheme_layout)
 
@@ -1672,17 +1998,22 @@ class SettingsDialog(QtGui.QDialog):
         page_theme.setLayout(page_theme_layout)
 
         # Content
-        self.contents = QtGui.QStackedWidget()
+        self.contents = QStackedWidget()
         self.contents.addWidget(page_media)
         self.contents.addWidget(page_sync)
         self.contents.addWidget(page_ui)
         self.contents.addWidget(page_theme)
-        self.contents.layout().setMargin(0)
+        if pyqt_version is not 5:
+            self.contents.layout().setMargin(0)
 
         # Bottom buttons
-        bottombox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Apply|QtGui.QDialogButtonBox.Cancel)
+        bottombox = QDialogButtonBox(
+            QDialogButtonBox.Ok
+            | QDialogButtonBox.Apply
+            | QDialogButtonBox.Cancel
+        )
         bottombox.accepted.connect(self.s_save)
-        bottombox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(self._save)
+        bottombox.button(QDialogButtonBox.Apply).clicked.connect(self._save)
         bottombox.rejected.connect(self.reject)
 
         # Main layout finish
@@ -1708,9 +2039,11 @@ class SettingsDialog(QtGui.QDialog):
         self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait_s'))
         self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
         self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
+        self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
 
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
+        self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
 
@@ -1754,6 +2087,10 @@ class SettingsDialog(QtGui.QDialog):
         self.tray_api_icon.setChecked(self.config['tray_api_icon'])
         self.notifications.setChecked(self.config['notifications'])
         self.remember_geometry.setChecked(self.config['remember_geometry'])
+        self.remember_columns.setChecked(self.config['remember_columns'])
+        self.columns_per_api.setChecked(self.config['columns_per_api'])
+        self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
+        self.filter_global.setChecked(self.config['filter_global'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
@@ -1773,14 +2110,16 @@ class SettingsDialog(QtGui.QDialog):
         engine.set_config('tracker_enabled',       self.tracker_enabled.isChecked())
         engine.set_config('tracker_interval',      self.tracker_interval.value())
         engine.set_config('tracker_process',       str(self.tracker_process.text()))
-        engine.set_config('tracker_update_wait_s',   self.tracker_update_wait.value())
+        engine.set_config('tracker_update_wait_s', self.tracker_update_wait.value())
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
+        engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
 
-        engine.set_config('player',     unicode(self.player.text()))
-        engine.set_config('searchdir',  unicode(self.searchdir.text()))
-        engine.set_config('plex_host',  unicode(self.plex_host.text()))
-        engine.set_config('plex_port',  unicode(self.plex_port.text()))
+        engine.set_config('player',            self.player.text())
+        engine.set_config('searchdir',         self.searchdir.text())
+        engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
+        engine.set_config('plex_host',         self.plex_host.text())
+        engine.set_config('plex_port',         self.plex_port.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -1805,8 +2144,8 @@ class SettingsDialog(QtGui.QDialog):
         else:
             engine.set_config('autosend', 'off')
 
-        engine.set_config('autosend_hours',   self.autosend_hours_n.value())
-        engine.set_config('autosend_size',   self.autosend_size_n.value())
+        engine.set_config('autosend_hours', self.autosend_hours_n.value())
+        engine.set_config('autosend_size',  self.autosend_size_n.value())
 
         engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
         engine.set_config('auto_status_change', self.auto_status_change.isChecked())
@@ -1821,8 +2160,12 @@ class SettingsDialog(QtGui.QDialog):
         self.config['tray_api_icon'] = self.tray_api_icon.isChecked()
         self.config['notifications'] = self.notifications.isChecked()
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
+        self.config['remember_columns'] = self.remember_columns.isChecked()
+        self.config['columns_per_api'] = self.columns_per_api.isChecked()
+        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex())
+        self.config['filter_global'] = self.filter_global.isChecked()
 
-        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex()).toInt()[0]
+        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex())
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
 
         self.config['colors'] = self.color_values
@@ -1883,16 +2226,19 @@ class SettingsDialog(QtGui.QDialog):
         self.auto_status_change_if_scored.setEnabled(checked)
 
     def s_player_browse(self):
-        self.player.setText( QtGui.QFileDialog.getOpenFileName(caption='Choose player executable') )
+        if pyqt_version is 5:
+            self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable')[0])
+        else:
+            self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable'))
 
     def s_searchdir_browse(self):
-        self.searchdir.setText( QtGui.QFileDialog.getExistingDirectory(caption='Choose media directory') )
+        self.searchdir.setText(QFileDialog.getExistingDirectory(caption='Choose media directory'))
 
     def s_switch_page(self, new, old):
         if not new:
             new = old
 
-        self.contents.setCurrentIndex( self.category_list.row( new ) )
+        self.contents.setCurrentIndex(self.category_list.row(new))
 
     def s_color_picker(self, key, system):
         return lambda: self.color_picker(key, system)
@@ -1906,41 +2252,42 @@ class SettingsDialog(QtGui.QDialog):
                 self.update_colors()
         else:
             current = getColor(self.color_values[key])
-            result = QtGui.QColorDialog.getColor(current)
+            result = QColorDialog.getColor(current)
             if result.isValid() and result is not current:
                 self.color_values[key] = str(result.name())
                 self.update_colors()
 
     def update_colors(self):
-        for ((key,label),color) in zip(self.colors['rows']+self.colors['progress'],self.color_buttons):
+        for ((key, label), color) in zip(self.colors['rows']+self.colors['progress'], self.color_buttons):
             color.setStyleSheet('background-color: ' + getColor(self.color_values[key]).name())
 
-class ThemedColorPicker(QtGui.QDialog):
-    def __init__(self,parent=None,default=None):
-        QtGui.QDialog.__init__(self,parent)
+
+class ThemedColorPicker(QDialog):
+    def __init__(self, parent=None, default=None):
+        QDialog.__init__(self, parent)
         self.setWindowTitle('Select Color')
-        layout = QtGui.QVBoxLayout()
-        colorbox = QtGui.QGridLayout()
+        layout = QVBoxLayout()
+        colorbox = QGridLayout()
         self.colorString = default
 
-        self.groups = [0,1,2]
-        self.roles = [1,2,3,4,5,11,12,16] # Only use background roles
+        self.groups = [0, 1, 2]
+        self.roles = [1, 2, 3, 4, 5, 11, 12, 16]  # Only use background roles
         self.colors = []
         row = 0
         # Make colored buttons for selection
         for group in self.groups:
             col = 0
             for role in self.roles:
-                self.colors.append( QtGui.QPushButton() )
-                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor( QPalette().color(group, role) ).name() )
+                self.colors.append(QPushButton())
+                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor(QPalette().color(group, role)).name())
                 self.colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
-                self.colors[-1].clicked.connect( self.s_select(group,role) )
+                self.colors[-1].clicked.connect(self.s_select(group, role))
                 colorbox.addWidget(self.colors[-1], row, col, 1, 1)
                 col += 1
             row += 1
-        bottombox = QtGui.QDialogButtonBox()
-        bottombox.addButton(QtGui.QDialogButtonBox.Ok)
-        bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
+        bottombox = QDialogButtonBox()
+        bottombox.addButton(QDialogButtonBox.Ok)
+        bottombox.addButton(QDialogButtonBox.Cancel)
         bottombox.accepted.connect(self.accept)
         bottombox.rejected.connect(self.reject)
         layout.addLayout(colorbox)
@@ -1958,61 +2305,67 @@ class ThemedColorPicker(QtGui.QDialog):
         dialog = ThemedColorPicker(parent, default)
         result = dialog.exec_()
 
-        if result == QtGui.QDialog.Accepted:
+        if result == QDialog.Accepted:
             return dialog.colorString
         else:
             return None
 
-class AccountDialog(QtGui.QDialog):
+
+class AccountDialog(QDialog):
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
 
     def __init__(self, parent, accountman):
-        QtGui.QDialog.__init__(self, parent)
+        QDialog.__init__(self, parent)
 
         self.accountman = accountman
 
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
 
         self.setWindowTitle('Select Account')
 
         # Create list
-        self.table = QtGui.QTableWidget()
+        self.table = QTableWidget()
         self.table.horizontalHeader().setHighlightSections(False)
-        self.table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
         self.table.doubleClicked.connect(self.select)
 
-        bottom_layout = QtGui.QHBoxLayout()
-        self.remember_chk = QtGui.QCheckBox('Remember')
+        bottom_layout = QHBoxLayout()
+        self.remember_chk = QCheckBox('Remember')
         if self.accountman.get_default() is not None:
             self.remember_chk.setChecked(True)
-        cancel_btn = QtGui.QPushButton('Cancel')
+        cancel_btn = QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
-        add_btn = QtGui.QPushButton('Add')
+        add_btn = QPushButton('Add')
         add_btn.clicked.connect(self.add)
-        delete_btn = QtGui.QPushButton('Delete')
-        delete_btn.setToolTip('Remove this account from Trackma')
-        delete_btn.clicked.connect(self.delete)
-        purge_btn = QtGui.QPushButton('Purge')
-        purge_btn.setToolTip('Clear local DB for this account')
-        purge_btn.clicked.connect(self.purge)
-        select_btn = QtGui.QPushButton('Select')
+        self.edit_btns = QComboBox()
+        self.edit_btns.blockSignals(True)
+        self.edit_btns.addItem('Edit...')
+        self.edit_btns.addItem('Update')
+        self.edit_btns.addItem('Delete')
+        self.edit_btns.addItem('Purge')
+        self.edit_btns.setItemData(1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setCurrentIndex(0)
+        self.edit_btns.blockSignals(False)
+        self.edit_btns.activated.connect(self.s_edit)
+        select_btn = QPushButton('Select')
         select_btn.clicked.connect(self.select)
-        bottom_layout.addWidget(self.remember_chk) #, 1, QtCore.Qt.AlignRight)
+        bottom_layout.addWidget(self.remember_chk)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
-        bottom_layout.addWidget(delete_btn)
-        bottom_layout.addWidget(purge_btn)
+        bottom_layout.addWidget(self.edit_btns)
         bottom_layout.addWidget(select_btn)
 
         # Get icons
         self.icons = dict()
-        for libname, lib in utils.available_libs.iteritems():
-            self.icons[libname] = QtGui.QIcon(lib[1])
+        for libname, lib in utils.available_libs.items():
+            self.icons[libname] = QIcon(lib[1])
 
         # Populate list
         self.rebuild()
@@ -2029,12 +2382,31 @@ class AccountDialog(QtGui.QDialog):
             self.accountman.add_account(username, password, api)
             self.rebuild()
 
+    def edit(self):
+        self.edit_btns.blockSignals(True)
+        self.edit_btns.setCurrentIndex(0)
+        self.edit_btns.blockSignals(False)
+        try:
+            selected_account_num = self.table.selectedItems()[0].num
+            acct = self.accountman.get_account(selected_account_num)
+            result = AccountAddDialog.do(icons=self.icons,
+                                         edit=True,
+                                         username=acct['username'],
+                                         password=acct['password'],
+                                         api=acct['api'])
+            if result:
+                (username, password, api) = result
+                self.accountman.edit_account(selected_account_num, username, password, api)
+                self.rebuild()
+        except IndexError:
+            self._error("Please select an account.")
+
     def delete(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QtGui.QMessageBox.question(self, 'Confirmation', 'Do you want to delete the selected account?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
 
-            if reply == QtGui.QMessageBox.Yes:
+            if reply == QMessageBox.Yes:
                 self.accountman.delete_account(selected_account_num)
                 self.rebuild()
         except IndexError:
@@ -2043,13 +2415,21 @@ class AccountDialog(QtGui.QDialog):
     def purge(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QtGui.QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
 
-            if reply == QtGui.QMessageBox.Yes:
+            if reply == QMessageBox.Yes:
                 self.accountman.purge_account(selected_account_num)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
+
+    def s_edit(self, index):
+        if   index is 1:
+            self.edit()
+        elif index is 2:
+            self.delete()
+        elif index is 3:
+            self.purge()
 
     def rebuild(self):
         self.table.clear()
@@ -2062,13 +2442,16 @@ class AccountDialog(QtGui.QDialog):
         accounts = self.accountman.get_accounts()
         i = 0
         for k, account in accounts:
-            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
+            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2)
             self.table.setItem(i, 0, AccountItem(k, account['username']))
             self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons[account['api']]))
 
             i += 1
 
-        self.table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
+        if pyqt_version is 5:
+            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        else:
+            self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
 
     def select(self, checked):
         try:
@@ -2083,9 +2466,10 @@ class AccountDialog(QtGui.QDialog):
         self.close()
 
     def _error(self, msg):
-        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
-class AccountItem(QtGui.QTableWidgetItem):
+
+class AccountItem(QTableWidgetItem):
     """
     Regular item able to save account item
 
@@ -2093,34 +2477,37 @@ class AccountItem(QtGui.QTableWidgetItem):
     num = None
 
     def __init__(self, num, text, icon=None):
-        QtGui.QTableWidgetItem.__init__(self, text)
+        QTableWidgetItem.__init__(self, text)
         self.num = num
         if icon:
-            self.setIcon( icon )
+            self.setIcon(icon)
 
-class ShowsTableWidget(QtGui.QTableWidget):
+
+class ShowsTableWidget(QTableWidget):
     """
     Regular table widget with context menu for show actions.
 
     """
-    def __init__(self, parent = None):
-        QtGui.QTableWidget.__init__(self, parent)
+    def __init__(self, parent=None):
+        QTableWidget.__init__(self, parent)
 
     def contextMenuEvent(self, event):
         action = self.context_menu.exec_(event.globalPos())
 
-class ShowItem(QtGui.QTableWidgetItem):
+
+class ShowItem(QTableWidgetItem):
     """
     Regular item able to show colors and alignment
 
     """
 
-    def __init__(self, text, color=None):
-        QtGui.QTableWidgetItem.__init__(self, text)
-        #if alignment:
-        #    self.setTextAlignment( alignment )
+    def __init__(self, text, color=None, alignment=None):
+        QTableWidgetItem.__init__(self, text)
+        if alignment:
+            self.setTextAlignment(alignment)
         if color:
-            self.setBackgroundColor( color )
+            self.setBackground(color)
+
 
 class ShowItemNum(ShowItem):
     def __init__(self, num, text, color=None):
@@ -2130,6 +2517,7 @@ class ShowItemNum(ShowItem):
 
     def __lt__(self, other):
         return self.num < other.num
+
 
 class ShowItemDate(ShowItem):
     def __init__(self, date, color=None):
@@ -2143,7 +2531,7 @@ class ShowItemDate(ShowItem):
 
         self.date = date
 
-        ShowItem.__init__(self, datestr, color)
+        ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
 
     def __lt__(self, other):
         if self.date and other.date:
@@ -2151,7 +2539,18 @@ class ShowItemDate(ShowItem):
         else:
             return True
 
-class EpisodeBar(QtGui.QProgressBar):
+
+class FilterBar():
+    """
+    Constants relating to filter bar settings can live here.
+    """
+    # Position
+    PositionHidden = 0
+    PositionAboveLists = 1
+    PositionBelowLists = 2
+
+
+class EpisodeBar(QProgressBar):
     """
   Custom progress bar to show detailed information
   about episodes
@@ -2167,9 +2566,8 @@ class EpisodeBar(QtGui.QProgressBar):
     _bar_style = BarStyle04
     _show_text = False
 
-
     def __init__(self, parent, colors):
-        QtGui.QProgressBar.__init__(self, parent)
+        QProgressBar.__init__(self, parent)
         self.colors = colors
 
     def paintEvent(self, event):
@@ -2177,26 +2575,26 @@ class EpisodeBar(QtGui.QProgressBar):
 
         if self._bar_style is self.BarStyleBasic:
             painter = QtGui.QPainter(self)
-            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options = QStyleOptionProgressBar()
             prog_options.maximum = self.maximum()
             prog_options.progress = self.value()
             prog_options.rect = rect
             prog_options.text = '%d%%' % (self.value()*100/self.maximum())
             prog_options.textVisible = self._show_text
-            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
+            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
 
         elif self._bar_style is self.BarStyle04:
             painter = QtGui.QPainter(self)
-            painter.setBrush( getColor(self.colors['progress_bg']) )
+            painter.setBrush(getColor(self.colors['progress_bg']))
             painter.setPen(QtCore.Qt.transparent)
-            painter.drawRect( rect )
+            painter.drawRect(rect)
             self.paintSubValue(painter)
             if self.value() > 0:
                 if self.value() >= self.maximum():
-                    painter.setBrush( getColor(self.colors['progress_complete']) )
+                    painter.setBrush(getColor(self.colors['progress_complete']))
                     mid = self.width()
                 else:
-                    painter.setBrush( getColor(self.colors['progress_fg']) )
+                    painter.setBrush(getColor(self.colors['progress_fg']))
                     mid = int(self.width() / float(self.maximum()) * self.value())
                 progressRect = QtCore.QRect(0, 0, mid, self.height())
                 painter.drawRect(progressRect)
@@ -2208,12 +2606,12 @@ class EpisodeBar(QtGui.QProgressBar):
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
             painter.fillRect(rect, QtCore.Qt.transparent)
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-            prog_options = QtGui.QStyleOptionProgressBarV2()
+            prog_options = QStyleOptionProgressBar()
             prog_options.maximum = self.maximum()
             prog_options.progress = self.value()
             prog_options.rect = rect
             prog_options.text = '%d%%' % (self.value()*100/self.maximum())
-            self.style().drawControl(QtGui.QStyle.CE_ProgressBar, prog_options, painter)
+            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
             painter.setPen(QtCore.Qt.transparent)
             self.paintSubValue(painter)
@@ -2222,23 +2620,33 @@ class EpisodeBar(QtGui.QProgressBar):
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
             painter.drawImage(rect, buffer)
             if self._show_text:
-                self.style().drawControl(QtGui.QStyle.CE_ProgressBarLabel, prog_options, painter)
+                self.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
 
     def paintSubValue(self, painter):
         if self.subValue() > 0:
-            painter.setBrush( getColor(self.colors['progress_sub_bg']) )
+            painter.setBrush(getColor(self.colors['progress_sub_bg']))
             mid = int(self.width() / float(self.maximum()) * self.subValue())
-            progressRect = QtCore.QRect(0, self.height()-self._subheight, mid, self.height()-(self.height()-self._subheight))
+            progressRect = QtCore.QRect(
+                0,
+                self.height()-self._subheight,
+                mid,
+                self.height()-(self.height()-self._subheight)
+            )
             painter.drawRect(progressRect)
 
     def paintEpisodes(self, painter):
         if self.episodes():
             for episode in self.episodes():
-                painter.setBrush( getColor(self.colors['progress_sub_fg']) )
+                painter.setBrush(getColor(self.colors['progress_sub_fg']))
                 if episode <= self.maximum():
-                    start = int(self.width() / float(self.maximum()) * (episode -1))
+                    start = int(self.width() / float(self.maximum()) * (episode - 1))
                     finish = int(self.width() / float(self.maximum()) * episode)
-                    progressRect = QtCore.QRect(start, self.height()-self._subheight, finish-start, self.height()-(self.height()-self._subheight))
+                    progressRect = QtCore.QRect(
+                        start,
+                        self.height()-self._subheight,
+                        finish-start,
+                        self.height()-(self.height()-self._subheight)
+                    )
                     painter.drawRect(progressRect)
 
     def setSubValue(self, subvalue):
@@ -2263,42 +2671,49 @@ class EpisodeBar(QtGui.QProgressBar):
         self._bar_style = style
         self._show_text = show_text
 
-class AccountAddDialog(QtGui.QDialog):
-    def __init__(self, parent, icons):
-        QtGui.QDialog.__init__(self, parent)
+
+class AccountAddDialog(QDialog):
+    def __init__(self, parent, icons, edit=False, username='', password='', api=''):
+        QDialog.__init__(self, parent)
+        self.edit = edit
 
         # Build UI
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
 
-        formlayout = QtGui.QFormLayout()
-        self.lbl_username = QtGui.QLabel('Username:')
-        self.username = QtGui.QLineEdit()
+        formlayout = QFormLayout()
+        self.lbl_username = QLabel('Username:')
+        self.username = QLineEdit(username)
 
-        pin_layout = QtGui.QHBoxLayout()
-        self.lbl_password = QtGui.QLabel('Password:')
-        self.password = QtGui.QLineEdit()
-        self.api = QtGui.QComboBox()
+        pin_layout = QHBoxLayout()
+        self.lbl_password = QLabel('Password:')
+        self.password = QLineEdit(password)
+        self.api = QComboBox()
         self.api.currentIndexChanged.connect(self.s_refresh)
-        self.api_auth = QtGui.QLabel('Request PIN')
+        self.api_auth = QLabel('Request PIN')
         self.api_auth.setTextFormat(QtCore.Qt.RichText)
         self.api_auth.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         self.api_auth.setOpenExternalLinks(True)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
 
-        formlayout.addRow( QtGui.QLabel('Site:'), self.api )
-        formlayout.addRow( self.lbl_username, self.username )
-        formlayout.addRow( self.lbl_password, pin_layout )
+        formlayout.addRow(QLabel('Site:'), self.api)
+        formlayout.addRow(self.lbl_username, self.username)
+        formlayout.addRow(self.lbl_password, pin_layout)
 
-        bottombox = QtGui.QDialogButtonBox()
-        bottombox.addButton(QtGui.QDialogButtonBox.Save)
-        bottombox.addButton(QtGui.QDialogButtonBox.Cancel)
+        bottombox = QDialogButtonBox()
+        bottombox.addButton(QDialogButtonBox.Save)
+        bottombox.addButton(QDialogButtonBox.Cancel)
         bottombox.accepted.connect(self.validate)
         bottombox.rejected.connect(self.reject)
 
         # Populate APIs
-        for libname, lib in sorted(utils.available_libs.iteritems()):
+        for libname, lib in sorted(utils.available_libs.items()):
             self.api.addItem(icons[libname], lib[0], libname)
+
+        if self.edit:
+            self.username.setEnabled(False)
+            self.api.setCurrentIndex(self.api.findData(api, QtCore.Qt.UserRole))
+            self.api.setEnabled(False)
 
         # Finish layouts
         layout.addLayout(formlayout)
@@ -2307,49 +2722,59 @@ class AccountAddDialog(QtGui.QDialog):
         self.setLayout(layout)
 
     def validate(self):
-        if len(self.username.text()) > 0 and len(self.password.text()) > 0:
-            self.accept()
+        if len(self.username.text()) is 0:
+            if len(self.password.text()) is 0:
+                self._error('Please fill the credentials fields.')
+            else:
+                self._error('Please fill the username field.')
+        elif len(self.password.text()) is 0:
+            self._error('Please fill the password/PIN field.')
         else:
-            self._error('Please fill all the fields.')
+            self.accept()
 
     def s_refresh(self, index):
-        self.username.setText("")
-        self.password.setText("")
+        if not self.edit:
+            self.username.setText("")
+            self.password.setText("")
 
-        apiname = str(self.api.itemData(index).toString())
+        if pyqt_version is 5:
+            apiname = self.api.itemData(index)
+        else:
+            apiname = str(self.api.itemData(index))
         api = utils.available_libs[apiname]
         if api[2] == utils.LOGIN_OAUTH:
-            apiname = str(self.api.itemData(index).toString())
+            apiname = str(self.api.itemData(index))
             url = utils.available_libs[apiname][4]
             self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
             self.api_auth.show()
 
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
-            self.password.setEchoMode(QtGui.QLineEdit.Normal)
+            self.password.setEchoMode(QLineEdit.Normal)
         else:
             self.lbl_username.setText('Username:')
             self.lbl_password.setText('Password:')
-            self.password.setEchoMode(QtGui.QLineEdit.Password)
+            self.password.setEchoMode(QLineEdit.Password)
             self.api_auth.hide()
 
     def _error(self, msg):
-        QtGui.QMessageBox.critical(self, 'Error', msg, QtGui.QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
 
     @staticmethod
-    def do(parent=None, icons=None):
-        dialog = AccountAddDialog(parent, icons)
+    def do(parent=None, icons=None, edit=False, username='', password='', api=''):
+        dialog = AccountAddDialog(parent, icons, edit, username, password, api)
         result = dialog.exec_()
 
-        if result == QtGui.QDialog.Accepted:
+        if result == QDialog.Accepted:
             currentIndex = dialog.api.currentIndex()
             return (
-                    str( dialog.username.text() ),
-                    str( dialog.password.text() ),
-                    str( dialog.api.itemData(currentIndex).toString() )
+                    str(dialog.username.text()),
+                    str(dialog.password.text()),
+                    str(dialog.api.itemData(currentIndex))
                    )
         else:
             return None
+
 
 class Image_Worker(QtCore.QThread):
     """
@@ -2373,9 +2798,9 @@ class Image_Worker(QtCore.QThread):
     def run(self):
         self.cancelled = False
 
-        req = urllib2.Request(self.remote)
+        req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = StringIO(urllib2.urlopen(req).read())
+        img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
             im = Image.open(img_file)
             im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
@@ -2391,6 +2816,7 @@ class Image_Worker(QtCore.QThread):
 
     def cancel(self):
         self.cancelled = True
+
 
 class Engine_Worker(QtCore.QThread):
     """
@@ -2414,12 +2840,14 @@ class Engine_Worker(QtCore.QThread):
     changed_queue = QtCore.pyqtSignal(int)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
+    prompt_for_add = QtCore.pyqtSignal(str, int)
 
     def __init__(self, account):
         super(Engine_Worker, self).__init__()
         self.engine = Engine(account, self._messagehandler)
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
+        self.engine.connect_signal('tags_changed', self._changed_show)
         self.engine.connect_signal('status_changed', self._changed_list)
         self.engine.connect_signal('playing', self._playing_show)
         self.engine.connect_signal('show_added', self._changed_list)
@@ -2427,6 +2855,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('show_synced', self._changed_show)
         self.engine.connect_signal('queue_changed', self._changed_queue)
         self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+        self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
 
         self.function_list = {
             'start': self._start,
@@ -2435,6 +2864,7 @@ class Engine_Worker(QtCore.QThread):
             'set_episode': self._set_episode,
             'set_score': self._set_score,
             'set_status': self._set_status,
+            'set_tags': self._set_tags,
             'play_episode': self._play_episode,
             'play_random': self._play_random,
             'list_download': self._list_download,
@@ -2451,10 +2881,10 @@ class Engine_Worker(QtCore.QThread):
         self.changed_status.emit("%s: %s" % (classname, msg))
 
     def _error(self, msg):
-        self.raised_error.emit(msg)
+        self.raised_error.emit(str(msg))
 
     def _fatal(self, msg):
-        self.raised_fatal.emit(msg)
+        self.raised_fatal.emit(str(msg))
 
     def _changed_show(self, show, changes=None):
         self.changed_show.emit(show)
@@ -2471,12 +2901,15 @@ class Engine_Worker(QtCore.QThread):
     def _prompt_for_update(self, show, episode):
         self.prompt_for_update.emit(show, episode)
 
+    def _prompt_for_add(self, show_title, episode):
+        self.prompt_for_add.emit(show_title, episode)
+
     # Callable functions
     def _start(self):
         try:
             self.engine.start()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2484,8 +2917,8 @@ class Engine_Worker(QtCore.QThread):
     def _reload(self, account, mediatype):
         try:
             self.engine.reload(account, mediatype)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2493,17 +2926,17 @@ class Engine_Worker(QtCore.QThread):
     def _unload(self):
         try:
             self.engine.unload()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
 
     def _scan_library(self):
         try:
-            self.engine.scan_library()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+            self.engine.scan_library(rescan=True)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2512,8 +2945,8 @@ class Engine_Worker(QtCore.QThread):
         try:
             showlist = self.engine.get_list()
             altnames = self.engine.altnames()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'showlist': showlist, 'altnames': altnames}
@@ -2521,8 +2954,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_episode(self, showid, episode):
         try:
             self.engine.set_episode(showid, episode)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2530,8 +2963,8 @@ class Engine_Worker(QtCore.QThread):
     def _set_score(self, showid, score):
         try:
             self.engine.set_score(showid, score)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2539,8 +2972,17 @@ class Engine_Worker(QtCore.QThread):
     def _set_status(self, showid, status):
         try:
             self.engine.set_status(showid, status)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
+            return {'success': False}
+
+        return {'success': True}
+
+    def _set_tags(self, showid, tags):
+        try:
+            self.engine.set_tags(showid, tags)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2548,8 +2990,8 @@ class Engine_Worker(QtCore.QThread):
     def _play_episode(self, show, episode):
         try:
             played_ep = self.engine.play_episode(show, episode)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'show': show, 'played_ep': played_ep}
@@ -2557,8 +2999,8 @@ class Engine_Worker(QtCore.QThread):
     def _play_random(self):
         try:
             (show, ep) = self.engine.play_random()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'played_show': show, 'played_ep': ep}
@@ -2566,8 +3008,8 @@ class Engine_Worker(QtCore.QThread):
     def _list_download(self):
         try:
             self.engine.list_download()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2575,8 +3017,8 @@ class Engine_Worker(QtCore.QThread):
     def _list_upload(self):
         try:
             self.engine.list_upload()
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2584,26 +3026,26 @@ class Engine_Worker(QtCore.QThread):
     def _get_show_details(self, show):
         try:
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'details': details}
 
     def _search(self, terms):
         try:
-            results = self.engine.search(unicode(terms).encode('utf-8'))
-        except utils.TrackmaError, e:
-            self._error(e.message)
+            results = self.engine.search(terms)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True, 'results': results}
 
-    def _add_show(self, show):
+    def _add_show(self, show, status):
         try:
-            results = self.engine.add_show(show)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+            results = self.engine.add_show(show, status)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2611,8 +3053,8 @@ class Engine_Worker(QtCore.QThread):
     def _delete_show(self, show):
         try:
             results = self.engine.delete_show(show)
-        except utils.TrackmaError, e:
-            self._error(e.message)
+        except utils.TrackmaError as e:
+            self._error(e)
             return {'success': False}
 
         return {'success': True}
@@ -2638,12 +3080,14 @@ class Engine_Worker(QtCore.QThread):
         try:
             ret = self.function(*self.args,**self.kwargs)
             self.finished.emit(ret)
-        except utils.TrackmaFatal, e:
-            self._fatal(e.message)
+        except utils.TrackmaFatal as e:
+            self._fatal(e)
+
 
 def getIcon(icon_name):
-    fallback = QtGui.QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
-    return QtGui.QIcon.fromTheme(icon_name, fallback)
+    fallback = QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
+    return QIcon.fromTheme(icon_name, fallback)
+
 
 def getColor(colorString):
     # Takes a color string in either #RRGGBB format or group,role format (using QPalette int values)
@@ -2652,15 +3096,19 @@ def getColor(colorString):
     else:
         (group, role) = [int(i) for i in colorString.split(',')]
         if (0 <= group <= 2) and (0 <= role <= 19):
-            return QtGui.QColor( QPalette().color(group, role) )
+            return QtGui.QColor(QPalette().color(group, role))
         else:
             # Failsafe - return black
             return QtGui.QColor()
 
+
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     try:
         mainwindow = Trackma()
         sys.exit(app.exec_())
-    except utils.TrackmaFatal, e:
-        QtGui.QMessageBox.critical(None, 'Fatal Error', "{0}".format(e.message), QtGui.QMessageBox.Ok)
+    except utils.TrackmaFatal as e:
+        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
+
+if __name__ == '__main__':
+    main()

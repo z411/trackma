@@ -1,5 +1,31 @@
+v0.6.2
+- New: Play Next now uses the library instead of rescanning the directory every time
+- New: Library auto-rescanning at start
+- New: (CLI) command line options
+- New: (CLI) new `altname` command
+- New: (GTK) Open containing folder functionality
+- Improvement: Support for multiple hooks (~/.trackma/hooks/*.py). Please move your hook.py file into the `hooks` directory; you can now separate them into several files. See git's `hooks` directory for the modified hook files that reflect this change.
+- Improvement: Tracker now can auto add or removes files from library
+- Improvement: Now Trackma uses HTTPS for all sites.
+- Bugfix: Using HTTPS with MAL; fixes 403 error.
+- Bugfix: Fixed `gi` package requirement.
+- Bugfix: Fixed search function in Anilist
+
+v0.6.1
+- New: (curses) Configurable colors, multiple keybinds, hide help bar
+- Improvement: (CLI) search now works in any position of the title
+- Bugfix: (CLI) search now shows correct index
+- Bugfix: (CLI) Fixed problem where commands weren't working properly
+- Bugfix: (curses) Help dialog now shows keybinds correctly
+
+v0.6
+- New: Switching to Python 3
+- New: Switching to GTK 3
+- Improvement: Few interface improvements
+
 v0.5
 - New: Shikimori support
+- New: Qt5 support
 - New: User hooks (~/.trackma/hook.py)
 - Improvement: (Qt) Configurable list colors
 - Improvement: (Qt) Interface improvements

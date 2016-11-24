@@ -19,24 +19,22 @@ import sys
 try:
     import urwid
 except ImportError:
-    print ("urwid not found. Make sure you installed the "
-           "urwid package.")
+    print("urwid not found. Make sure you installed the "
+          "urwid package.")
     sys.exit(-1)
 
 import re
 import urwid
 import webbrowser
-
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-
-import trackma.messenger as messenger
-import trackma.utils as utils
-
 from operator import itemgetter
 from itertools import cycle
 
-class Trackma_urwid(object):
+from trackma.engine import Engine
+from trackma.accounts import AccountManager
+from trackma import messenger
+from trackma import utils
+
+class Trackma_urwid():
     """
     Main class for the urwid version of Trackma
     """
@@ -60,50 +58,38 @@ class Trackma_urwid(object):
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-
-        palette = [
-        ('body','', ''),
-        ('focus','standout', ''),
-        ('head','light red', 'black'),
-        ('header','bold', ''),
-        ('status', 'white', 'dark blue'),
-        ('error', 'light red', 'dark blue'),
-        ('window', 'white', 'dark blue'),
-        ('button', 'black', 'light gray'),
-        ('button hilight', 'white', 'dark red'),
-        ('item_airing', 'dark blue', ''),
-        ('item_notaired', 'yellow', ''),
-        ('item_neweps', 'white', 'brown'),
-        ('item_updated', 'white', 'dark green'),
-        ('item_playing', 'white', 'dark blue'),
-        ('info_title', 'light red', ''),
-        ('info_section', 'dark blue', ''),
-        ]
-
-        keymap = utils.parse_config(utils.get_root_filename('keymap.json'), utils.keymap_defaults)
+        self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
+        keymap = self.config['keymap']
+        self.keymap_str = self.get_keymap_str(keymap)
         self.keymapping = self.map_key_to_func(keymap)
+
+        palette = []
+        for k, color in self.config['palette'].items():
+            palette.append( (k, color[0], color[1]) )
 
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
         self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
         self.header_sort = urwid.Text('Sort:title')
-	self.header_order = urwid.Text('Order:d')
+        self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
             ('fixed', 23, self.header_filter),
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
 
+        top_pile = [self.header]
 
-        top_text = keymap['help'] + ':Help  ' + keymap['sort'] +':Sort  ' + \
-                   keymap['update'] + ':Update  ' + keymap['play'] + ':Play  ' + \
-                   keymap['status'] + ':Status  ' + keymap['score'] + ':Score  ' + \
-                   keymap['quit'] + ':Quit'
-        self.top_pile = urwid.Pile([self.header,
-            urwid.AttrMap(urwid.Text(top_text), 'status')
-        ])
+        if self.config['show_help']:
+            top_text = "{help}:Help  {sort}:Sort  " + \
+                       "{update}:Update  {play}:Play  " + \
+                       "{status}:Status  {score}:Score  " + \
+                       "{quit}:Quit"
+            top_text = top_text.format(**self.keymap_str)
+            top_pile.append(urwid.AttrMap(urwid.Text(top_text), 'status'))
 
+        self.top_pile = urwid.Pile(top_pile)
         self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
 
         self.listheader = urwid.AttrMap(
@@ -131,7 +117,7 @@ class Trackma_urwid(object):
                     'prev_filter': self.do_prev_filter,
                     'next_filter': self.do_next_filter,
                     'sort': self.do_sort,
-		    'sort_order': self.change_sort_order,
+                    'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
                     'status': self.do_status,
@@ -151,13 +137,26 @@ class Trackma_urwid(object):
                     'open_web': self.do_open_web,
                     }
 
-        for key, value in keymap.items():
+        for func, keybind in keymap.items():
             try:
-                keymapping.update({value: funcmap[key]})
+                if isinstance(keybind, list):
+                    for keybindm in keybind:
+                        keymapping[keybindm] = funcmap[func]
+                else:
+                    keymapping[keybind] = funcmap[func]
             except KeyError:
                 # keymap.json requested an action not available in funcmap
                 pass
         return keymapping
+
+    def get_keymap_str(self, keymap):
+        stringed = {}
+        for k, keybind in keymap.items():
+            if isinstance(keybind, list):
+                stringed[k] = ','.join(keybind)
+            else:
+                stringed[k] = keybind
+        return stringed
 
     def _rebuild(self):
         self.header_api.set_text('API:%s' % self.engine.api_info['name'])
@@ -279,18 +278,18 @@ class Trackma_urwid(object):
 
     def do_sort(self):
         self.status("Sorting...")
-        _sort = self.sorts_iter.next()
+        _sort = next(self.sorts_iter)
         self.cur_sort = _sort
         self.header_sort.set_text("Sort:%s" % _sort)
         self._rebuild_lists()
         self.status("Ready.")
 
     def change_sort_order(self):
-    	self.status("Sorting...")
-	_order = self.orders_iter.next()
-	self.cur_order = _order
-	self._rebuild_lists()
-	self.status("Ready.")
+        self.status("Sorting...")
+        _order = next(self.orders_iter)
+        self.cur_order = _order
+        self._rebuild_lists()
+        self.status("Ready.")
 
     def do_update(self):
         showid = self._get_selected_item().showid
@@ -311,16 +310,17 @@ class Trackma_urwid(object):
             self.engine.list_download()
             self._rebuild_lists()
             self.status("Ready.")
-        except utils.TrackmaError, e:
-            self.error(e.message)
+        except utils.TrackmaError as e:
+            self.error(e)
 
     def do_help(self):
         helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
-        helptext += "More controls:\n  Left/Right:Change Filter\n  /:Search\n  a:Add\n  c:Change API/Mediatype\n"
-        helptext += "  d:Delete\n  s:Send changes\n  r:Change sort order\n  R:Retrieve list\n  Enter: View details\n  O: Open website\n  A:Set alternative title\n  N:Search for new episodes\n  F9: Change account"
+        helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {switch_account}: Change account"
+        helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
@@ -403,8 +403,8 @@ class Trackma_urwid(object):
 
         try:
             details = self.engine.get_show_details(show)
-        except utils.TrackmaError, e:
-            self.error(e.message)
+        except utils.TrackmaError as e:
+            self.error(e)
             return
 
         title = urwid.Text( ('info_title', show['title']), 'center', 'any')
@@ -414,7 +414,7 @@ class Trackma_urwid(object):
                 widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
                 if isinstance(line[1], dict):
                     linestr = repr(line[1])
-                elif isinstance(line[1], int):
+                elif isinstance(line[1], int) or isinstance(line[1], list):
                     linestr = str(line[1])
                 else:
                     linestr = line[1]
@@ -433,12 +433,12 @@ class Trackma_urwid(object):
 
     def do_neweps(self):
         try:
-            shows = self.engine.scan_library()
+            shows = self.engine.scan_library(rescan=True)
             self._rebuild_lists(self.engine.mediainfo['status_start'])
 
             self.status("Ready.")
-        except utils.TrackmaError, e:
-            self.error(e.message)
+        except utils.TrackmaError as e:
+            self.error(e)
 
     def do_quit(self):
         self.engine.unload()
@@ -449,8 +449,8 @@ class Trackma_urwid(object):
         if data:
             try:
                 shows = self.engine.search(data)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
             if len(shows) > 0:
@@ -467,8 +467,8 @@ class Trackma_urwid(object):
         _filter = self.filters_nums[self.cur_filter]
         try:
             self.engine.add_show(show, _filter)
-        except utils.TrackmaError, e:
-            self.error(e.message)
+        except utils.TrackmaError as e:
+            self.error(e)
 
     def delete_request(self, data):
         self.ask_finish(self.delete_request)
@@ -478,8 +478,8 @@ class Trackma_urwid(object):
 
             try:
                 show = self.engine.delete_show(show)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
 
     def status_request(self, widget, data=None):
         self.dialog.close()
@@ -488,8 +488,8 @@ class Trackma_urwid(object):
 
             try:
                 show = self.engine.set_status(item.showid, data)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
     def reload_request(self, widget, selected, data):
@@ -504,8 +504,8 @@ class Trackma_urwid(object):
 
             try:
                 show = self.engine.set_episode(item.showid, data)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
     def score_request(self, data):
@@ -515,8 +515,8 @@ class Trackma_urwid(object):
 
             try:
                 show = self.engine.set_score(item.showid, data)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
     def altname_request(self, data):
@@ -527,8 +527,8 @@ class Trackma_urwid(object):
             try:
                 self.engine.altname(item.showid, data)
                 item.update_altname(self.engine.altname(item.showid))
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
     def play_request(self, data):
@@ -539,8 +539,8 @@ class Trackma_urwid(object):
 
             try:
                 self.engine.play_episode(show, data)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
 
             self.status('Ready.')
@@ -551,8 +551,8 @@ class Trackma_urwid(object):
         if data == 'y':
             try:
                 show = self.engine.set_episode(show['id'], episode)
-            except utils.TrackmaError, e:
-                self.error(e.message)
+            except utils.TrackmaError as e:
+                self.error(e)
                 return
         else:
             self.status('Ready.')
@@ -787,7 +787,7 @@ class AccountDialog(Dialog):
 
     def do_add_api(self):
         self.adding = True
-        available_libs = ', '.join(sorted(utils.available_libs.iterkeys()))
+        available_libs = ', '.join(sorted(utils.available_libs.keys()))
         ask = Asker("API (%s): " % available_libs)
         self.frame.footer = ask
         self.frame.set_focus('footer')
@@ -842,9 +842,9 @@ class AccountDialog(Dialog):
 
         try:
             self.manager.add_account(username, password, api)
-        except utils.AccountError, e:
+        except utils.AccountError as e:
             self.adding = False
-            self.frame.footer = urwid.Text("Error: %s" % e.message)
+            self.frame.footer = urwid.Text("Error: %s" % e)
             self.frame.set_focus('body')
             return
 
@@ -862,8 +862,8 @@ class AccountDialog(Dialog):
             self.manager.set_default(accountitem.num)
         else:
             self.manager.set_default(None)
-        urwid.emit_signal(self, 'done', accountitem.account)
         self.close()
+        urwid.emit_signal(self, 'done', accountitem.account)
 
 class AccountItem(urwid.WidgetWrap):
     def __init__(self, num, account):
@@ -1004,7 +1004,7 @@ class ShowItem(urwid.WidgetWrap):
             # Update color
             self.highlight(show)
         else:
-            print "Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid)
+            print("Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid))
 
     def update_altname(self, altname):
         # Update title
@@ -1056,5 +1056,8 @@ class QuestionAsker(Asker):
 def main():
     try:
         Trackma_urwid()
-    except utils.TrackmaFatal, e:
-        print "Fatal error: %s" % e.message
+    except utils.TrackmaFatal as e:
+        print("Fatal error: %s" % e)
+
+if __name__ == '__main__':
+    main()

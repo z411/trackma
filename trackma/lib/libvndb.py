@@ -14,21 +14,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
 import socket
 import json
 import datetime
+import ssl
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libvndb(lib):
     """
     API class to communicate with VNDB
     Implements protocol version 1.
 
-    Website: http://www.vndb.org
-    API documentation: http://vndb.org/d11
-    Designed by: Yorhel <contact@vndb.org> (http://vndb.org/u2)
+    Website: https://www.vndb.org
+    API documentation: https://vndb.org/d11
+    Designed by: Yorhel <contact@vndb.org> (https://vndb.org/u2)
 
     """
     name = 'libvndb'
@@ -77,17 +78,25 @@ class libvndb(lib):
         """Initializes the useragent through credentials."""
         super(libvndb, self).__init__(messenger, account, userconfig)
 
+        self.hostname = "api.vndb.org"
+        self.tls = 19535
+        self.tcp = 19534
         self.username = account['username']
         self.password = account['password']
         self.logged_in = False
 
     def _connect(self):
         """Create TCP socket and connect"""
+
+        self.context = ssl.create_default_context()
         try:
-            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.s.connect(("api.vndb.org", 19534))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s = self.context.wrap_socket(s, server_hostname=self.hostname)
+            self.s.connect((self.hostname, self.tls))
         except socket.error:
             raise utils.APIError("Connection error.")
+        except ssl.CertificateError:
+            raise utils.APIError("Insecure connection.")
 
     def _disconnect(self):
         """Shutdown and close the socket"""
@@ -99,7 +108,8 @@ class libvndb(lib):
         msg = cmd
         if options:
             msg += " " + json.dumps(options, separators=(',',':'))
-        msg += "\x04" # EOT
+        msg = msg.encode('utf-8')
+        msg += b"\x04" # EOT
 
         # Send message
         self.s.sendall(msg)
@@ -108,10 +118,10 @@ class libvndb(lib):
         lines = []
         while True:
             line = self.s.recv(65536)
-            if line.endswith("\x04"):
-                line = line.strip("\x04")
+            if line.endswith(b"\x04"):
+                line = line.strip(b"\x04")
                 lines.append(line)
-                response = "".join(lines)
+                response = b"".join(lines).decode('utf-8')
                 break
             else:
                 lines.append(line)
