@@ -53,7 +53,7 @@ Requirements
 
 - Python 3.4/3.5
 - lsof - for the media player detection tracker.
-- (Optional) inotifyx - for instant media recognition (Linux only)
+- (Optional) inotify *or* pyinotify - for instant media recognition (Linux only)
 - (Optional) PyQt - for the Qt Interface
 - (Optional) PyGI (python3-gi and python3-cairo) - for the GTK interface.
 - (Optional) Urwid (python3-urwid) - for the curses/urwid interface.
