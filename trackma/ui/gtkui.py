@@ -1948,16 +1948,16 @@ class Settings(Gtk.Window):
         self.rbtn_autosend_always = Gtk.RadioButton.new_with_label_from_widget(self.rbtn_autosend_off, 'After every change')
         self.rbtn_autosend_at_exit = Gtk.CheckButton('Auto-send at exit')
 
-        self.rbtn_autosend_hours = Gtk.RadioButton.new_with_label_from_widget(self.rbtn_autosend_off, 'After')
-        self.spin_autosend_hours = Gtk.SpinButton()
-        self.spin_autosend_hours.set_adjustment(Gtk.Adjustment(value=5, lower=1, upper=1000, step_incr=1, page_incr=10))
-        self.spin_autosend_hours.set_sensitive(False)
-        self.rbtn_autosend_hours.connect("toggled", self.radio_toggled, self.spin_autosend_hours)
-        lbl_autosend_hours = Gtk.Label('hours')
-        line_autosend_hours = Gtk.HBox(False, 5)
-        line_autosend_hours.pack_start(self.rbtn_autosend_hours, False, False, 0)
-        line_autosend_hours.pack_start(self.spin_autosend_hours, False, False, 0)
-        line_autosend_hours.pack_start(lbl_autosend_hours, False, False, 0)
+        self.rbtn_autosend_minutes = Gtk.RadioButton.new_with_label_from_widget(self.rbtn_autosend_off, 'After')
+        self.spin_autosend_minutes = Gtk.SpinButton()
+        self.spin_autosend_minutes.set_adjustment(Gtk.Adjustment(value=60, lower=1, upper=1000, step_incr=1, page_incr=10))
+        self.spin_autosend_minutes.set_sensitive(False)
+        self.rbtn_autosend_minutes.connect("toggled", self.radio_toggled, self.spin_autosend_minutes)
+        lbl_autosend_minutes = Gtk.Label('minutes')
+        line_autosend_minutes = Gtk.HBox(False, 5)
+        line_autosend_minutes.pack_start(self.rbtn_autosend_minutes, False, False, 0)
+        line_autosend_minutes.pack_start(self.spin_autosend_minutes, False, False, 0)
+        line_autosend_minutes.pack_start(lbl_autosend_minutes, False, False, 0)
 
         self.rbtn_autosend_size = Gtk.RadioButton.new_with_label_from_widget(self.rbtn_autosend_off, 'After the queue is larger than')
         self.spin_autosend_size = Gtk.SpinButton()
@@ -1973,7 +1973,7 @@ class Settings(Gtk.Window):
         line5 = Gtk.VBox(False, 5)
         line5.pack_start(self.rbtn_autosend_off, False, False, 0)
         line5.pack_start(self.rbtn_autosend_always, False, False, 0)
-        line5.pack_start(line_autosend_hours, False, False, 0)
+        line5.pack_start(line_autosend_minutes, False, False, 0)
         line5.pack_start(line_autosend_size, False, False, 0)
         line5.pack_start(self.rbtn_autosend_at_exit, False, False, 0)
 
@@ -2122,13 +2122,13 @@ class Settings(Gtk.Window):
 
         if self.engine.get_config('autosend') == 'always':
             self.rbtn_autosend_always.set_active(True)
-        elif self.engine.get_config('autosend') == 'hours':
-            self.rbtn_autosend_hours.set_active(True)
+        elif self.engine.get_config('autosend') in ('minutes', 'hours'):
+            self.rbtn_autosend_minutes.set_active(True)
         elif self.engine.get_config('autosend') == 'size':
             self.rbtn_autosend_size.set_active(True)
 
         self.spin_autoret_days.set_value(self.engine.get_config('autoretrieve_days'))
-        self.spin_autosend_hours.set_value(self.engine.get_config('autosend_hours'))
+        self.spin_autosend_minutes.set_value(self.engine.get_config('autosend_minutes'))
         self.spin_autosend_size.set_value(self.engine.get_config('autosend_size'))
 
         self.chk_auto_status_change.set_active(self.engine.get_config('auto_status_change'))
@@ -2173,15 +2173,15 @@ class Settings(Gtk.Window):
         # Auto-send
         if self.rbtn_autosend_always.get_active():
             self.engine.set_config('autosend', 'always')
-        elif self.rbtn_autosend_hours.get_active():
-            self.engine.set_config('autosend', 'hours')
+        elif self.rbtn_autosend_minutes.get_active():
+            self.engine.set_config('autosend', 'minutes')
         elif self.rbtn_autosend_size.get_active():
             self.engine.set_config('autosend', 'size')
         else:
             self.engine.set_config('autosend', 'off')
 
         self.engine.set_config('autoretrieve_days', self.spin_autoret_days.get_value_as_int())
-        self.engine.set_config('autosend_hours', self.spin_autosend_hours.get_value_as_int())
+        self.engine.set_config('autosend_minutes', self.spin_autosend_minutes.get_value_as_int())
         self.engine.set_config('autosend_size', self.spin_autosend_size.get_value_as_int())
 
         self.engine.set_config('auto_status_change', self.chk_auto_status_change.get_active())
