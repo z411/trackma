@@ -1836,10 +1836,10 @@ class SettingsDialog(QDialog):
         g_autosend.setFlat(True)
         self.autosend_off = QRadioButton('Disabled')
         self.autosend_always = QRadioButton('Immediately after every change')
-        self.autosend_hours = QRadioButton('After n hours')
-        self.autosend_hours.toggled.connect(self.s_autosend_hours)
-        self.autosend_hours_n = QSpinBox()
-        self.autosend_hours_n.setRange(1, 1000)
+        self.autosend_minutes = QRadioButton('After n minutes')
+        self.autosend_minutes.toggled.connect(self.s_autosend_minutes)
+        self.autosend_minutes_n = QSpinBox()
+        self.autosend_minutes_n.setRange(1, 1000)
         self.autosend_size = QRadioButton('After the queue reaches n items')
         self.autosend_size.toggled.connect(self.s_autosend_size)
         self.autosend_size_n = QSpinBox()
@@ -1849,8 +1849,8 @@ class SettingsDialog(QDialog):
         g_autosend_layout.setColumnStretch(0, 1)
         g_autosend_layout.addWidget(self.autosend_off,      0, 0, 1, 1)
         g_autosend_layout.addWidget(self.autosend_always,   1, 0, 1, 1)
-        g_autosend_layout.addWidget(self.autosend_hours,    2, 0, 1, 1)
-        g_autosend_layout.addWidget(self.autosend_hours_n,  2, 1, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_minutes,    2, 0, 1, 1)
+        g_autosend_layout.addWidget(self.autosend_minutes_n,  2, 1, 1, 1)
         g_autosend_layout.addWidget(self.autosend_size,     3, 0, 1, 1)
         g_autosend_layout.addWidget(self.autosend_size_n,   3, 1, 1, 1)
         g_autosend_layout.addWidget(self.autosend_at_exit,  4, 0, 1, 1)
@@ -2066,14 +2066,14 @@ class SettingsDialog(QDialog):
 
         if autosend == 'always':
             self.autosend_always.setChecked(True)
-        elif autosend == 'hours':
-            self.autosend_hours.setChecked(True)
+        elif autosend in ('minutes', 'hours'):
+            self.autosend_minutes.setChecked(True)
         elif autosend == 'size':
             self.autosend_size.setChecked(True)
         else:
             self.autosend_off.setChecked(True)
 
-        self.autosend_hours_n.setValue(engine.get_config('autosend_hours'))
+        self.autosend_minutes_n.setValue(engine.get_config('autosend_minutes'))
         self.autosend_size_n.setValue(engine.get_config('autosend_size'))
 
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
@@ -2096,7 +2096,7 @@ class SettingsDialog(QDialog):
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
 
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
-        self.autosend_hours_n.setEnabled(self.autosend_hours.isChecked())
+        self.autosend_minutes_n.setEnabled(self.autosend_minutes.isChecked())
         self.autosend_size_n.setEnabled(self.autosend_size.isChecked())
         self.close_to_tray.setEnabled(self.tray_icon.isChecked())
         self.start_in_tray.setEnabled(self.tray_icon.isChecked())
@@ -2137,14 +2137,14 @@ class SettingsDialog(QDialog):
 
         if self.autosend_always.isChecked():
             engine.set_config('autosend', 'always')
-        elif self.autosend_hours.isChecked():
-            engine.set_config('autosend', 'hours')
+        elif self.autosend_minutes.isChecked():
+            engine.set_config('autosend', 'minutes')
         elif self.autosend_size.isChecked():
             engine.set_config('autosend', 'size')
         else:
             engine.set_config('autosend', 'off')
 
-        engine.set_config('autosend_hours', self.autosend_hours_n.value())
+        engine.set_config('autosend_minutes', self.autosend_minutes_n.value())
         engine.set_config('autosend_size',  self.autosend_size_n.value())
 
         engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
@@ -2204,8 +2204,8 @@ class SettingsDialog(QDialog):
     def s_autoretrieve_days(self, checked):
         self.autoretrieve_days_n.setEnabled(checked)
 
-    def s_autosend_hours(self, checked):
-        self.autosend_hours_n.setEnabled(checked)
+    def s_autosend_minutes(self, checked):
+        self.autosend_minutes_n.setEnabled(checked)
 
     def s_autosend_size(self, checked):
         self.autosend_size_n.setEnabled(checked)
