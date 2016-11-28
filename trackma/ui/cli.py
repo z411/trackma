@@ -870,7 +870,7 @@ def usage():
     print("Usage: trackma [options]")
     print()
     print("Options:")
-    print("  -a --acount\tPre-selects account number")
+    print("  -a --account\tPre-selects account number")
     print("  -d --debug\tShows debugging information")
     print("  -h --help\tShows this help")
     print()
