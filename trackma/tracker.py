@@ -58,7 +58,7 @@ class Tracker():
     last_state = STATE_NOVIDEO
     last_time = 0
     last_updated = False
-    last_close_queue = False
+    last_close_queue = None
     plex_enabled = False
     plex_log = [None, None]
 
@@ -202,7 +202,7 @@ class Tracker():
                                 or 'IN_CLOSE_NOWRITE' in types
                                 or 'IN_CLOSE_WRITE' in types):
                             self._poll_lsof()
-                elif self.last_state != STATE_NOVIDEO:
+                elif self.last_state != STATE_NOVIDEO and not self.last_updated:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
@@ -267,7 +267,7 @@ class Tracker():
                 if notifier.check_events(timeout):
                     notifier.read_events()
                     notifier.process_events()
-                    if self.last_state == STATE_NOVIDEO:
+                    if self.last_state == STATE_NOVIDEO or self.last_updated:
                         timeout = None  # Block indefinitely
                     else:
                         timeout = 1000  # Check each second for counting
@@ -332,83 +332,73 @@ class Tracker():
             else:
                 self._observe_polling(interval)
 
-    def update_show_if_needed(self, state, show_tuple):
-        if self.last_show_tuple:
+    def _update_show(self, state, show_tuple):
+        (show, episode) = show_tuple
+        countdown = int(1 + self.wait_s - (time.time() - self.last_time))
+        if countdown <= 0:
+            self.last_updated = True
+            action = None
+            if state == STATE_PLAYING:
+                action = lambda: self._emit_signal('update', show['id'], episode)
+            elif state == STATE_NOT_FOUND:
+                action = lambda: self._emit_signal('unrecognised', show, episode)
+
+            if self.wait_close:
+                self.msg.info(self.name, 'Waiting for the player to close.')
+                self.last_close_queue = action
+            elif action:
+                action()
+        elif (countdown < 10) or (countdown % 5 == 0):
+            # Only print every 5 seconds if more than 10 seconds remain
+            if state == STATE_PLAYING:
+                self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, countdown))
+            elif state == STATE_NOT_FOUND:
+                self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, countdown))
+
+    def _update_state(self):
+        # Call when show or state is changed. Perform queued update if any, and clear playing flag.
+        if self.last_close_queue:
+            self.last_close_queue()
+            self.last_close_queue = None
+        elif not self.last_updated:
+            self.msg.info(self.name, 'Player was closed before update.')
+        self.last_updated = False
+        self.last_time = time.time()
+        if self.last_show_tuple and self.last_state == STATE_PLAYING:
             (last_show, last_show_ep) = self.last_show_tuple
-        else:
-            self.last_show_tuple = None
+            self._emit_signal('playing', last_show['id'], False, last_show_ep)
 
-        if show_tuple:
-            # In order to keep this consistent with last_show_tuple, this uses show
-            # for STATE_NOT_FOUND even though show_title would be more informative
+    def update_show_if_needed(self, state, show_tuple):
+        # If the state and show are unchanged, skip to countdown
+        if show_tuple and state == self.last_state and show_tuple == self.last_show_tuple and not self.last_updated:
+            self._update_show(state, show_tuple)
+            return
+
+        if show_tuple and show_tuple != self.last_show_tuple:
             (show, episode) = show_tuple
-
-            if show_tuple != self.last_show_tuple:
-                # Turn off the old Playing flag
-                if self.last_state == STATE_PLAYING:
-                    self._emit_signal('playing', last_show['id'], False, 0)
-                # There's a new show/ep detected, so let's save the show
-                # information and the time we detected it
-                self.last_show_tuple = show_tuple
-                if state == STATE_PLAYING:
-                    self._emit_signal('playing', show['id'], True, episode)
-                self.last_time = time.time()
-                self.last_updated = False
-
-            if not self.last_updated:
-                # Check if we need to update the show yet
-                if state == STATE_PLAYING and episode != (show['my_progress'] + 1):
-                    # We shouldn't update to this episode!
+            self._update_state()
+            # There's a new show/ep detected, so let's save the show information
+            self.last_show_tuple = show_tuple
+            if state == STATE_PLAYING:
+                self._emit_signal('playing', show['id'], True, episode)
+                # Check if we shouldn't update the show
+                if episode != (show['my_progress'] + 1):
                     self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
                     self.last_updated = True
-                else:
-                    # We are either going to update a show or consider adding it
-                    countdown = 1 + self.wait_s - (time.time() - self.last_time)
-                    if countdown > 0:
-                        if state == STATE_PLAYING:
-                            self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, countdown))
-                        elif state == STATE_NOT_FOUND:
-                            self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, countdown))
-                    else:
-                        # Time has passed, let's update
-                        self.last_updated = True
-                        if self.wait_close:
-                            # Queue update for when the player closes
-                            self.msg.info(self.name, 'Waiting for the player to close.')
-                            self.last_close_queue = True
-                        else:
-                            # Update now
-                            if state == STATE_PLAYING:
-                                self._emit_signal('update', show['id'], episode)
-                            elif state == STATE_NOT_FOUND:
-                                self._emit_signal('unrecognised', show, episode)
-        elif self.last_state != state:
-            # React depending on state
-            # STATE_NOVIDEO : No video is playing anymore
-            # STATE_UNRECOGNIZED : There's a new video playing but the regex didn't recognize the format
-            # STATE_NOT_FOUND : There's a new video playing but an associated show wasn't found
-            if state == STATE_NOVIDEO and self.last_show_tuple:
-                # Update now if there's an update queued
-                if self.last_close_queue:
-                    if self.last_state == STATE_PLAYING:
-                        self._emit_signal('update', last_show['id'], last_show_ep)
-                    elif self.last_state == STATE_NOT_FOUND:
-                        self._emit_signal('unrecognised', last_show, last_show_ep)
-                elif not self.last_updated:
-                    self.msg.info(self.name, 'Player was closed before update.')
-            elif state == STATE_UNRECOGNIZED:
-                self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-            elif state == STATE_NOT_FOUND:
-                self.msg.warn(self.name, 'Found player but show not in list.')
+                    self.last_state = state
+                    return
+            self._update_show(state, show_tuple)
 
-            # Clear any show previously playing
-            if self.last_show_tuple:
-                if self.last_state == STATE_PLAYING:
-                    self._emit_signal('playing', last_show['id'], False, last_show_ep)
-                self.last_updated = False
-                self.last_close_queue = False
-                self.last_time = 0
-                self.last_show_tuple = None
+        elif self.last_state != state:
+            self._update_state()
+            self.last_show_tuple = None
+            # React depending on state
+            if state == STATE_NOVIDEO:  # No video is playing
+                pass  # No need to pollute the log
+            elif state == STATE_UNRECOGNIZED:  # There's a new video playing but the regex didn't recognize the format
+                self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
+            elif state == STATE_NOT_FOUND:  # There's a new video playing but an associated show wasn't found
+                self.msg.warn(self.name, 'Found player but show not in list.')
 
         self.last_state = state
 
@@ -420,7 +410,7 @@ class Tracker():
         if filename:
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
-                return (4, self.last_show_tuple)
+                return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename
 
