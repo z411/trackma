@@ -380,7 +380,7 @@ class Tracker():
                             # Update now
                             if state == STATE_PLAYING:
                                 self._emit_signal('update', show['id'], episode)
-                            else:  # Assume state is STATE_NOT_FOUND
+                            elif state == STATE_NOT_FOUND:
                                 self._emit_signal('unrecognised', show, episode)
         elif self.last_state != state:
             # React depending on state
