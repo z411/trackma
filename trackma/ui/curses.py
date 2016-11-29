@@ -266,7 +266,8 @@ class Trackma_urwid():
         self.ask('Search on remote: ', self.addsearch_request)
 
     def do_delete(self):
-        self.question('Delete selected show? [y/n] ', self.delete_request)
+        if self._get_selected_item():
+            self.question('Delete selected show? [y/n] ', self.delete_request)
 
     def do_prev_filter(self):
         if self.cur_filter > 0:
@@ -292,14 +293,16 @@ class Trackma_urwid():
         self.status("Ready.")
 
     def do_update(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
 
     def do_play(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
 
     def do_send(self):
         self.engine.list_upload()
@@ -331,19 +334,24 @@ class Trackma_urwid():
         self.dialog.close()
 
     def do_altname(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.status(show['title'])
-        self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.status(show['title'])
+            self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
 
     def do_score(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
 
     def do_status(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
+        item = self._get_selected_item()
+        if not item:
+            return
+
+        show = self.engine.get_show_info(item.showid)
 
         buttons = list()
         num = 1
@@ -387,17 +395,21 @@ class Trackma_urwid():
         self._rebuild()
 
     def do_open_web(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        if show['url']:
-            webbrowser.open(show['url'], 2, True)
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            if show['url']:
+                webbrowser.open(show['url'], 2, True)
 
     def do_info(self):
         if self.viewing_info:
             return
 
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
+        item = self._get_selected_item()
+        if not item:
+            return
+
+        show = self.engine.get_show_info(item.showid)
 
         self.status("Getting show details...")
 
