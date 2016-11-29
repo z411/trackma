@@ -374,8 +374,8 @@ class Trackma(QMainWindow):
 
         #self.setMinimumSize(740, 480)
         if self.config['remember_geometry']:
-            self.setGeometry(self.config['last_x'], self.config['last_y'],
-                             self.config['last_width'], self.config['last_height'])
+            self.resize(self.config['last_width'], self.config['last_height'])
+            self.move(self.config['last_x'], self.config['last_y'])
 
         self.show_image = QLabel('Trackma-qt')
         self.show_image.setFixedHeight(149)
