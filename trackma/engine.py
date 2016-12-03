@@ -248,6 +248,7 @@ class Engine:
                                    int(self.config['tracker_update_wait_s']),
                                    self.config['tracker_update_close'],
                                    self.config['tracker_not_found_prompt'],
+                                   self.config['tracker_enforce_media_directory']
                                   )
             self.tracker.connect_signal('detected', self._tracker_detected)
             self.tracker.connect_signal('removed', self._tracker_removed)

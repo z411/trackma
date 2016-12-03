@@ -262,6 +262,7 @@ config_defaults = {
     'player': 'mpv',
     'searchdir': '/home/user/Videos',
     'tracker_enabled': True,
+    'tracker_enforce_media_directory': False,
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
     'tracker_update_prompt': False,

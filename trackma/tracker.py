@@ -71,7 +71,7 @@ class Tracker():
                'update': None,
                'unrecognised': None, }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt, enforce_media_directory):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
@@ -84,6 +84,7 @@ class Tracker():
         self.wait_s = update_wait
         self.wait_close = update_close
         self.not_found_prompt = not_found_prompt
+        self.enforce_media_directory = enforce_media_directory
         tracker_t = threading.Thread(target=self._tracker, args=tracker_args)
         tracker_t.daemon = True
         self.msg.debug(self.name, 'Enabling tracker...')
@@ -422,7 +423,7 @@ class Tracker():
 
             self.last_filename = filename
 
-            if directory and not directory.startswith(self.watch_dir):
+            if self.enforce_media_directory and directory and not directory.startswith(self.watch_dir):
                 return (STATE_NOT_IN_WATCHDIR, None)
 
             # Do a regex to the filename to get
