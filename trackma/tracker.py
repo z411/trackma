@@ -36,6 +36,7 @@ STATE_PLAYING = 0
 STATE_NOVIDEO = 1
 STATE_UNRECOGNIZED = 2
 STATE_NOT_FOUND = 3
+STATE_NOT_IN_WATCHDIR = 4
 
 try:
     import inotify.adapters
@@ -79,6 +80,7 @@ class Tracker():
         self.plex_enabled = plex.get_config()[0]
 
         tracker_args = (watch_dir, interval)
+        self.watch_dir = watch_dir
         self.wait_s = update_wait
         self.wait_close = update_close
         self.not_found_prompt = not_found_prompt
@@ -127,7 +129,7 @@ class Tracker():
         for line in output.splitlines():
             match = fileregex.match(line)
             if match is not None:
-                return os.path.basename(match.group(1))
+                return (os.path.dirname(match.group(1)), os.path.basename(match.group(1)))
 
         return False
 
@@ -169,8 +171,12 @@ class Tracker():
         return playing_file
 
     def _poll_lsof(self):
-        filename = self._get_playing_file_lsof(self.process_name)
-        (state, show_tuple) = self._get_playing_show(filename)
+        file = self._get_playing_file_lsof(self.process_name)
+        if file:
+            (directory, filename) = file
+            (state, show_tuple) = self._get_playing_show(filename, directory)
+        else:
+            (state, show_tuple) = self._get_playing_show(False)
         self.update_show_if_needed(state, show_tuple)
 
     def _observe_inotify(self, watch_dir):
@@ -399,10 +405,12 @@ class Tracker():
                 self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
             elif state == STATE_NOT_FOUND:  # There's a new video playing but an associated show wasn't found
                 self.msg.warn(self.name, 'Found player but show not in list.')
+            elif state == STATE_NOT_IN_WATCHDIR:  # There's a new video playing but the regex didn't recognize the format
+                self.msg.warn(self.name, 'Found video but the file is not in the watch directory.')
 
         self.last_state = state
 
-    def _get_playing_show(self, filename):
+    def _get_playing_show(self, filename, directory=None):
         if not self.active:
             # Don't do anything if the Tracker is disabled
             return (STATE_NOVIDEO, None)
@@ -413,6 +421,9 @@ class Tracker():
                 return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename
+
+            if directory and not directory.startswith(self.watch_dir):
+                return (STATE_NOT_IN_WATCHDIR, None)
 
             # Do a regex to the filename to get
             # the show title and episode number
