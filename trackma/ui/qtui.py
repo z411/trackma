@@ -1783,8 +1783,8 @@ class SettingsDialog(QDialog):
 
         g_media.setLayout(g_media_layout)
 
-        # Group: Play Next
-        g_playnext = QGroupBox('Play Next')
+        # Group: Library
+        g_playnext = QGroupBox('Library')
         g_playnext.setFlat(True)
         self.player = QLineEdit()
         self.player_browse = QPushButton('Browse...')
@@ -1792,17 +1792,20 @@ class SettingsDialog(QDialog):
         self.searchdir = QLineEdit()
         self.searchdir_browse = QPushButton('Browse...')
         self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
+        self.tracker_enforce_media_directory = QCheckBox()
         self.library_autoscan = QCheckBox()
 
         g_playnext_layout = QGridLayout()
-        g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
-        g_playnext_layout.addWidget(self.player,                         0, 1, 1, 1)
-        g_playnext_layout.addWidget(self.player_browse,                  0, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Media directory'),           1, 0, 1, 1)
-        g_playnext_layout.addWidget(self.searchdir,                      1, 1, 1, 1)
-        g_playnext_layout.addWidget(self.searchdir_browse,               1, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Rescan Library at startup'), 2, 0, 1, 2)
-        g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Player'),                              0, 0, 1, 1)
+        g_playnext_layout.addWidget(self.player,                                   0, 1, 1, 1)
+        g_playnext_layout.addWidget(self.player_browse,                            0, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Media directory'),                     1, 0, 1, 1)
+        g_playnext_layout.addWidget(self.searchdir,                                1, 1, 1, 1)
+        g_playnext_layout.addWidget(self.searchdir_browse,                         1, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Only track files in media directory'), 2, 0, 1, 2)
+        g_playnext_layout.addWidget(self.tracker_enforce_media_directory,          2, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Rescan Library at startup'),           3, 0, 1, 2)
+        g_playnext_layout.addWidget(self.library_autoscan,                         3, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
@@ -2042,6 +2045,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
         self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
         self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
+        self.tracker_enforce_media_directory.setChecked(engine.get_config('tracker_enforce_media_directory'))
 
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
@@ -2116,6 +2120,7 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
         engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
+        engine.set_config('tracker_enforce_media_directory', self.tracker_enforce_media_directory.isChecked())
 
         engine.set_config('player',            self.player.text())
         engine.set_config('searchdir',         self.searchdir.text())
