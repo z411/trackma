@@ -14,11 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
-import urllib, urllib2
+import urllib.parse
+import urllib.request
 import json
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libmelative(lib):
     """
@@ -93,13 +94,13 @@ class libmelative(lib):
 
         self.username = account['username']
 
-        self.password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        self.password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         self.password_mgr.add_password("Melative", "melative.com:80", account['username'], account['password']);
 
-        self.handler = urllib2.HTTPBasicAuthHandler(self.password_mgr)
-        self.opener = urllib2.build_opener(self.handler)
+        self.handler = urllib.request.HTTPBasicAuthHandler(self.password_mgr)
+        self.opener = urllib.request.build_opener(self.handler)
 
-        urllib2.install_opener(self.opener)
+        urllib.request.install_opener(self.opener)
 
     def check_credentials(self):
         self.msg.info(self.name, 'Logging in...')
@@ -109,13 +110,13 @@ class libmelative(lib):
             self.logged_in = True
 
             # Parse user information
-            data = json.load(response)
+            data = json.loads(response.read().decode('utf-8'))
 
             self.username = data['name']
             self.userid = data['id']
 
             return True
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Incorrect credentials.")
 
     def fetch_list(self):
@@ -124,7 +125,7 @@ class libmelative(lib):
 
         # Get a JSON list from API
         response = self.opener.open("http://melative.com/api/library.json?user={0}&context_type={1}".format(self.username, self.mediatype))
-        data = json.load(response)
+        data = json.loads(response.read().decode('utf-8'))
 
         # Load data from the JSON stream into a parsed dictionary
         statuses = self.media_info()['statuses_dict']
@@ -154,7 +155,7 @@ class libmelative(lib):
 
             show = utils.show()
             show['id'] = itemid
-            show['title'] = entity['aliases'][0].encode('utf-8')
+            show['title'] = entity['aliases'][0]
             show['my_status'] = _status
             show['my_score'] = int(record['rating'] or 0)
             show['my_progress'] =_progress
@@ -166,8 +167,8 @@ class libmelative(lib):
 
         return itemlist
 
-        #except urllib2.HTTPError, e:
-        #    raise utils.APIError("Error getting list. %s" % e.message)
+        #except urllib.request.HTTPError as e:
+        #    raise utils.APIError("Error getting list. %s" % e)
 
     def update_show(self, item):
         self.check_credentials()
@@ -179,11 +180,11 @@ class libmelative(lib):
             #values = dict()
             #values = {'attribute_type': _self.media_info['segment_type'],
             #          'attribute_name': item['my_progress']}
-            #data = self._urlencode(values)
+            #data = urllib.parse.urlencode(values)
             #
             #try:
-            #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data)
-            #except urllib2.HTTPError, e:
+            #    reponse = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
+            #except urllib.request.HTTPError as e:
             #    raise utils.APIError("Error scrobbling: " + str(e.code))
             changes['segment'] = "%s|%d" % (self.media_info()['segment_type'], item['my_progress'] )
 
@@ -193,21 +194,11 @@ class libmelative(lib):
         if 'my_score' in item.keys():
             changes['rating'] = item['my_score']
 
-        data = self._urlencode(changes)
+        data = urllib.parse.urlencode(changes)
 
         try:
-            response = self.opener.open("http://melative.com/api/scrobble.json", data)
-        except urllib2.HTTPError, e:
+            response = self.opener.open("http://melative.com/api/scrobble.json", data.encode('utf-8'))
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error updating: " + str(e.code))
 
         return True
-
-    def _urlencode(self, in_dict):
-        out_dict = {}
-        for k, v in in_dict.iteritems():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)

@@ -12,22 +12,23 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
 import datetime
-
-import urllib, urllib2
+import urllib.parse
+import urllib.request
 import json
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libhb(lib):
     """
     API class to communicate with Hummingbird
     Should inherit a base library interface.
 
-    Website: http://hummingbird.me/
+    Website: https://hummingbird.me/
     API documentation:
     Designed by:
 
@@ -58,7 +59,7 @@ class libhb(lib):
         'score_step': 0.5,
     }
 
-    url = "http://hummingbird.me/api/v1"
+    url = "https://hummingbird.me/api/v1"
 
     status_translate = {'Currently Airing': utils.STATUS_AIRING,
             'Finished Airing': utils.STATUS_FINISHED,
@@ -72,21 +73,23 @@ class libhb(lib):
         self.password = account['password']
 
         # Build opener with the mashape API key
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
 
     def _request(self, url, get=None, post=None):
         if get:
-            url += "?%s" % urllib.urlencode(get)
+            url += "?%s" % urllib.parse.urlencode(get)
         if post:
-            post = urllib.urlencode(post)
+            post = urllib.parse.urlencode(post).encode('utf-8')
 
         try:
             return self.opener.open(self.url + url, post, 10)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
                 raise utils.APIError("Connection error: %s" % e)
+        except urllib.request.URLError as e:
+            raise utils.APIError("URL error: %s" % e)
 
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -95,7 +98,7 @@ class libhb(lib):
 
         self.msg.info(self.name, 'Logging in...')
 
-        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read()
+        response = self._request( "/users/authenticate", post={'username': self.username, 'password': self.password} ).read().decode('utf-8')
         self.auth = response.strip('"')
         self._set_userconfig('username', self.username)
         self.logged_in = True
@@ -109,7 +112,7 @@ class libhb(lib):
 
         try:
             data = self._request( "/users/%s/library" % self.username, get={'auth_token': self.auth} )
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             showlist = dict()
             infolist = list()
@@ -136,13 +139,14 @@ class libhb(lib):
                     'my_status': show['status'],
                     'total': int(epCount) if epCount is not None else 0,
                     'image': show['anime']['cover_image'],
+                    'url': str("https://hummingbird.me/%s/%d" % (self.mediatype, showid)),
                 })
                 info = self._parse_info(show['anime'])
                 infolist.append(info)
 
             self._emit_signal('show_info_changed', infolist)
             return showlist
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
 
     def add_show(self, item):
@@ -167,7 +171,7 @@ class libhb(lib):
 
         try:
             self._request("/libraries/%s" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -178,7 +182,7 @@ class libhb(lib):
         values = {'auth_token': self.auth}
         try:
             self._request("/libraries/%s/remove" % item['id'], post=values)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, query):
@@ -187,7 +191,7 @@ class libhb(lib):
         values = {'query': query}
         try:
             data = self._request("/search/anime", get=values)
-            shows = json.load(data)
+            shows = json.loads(data.read().decode('utf-8'))
 
             infolist = []
             for show in shows:
@@ -201,7 +205,7 @@ class libhb(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
 
     def _str2date(self, string):
@@ -233,14 +237,3 @@ class libhb(lib):
             ]
         })
         return info
-
-    def _urlencode(self, in_dict):
-        """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
-        out_dict = {}
-        for k, v in in_dict.iteritems():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)

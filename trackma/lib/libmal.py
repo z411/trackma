@@ -15,15 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma.lib.lib import lib
-import trackma.utils as utils
-
-import urllib, urllib2
+import re
+import urllib.parse
+import urllib.request
 import datetime
 import base64
 import gzip
 import xml.etree.ElementTree as ET
-from cStringIO import StringIO
+
+from trackma.lib.lib import lib
+from trackma import utils
 
 class libmal(lib):
     """
@@ -31,8 +32,8 @@ class libmal(lib):
     Should inherit a base library interface.
 
     Website: http://www.myanimelist.net
-    API documentation: http://myanimelist.net/modules.php?go=api
-    Designed by: Garrett Gyssler (http://myanimelist.net/profile/Xinil)
+    API documentation: https://myanimelist.net/modules.php?go=api
+    Designed by: Garrett Gyssler (https://myanimelist.net/profile/Xinil)
 
     """
     name = 'libmal'
@@ -51,6 +52,7 @@ class libmal(lib):
         'can_delete': True,
         'can_score': True,
         'can_status': True,
+        'can_tag': True,
         'can_update': True,
         'can_play': True,
         'can_date': True,
@@ -67,6 +69,7 @@ class libmal(lib):
         'can_delete': True,
         'can_score': True,
         'can_status': True,
+        'can_tag': True,
         'can_update': True,
         'can_play': False,
         'can_date': True,
@@ -79,23 +82,24 @@ class libmal(lib):
     }
 
     # Authorized User-Agent for Trackma
-    url = 'http://myanimelist.net/api/'
+    url = 'https://myanimelist.net/api/'
     useragent = 'api-team-f894427cc1c571f79da49605ef8b112f'
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
         # Since MyAnimeList uses a cookie we just create a HTTP Auth handler
-        # together with the urllib2 opener.
+        # together with the urllib opener.
         super(libmal, self).__init__(messenger, account, userconfig)
 
-        auth_string = 'Basic ' + base64.encodestring('%s:%s' % (account['username'], account['password'])).replace('\n', '')
+        token = '%s:%s' % (account['username'], account['password'])
+        auth_string = 'Basic ' + base64.b64encode(token.encode('utf-8')).decode('ascii').replace('\n', '')
 
         self.username = self._get_userconfig('username')
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
-			('User-Agent', self.useragent),
-			('Authorization', auth_string),
-		]
+            ('User-Agent', self.useragent),
+            ('Authorization', auth_string),
+        ]
 
     def _request(self, url):
         """
@@ -105,10 +109,10 @@ class libmal(lib):
 
         """
         try:
-            request = urllib2.Request(url)
+            request = urllib.request.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
             response = self.opener.open(request, timeout = 10)
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError(
                         "Unauthorized. Please check if your username and password are correct."
@@ -117,15 +121,17 @@ class libmal(lib):
                         "MAL bug (#138).")
             else:
                 raise utils.APIError("HTTP error %d: %s" % (e.code, e.reason))
-        except urllib2.URLError, e:
+        except urllib.request.URLError as e:
             raise utils.APIError("Connection error: %s" % e)
 
         if response.info().get('content-encoding') == 'gzip':
-            compressed_stream = StringIO(response.read())
-            return gzip.GzipFile(fileobj=compressed_stream)
+            ret = gzip.decompress(response.read())
         else:
             # If the content is not gzipped return it as-is
-            return response
+            ret = response.read()
+        if isinstance(ret, bytes):
+            return ret.decode('utf-8')
+        return ret
 
     def check_credentials(self):
         """Checks if credentials are correct; returns True or False."""
@@ -135,7 +141,7 @@ class libmal(lib):
         self.msg.info(self.name, 'Logging in...')
 
         response = self._request(self.url + "account/verify_credentials.xml")
-        root = ET.ElementTree().parse(response, parser=self._make_parser())
+        root = self._parse_xml(response)
         (userid, username) = self._parse_credentials(root)
         self.username = username
 
@@ -154,11 +160,11 @@ class libmal(lib):
 
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request("http://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
+            data = self._request("https://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
 
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
-            root = ET.ElementTree().parse(data, parser=self._make_parser())
+            root = self._parse_xml(data)
 
             if self.mediatype == 'anime':
                 self.msg.info(self.name, 'Parsing anime list...')
@@ -168,10 +174,10 @@ class libmal(lib):
                 return self._parse_manga(root)
             else:
                 raise utils.APIFatal('Attempted to parse unsupported media type.')
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
-        except IOError, e:
-            raise utils.APIError("Error reading list: %s" % e.message)
+        except IOError as e:
+            raise utils.APIError("Error reading list: %s" % e)
 
     def add_show(self, item):
         """Adds a new show in the server"""
@@ -182,10 +188,10 @@ class libmal(lib):
 
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
-        data = self._urlencode(values)
+        data = urllib.parse.urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError, e:
+            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data.encode('utf-8'))
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
     def update_show(self, item):
@@ -197,10 +203,10 @@ class libmal(lib):
 
         # Send the XML as POST data to the MyAnimeList API
         values = {'data': xml}
-        data = self._urlencode(values)
+        data = urllib.parse.urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data)
-        except urllib2.HTTPError, e:
+            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data.encode('utf-8'))
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
     def delete_show(self, item):
@@ -210,7 +216,7 @@ class libmal(lib):
 
         try:
             self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
-        except urllib2.HTTPError, e:
+        except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, criteria):
@@ -218,20 +224,20 @@ class libmal(lib):
         self.msg.info(self.name, "Searching for %s..." % criteria)
 
         # Send the urlencoded query to the search API
-        query = self._urlencode({'q': criteria})
+        query = urllib.parse.urlencode({'q': criteria})
         data = self._request(self.url + self.mediatype + "/search.xml?" + query)
 
         # Load the results into XML
         try:
-            root = ET.ElementTree().parse(data, parser=self._make_parser())
-        except ET.ParseError, e:
+            root = self._parse_xml(data)
+        except ET.ParseError as e:
             if e.code == 3:
                 # Empty document; no results
                 return []
             else:
-                raise utils.APIError("Parser error: %s" % repr(e.message))
+                raise utils.APIError("Parser error: %r" % e)
         except IOError:
-            raise utils.APIError("IO error: %s" % repr(e.message))
+            raise utils.APIError("IO error: %r" % e)
 
         # Use the correct tag name for episodes
         if self.mediatype == 'manga':
@@ -260,7 +266,7 @@ class libmal(lib):
                 'status':       status_translate[child.find('status').text], # TODO : This should return an int!
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
-                'url':          "http://myanimelist.net/anime/%d" % showid,
+                'url':          "https://myanimelist.net/anime/%d" % showid,
                 'start_date':   self._str2date( child.find('start_date').text ),
                 'end_date':     self._str2date( child.find('end_date').text ),
                 'extra': [
@@ -331,12 +337,13 @@ class libmal(lib):
                 'my_score':     int(child.find('my_score').text),
                 'my_start_date':  self._str2date( child.find('my_start_date').text ),
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
+                'my_tags':         child.find('my_tags').text,
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/anime/%d" % show_id,
+                'url':          "https://myanimelist.net/anime/%d" % show_id,
             })
             showlist[show_id] = show
         return showlist
@@ -366,7 +373,7 @@ class libmal(lib):
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
-                'url':          "http://myanimelist.net/manga/%d" % manga_id,
+                'url':          "https://myanimelist.net/manga/%d" % manga_id,
             })
             mangalist[manga_id] = show
         return mangalist
@@ -377,8 +384,8 @@ class libmal(lib):
         add, update and delete methods.
 
         More information:
-          http://myanimelist.net/modules.php?go=api#animevalues
-          http://myanimelist.net/modules.php?go=api#mangavalues
+          https://myanimelist.net/modules.php?go=api#animevalues
+          https://myanimelist.net/modules.php?go=api#mangavalues
 
         """
 
@@ -407,6 +414,9 @@ class libmal(lib):
         if 'my_finish_date' in item.keys():
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
+        if 'my_tags' in item.keys():
+            tags = ET.SubElement(root, "tags")
+            tags.text = str(item['my_tags'])
 
         return ET.tostring(root)
 
@@ -425,278 +435,273 @@ class libmal(lib):
         else:
             return None
 
-    def _urlencode(self, in_dict):
-        """Helper function to urlencode dicts in unicode. urllib doesn't like them."""
-        out_dict = {}
-        for k, v in in_dict.iteritems():
-            out_dict[k] = v
-            if isinstance(v, unicode):
-                out_dict[k] = v.encode('utf8')
-            elif isinstance(v, str):
-                out_dict[k] = v.decode('utf8')
-        return urllib.urlencode(out_dict)
-
-    def _make_parser(self):
+    def _parse_xml(self, data):
         # For some reason MAL returns an XML file with HTML exclusive
         # entities like &aacute;, so we have to create a custom XMLParser
         # to convert these entities correctly.
-        parser = ET.XMLParser()
-        parser.parser.UseForeignDTD(True)
 
-        entities = dict()
-        entities["nbsp"] =     u'\u00A0'
-        entities["iexcl"] =    u'\u00A1'
-        entities["cent"] =     u'\u00A2'
-        entities["pound"] =    u'\u00A3'
-        entities["curren"] =   u'\u00A4'
-        entities["yen"] =      u'\u00A5'
-        entities["brvbar"] =   u'\u00A6'
-        entities["sect"] =     u'\u00A7'
-        entities["uml"] =      u'\u00A8'
-        entities["copy"] =     u'\u00A9'
-        entities["ordf"] =     u'\u00AA'
-        entities["laquo"] =    u'\u00AB'
-        entities["not"] =      u'\u00AC'
-        entities["shy"] =      u'\u00AD'
-        entities["reg"] =      u'\u00AE'
-        entities["macr"] =     u'\u00AF'
-        entities["deg"] =      u'\u00B0'
-        entities["plusmn"] =   u'\u00B1'
-        entities["sup2"] =     u'\u00B2'
-        entities["sup3"] =     u'\u00B3'
-        entities["acute"] =    u'\u00B4'
-        entities["micro"] =    u'\u00B5'
-        entities["para"] =     u'\u00B6'
-        entities["middot"] =   u'\u00B7'
-        entities["cedil"] =    u'\u00B8'
-        entities["sup1"] =     u'\u00B9'
-        entities["ordm"] =     u'\u00BA'
-        entities["raquo"] =    u'\u00BB'
-        entities["frac14"] =   u'\u00BC'
-        entities["frac12"] =   u'\u00BD'
-        entities["frac34"] =   u'\u00BE'
-        entities["iquest"] =   u'\u00BF'
-        entities["Agrave"] =   u'\u00C0'
-        entities["Aacute"] =   u'\u00C1'
-        entities["Acirc"] =    u'\u00C2'
-        entities["Atilde"] =   u'\u00C3'
-        entities["Auml"] =     u'\u00C4'
-        entities["Aring"] =    u'\u00C5'
-        entities["AElig"] =    u'\u00C6'
-        entities["Ccedil"] =   u'\u00C7'
-        entities["Egrave"] =   u'\u00C8'
-        entities["Eacute"] =   u'\u00C9'
-        entities["Ecirc"] =    u'\u00CA'
-        entities["Euml"] =     u'\u00CB'
-        entities["Igrave"] =   u'\u00CC'
-        entities["Iacute"] =   u'\u00CD'
-        entities["Icirc"] =    u'\u00CE'
-        entities["Iuml"] =     u'\u00CF'
-        entities["ETH"] =      u'\u00D0'
-        entities["Ntilde"] =   u'\u00D1'
-        entities["Ograve"] =   u'\u00D2'
-        entities["Oacute"] =   u'\u00D3'
-        entities["Ocirc"] =    u'\u00D4'
-        entities["Otilde"] =   u'\u00D5'
-        entities["Ouml"] =     u'\u00D6'
-        entities["times"] =    u'\u00D7'
-        entities["Oslash"] =   u'\u00D8'
-        entities["Ugrave"] =   u'\u00D9'
-        entities["Uacute"] =   u'\u00DA'
-        entities["Ucirc"] =    u'\u00DB'
-        entities["Uuml"] =     u'\u00DC'
-        entities["Yacute"] =   u'\u00DD'
-        entities["THORN"] =    u'\u00DE'
-        entities["szlig"] =    u'\u00DF'
-        entities["agrave"] =   u'\u00E0'
-        entities["aacute"] =   u'\u00E1'
-        entities["acirc"] =    u'\u00E2'
-        entities["atilde"] =   u'\u00E3'
-        entities["auml"] =     u'\u00E4'
-        entities["aring"] =    u'\u00E5'
-        entities["aelig"] =    u'\u00E6'
-        entities["ccedil"] =   u'\u00E7'
-        entities["egrave"] =   u'\u00E8'
-        entities["eacute"] =   u'\u00E9'
-        entities["ecirc"] =    u'\u00EA'
-        entities["euml"] =     u'\u00EB'
-        entities["igrave"] =   u'\u00EC'
-        entities["iacute"] =   u'\u00ED'
-        entities["icirc"] =    u'\u00EE'
-        entities["iuml"] =     u'\u00EF'
-        entities["eth"] =      u'\u00F0'
-        entities["ntilde"] =   u'\u00F1'
-        entities["ograve"] =   u'\u00F2'
-        entities["oacute"] =   u'\u00F3'
-        entities["ocirc"] =    u'\u00F4'
-        entities["otilde"] =   u'\u00F5'
-        entities["ouml"] =     u'\u00F6'
-        entities["divide"] =   u'\u00F7'
-        entities["oslash"] =   u'\u00F8'
-        entities["ugrave"] =   u'\u00F9'
-        entities["uacute"] =   u'\u00FA'
-        entities["ucirc"] =    u'\u00FB'
-        entities["uuml"] =     u'\u00FC'
-        entities["yacute"] =   u'\u00FD'
-        entities["thorn"] =    u'\u00FE'
-        entities["yuml"] =     u'\u00FF'
-        entities["fnof"] =     u'\u0192'
-        entities["Alpha"] =    u'\u0391'
-        entities["Beta"] =     u'\u0392'
-        entities["Gamma"] =    u'\u0393'
-        entities["Delta"] =    u'\u0394'
-        entities["Epsilon"] =  u'\u0395'
-        entities["Zeta"] =     u'\u0396'
-        entities["Eta"] =      u'\u0397'
-        entities["Theta"] =    u'\u0398'
-        entities["Iota"] =     u'\u0399'
-        entities["Kappa"] =    u'\u039A'
-        entities["Lambda"] =   u'\u039B'
-        entities["Mu"] =       u'\u039C'
-        entities["Nu"] =       u'\u039D'
-        entities["Xi"] =       u'\u039E'
-        entities["Omicron"] =  u'\u039F'
-        entities["Pi"] =       u'\u03A0'
-        entities["Rho"] =      u'\u03A1'
-        entities["Sigma"] =    u'\u03A3'
-        entities["Tau"] =      u'\u03A4'
-        entities["Upsilon"] =  u'\u03A5'
-        entities["Phi"] =      u'\u03A6'
-        entities["Chi"] =      u'\u03A7'
-        entities["Psi"] =      u'\u03A8'
-        entities["Omega"] =    u'\u03A9'
-        entities["alpha"] =    u'\u03B1'
-        entities["beta"] =     u'\u03B2'
-        entities["gamma"] =    u'\u03B3'
-        entities["delta"] =    u'\u03B4'
-        entities["epsilon"] =  u'\u03B5'
-        entities["zeta"] =     u'\u03B6'
-        entities["eta"] =      u'\u03B7'
-        entities["theta"] =    u'\u03B8'
-        entities["iota"] =     u'\u03B9'
-        entities["kappa"] =    u'\u03BA'
-        entities["lambda"] =   u'\u03BB'
-        entities["mu"] =       u'\u03BC'
-        entities["nu"] =       u'\u03BD'
-        entities["xi"] =       u'\u03BE'
-        entities["omicron"] =  u'\u03BF'
-        entities["pi"] =       u'\u03C0'
-        entities["rho"] =      u'\u03C1'
-        entities["sigmaf"] =   u'\u03C2'
-        entities["sigma"] =    u'\u03C3'
-        entities["tau"] =      u'\u03C4'
-        entities["upsilon"] =  u'\u03C5'
-        entities["phi"] =      u'\u03C6'
-        entities["chi"] =      u'\u03C7'
-        entities["psi"] =      u'\u03C8'
-        entities["omega"] =    u'\u03C9'
-        entities["thetasym"] = u'\u03D1'
-        entities["upsih"] =    u'\u03D2'
-        entities["piv"] =      u'\u03D6'
-        entities["bull"] =     u'\u2022'
-        entities["hellip"] =   u'\u2026'
-        entities["prime"] =    u'\u2032'
-        entities["Prime"] =    u'\u2033'
-        entities["oline"] =    u'\u203E'
-        entities["frasl"] =    u'\u2044'
-        entities["weierp"] =   u'\u2118'
-        entities["image"] =    u'\u2111'
-        entities["real"] =     u'\u211C'
-        entities["trade"] =    u'\u2122'
-        entities["alefsym"] =  u'\u2135'
-        entities["larr"] =     u'\u2190'
-        entities["uarr"] =     u'\u2191'
-        entities["rarr"] =     u'\u2192'
-        entities["darr"] =     u'\u2193'
-        entities["harr"] =     u'\u2194'
-        entities["crarr"] =    u'\u21B5'
-        entities["lArr"] =     u'\u21D0'
-        entities["uArr"] =     u'\u21D1'
-        entities["rArr"] =     u'\u21D2'
-        entities["dArr"] =     u'\u21D3'
-        entities["hArr"] =     u'\u21D4'
-        entities["forall"] =   u'\u2200'
-        entities["part"] =     u'\u2202'
-        entities["exist"] =    u'\u2203'
-        entities["empty"] =    u'\u2205'
-        entities["nabla"] =    u'\u2207'
-        entities["isin"] =     u'\u2208'
-        entities["notin"] =    u'\u2209'
-        entities["ni"] =       u'\u220B'
-        entities["prod"] =     u'\u220F'
-        entities["sum"] =      u'\u2211'
-        entities["minus"] =    u'\u2212'
-        entities["lowast"] =   u'\u2217'
-        entities["radic"] =    u'\u221A'
-        entities["prop"] =     u'\u221D'
-        entities["infin"] =    u'\u221E'
-        entities["ang"] =      u'\u2220'
-        entities["and"] =      u'\u2227'
-        entities["or"] =       u'\u2228'
-        entities["cap"] =      u'\u2229'
-        entities["cup"] =      u'\u222A'
-        entities["int"] =      u'\u222B'
-        entities["there4"] =   u'\u2234'
-        entities["sim"] =      u'\u223C'
-        entities["cong"] =     u'\u2245'
-        entities["asymp"] =    u'\u2248'
-        entities["ne"] =       u'\u2260'
-        entities["equiv"] =    u'\u2261'
-        entities["le"] =       u'\u2264'
-        entities["ge"] =       u'\u2265'
-        entities["sub"] =      u'\u2282'
-        entities["sup"] =      u'\u2283'
-        entities["nsub"] =     u'\u2284'
-        entities["sube"] =     u'\u2286'
-        entities["supe"] =     u'\u2287'
-        entities["oplus"] =    u'\u2295'
-        entities["otimes"] =   u'\u2297'
-        entities["perp"] =     u'\u22A5'
-        entities["sdot"] =     u'\u22C5'
-        entities["lceil"] =    u'\u2308'
-        entities["rceil"] =    u'\u2309'
-        entities["lfloor"] =   u'\u230A'
-        entities["rfloor"] =   u'\u230B'
-        entities["lang"] =     u'\u2329'
-        entities["rang"] =     u'\u232A'
-        entities["loz"] =      u'\u25CA'
-        entities["spades"] =   u'\u2660'
-        entities["clubs"] =    u'\u2663'
-        entities["hearts"] =   u'\u2665'
-        entities["diams"] =    u'\u2666'
-        entities["quot"] =     u'\"'
-        entities["amp"] =      u'&'
-        entities["lt"] =       u'<'
-        entities["gt"] =       u'>'
-        entities["OElig"] =    u'\u0152'
-        entities["oelig"] =    u'\u0153'
-        entities["Scaron"] =   u'\u0160'
-        entities["scaron"] =   u'\u0161'
-        entities["Yuml"] =     u'\u0178'
-        entities["circ"] =     u'\u02C6'
-        entities["tilde"] =    u'\u02DC'
-        entities["ensp"] =     u'\u2002'
-        entities["emsp"] =     u'\u2003'
-        entities["thinsp"] =   u'\u2009'
-        entities["zwnj"] =     u'\u200C'
-        entities["zwj"] =      u'\u200D'
-        entities["lrm"] =      u'\u200E'
-        entities["rlm"] =      u'\u200F'
-        entities["ndash"] =    u'\u2013'
-        entities["mdash"] =    u'\u2014'
-        entities["lsquo"] =    u'\u2018'
-        entities["rsquo"] =    u'\u2019'
-        entities["sbquo"] =    u'\u201A'
-        entities["ldquo"] =    u'\u201C'
-        entities["rdquo"] =    u'\u201D'
-        entities["bdquo"] =    u'\u201E'
-        entities["dagger"] =   u'\u2020'
-        entities["Dagger"] =   u'\u2021'
-        entities["permil"] =   u'\u2030'
-        entities["lsaquo"] =   u'\u2039'
-        entities["rsaquo"] =   u'\u203A'
-        entities["euro"] =     u'\u20AC'
-        parser.entity.update(entities)
+        ENTITIES = {
+            "nbsp":     u'\u00A0',
+            "iexcl":    u'\u00A1',
+            "cent":     u'\u00A2',
+            "pound":    u'\u00A3',
+            "curren":   u'\u00A4',
+            "yen":      u'\u00A5',
+            "brvbar":   u'\u00A6',
+            "sect":     u'\u00A7',
+            "uml":      u'\u00A8',
+            "copy":     u'\u00A9',
+            "ordf":     u'\u00AA',
+            "laquo":    u'\u00AB',
+            "not":      u'\u00AC',
+            "shy":      u'\u00AD',
+            "reg":      u'\u00AE',
+            "macr":     u'\u00AF',
+            "deg":      u'\u00B0',
+            "plusmn":   u'\u00B1',
+            "sup2":     u'\u00B2',
+            "sup3":     u'\u00B3',
+            "acute":    u'\u00B4',
+            "micro":    u'\u00B5',
+            "para":     u'\u00B6',
+            "middot":   u'\u00B7',
+            "cedil":    u'\u00B8',
+            "sup1":     u'\u00B9',
+            "ordm":     u'\u00BA',
+            "raquo":    u'\u00BB',
+            "frac14":   u'\u00BC',
+            "frac12":   u'\u00BD',
+            "frac34":   u'\u00BE',
+            "iquest":   u'\u00BF',
+            "Agrave":   u'\u00C0',
+            "Aacute":   u'\u00C1',
+            "Acirc":    u'\u00C2',
+            "Atilde":   u'\u00C3',
+            "Auml":     u'\u00C4',
+            "Aring":    u'\u00C5',
+            "AElig":    u'\u00C6',
+            "Ccedil":   u'\u00C7',
+            "Egrave":   u'\u00C8',
+            "Eacute":   u'\u00C9',
+            "Ecirc":    u'\u00CA',
+            "Euml":     u'\u00CB',
+            "Igrave":   u'\u00CC',
+            "Iacute":   u'\u00CD',
+            "Icirc":    u'\u00CE',
+            "Iuml":     u'\u00CF',
+            "ETH":      u'\u00D0',
+            "Ntilde":   u'\u00D1',
+            "Ograve":   u'\u00D2',
+            "Oacute":   u'\u00D3',
+            "Ocirc":    u'\u00D4',
+            "Otilde":   u'\u00D5',
+            "Ouml":     u'\u00D6',
+            "times":    u'\u00D7',
+            "Oslash":   u'\u00D8',
+            "Ugrave":   u'\u00D9',
+            "Uacute":   u'\u00DA',
+            "Ucirc":    u'\u00DB',
+            "Uuml":     u'\u00DC',
+            "Yacute":   u'\u00DD',
+            "THORN":    u'\u00DE',
+            "szlig":    u'\u00DF',
+            "agrave":   u'\u00E0',
+            "aacute":   u'\u00E1',
+            "acirc":    u'\u00E2',
+            "atilde":   u'\u00E3',
+            "auml":     u'\u00E4',
+            "aring":    u'\u00E5',
+            "aelig":    u'\u00E6',
+            "ccedil":   u'\u00E7',
+            "egrave":   u'\u00E8',
+            "eacute":   u'\u00E9',
+            "ecirc":    u'\u00EA',
+            "euml":     u'\u00EB',
+            "igrave":   u'\u00EC',
+            "iacute":   u'\u00ED',
+            "icirc":    u'\u00EE',
+            "iuml":     u'\u00EF',
+            "eth":      u'\u00F0',
+            "ntilde":   u'\u00F1',
+            "ograve":   u'\u00F2',
+            "oacute":   u'\u00F3',
+            "ocirc":    u'\u00F4',
+            "otilde":   u'\u00F5',
+            "ouml":     u'\u00F6',
+            "divide":   u'\u00F7',
+            "oslash":   u'\u00F8',
+            "ugrave":   u'\u00F9',
+            "uacute":   u'\u00FA',
+            "ucirc":    u'\u00FB',
+            "uuml":     u'\u00FC',
+            "yacute":   u'\u00FD',
+            "thorn":    u'\u00FE',
+            "yuml":     u'\u00FF',
+            "fnof":     u'\u0192',
+            "Alpha":    u'\u0391',
+            "Beta":     u'\u0392',
+            "Gamma":    u'\u0393',
+            "Delta":    u'\u0394',
+            "Epsilon":  u'\u0395',
+            "Zeta":     u'\u0396',
+            "Eta":      u'\u0397',
+            "Theta":    u'\u0398',
+            "Iota":     u'\u0399',
+            "Kappa":    u'\u039A',
+            "Lambda":   u'\u039B',
+            "Mu":       u'\u039C',
+            "Nu":       u'\u039D',
+            "Xi":       u'\u039E',
+            "Omicron":  u'\u039F',
+            "Pi":       u'\u03A0',
+            "Rho":      u'\u03A1',
+            "Sigma":    u'\u03A3',
+            "Tau":      u'\u03A4',
+            "Upsilon":  u'\u03A5',
+            "Phi":      u'\u03A6',
+            "Chi":      u'\u03A7',
+            "Psi":      u'\u03A8',
+            "Omega":    u'\u03A9',
+            "alpha":    u'\u03B1',
+            "beta":     u'\u03B2',
+            "gamma":    u'\u03B3',
+            "delta":    u'\u03B4',
+            "epsilon":  u'\u03B5',
+            "zeta":     u'\u03B6',
+            "eta":      u'\u03B7',
+            "theta":    u'\u03B8',
+            "iota":     u'\u03B9',
+            "kappa":    u'\u03BA',
+            "lambda":   u'\u03BB',
+            "mu":       u'\u03BC',
+            "nu":       u'\u03BD',
+            "xi":       u'\u03BE',
+            "omicron":  u'\u03BF',
+            "pi":       u'\u03C0',
+            "rho":      u'\u03C1',
+            "sigmaf":   u'\u03C2',
+            "sigma":    u'\u03C3',
+            "tau":      u'\u03C4',
+            "upsilon":  u'\u03C5',
+            "phi":      u'\u03C6',
+            "chi":      u'\u03C7',
+            "psi":      u'\u03C8',
+            "omega":    u'\u03C9',
+            "thetasym": u'\u03D1',
+            "upsih":    u'\u03D2',
+            "piv":      u'\u03D6',
+            "bull":     u'\u2022',
+            "hellip":   u'\u2026',
+            "prime":    u'\u2032',
+            "Prime":    u'\u2033',
+            "oline":    u'\u203E',
+            "frasl":    u'\u2044',
+            "weierp":   u'\u2118',
+            "image":    u'\u2111',
+            "real":     u'\u211C',
+            "trade":    u'\u2122',
+            "alefsym":  u'\u2135',
+            "larr":     u'\u2190',
+            "uarr":     u'\u2191',
+            "rarr":     u'\u2192',
+            "darr":     u'\u2193',
+            "harr":     u'\u2194',
+            "crarr":    u'\u21B5',
+            "lArr":     u'\u21D0',
+            "uArr":     u'\u21D1',
+            "rArr":     u'\u21D2',
+            "dArr":     u'\u21D3',
+            "hArr":     u'\u21D4',
+            "forall":   u'\u2200',
+            "part":     u'\u2202',
+            "exist":    u'\u2203',
+            "empty":    u'\u2205',
+            "nabla":    u'\u2207',
+            "isin":     u'\u2208',
+            "notin":    u'\u2209',
+            "ni":       u'\u220B',
+            "prod":     u'\u220F',
+            "sum":      u'\u2211',
+            "minus":    u'\u2212',
+            "lowast":   u'\u2217',
+            "radic":    u'\u221A',
+            "prop":     u'\u221D',
+            "infin":    u'\u221E',
+            "ang":      u'\u2220',
+            "and":      u'\u2227',
+            "or":       u'\u2228',
+            "cap":      u'\u2229',
+            "cup":      u'\u222A',
+            "int":      u'\u222B',
+            "there4":   u'\u2234',
+            "sim":      u'\u223C',
+            "cong":     u'\u2245',
+            "asymp":    u'\u2248',
+            "ne":       u'\u2260',
+            "equiv":    u'\u2261',
+            "le":       u'\u2264',
+            "ge":       u'\u2265',
+            "sub":      u'\u2282',
+            "sup":      u'\u2283',
+            "nsub":     u'\u2284',
+            "sube":     u'\u2286',
+            "supe":     u'\u2287',
+            "oplus":    u'\u2295',
+            "otimes":   u'\u2297',
+            "perp":     u'\u22A5',
+            "sdot":     u'\u22C5',
+            "lceil":    u'\u2308',
+            "rceil":    u'\u2309',
+            "lfloor":   u'\u230A',
+            "rfloor":   u'\u230B',
+            "lang":     u'\u2329',
+            "rang":     u'\u232A',
+            "loz":      u'\u25CA',
+            "spades":   u'\u2660',
+            "clubs":    u'\u2663',
+            "hearts":   u'\u2665',
+            "diams":    u'\u2666',
+            "quot":     u'\"'    ,
+            "amp":      u'&'     ,
+            "lt":       u'<'     ,
+            "gt":       u'>'     ,
+            "OElig":    u'\u0152',
+            "oelig":    u'\u0153',
+            "Scaron":   u'\u0160',
+            "scaron":   u'\u0161',
+            "Yuml":     u'\u0178',
+            "circ":     u'\u02C6',
+            "tilde":    u'\u02DC',
+            "ensp":     u'\u2002',
+            "emsp":     u'\u2003',
+            "thinsp":   u'\u2009',
+            "zwnj":     u'\u200C',
+            "zwj":      u'\u200D',
+            "lrm":      u'\u200E',
+            "rlm":      u'\u200F',
+            "ndash":    u'\u2013',
+            "mdash":    u'\u2014',
+            "lsquo":    u'\u2018',
+            "rsquo":    u'\u2019',
+            "sbquo":    u'\u201A',
+            "ldquo":    u'\u201C',
+            "rdquo":    u'\u201D',
+            "bdquo":    u'\u201E',
+            "dagger":   u'\u2020',
+            "Dagger":   u'\u2021',
+            "permil":   u'\u2030',
+            "lsaquo":   u'\u2039',
+            "rsaquo":   u'\u203A',
+            "euro":     u'\u20AC',
+        }
 
-        return parser
+        # http://stackoverflow.com/a/35591479/2016221
+        magic = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" [\n'''
+        magic += ''.join("<!ENTITY %s '&#%d;'>\n" % (key, ord(value)) for key, value in ENTITIES.items())
+        magic += '\n]>'
 
+        # strip xml declaration since we're concatenating something before it
+        data = re.sub('<\?.*?\?>', '', data)
+
+        return ET.fromstring(magic + data)
