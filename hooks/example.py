@@ -3,7 +3,7 @@
 # This configuration file is licensed under the same terms as Trackma.
 # ===================================
 #
-# To use this file, you must move it to ~/.trackma/hook.py
+# To use this file, you must move it to ~/.trackma/hooks/my_hook.py
 #
 # ===================================
 # This Python file contains hook functions for Trackma's engine signals.
@@ -13,6 +13,8 @@
 # These functions are called upon immediately by Trackma after the
 # signal of the same name has been triggered. A reference to the Engine
 # and the relevant arguments are also passed to the function.
+#
+# You can have several hook files in the "hooks" directory.
 # ===================================
 
 # These functions are called when changes are made locally.
@@ -65,11 +67,11 @@ def show_synced(engine, show, change):
     """
 
     if change['action'] == 'add':
-        print "Show ID %d, title %s, was added to the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was added to the remote list." % (show['id'], show['title']))
     elif change['action'] == 'update':
-        print "Show ID %d, title %s, was updated in the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was updated in the remote list." % (show['id'], show['title']))
     elif change['action'] == 'delete':
-        print "Show ID %d, title %s, was deleted from the remote list." % (show['id'], show['title'])
+        print("Show ID %d, title %s, was deleted from the remote list." % (show['id'], show['title']))
 
 def sync_complete(engine, items):
     """This is called after the entire queue has been processed.
@@ -78,7 +80,7 @@ def sync_complete(engine, items):
     processed correctly.
     """
 
-    print "Finished. List of changes made: "
+    print("Finished. List of changes made: ")
     for item in items:
         (show, change) = item
-        print "Action: %s, show ID: %d" % (change['action'], show['id'])
+        print("Action: %s, show ID: %d" % (change['action'], show['id']))

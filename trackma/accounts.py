@@ -1,7 +1,7 @@
-import utils
-import cPickle
+import pickle
+from trackma import utils
 
-class AccountManager(object):
+class AccountManager():
     """
     This is the account manager.
 
@@ -21,16 +21,19 @@ class AccountManager(object):
     def _load(self):
         if utils.file_exists(self.filename):
             with open(self.filename, 'rb') as f:
-                self.accounts = cPickle.load(f)
+                self.accounts = pickle.load(f)
 
     def _save(self):
+        is_new = not utils.file_exists(self.filename)
         with open(self.filename, 'wb') as f:
-            cPickle.dump(self.accounts, f)
+            if is_new:
+                utils.change_permissions(self.filename, 0o600)
+            pickle.dump(self.accounts, f, protocol=2)
 
     def add_account(self, username, password, api):
         """
         Registers a new account with the specified
-        *username*, *password* and *api*.
+        *username*, *password*, and *api*.
 
         The *api* must be one of the available APIs
         found in the utils.available_libs dict.
@@ -53,6 +56,29 @@ class AccountManager(object):
         nextnum = self.accounts['next']
         self.accounts['accounts'][nextnum] = account
         self.accounts['next'] += 1
+        self._save()
+
+    def edit_account(self, num, username, password, api, friends=[]):
+        """
+        Updates data for account *num* with the specified
+        *username*, *password*, and *api*.
+        """
+
+        available_libs = utils.available_libs.keys()
+
+        if not username:
+            raise utils.AccountError('Empty username.')
+        if not password:
+            raise utils.AccountError('Empty password.')
+        if api not in available_libs:
+            raise utils.AccountError('That API doesn\'t exist.')
+
+        account = {'username': username,
+                   'password': password,
+                   'api': api,
+                  }
+
+        self.accounts['accounts'][num].update(account)
         self._save()
 
     def delete_account(self, num):
@@ -87,7 +113,7 @@ class AccountManager(object):
         """
         Returns an iterator of available accounts.
         """
-        return self.accounts['accounts'].iteritems()
+        return self.accounts['accounts'].items()
 
     def get_default(self):
         """

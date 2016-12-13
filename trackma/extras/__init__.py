@@ -1,0 +1,1 @@
+from trackma.extras.AnimeInfoExtractor import AnimeInfoExtractor
