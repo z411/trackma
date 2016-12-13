@@ -317,7 +317,7 @@ class Tracker():
 
             del self.plex_log[0]
             # Wait for the interval before running check again
-            time.sleep(30)
+            time.sleep(interval)
 
     def _tracker(self, watch_dir, interval):
         if self.plex_enabled:
