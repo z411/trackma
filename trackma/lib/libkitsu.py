@@ -50,7 +50,7 @@ class libkitsu(lib):
         'name': 'Kitsu',
         'shortname': 'kitsu',
         'version': 'v0.3',
-        'merge': False
+        'merge': True
     }
 
     default_mediatype = 'anime'
@@ -63,22 +63,22 @@ class libkitsu(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'status_start': 'currently-watching',
+        'status_start': 'current',
         'status_finish': 'completed',
-        'statuses':  ['currently-watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'],
+        'statuses':  ['current', 'completed', 'on_hold', 'dropped', 'planned'],
         'statuses_dict': {
-            'currently-watching': 'Watching',
+            'current': 'Watching',
             'completed': 'Completed',
-            'on-hold': 'On Hold',
+            'on_hold': 'On Hold',
             'dropped': 'Dropped',
-            'plan-to-watch': 'Plan to Watch'
+            'planned': 'Plan to Watch'
             },
         'score_max': 5,
         'score_step': 0.5,
     }
 
     url    = 'https://kitsu.io/api'
-    prefix = '/edge'
+    prefix = 'https://kitsu.io/api/edge'
 
     # TODO : These values are previsional.
     _client_id     = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
@@ -111,12 +111,12 @@ class libkitsu(lib):
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
 
-        request = urllib.request.Request(self.url + url, post)
-        request.add_header('User-Agent',      self.user_agent)
-        request.add_header('Content-Type',    'application/vnd.api+json')
-        request.add_header('Accept',          'application/vnd.api+json')
-        request.add_header('Accept-Encoding', 'gzip')
-        request.add_header('Accept-Charset',  'utf-8')
+        request = urllib.request.Request(url, post)
+        #request.add_header('User-Agent',      self.user_agent)
+        #request.add_header('Content-Type',    'application/vnd.api+json')
+        #request.add_header('Accept',          'application/vnd.api+json')
+        #request.add_header('Accept-Encoding', 'gzip')
+        #request.add_header('Accept-Charset',  'utf-8')
 
         if auth:
             request.add_header('Authorization', '{0} {1}'.format(
@@ -125,7 +125,7 @@ class libkitsu(lib):
             ))
 
         try:
-            response = self.opener.open(self.url + url, post, 10)
+            response = self.opener.open(request)
             
             # The response most probably will be gzipped so we
             # have to take care of that first
@@ -153,7 +153,7 @@ class libkitsu(lib):
             'client_secret': self._client_secret,
         }
 
-        response = self._request('/oauth/token', post=params)
+        response = self._request(self.url + '/oauth/token', post=params)
         data = json.loads(response)
         
         timestamp = int(time.time())
@@ -165,7 +165,7 @@ class libkitsu(lib):
 
         self.logged_in = True
         self._refresh_user_info()
-        #self._emit_signal('userconfig_changed')
+        self._emit_signal('userconfig_changed')
 
     def _refresh_access_token(self):
         self.msg.info(self.name, 'Refreshing access token...')
@@ -180,13 +180,17 @@ class libkitsu(lib):
         raise NotImplementedError
 
     def _refresh_user_info(self):
-        # TODO : Implement this
-
-        return
-
         self.msg.info(self.name, 'Refreshing user details...')
-        data = self._request(self.prefix + '/user')
+        params = {
+                "filter[name]": self.username,
+        }
+        data = self._request(self.prefix + "/users", get=params)
+        json_data = json.loads(data)
+        user = json_data['data'][0]
 
+        # Parse user information
+        self._set_userconfig('userid', user['id'])
+        self._set_userconfig('username', user['attributes']['name'])
 
     def check_credentials(self):
         """
@@ -214,59 +218,67 @@ class libkitsu(lib):
         self.msg.info(self.name, 'Downloading list...')
 
         try:
-            params = {
-                "filter[name]": self.username,
-                "include": "libraryEntries.media"
-            }
-            data = self._request(self.prefix + "/users", get=params)
-            json_data = json.loads(data)
-            (user, shows) = (json_data['data'], None)
-
-            # Parse user information
-            #self._set_userconfig('userid', data['id'])
-            #self._set_userconfig('username', data['displayname'])
-
-            #self.userid = data['id']
-
-            # Parse list
-
-            print(json_data)
-            return []
-
             showlist = dict()
             infolist = list()
 
-            for show in shows:
-                showid = show['anime']['id']
-                status = show['anime']['status']
-                rating = show['rating']['value']
-                epCount = show['anime']['episode_count']
-                alt_titles = []
+            # Get first page and continue from there
+            params = {
+                "filter[userId]": self._get_userconfig('userid'),
+                "include": "media",
+                "page[limit]": "50",
+            }
 
-                if show['anime']['alternate_title'] is not None:
-                    alt_titles.append(show['anime']['alternate_title'])
-                showlist[showid] = utils.show()
-                showlist[showid].update({
-                    'id': showid,
-                    'title': show['anime']['title'] or show['anime']['alternate_title'] or "",
-                    'status': self.status_translate[status],
-                    'start_date':   self._str2date( show['anime']['started_airing'] ),
-                    'end_date':     self._str2date( show['anime']['finished_airing'] ),
-                    'my_progress': show['episodes_watched'],
-                    'my_score': float(rating) if rating is not None else 0.0,
-                    'aliases': alt_titles,
-                    'my_status': show['status'],
-                    'total': int(epCount) if epCount is not None else 0,
-                    'image': show['anime']['cover_image'],
-                    'url': str("https://hummingbird.me/%s/%d" % (self.mediatype, showid)),
-                })
-                info = self._parse_info(show['anime'])
-                infolist.append(info)
+            url = "{}/library-entries?{}".format(self.prefix, urllib.parse.urlencode(params))
+            i = 1
+
+            while url:
+                self.msg.info(self.name, 'Getting page {}...'.format(i))
+
+                data = self._request(url)
+                data_json = json.loads(data)
+
+                entries = data_json['data']
+                links = data_json['links']
+
+                for entry in entries:
+                    showid = int(entry['relationships']['media']['data']['id'])
+                    status = entry['attributes']['status']
+                    rating = entry['attributes']['rating']
+                    
+                    showlist[showid] = utils.show()
+                    showlist[showid].update({
+                        'id': showid,
+                        'my_progress': entry['attributes']['progress'],
+                        'my_score': float(rating) if rating is not None else 0.0,
+                        'my_status': entry['attributes']['status'],
+                    })
+
+                medias = data_json['included']
+                for media in medias:
+                    info = utils.show()
+                    info.update({
+                        'id': int(media['id']),
+                        'title': media['attributes']['canonicalTitle']
+                    })
+
+                    infolist.append(info)
+
+                url = links.get('next')
+                i += 1
 
             self._emit_signal('show_info_changed', infolist)
+
             return showlist
         except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
+
+    def merge(self, show, info):
+        show['title'] = info['title']
+        # TODO implement all
+
+    def request_info(self, item_list):
+        print("These are missing: " + repr(item_list))
+        raise NotImplementedError
 
     def add_show(self, item):
         """Adds a new show in the server"""
