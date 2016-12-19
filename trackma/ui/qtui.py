@@ -1113,7 +1113,7 @@ class Trackma(QMainWindow):
 
     def s_set_tags(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
-        if show['my_tags']:
+        if 'my_tags' in show and show['my_tags']:
             tags = show['my_tags']
         else:
             tags = ''
