@@ -141,6 +141,7 @@ class libkitsu(lib):
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
+                print(repr(e.read()))
                 raise utils.APIError("Connection error: %s" % e)
         except urllib.request.URLError as e:
             raise utils.APIError("URL error: %s" % e)
@@ -226,7 +227,8 @@ class libkitsu(lib):
             params = {
                 "filter[userId]": self._get_userconfig('userid'),
                 "include": "media",
-                "page[limit]": "500",
+                "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,showType,posterImage",
+                "page[limit]": "100",
             }
 
             url = "{}/library-entries?{}".format(self.prefix, urllib.parse.urlencode(params))
@@ -237,6 +239,9 @@ class libkitsu(lib):
 
                 data = self._request('GET', url)
                 data_json = json.loads(data)
+
+                #print(json.dumps(data_json, sort_keys=True, indent=2))
+                #return []
 
                 entries = data_json['data']
                 links = data_json['links']
@@ -400,16 +405,19 @@ class libkitsu(lib):
 
     def _parse_info(self, media):
         info = utils.show()
+        attr = media['attributes']
+
         info.update({
             'id': int(media['id']),
-            'title':  media['attributes']['canonicalTitle'],
-            'total':  media['attributes']['episodeCount'],
-            'image':  None, # TODO : large and small images are not working?
-            'url': None,
+            'title':       attr['canonicalTitle'],
+            'total':       attr['episodeCount'],
+            'image':       attr['posterImage']['small'],
+            'image_thumb': attr['posterImage']['tiny'],
+            'url': "https://kitsu.io/anime/{}".format(attr['slug']),
             'aliases': [], # TODO : handle aliases
             'extra': [
-                ('Synopsis', media['attributes']['synopsis']),
-                ('Type',     media['attributes']['showType']),
+                ('Synopsis', attr['synopsis']),
+                ('Type',     attr['showType']),
             ]
         })
 
