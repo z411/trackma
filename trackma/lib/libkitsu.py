@@ -54,6 +54,15 @@ class libkitsu(lib):
     }
 
     default_mediatype = 'anime'
+    default_statuses = ['current', 'completed', 'on_hold', 'dropped', 'planned']
+    default_statuses_dict = {
+            'current': 'Watching',
+            'completed': 'Completed',
+            'on_hold': 'On Hold',
+            'dropped': 'Dropped',
+            'planned': 'Plan to Watch'
+            }
+
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -65,14 +74,23 @@ class libkitsu(lib):
         'can_play': True,
         'status_start': 'current',
         'status_finish': 'completed',
-        'statuses':  ['current', 'completed', 'on_hold', 'dropped', 'planned'],
-        'statuses_dict': {
-            'current': 'Watching',
-            'completed': 'Completed',
-            'on_hold': 'On Hold',
-            'dropped': 'Dropped',
-            'planned': 'Plan to Watch'
-            },
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
+        'score_max': 5,
+        'score_step': 0.5,
+    }
+    mediatypes['manga'] = {
+        'has_progress': True,
+        'can_add': True,
+        'can_delete': True,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
+        'can_play': False,
+        'status_start': 'current',
+        'status_finish': 'completed',
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
         'score_max': 5,
         'score_step': 0.5,
     }
@@ -226,6 +244,7 @@ class libkitsu(lib):
             # Get first page and continue from there
             params = {
                 "filter[userId]": self._get_userconfig('userid'),
+                "filter[media_type]": self.mediatype.capitalize(),
                 "include": "media",
                 "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,showType,posterImage",
                 "page[limit]": "100",
@@ -329,7 +348,7 @@ class libkitsu(lib):
                  }
 
         try:
-            data = self._request('GET', self.prefix + "/anime", get=values)
+            data = self._request('GET', self.prefix + "/" + self.mediatype, get=values)
             shows = json.loads(data)
 
             infolist = []
@@ -412,17 +431,27 @@ class libkitsu(lib):
         info = utils.show()
         attr = media['attributes']
 
+        #print(json.dumps(media, indent=2))
+        #raise NotImplementedError
+
+        if media['type'] == 'anime':
+            total = attr['episodeCount']
+            type_str = 'showType'
+        elif media['type'] == 'manga':
+            total = attr['chapterCount']
+            type_str = 'mangaType'
+
         info.update({
             'id': int(media['id']),
             'title':       attr['canonicalTitle'],
-            'total':       attr['episodeCount'],
+            'total':       total or 0,
             'image':       attr['posterImage']['small'],
             'image_thumb': attr['posterImage']['tiny'],
-            'url': "https://kitsu.io/anime/{}".format(attr['slug']),
+            'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases': [], # TODO : handle aliases
             'extra': [
                 ('Synopsis', attr['synopsis']),
-                ('Type',     attr['showType']),
+                ('Type',     attr[type_str]),
             ]
         })
 
