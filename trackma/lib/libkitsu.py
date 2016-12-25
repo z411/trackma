@@ -225,7 +225,7 @@ class libkitsu(lib):
             params = {
                 "filter[userId]": self._get_userconfig('userid'),
                 "include": "media",
-                "page[limit]": "50",
+                "page[limit]": "500",
             }
 
             url = "{}/library-entries?{}".format(self.prefix, urllib.parse.urlencode(params))
