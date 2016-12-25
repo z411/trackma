@@ -210,9 +210,6 @@ class libkitsu(lib):
         else:
             self.logged_in = True
 
-        #self.auth = response.strip('"')
-        #self._set_userconfig('username', self.username)
-        #self.logged_in = True
         return True
 
     def fetch_list(self):
@@ -274,6 +271,9 @@ class libkitsu(lib):
 
     def merge(self, show, info):
         show['title'] = info['title']
+        show['total'] = info['total']
+        show['image'] = info['image']
+
         # TODO implement all
 
     def request_info(self, item_list):
@@ -326,7 +326,7 @@ class libkitsu(lib):
         try:
             data = self._request('GET', self.prefix + "/anime", get=values)
             shows = json.loads(data)
-            
+
             infolist = []
             for media in shows['data']:
                 info = self._parse_info(media)
@@ -402,7 +402,15 @@ class libkitsu(lib):
         info = utils.show()
         info.update({
             'id': int(media['id']),
-            'title': media['attributes']['canonicalTitle']
+            'title':  media['attributes']['canonicalTitle'],
+            'total':  media['attributes']['episodeCount'],
+            'image':  None, # TODO : large and small images are not working?
+            'url': None,
+            'aliases': [], # TODO : handle aliases
+            'extra': [
+                ('Synopsis', media['attributes']['synopsis']),
+                ('Type',     media['attributes']['showType']),
+            ]
         })
 
         return info
