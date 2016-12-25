@@ -159,12 +159,26 @@ class libkitsu(lib):
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
-                print(repr(e.read()))
-                raise utils.APIError("Connection error: %s" % e)
+                api_error = self._parse_errors(e)
+                if api_error:
+                    raise utils.APIError("API error: %s" % api_error)
+                else:
+                    raise utils.APIError("Connection error: %s" % e)
         except urllib.request.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
+
+    def _parse_errors(self, e):
+        try:
+            data = json.loads(e.read().decode('utf-8'))
+            errors = ""
+            for error in data['errors']:
+                errors += "{}: {}".format(error['code'], error['detail'])
+
+            return errors
+        except:
+            return None
 
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
@@ -312,8 +326,10 @@ class libkitsu(lib):
         data = self._build_data(item)
 
         try:
-            # TODO : Should return my_id
-            self._request('POST', self.prefix + "/library-entries", body=data, auth=True)
+            data = self._request('POST', self.prefix + "/library-entries", body=data, auth=True)
+
+            data_json = json.loads(data)
+            return int(data_json['data']['id'])
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
