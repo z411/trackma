@@ -99,24 +99,28 @@ class libkitsu(lib):
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
             ('User-Agent',      self.user_agent),
-            ('Content-Type',    'application/vnd.api+json'),
             ('Accept',          'application/vnd.api+json'),
             ('Accept-Encoding', 'gzip'),
             ('Accept-Charset',  'utf-8'),
         ]
 
-    def _request(self, url, get=None, post=None, auth=False):
+    def _request(self, method, url, get=None, post=None, body=None, auth=False):
+        content_type = None
+
         if get:
             url += "?%s" % urllib.parse.urlencode(get)
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
+            content_type = 'application/x-www-form-urlencoded'
+        if body:
+            post = body.encode('utf-8')
+            content_type = 'application/vnd.api+json'
 
         request = urllib.request.Request(url, post)
-        #request.add_header('User-Agent',      self.user_agent)
-        #request.add_header('Content-Type',    'application/vnd.api+json')
-        #request.add_header('Accept',          'application/vnd.api+json')
-        #request.add_header('Accept-Encoding', 'gzip')
-        #request.add_header('Accept-Charset',  'utf-8')
+        request.get_method = lambda: method
+
+        if content_type:
+            request.add_header('Content-Type', content_type)
 
         if auth:
             request.add_header('Authorization', '{0} {1}'.format(
@@ -126,7 +130,7 @@ class libkitsu(lib):
 
         try:
             response = self.opener.open(request)
-            
+
             # The response most probably will be gzipped so we
             # have to take care of that first
             if response.info().get('content-encoding') == 'gzip':
@@ -153,9 +157,9 @@ class libkitsu(lib):
             'client_secret': self._client_secret,
         }
 
-        response = self._request(self.url + '/oauth/token', post=params)
+        response = self._request('POST', self.url + '/oauth/token', post=params)
         data = json.loads(response)
-        
+
         timestamp = int(time.time())
 
         self._set_userconfig('access_token',  data['access_token'])
@@ -175,7 +179,7 @@ class libkitsu(lib):
             'client_secret': self._client_secret,
             'refresh_token': self._get_userconfig('refresh_token'),
         }
-        
+
         # TODO : Where's the refresh endpoint?
         raise NotImplementedError
 
@@ -184,7 +188,7 @@ class libkitsu(lib):
         params = {
                 "filter[name]": self.username,
         }
-        data = self._request(self.prefix + "/users", get=params)
+        data = self._request('GET', self.prefix + "/users", get=params)
         json_data = json.loads(data)
         user = json_data['data'][0]
 
@@ -234,7 +238,7 @@ class libkitsu(lib):
             while url:
                 self.msg.info(self.name, 'Getting page {}...'.format(i))
 
-                data = self._request(url)
+                data = self._request('GET', url)
                 data_json = json.loads(data)
 
                 entries = data_json['data']
@@ -244,10 +248,11 @@ class libkitsu(lib):
                     showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
                     rating = entry['attributes']['rating']
-                    
+
                     showlist[showid] = utils.show()
                     showlist[showid].update({
                         'id': showid,
+                        'my_id': entry['id'],
                         'my_progress': entry['attributes']['progress'],
                         'my_score': float(rating) if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
@@ -255,12 +260,7 @@ class libkitsu(lib):
 
                 medias = data_json['included']
                 for media in medias:
-                    info = utils.show()
-                    info.update({
-                        'id': int(media['id']),
-                        'title': media['attributes']['canonicalTitle']
-                    })
-
+                    info = self._parse_info(media)
                     infolist.append(info)
 
                 url = links.get('next')
@@ -282,26 +282,26 @@ class libkitsu(lib):
 
     def add_show(self, item):
         """Adds a new show in the server"""
-        self.update_show(item)
+        self.check_credentials()
+        self.msg.info(self.name, "Adding show %s..." % item['title'])
+
+        data = self._build_data(item)
+
+        try:
+            # TODO : Should return my_id
+            self._request('POST', self.prefix + "/library-entries", body=data, auth=True)
+        except urllib.request.HTTPError as e:
+            raise utils.APIError('Error adding: ' + str(e.code))
 
     def update_show(self, item):
         """Sends a show update to the server"""
         self.check_credentials()
         self.msg.info(self.name, "Updating show %s..." % item['title'])
 
-        # Send the POST data to the Hummingbird API
-        values = {'auth_token': self.auth}
-
-        # Update necessary keys
-        if 'my_progress' in item.keys():
-            values['episodes_watched'] = item['my_progress']
-        if 'my_status' in item.keys():
-            values['status'] = item['my_status']
-        if 'my_score' in item.keys():
-            values['sane_rating_update'] = item['my_score']
+        data = self._build_data(item)
 
         try:
-            self._request("/libraries/%s" % item['id'], post=values)
+            self._request('PATCH', self.prefix + "/library-entries/%s" % item['my_id'], body=data, auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
@@ -310,16 +310,38 @@ class libkitsu(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
 
-        values = {'auth_token': self.auth}
         try:
-            self._request("/libraries/%s/remove" % item['id'], post=values)
+            self._request('DELETE', self.prefix + "/library-entries/%s" % item['my_id'], auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
     def search(self, query):
         self.msg.info(self.name, "Searching for %s..." % query)
 
-        values = {'query': query}
+        values = {
+                  "filter[text]": query,
+                  "page[limit]": 20,
+                 }
+
+        try:
+            data = self._request('GET', self.prefix + "/anime", get=values)
+            shows = json.loads(data)
+            
+            infolist = []
+            for media in shows['data']:
+                info = self._parse_info(media)
+                infolist.append(info)
+
+            self._emit_signal('show_info_changed', infolist)
+
+            if not infolist:
+                raise utils.APIError('No results.')
+
+            return infolist
+        except urllib.request.HTTPError as e:
+            raise utils.APIError('Error searching: ' + str(e.code))
+
+        """values = {'query': query}
         try:
             data = self._request("/search/anime", get=values)
             shows = json.loads(data.read().decode('utf-8'))
@@ -336,8 +358,36 @@ class libkitsu(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib.request.HTTPError as e:
-            raise utils.APIError('Error searching: ' + str(e.code))
+        except urllib.request.HTTPError as e:"""
+
+    def _build_data(self, item):
+        values = {'data': {
+            'type': 'libraryEntries',
+            'attributes': {},
+            'relationships': {
+                'media': {
+                    'data': {
+                        'type': self.mediatype,
+                        'id': item['id']
+                        }
+                    }
+                }
+            }
+        }
+
+        # Update necessary keys
+        if item['my_id']:
+            values['data']['id'] = str(item['my_id'])
+        if 'my_progress' in item.keys():
+            values['data']['attributes']['progress'] = item['my_progress']
+        if 'my_status' in item.keys():
+            values['data']['attributes']['status'] = item['my_status']
+        if 'my_score' in item.keys():
+            values['data']['attributes']['rating'] = item['my_score']
+
+        print(repr(values))
+
+        return json.dumps(values)
 
     def _str2date(self, string):
         if string != '0000-00-00':
@@ -348,8 +398,16 @@ class libkitsu(lib):
         else:
             return None
 
-    def _parse_info(self, show):
+    def _parse_info(self, media):
         info = utils.show()
+        info.update({
+            'id': int(media['id']),
+            'title': media['attributes']['canonicalTitle']
+        })
+
+        return info
+
+        """info = utils.show()
         alt_titles = []
         if show['alternate_title'] is not None:
             alt_titles.append(show['alternate_title'])
@@ -367,4 +425,4 @@ class libkitsu(lib):
                 ('Status',          show['status']),
             ]
         })
-        return info
+        return info"""
