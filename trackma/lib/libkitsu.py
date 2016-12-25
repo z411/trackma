@@ -373,9 +373,15 @@ class libkitsu(lib):
                 'media': {
                     'data': {
                         'type': self.mediatype,
-                        'id': item['id']
+                        'id': item['id'],
                         }
-                    }
+                    },
+                'user': {
+                    'data': {
+                        'type': 'users',
+                        'id': self._get_userconfig('userid'),
+                        }
+                    },
                 }
             }
         }
@@ -387,10 +393,9 @@ class libkitsu(lib):
             values['data']['attributes']['progress'] = item['my_progress']
         if 'my_status' in item.keys():
             values['data']['attributes']['status'] = item['my_status']
-        if 'my_score' in item.keys():
+        if 'my_score' in item.keys() and item['my_score'] > 0:
+            # TODO : API doesn't allow 0. What if we want to remove our rating?
             values['data']['attributes']['rating'] = item['my_score']
-
-        print(repr(values))
 
         return json.dumps(values)
 
