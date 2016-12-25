@@ -647,6 +647,8 @@ class Trackma(QMainWindow):
         for status in statuses_nums:
             self._rebuild_list(status, filtered_list[status], altnames, library)
 
+        self.s_filter_changed()
+
     def _rebuild_list(self, status, showlist=None, altnames=None, library=None):
         if not showlist:
             showlist = self.worker.engine.filter_list(status)
@@ -1111,7 +1113,7 @@ class Trackma(QMainWindow):
 
     def s_set_tags(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
-        if show['my_tags']:
+        if 'my_tags' in show and show['my_tags']:
             tags = show['my_tags']
         else:
             tags = ''
