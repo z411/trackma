@@ -324,7 +324,11 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
             return
 
-        print("Title: %s" % details['title'])
+        print(details['title'])
+        print("-" * len(details['title']))
+        print(show['url'])
+        print()
+
         for line in details['extra']:
             print("%s: %s" % line)
 
