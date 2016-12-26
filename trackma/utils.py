@@ -40,7 +40,6 @@ available_libs = {
                 ),
     'hb':       ('Hummingbird',  datadir + '/data/hb.jpg',          LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
-    'melative': ('Melative',     datadir + '/data/melative.jpg',    LOGIN_PASSWD),
     'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
