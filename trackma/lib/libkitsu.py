@@ -94,6 +94,21 @@ class libkitsu(lib):
         'score_max': 5,
         'score_step': 0.5,
     }
+    mediatypes['drama'] = {
+        'has_progress': True,
+        'can_add': True,
+        'can_delete': True,
+        'can_score': True,
+        'can_status': True,
+        'can_update': True,
+        'can_play': True,
+        'status_start': 'current',
+        'status_finish': 'completed',
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
+        'score_max': 5,
+        'score_step': 0.5,
+    }
 
     url    = 'https://kitsu.io/api'
     prefix = 'https://kitsu.io/api/edge'
@@ -437,6 +452,9 @@ class libkitsu(lib):
         elif media['type'] == 'manga':
             total = attr['chapterCount']
             type_str = 'mangaType'
+        elif media['type'] == 'drama':
+            total = attr['episodeCount'] # TODO Unconfirmed
+            type_str = 'dramaType'
 
         info.update({
             'id': int(media['id']),
