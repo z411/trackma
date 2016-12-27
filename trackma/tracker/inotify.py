@@ -25,12 +25,16 @@ class inotifyTracker(tracker.TrackerBase):
     def observe(self, watch_dir, interval):
         # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
+
+        watch_dir = watch_dir.encode('utf-8')
         mask = (inotify.constants.IN_OPEN
                 | inotify.constants.IN_CLOSE
                 | inotify.constants.IN_CREATE
                 | inotify.constants.IN_MOVE
                 | inotify.constants.IN_DELETE)
+
         i = inotify.adapters.InotifyTree(watch_dir, mask=mask)
+
         try:
             for event in i.event_gen():
                 if event is not None:
