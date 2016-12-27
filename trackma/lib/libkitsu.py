@@ -316,6 +316,7 @@ class libkitsu(lib):
 
     def request_info(self, item_list):
         print("These are missing: " + repr(item_list))
+        # TODO implement
         raise NotImplementedError
 
     def add_show(self, item):
@@ -380,25 +381,6 @@ class libkitsu(lib):
             return infolist
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
-
-        """values = {'query': query}
-        try:
-            data = self._request("/search/anime", get=values)
-            shows = json.loads(data.read().decode('utf-8'))
-
-            infolist = []
-            for show in shows:
-                info = self._parse_info(show)
-                info['my_status'] = 'currently-watching' # TODO : Default to watching; this should be changeable
-                infolist.append(info)
-
-            self._emit_signal('show_info_changed', infolist)
-
-            if not infolist:
-                raise utils.APIError('No results.')
-
-            return infolist
-        except urllib.request.HTTPError as e:"""
 
     def _build_data(self, item):
         values = {'data': {
@@ -472,22 +454,3 @@ class libkitsu(lib):
 
         return info
 
-        """info = utils.show()
-        alt_titles = []
-        if show['alternate_title'] is not None:
-            alt_titles.append(show['alternate_title'])
-        info.update({
-            'id': show['id'],
-            'title': show['title'] or show['alternate_title'] or "",
-            'status': self.status_translate[show['status']],
-            'image': show['cover_image'],
-            'url': show['url'],
-            'aliases': alt_titles,
-            'extra': [
-                ('Alternate title', show['alternate_title']),
-                ('Show type',       show['show_type']),
-                ('Synopsis',        show['synopsis']),
-                ('Status',          show['status']),
-            ]
-        })
-        return info"""
