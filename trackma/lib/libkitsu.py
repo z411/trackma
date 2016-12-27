@@ -308,15 +308,16 @@ class libkitsu(lib):
                         'my_status': entry['attributes']['status'],
                     })
 
-                medias = data_json['included']
-                for media in medias:
-                    info = self._parse_info(media)
-                    infolist.append(info)
+                if 'included' in data_json:
+                    medias = data_json['included']
+                    for media in medias:
+                        info = self._parse_info(media)
+                        infolist.append(info)
+
+                    self._emit_signal('show_info_changed', infolist)
 
                 url = links.get('next')
                 i += 1
-
-            self._emit_signal('show_info_changed', infolist)
 
             return showlist
         except urllib.request.HTTPError as e:
