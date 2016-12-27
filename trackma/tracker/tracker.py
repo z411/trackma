@@ -148,7 +148,7 @@ class TrackerBase(object):
         if self.last_close_queue:
             self.last_close_queue()
             self.last_close_queue = None
-        elif not self.last_updated:
+        elif self.last_state in (STATE_PLAYING, STATE_NOT_FOUND) and not self.last_updated:
             self.msg.info(self.name, 'Player was closed before update.')
         self.last_updated = False
         self.last_time = time.time()
