@@ -27,7 +27,6 @@ from decimal import Decimal
 
 from trackma import messenger
 from trackma import data
-from trackma import tracker
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 
@@ -240,7 +239,24 @@ class Engine:
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            self.tracker = tracker.Tracker(self.msg,
+            # Choose the tracker we want to tart
+            if self.config['tracker_type'] == 'plex':
+                from trackma.tracker.plex import PlexTracker
+                TrackerClass = PlexTracker
+            else:
+                # Try trackers in this order: pyinotify, inotify, polling
+                try:
+                    from trackma.tracker.pyinotify import pyinotifyTracker
+                    TrackerClass = pyinotifyTracker
+                except ImportError:
+                    try:
+                        from trackma.tracker.inotify import inotifyTracker
+                        TrackerClass = inotifyTracker
+                    except ImportError:
+                        from trackma.tracker.polling import PollingTracker
+                        TrackerClass = PollingTracker
+
+            self.tracker = TrackerClass(self.msg,
                                    self._get_tracker_list(),
                                    self.config['tracker_process'],
                                    self.config['searchdir'],
