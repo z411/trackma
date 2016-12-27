@@ -664,10 +664,10 @@ class Trackma_cmd(cmd.Cmd):
             color_escape = _COLOR_ENGINE
         elif classname == 'Data':
             color_escape = _COLOR_DATA
-        elif classname == 'Tracker':
-            color_escape = _COLOR_TRACKER
         elif classname.startswith('lib'):
             color_escape = _COLOR_API
+        elif classname.startswith('Tracker'):
+            color_escape = _COLOR_TRACKER
         else:
             color_reset = ''
 
