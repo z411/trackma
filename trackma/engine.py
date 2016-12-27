@@ -243,11 +243,12 @@ class Engine:
                 from trackma.tracker.pyinotify import pyinotifyTracker
                 TrackerClass = pyinotifyTracker
             except ImportError:
-                from trackma.tracker.inotify import inotifyTracker
-                TrackerClass = inotifyTracker
-            except ImportError:
-                from trackma.tracker.polling import PollingTracker
-                TrackerClass = PollingTracker
+                try:
+                    from trackma.tracker.inotify import inotifyTracker
+                    TrackerClass = inotifyTracker
+                except ImportError:
+                    from trackma.tracker.polling import PollingTracker
+                    TrackerClass = PollingTracker
 
             self.tracker = TrackerClass(self.msg,
                                    self._get_tracker_list(),
