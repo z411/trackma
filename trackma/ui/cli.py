@@ -412,8 +412,33 @@ class Trackma_cmd(cmd.Cmd):
         :usage trackmer
         """
         try:
-            tracker_info = self.engine.tracker_status()
-            print("{}".format(tracker_info))
+            info = self.engine.tracker_status()
+            print("- Tracker status -")
+
+            if info:
+                if info['state'] == utils.TRACKER_NOVIDEO:
+                    state = 'No video'
+                elif info['state'] == utils.TRACKER_PLAYING:
+                    state = 'Playing'
+                elif info['state'] == utils.TRACKER_UNRECOGNIZED:
+                    state = 'Unrecognized'
+                elif info['state'] == utils.TRACKER_NOT_FOUND:
+                    state = 'Not found'
+                elif info['state'] == utils.TRACKER_IGNORED:
+                    state = 'Ignored'
+                else:
+                    state = 'N/A'
+
+                print("State: {}".format(state))
+                print("Filename: {}".format(info['filename'] or 'N/A'))
+                print("Timer: {}".format(info['timer'] or 'N/A'))
+                if info['show']:
+                    (show, ep) = info['show']
+                    print("Show: {}\nEpisode: {}".format(show['title'], ep))
+                else:
+                    print("Show: N/A")
+            else:
+                print("Not started")
         except utils.TrackmaError as e:
             self.display_error(e)
 
