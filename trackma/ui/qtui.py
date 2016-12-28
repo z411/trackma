@@ -1423,7 +1423,6 @@ class Trackma(QMainWindow):
             self._rebuild_lists(showlist, altnames, library)
 
             self.s_show_selected(None)
-            #self._update_queue_counter(len(self.worker.engine.get_queue()))
 
             self.status('Ready.')
 
@@ -2802,14 +2801,18 @@ class Image_Worker(QtCore.QThread):
 
         req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = BytesIO(urllib.request.urlopen(req).read())
-        if self.size:
-            im = Image.open(img_file)
-            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-            im.save(self.local)
-        else:
-            with open(self.local, 'wb') as f:
-                f.write(img_file.read())
+        try:
+            img_file = BytesIO(urllib.request.urlopen(req).read())
+            if self.size:
+                im = Image.open(img_file)
+                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                im.save(self.local)
+            else:
+                with open(self.local, 'wb') as f:
+                    f.write(img_file.read())
+        except urllib.error.URLError as e:
+            print("Warning: Error getting image ({})".format(e))
+            return
 
         if self.cancelled:
             return
