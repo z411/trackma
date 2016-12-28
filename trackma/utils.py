@@ -32,6 +32,12 @@ STATUS_FINISHED = 2
 STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
 
+TRACKER_NOVIDEO = 0
+TRACKER_PLAYING = 1
+TRACKER_UNRECOGNIZED = 2
+TRACKER_NOT_FOUND = 3
+TRACKER_IGNORED = 4
+
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,

@@ -18,6 +18,7 @@ import inotify.adapters
 import inotify.constants
 
 from trackma.tracker import tracker
+from trackma import utils
 
 class inotifyTracker(tracker.TrackerBase):
     name = 'Tracker (inotify)'
@@ -55,7 +56,7 @@ class inotifyTracker(tracker.TrackerBase):
                                 or 'IN_CLOSE_NOWRITE' in types
                                 or 'IN_CLOSE_WRITE' in types):
                             self._poll_lsof()
-                elif self.last_state != tracker.STATE_NOVIDEO and not self.last_updated:
+                elif self.last_state != utils.TRACKER_NOVIDEO and not self.last_updated:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
