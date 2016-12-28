@@ -405,6 +405,18 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
+    def do_tracker(self, args):
+        """
+        Shows information about the tracker, if it's running.
+
+        :usage trackmer
+        """
+        try:
+            tracker_info = self.engine.tracker_status()
+            print("{}".format(tracker_info))
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
     def do_play(self, args):
         """
         Starts the media player with the specified episode number (next if not specified).

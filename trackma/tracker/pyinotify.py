@@ -17,6 +17,7 @@
 import pyinotify
 
 from trackma.tracker import tracker
+from trackma import utils
 
 class pyinotifyTracker(tracker.TrackerBase):
     name = 'Tracker (pyinotify)'
@@ -78,7 +79,7 @@ class pyinotifyTracker(tracker.TrackerBase):
                 if notifier.check_events(timeout):
                     notifier.read_events()
                     notifier.process_events()
-                    if self.last_state == tracker.STATE_NOVIDEO or self.last_updated:
+                    if self.last_state == utils.TRACKER_NOVIDEO or self.last_updated:
                         timeout = None  # Block indefinitely
                     else:
                         timeout = 1000  # Check each second for counting

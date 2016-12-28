@@ -373,6 +373,16 @@ class Engine:
 
         return newlist
 
+    def tracker_status(self):
+        """
+        Asks the tracker for its current status.
+        """
+
+        if self.tracker:
+            return self.tracker.get_status()
+        else:
+            return None
+
     def search(self, criteria):
         """
         Request a remote list of shows matching the criteria
