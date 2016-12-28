@@ -191,7 +191,8 @@ class TrackerBase(object):
 
             # React depending on state
             if state == utils.TRACKER_NOVIDEO:  # No video is playing
-                if not self.last_updated:  # Video didn't get to update phase before it was closed
+                # Video didn't get to update phase before it was closed
+                if self.last_state == utils.TRACKER_PLAYING and not self.last_updated:
                     self.msg.info(self.name, 'Player was closed before update.')
             elif state == utils.TRACKER_UNRECOGNIZED:  # There's a new video playing but the regex didn't recognize the format
                 self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
