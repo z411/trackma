@@ -67,7 +67,10 @@ class Engine:
                 'queue_changed':     None,
                 'playing':           None,
                 'prompt_for_update': None,
-                'prompt_for_add':    None, }
+                'prompt_for_add':    None,
+                'tracker_state':     None,
+                'tracker_timer':     None,
+        }
 
     def __init__(self, account, message_handler=None):
         """Reads configuration file and asks the data handler for the API info."""
@@ -155,6 +158,12 @@ class Engine:
     def _tracker_unrecognised(self, show_title, episode):
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show_title, episode)
+
+    def _tracker_state(self, state):
+        self._emit_signal('tracker_state', state)
+
+    def _tracker_timer(self, timer):
+        self._emit_signal('tracker_timer', timer)
 
     def _emit_signal(self, signal, *args):
         try:
@@ -270,6 +279,8 @@ class Engine:
             self.tracker.connect_signal('playing', self._tracker_playing)
             self.tracker.connect_signal('update', self._tracker_update)
             self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
+            self.tracker.connect_signal('state', self._tracker_state)
+            self.tracker.connect_signal('timer', self._tracker_timer)
 
         self.loaded = True
         return True
