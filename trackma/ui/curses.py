@@ -67,6 +67,7 @@ class Trackma_urwid():
         for k, color in self.config['palette'].items():
             palette.append( (k, color[0], color[1]) )
 
+        # Prepare header
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
         self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
@@ -90,7 +91,16 @@ class Trackma_urwid():
             top_pile.append(urwid.AttrMap(urwid.Text(top_text), 'status'))
 
         self.top_pile = urwid.Pile(top_pile)
-        self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
+
+        # Prepare status bar
+        self.status_text = urwid.Text('Trackma-curses '+utils.VERSION)
+        self.status_queue = urwid.Text('Q:N/A')
+        self.status_tracker = urwid.Text('T:N/A')
+        self.statusbar = urwid.AttrMap(urwid.Columns([
+            self.status_text,
+            ('fixed', 10, self.status_tracker),
+            ('fixed', 6, self.status_queue),
+            ]), 'status')
 
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -164,6 +174,10 @@ class Trackma_urwid():
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
 
+        track_info = self.engine.tracker_status()
+        if track_info:
+            self.tracker_state(track_info['state'])
+
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
@@ -207,7 +221,10 @@ class Trackma_urwid():
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
         self.engine.connect_signal('show_synced', self.changed_show)
+        self.engine.connect_signal('queue_changed', self.changed_queue)
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
+        self.engine.connect_signal('tracker_state', self.tracker_state)
+        self.engine.connect_signal('tracker_timer', self.tracker_timer)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
@@ -229,10 +246,10 @@ class Trackma_urwid():
         return self._get_cur_list().get_focus()[0]
 
     def status(self, msg):
-        self.statusbar.base_widget.set_text(msg)
+        self.status_text.set_text(msg)
 
     def error(self, msg):
-        self.statusbar.base_widget.set_text([('error', "Error: %s" % msg)])
+        self.status_text.set_text([('error', "Error: %s" % msg)])
 
     def message_handler(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
@@ -592,6 +609,29 @@ class Trackma_urwid():
 
         self.set_filter(go_filter)
         self._get_cur_list().select_show(show)
+
+    def changed_queue(self, queue):
+        self.status_queue.set_text("Q:{}".format(len(queue)))
+
+    def tracker_state(self, state):
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'LISTEN'
+        elif state == utils.TRACKER_UNRECOGNIZED:
+            st = 'UNRECOG'
+        elif state == utils.TRACKER_NOT_FOUND:
+            st = 'NOTFOUN'
+        elif state == utils.TRACKER_IGNORED:
+            st = 'IGNORE'
+        else:
+            return
+
+        self.status_tracker.set_text("T:{}".format(st))
+        self.mainloop.draw_screen()
+
+    def tracker_timer(self, timer):
+        if timer is not None:
+            self.status_tracker.set_text("T:+{}".format(timer))
+            self.mainloop.draw_screen()
 
     def playing_show(self, show, is_playing, episode=None):
         status = show['my_status']
