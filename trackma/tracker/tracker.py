@@ -160,7 +160,6 @@ class TrackerBase(object):
         if self.last_show_tuple and self.last_state == utils.TRACKER_PLAYING:
             (last_show, last_show_ep) = self.last_show_tuple
             self._emit_signal('playing', last_show['id'], False, last_show_ep)
-        self._emit_signal('state', state, self.last_state)
 
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
@@ -180,6 +179,7 @@ class TrackerBase(object):
                     self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
                     self.last_updated = True
                     self.last_state = utils.TRACKER_IGNORED
+                    self._emit_signal('state', utils.TRACKER_IGNORED)
                     return
 
             # Start our countdown
@@ -189,6 +189,7 @@ class TrackerBase(object):
             elif state == utils.TRACKER_NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, self.wait_s))
             self._update_show(state, show_tuple)
+            self._emit_signal('state', state)
 
         elif self.last_state != state:
             self._update_state(state)
@@ -204,6 +205,7 @@ class TrackerBase(object):
 
             self.last_show_tuple = None
             self.last_updated = False
+            self._emit_signal('state', state)
             self._set_timer(None)
 
         self.last_state = state
