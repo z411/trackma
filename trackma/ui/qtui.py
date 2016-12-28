@@ -134,8 +134,6 @@ class Trackma(QMainWindow):
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
-        self.accountman_widget = AccountDialog(None, self.accountman)
-        self.accountman_widget.selected.connect(self.accountman_selected)
 
         # Go directly into the application if a default account is set
         # Open the selection dialog otherwise
@@ -143,6 +141,8 @@ class Trackma(QMainWindow):
         if default:
             self.start(default)
         else:
+            self.accountman_widget = AccountDialog(None, self.accountman)
+            self.accountman_widget.selected.connect(self.accountman_selected)
             self.accountman_widget.show()
 
     def accountman_selected(self, account_num, remember):
@@ -1423,7 +1423,7 @@ class Trackma(QMainWindow):
             self._rebuild_lists(showlist, altnames, library)
 
             self.s_show_selected(None)
-            self._update_queue_counter(len(self.worker.engine.get_queue()))
+            #self._update_queue_counter(len(self.worker.engine.get_queue()))
 
             self.status('Ready.')
 
