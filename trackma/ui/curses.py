@@ -176,7 +176,7 @@ class Trackma_urwid():
 
         track_info = self.engine.tracker_status()
         if track_info:
-            self.tracker_state(track_info['state'])
+            self.tracker_state(track_info['state'], None)
 
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
@@ -224,7 +224,6 @@ class Trackma_urwid():
         self.engine.connect_signal('queue_changed', self.changed_queue)
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
         self.engine.connect_signal('tracker_state', self.tracker_state)
-        self.engine.connect_signal('tracker_timer', self.tracker_timer)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
@@ -613,9 +612,11 @@ class Trackma_urwid():
     def changed_queue(self, queue):
         self.status_queue.set_text("Q:{}".format(len(queue)))
 
-    def tracker_state(self, state):
+    def tracker_state(self, state, timer):
         if state == utils.TRACKER_NOVIDEO:
             st = 'LISTEN'
+        elif state == utils.TRACKER_PLAYING:
+            st = '+{}'.format(timer)
         elif state == utils.TRACKER_UNRECOGNIZED:
             st = 'UNRECOG'
         elif state == utils.TRACKER_NOT_FOUND:
@@ -623,7 +624,7 @@ class Trackma_urwid():
         elif state == utils.TRACKER_IGNORED:
             st = 'IGNORE'
         else:
-            return
+            st = '???'
 
         self.status_tracker.set_text("T:{}".format(st))
         self.mainloop.draw_screen()
