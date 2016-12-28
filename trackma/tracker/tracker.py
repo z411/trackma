@@ -44,7 +44,6 @@ class TrackerBase(object):
 
     signals = {
                'state': None,
-               'timer': None,
                'detected': None,
                'playing': None,
                'removed': None,
@@ -123,10 +122,6 @@ class TrackerBase(object):
 
         return False
 
-    def _set_timer(self, time):
-        self.timer = time
-        self._emit_signal('timer', self.timer)
-
     def _poll_lsof(self):
         filename = self._get_playing_file_lsof(self.process_name)
         (state, show_tuple) = self._get_playing_show(filename)
@@ -134,7 +129,8 @@ class TrackerBase(object):
 
     def _update_show(self, state, show_tuple):
         (show, episode) = show_tuple
-        self._set_timer( int(1 + self.wait_s - (time.time() - self.last_time)) )
+        self.timer = int(1 + self.wait_s - (time.time() - self.last_time))
+        self._emit_signal('state', state, self.timer)
 
         if self.timer <= 0:
             # Perform show update
@@ -179,7 +175,7 @@ class TrackerBase(object):
                     self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
                     self.last_updated = True
                     self.last_state = utils.TRACKER_IGNORED
-                    self._emit_signal('state', utils.TRACKER_IGNORED)
+                    self._emit_signal('state', utils.TRACKER_IGNORED, None)
                     return
 
             # Start our countdown
@@ -189,7 +185,6 @@ class TrackerBase(object):
             elif state == utils.TRACKER_NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, self.wait_s))
             self._update_show(state, show_tuple)
-            self._emit_signal('state', state)
 
         elif self.last_state != state:
             self._update_state(state)
@@ -205,8 +200,8 @@ class TrackerBase(object):
 
             self.last_show_tuple = None
             self.last_updated = False
-            self._emit_signal('state', state)
-            self._set_timer(None)
+            self.timer = None
+            self._emit_signal('state', state, None)
 
         self.last_state = state
 
