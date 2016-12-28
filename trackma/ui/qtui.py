@@ -461,10 +461,11 @@ class Trackma(QMainWindow):
         # Statusbar
         self.status_text = QLabel('Trackma-qt')
         self.tracker_text = QLabel('Tracker: N/A')
+        self.tracker_text.setMinimumWidth(120)
         self.queue_text = QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
-        self.statusBar().addWidget(self.tracker_text)
-        self.statusBar().addWidget(self.queue_text)
+        self.statusBar().addPermanentWidget(self.tracker_text)
+        self.statusBar().addPermanentWidget(self.queue_text)
 
         # Tray icon
         tray_menu = QMenu(self)
@@ -591,6 +592,23 @@ class Trackma(QMainWindow):
 
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
+
+    def _update_tracker_info(self, state, timer):
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'Listen'
+        elif state == utils.TRACKER_PLAYING:
+            (m, s) = divmod(timer, 60)
+            st = "+{0}:{1:02d}".format(m, s)
+        elif state == utils.TRACKER_UNRECOGNIZED:
+            st = 'Unrecognized'
+        elif state == utils.TRACKER_NOT_FOUND:
+            st = 'Not found'
+        elif state == utils.TRACKER_IGNORED:
+            st = 'Ignored'
+        else:
+            st = '???'
+
+        self.tracker_text.setText("Tracker: {}".format(st))
 
     def _update_config(self):
         self._tray()
@@ -1324,20 +1342,7 @@ class Trackma(QMainWindow):
         self._update_queue_counter(queue)
 
     def ws_tracker_state(self, state, timer):
-        if state == utils.TRACKER_NOVIDEO:
-            st = 'Listen'
-        elif state == utils.TRACKER_PLAYING:
-            st = '+{}'.format(timer)
-        elif state == utils.TRACKER_UNRECOGNIZED:
-            st = 'Unrecognized'
-        elif state == utils.TRACKER_NOT_FOUND:
-            st = 'Not found'
-        elif state == utils.TRACKER_IGNORED:
-            st = 'Ignored'
-        else:
-            st = '???'
-
-        self.tracker_text.setText("Tracker: {}".format(st))
+        self._update_tracker_info(state, timer)
 
     def ws_prompt_update(self, show, episode):
         reply = QMessageBox.question(self, 'Message',
@@ -1437,6 +1442,11 @@ class Trackma(QMainWindow):
                 self.tray.setIcon(QIcon(utils.available_libs[self.account['api']][1]))
             self.api_user.setText(self.worker.engine.get_userconfig('username'))
             self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
+
+            # Show tracker info
+            tracker_info = self.worker.engine.tracker_status()
+            if tracker_info:
+                self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
 
             # Rebuild lists
             self._rebuild_lists(showlist, altnames, library)
