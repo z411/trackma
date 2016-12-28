@@ -460,8 +460,10 @@ class Trackma(QMainWindow):
 
         # Statusbar
         self.status_text = QLabel('Trackma-qt')
+        self.tracker_text = QLabel('Tracker: N/A')
         self.queue_text = QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
+        self.statusBar().addWidget(self.tracker_text)
         self.statusBar().addWidget(self.queue_text)
 
         # Tray icon
@@ -483,6 +485,7 @@ class Trackma(QMainWindow):
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
+        self.worker.tracker_state.connect(self.ws_tracker_state)
         self.worker.playing_show.connect(self.ws_changed_show)
         self.worker.prompt_for_update.connect(self.ws_prompt_update)
         self.worker.prompt_for_add.connect(self.ws_prompt_add)
@@ -1319,6 +1322,22 @@ class Trackma(QMainWindow):
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
+
+    def ws_tracker_state(self, state, timer):
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'Listen'
+        elif state == utils.TRACKER_PLAYING:
+            st = '+{}'.format(timer)
+        elif state == utils.TRACKER_UNRECOGNIZED:
+            st = 'Unrecognized'
+        elif state == utils.TRACKER_NOT_FOUND:
+            st = 'Not found'
+        elif state == utils.TRACKER_IGNORED:
+            st = 'Ignored'
+        else:
+            st = '???'
+
+        self.tracker_text.setText("Tracker: {}".format(st))
 
     def ws_prompt_update(self, show, episode):
         reply = QMessageBox.question(self, 'Message',
@@ -2843,6 +2862,7 @@ class Engine_Worker(QtCore.QThread):
     changed_show = QtCore.pyqtSignal(dict)
     changed_list = QtCore.pyqtSignal(dict, object)
     changed_queue = QtCore.pyqtSignal(int)
+    tracker_state = QtCore.pyqtSignal(int, int)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
     prompt_for_add = QtCore.pyqtSignal(str, int)
@@ -2861,6 +2881,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('queue_changed', self._changed_queue)
         self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
         self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
+        self.engine.connect_signal('tracker_state', self._tracker_state)
 
         self.function_list = {
             'start': self._start,
@@ -2899,6 +2920,9 @@ class Engine_Worker(QtCore.QThread):
 
     def _changed_queue(self, queue):
         self.changed_queue.emit(len(queue))
+
+    def _tracker_state(self, state, timer):
+        self.tracker_state.emit(state, timer)
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)
