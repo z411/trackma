@@ -2898,7 +2898,7 @@ class Engine_Worker(QtCore.QThread):
         self.changed_list.emit(show, old_status)
 
     def _changed_queue(self, queue):
-        self.changed_queue.emit(queue)
+        self.changed_queue.emit(len(queue))
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)
