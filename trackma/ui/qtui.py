@@ -134,8 +134,6 @@ class Trackma(QMainWindow):
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
-        self.accountman_widget = AccountDialog(None, self.accountman)
-        self.accountman_widget.selected.connect(self.accountman_selected)
 
         # Go directly into the application if a default account is set
         # Open the selection dialog otherwise
@@ -143,6 +141,8 @@ class Trackma(QMainWindow):
         if default:
             self.start(default)
         else:
+            self.accountman_widget = AccountDialog(None, self.accountman)
+            self.accountman_widget.selected.connect(self.accountman_selected)
             self.accountman_widget.show()
 
     def accountman_selected(self, account_num, remember):
@@ -460,9 +460,12 @@ class Trackma(QMainWindow):
 
         # Statusbar
         self.status_text = QLabel('Trackma-qt')
+        self.tracker_text = QLabel('Tracker: N/A')
+        self.tracker_text.setMinimumWidth(120)
         self.queue_text = QLabel('Unsynced items: N/A')
         self.statusBar().addWidget(self.status_text, 1)
-        self.statusBar().addWidget(self.queue_text)
+        self.statusBar().addPermanentWidget(self.tracker_text)
+        self.statusBar().addPermanentWidget(self.queue_text)
 
         # Tray icon
         tray_menu = QMenu(self)
@@ -483,6 +486,7 @@ class Trackma(QMainWindow):
         self.worker.changed_show.connect(self.ws_changed_show)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
+        self.worker.tracker_state.connect(self.ws_tracker_state)
         self.worker.playing_show.connect(self.ws_changed_show)
         self.worker.prompt_for_update.connect(self.ws_prompt_update)
         self.worker.prompt_for_add.connect(self.ws_prompt_add)
@@ -588,6 +592,23 @@ class Trackma(QMainWindow):
 
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
+
+    def _update_tracker_info(self, state, timer):
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'Listen'
+        elif state == utils.TRACKER_PLAYING:
+            (m, s) = divmod(timer, 60)
+            st = "+{0}:{1:02d}".format(m, s)
+        elif state == utils.TRACKER_UNRECOGNIZED:
+            st = 'Unrecognized'
+        elif state == utils.TRACKER_NOT_FOUND:
+            st = 'Not found'
+        elif state == utils.TRACKER_IGNORED:
+            st = 'Ignored'
+        else:
+            st = '???'
+
+        self.tracker_text.setText("Tracker: {}".format(st))
 
     def _update_config(self):
         self._tray()
@@ -1320,6 +1341,9 @@ class Trackma(QMainWindow):
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
 
+    def ws_tracker_state(self, state, timer):
+        self._update_tracker_info(state, timer)
+
     def ws_prompt_update(self, show, episode):
         reply = QMessageBox.question(self, 'Message',
             'Do you want to update %s to %d?' % (show['title'], episode),
@@ -1419,11 +1443,15 @@ class Trackma(QMainWindow):
             self.api_user.setText(self.worker.engine.get_userconfig('username'))
             self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
 
+            # Show tracker info
+            tracker_info = self.worker.engine.tracker_status()
+            if tracker_info:
+                self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
+
             # Rebuild lists
             self._rebuild_lists(showlist, altnames, library)
 
             self.s_show_selected(None)
-            self._update_queue_counter(len(self.worker.engine.get_queue()))
 
             self.status('Ready.')
 
@@ -2802,14 +2830,18 @@ class Image_Worker(QtCore.QThread):
 
         req = urllib.request.Request(self.remote)
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
-        img_file = BytesIO(urllib.request.urlopen(req).read())
-        if self.size:
-            im = Image.open(img_file)
-            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-            im.save(self.local)
-        else:
-            with open(self.local, 'wb') as f:
-                f.write(img_file.read())
+        try:
+            img_file = BytesIO(urllib.request.urlopen(req).read())
+            if self.size:
+                im = Image.open(img_file)
+                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                im.save(self.local)
+            else:
+                with open(self.local, 'wb') as f:
+                    f.write(img_file.read())
+        except urllib.error.URLError as e:
+            print("Warning: Error getting image ({})".format(e))
+            return
 
         if self.cancelled:
             return
@@ -2840,6 +2872,7 @@ class Engine_Worker(QtCore.QThread):
     changed_show = QtCore.pyqtSignal(dict)
     changed_list = QtCore.pyqtSignal(dict, object)
     changed_queue = QtCore.pyqtSignal(int)
+    tracker_state = QtCore.pyqtSignal(int, int)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
     prompt_for_add = QtCore.pyqtSignal(str, int)
@@ -2858,6 +2891,7 @@ class Engine_Worker(QtCore.QThread):
         self.engine.connect_signal('queue_changed', self._changed_queue)
         self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
         self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
+        self.engine.connect_signal('tracker_state', self._tracker_state)
 
         self.function_list = {
             'start': self._start,
@@ -2895,7 +2929,10 @@ class Engine_Worker(QtCore.QThread):
         self.changed_list.emit(show, old_status)
 
     def _changed_queue(self, queue):
-        self.changed_queue.emit(queue)
+        self.changed_queue.emit(len(queue))
+
+    def _tracker_state(self, state, timer):
+        self.tracker_state.emit(state, timer)
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)

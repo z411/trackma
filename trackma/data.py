@@ -139,6 +139,7 @@ class Data():
 
         if self._queue_exists() and self.meta.get('version') == self.version:
             self._load_queue()
+            self._emit_signal('queue_changed', self.queue)
 
         if self._info_exists() and self.meta.get('version') == self.version:
             # Load info cache only if we're on the same database version
@@ -251,7 +252,7 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued add for %s" % show['title'])
 
     def queue_update(self, show, key, value):
@@ -294,7 +295,7 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued update for %s" % show['title'])
 
         # Immediately process the action if necessary
@@ -335,7 +336,7 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued delete for %s" % item['title'])
 
     def queue_clear(self):
@@ -343,7 +344,7 @@ class Data():
         if self.queue:
             self.queue = []
             self._save_queue()
-            self._emit_signal('queue_changed', len(self.queue))
+            self._emit_signal('queue_changed', self.queue)
             self.msg.info(self.name, "Cleared queue.")
 
     def process_queue(self):
@@ -399,7 +400,7 @@ class Data():
                         self._emit_signal('show_synced', show, item)
 
                     items_processed.append((show, item))
-                    self._emit_signal('queue_changed', len(self.queue))
+                    self._emit_signal('queue_changed', self.queue)
                 except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
                     self.msg.debug(self.name, "Info: %s" % e)
