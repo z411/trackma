@@ -100,7 +100,7 @@ class pyinotifyTracker(tracker.TrackerBase):
             def process_IN_CLOSE_WRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
                     self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._proc_close()
+                    self.parent._proc_close(event.pathname)
 
             def process_IN_CREATE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
