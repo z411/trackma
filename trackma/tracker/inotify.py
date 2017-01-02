@@ -14,6 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import re
+
 import inotify.adapters
 import inotify.constants
 
@@ -22,6 +25,56 @@ from trackma import utils
 
 class inotifyTracker(tracker.TrackerBase):
     name = 'Tracker (inotify)'
+    open_pathname = None
+
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
+
+        self.re_players = re.compile(self.process_name.encode('utf-8'))
+
+    def _is_being_played(self, filename):
+        """
+        This function makes sure that the filename is being played
+        by the player specified in players.
+
+        It uses procfs so if we're using inotify that means we're using Linux
+        thus we should be safe.
+        """
+
+        for p in os.listdir("/proc/"):
+            if not p.isdigit(): continue
+            d = "/proc/%s/fd/" % p
+            try:
+                for fd in os.listdir(d):
+                    f = os.readlink(d+fd)
+                    if f == filename:
+                        # Get process name
+                        with open('/proc/%s/cmdline' % p, 'rb') as f:
+                            pname = f.read()
+
+                        # Check if it's our process
+                        if self.re_players.match(pname):
+                            return True
+            except OSError:
+                pass
+
+        return False
+
+    def _proc_open(self, path, filename):
+        pathname = "/".join([path, filename])
+
+        if self._is_being_played(pathname):
+            self.open_pathname = pathname
+
+            (state, show_tuple) = self._get_playing_show(filename)
+            self.update_show_if_needed(state, show_tuple)
+
+    def _proc_close(self, path, filename):
+        pathname = "/".join([path, filename])
+
+        if pathname == self.open_pathname:
+            self.open_pathname = None
+            self.update_show_if_needed(utils.TRACKER_NOVIDEO, None)
 
     def observe(self, watch_dir, interval):
         # Note that this lib uses bytestrings for filenames and paths.
@@ -52,10 +105,12 @@ class inotifyTracker(tracker.TrackerBase):
                         # Would check for IN_MOVED_TO or IN_CREATE but no need
                         else:
                             self._emit_signal('detected', str(path, 'utf-8'), str(filename, 'utf-8'))
-                        if ('IN_OPEN' in types
-                                or 'IN_CLOSE_NOWRITE' in types
-                                or 'IN_CLOSE_WRITE' in types):
-                            self._poll_lsof()
+
+                        if 'IN_OPEN' in types:
+                            self._proc_open(str(path, 'utf-8'), str(filename, 'utf-8'))
+                        elif ('IN_CLOSE_NOWRITE' in types
+                              or 'IN_CLOSE_WRITE' in types):
+                            self._proc_close(str(path, 'utf-8'), str(filename, 'utf-8'))
                 elif self.last_state != utils.TRACKER_NOVIDEO and not self.last_updated:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did

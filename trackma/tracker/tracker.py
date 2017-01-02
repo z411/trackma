@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import subprocess
 import threading
 import re
 import time
@@ -103,29 +102,6 @@ class TrackerBase(object):
                 self.signals[signal](*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
-
-    def _get_playing_file_lsof(self, players):
-        try:
-            lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
-        except OSError:
-            self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
-            self.disable()
-            return False
-
-        output = lsof.communicate()[0].decode('utf-8')
-        fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
-
-        for line in output.splitlines():
-            match = fileregex.match(line)
-            if match is not None:
-                return os.path.basename(match.group(1))
-
-        return False
-
-    def _poll_lsof(self):
-        filename = self._get_playing_file_lsof(self.process_name)
-        (state, show_tuple) = self._get_playing_show(filename)
-        self.update_show_if_needed(state, show_tuple)
 
     def _update_show(self, state, show_tuple):
         (show, episode) = show_tuple
