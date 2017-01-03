@@ -1824,6 +1824,7 @@ class SettingsDialog(QDialog):
         self.searchdir_browse = QPushButton('Browse...')
         self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
         self.library_autoscan = QCheckBox()
+        self.scan_whole_list   = QCheckBox()
 
         g_playnext_layout = QGridLayout()
         g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
@@ -1834,6 +1835,8 @@ class SettingsDialog(QDialog):
         g_playnext_layout.addWidget(self.searchdir_browse,               1, 2, 1, 1)
         g_playnext_layout.addWidget(QLabel('Rescan Library at startup'), 2, 0, 1, 2)
         g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Scan through whole list'),   3, 0, 1, 2)
+        g_playnext_layout.addWidget(self.scan_whole_list,                 3, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
@@ -2077,6 +2080,7 @@ class SettingsDialog(QDialog):
         self.player.setText(engine.get_config('player'))
         self.searchdir.setText(engine.get_config('searchdir'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
+        self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
 
@@ -2151,6 +2155,7 @@ class SettingsDialog(QDialog):
         engine.set_config('player',            self.player.text())
         engine.set_config('searchdir',         self.searchdir.text())
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
+        engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
 
