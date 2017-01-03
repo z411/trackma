@@ -181,10 +181,17 @@ class Engine:
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
-        if filter_num:
-            source_list = self.filter_list(filter_num)
-        else:
+        if type(filter_num) == None:
             source_list = self.get_list()
+        elif type(filter_num) == list:
+            source_list = []
+            for status in filter_num:
+                if status is not self.mediainfo['status_finish']:
+                    self.msg.debug(self.name, "scanning for \
+                            {}".format(self.mediainfo['statuses_dict'][status]))
+                    source_list = source_list + self.filter_list(status)
+        else:
+            source_list = self.filter_list(filter_num)
 
         for show in source_list:
             tracker_list.append({'id': show['id'],
@@ -729,11 +736,15 @@ class Engine:
         library_cache = self.data_handler.library_cache_get()
 
         if not my_status:
-            my_status = self.mediainfo['status_start']
+            if self.config['scan_whole_list']:
+                my_status = self.mediainfo['statuses']
+            else:
+                my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
         self.msg.debug(self.name, "Directory: %s" % self.config['searchdir'])
         tracker_list = self._get_tracker_list(my_status)
+
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):

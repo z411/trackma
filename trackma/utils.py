@@ -280,6 +280,7 @@ config_defaults = {
     'autosend_size': 5,
     'autosend_at_exit': True,
     'library_autoscan': True,
+    'scan_whole_list': False,
     'debug_disable_lock': True,
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
