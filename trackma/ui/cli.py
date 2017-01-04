@@ -741,11 +741,11 @@ class Trackma_cmd(cmd.Cmd):
             # (often from the tracker) we need to clear the line
             # first, show the message, then re-show the prompt.
             buf = readline.get_line_buffer()
-            self.stdout.write('\r' + ' '*(len(buf)+len(self.prompt)) + '\r')
+            self.stdout.write('\r' + ' '*(len(self.prompt)+len(buf)) + '\r')
 
             print(out)
 
-            self.stdout.write(self.prompt)
+            self.stdout.write(self.prompt + buf)
             self.stdout.flush()
         else:
             print(out)
