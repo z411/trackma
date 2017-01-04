@@ -248,6 +248,9 @@ class Engine:
             if self.config['tracker_type'] == 'plex':
                 from trackma.tracker.plex import PlexTracker
                 TrackerClass = PlexTracker
+            elif os.name == 'nt':
+                from trackma.tracker.win32 import Win32Tracker
+                TrackerClass = Win32Tracker
             else:
                 # Try trackers in this order: pyinotify, inotify, polling
                 try:
