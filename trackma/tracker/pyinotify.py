@@ -70,7 +70,9 @@ class pyinotifyTracker(tracker.TrackerBase):
     def _proc_close(self, pathname):
         if pathname == self.open_pathname:
             self.open_pathname = None
-            self.update_show_if_needed(utils.TRACKER_NOVIDEO, None)
+
+            (state, show_tuple) = self._get_playing_show(None)
+            self.update_show_if_needed(state, show_tuple)
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, 'Using pyinotify.')
