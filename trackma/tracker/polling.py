@@ -30,7 +30,7 @@ class PollingTracker(tracker.TrackerBase):
         except OSError:
             self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
             self.disable()
-            return False
+            return None
 
         output = lsof.communicate()[0].decode('utf-8')
         fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
@@ -40,7 +40,7 @@ class PollingTracker(tracker.TrackerBase):
             if match is not None:
                 return os.path.basename(match.group(1))
 
-        return False
+        return None
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, "pyinotify not available; using polling (slow).")
