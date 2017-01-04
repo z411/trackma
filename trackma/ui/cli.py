@@ -15,10 +15,14 @@
 #
 
 import sys
+
 try:
     import readline
+    has_readline = True
 except ImportError:
+    has_readline = False
     pass # readline is optional
+
 import cmd
 import shlex
 import textwrap
@@ -61,6 +65,7 @@ class Trackma_cmd(cmd.Cmd):
     completekey = 'Tab'
     cmdqueue = []
     stdout = sys.stdout
+    in_prompt = False
     sortedlist = []
     needed_args = {
         'altname':      (1, 2),
@@ -648,6 +653,20 @@ class Trackma_cmd(cmd.Cmd):
     def emptyline(self):
         return
 
+    def preloop(self):
+        """ Override. """
+        self.in_prompt = True
+
+    def precmd(self, line):
+        """ Override. """
+        self.in_prompt = False
+        return line
+
+    def postcmd(self, stop, line):
+        """ Override. """
+        self.in_prompt = True
+        return stop
+
     def onecmd(self, line):
         """ Override. """
         cmd, arg, line = self.parseline(line)
@@ -709,11 +728,27 @@ class Trackma_cmd(cmd.Cmd):
             color_reset = ''
 
         if msgtype == messenger.TYPE_INFO:
-            print("%s%s: %s%s" % (color_escape, classname, msg, color_reset))
+            out = "%s%s: %s%s" % (color_escape, classname, msg, color_reset)
         elif msgtype == messenger.TYPE_WARN:
-            print("%s%s warning: %s%s" % (color_escape, classname, msg, color_reset))
+            out = "%s%s warning: %s%s" % (color_escape, classname, msg, color_reset)
         elif self.debug and msgtype == messenger.TYPE_DEBUG:
-            print("[D] %s%s: %s%s" % (color_escape, classname, msg, color_reset))
+            out = "[D] %s%s: %s%s" % (color_escape, classname, msg, color_reset)
+        else:
+            return # Unrecognized message, don't show anything
+
+        if has_readline and self.in_prompt:
+            # If we're in a prompt and receive a message
+            # (often from the tracker) we need to clear the line
+            # first, show the message, then re-show the prompt.
+            buf = readline.get_line_buffer()
+            self.stdout.write('\r' + ' '*(len(buf)+len(self.prompt)) + '\r')
+
+            print(out)
+
+            self.stdout.write(self.prompt)
+            self.stdout.flush()
+        else:
+            print(out)
 
     def _guess_status(self, string):
         for k, v in self.engine.mediainfo['statuses_dict'].items():
