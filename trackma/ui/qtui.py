@@ -1192,7 +1192,6 @@ class Trackma(QMainWindow):
             self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
-        self._busy(True)
         self.worker_call('scan_library', self.r_library_scanned)
 
     def s_altname(self):

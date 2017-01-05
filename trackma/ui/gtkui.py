@@ -773,8 +773,6 @@ class Trackma_gtk():
         self.allow_buttons(True)
 
     def task_scanlibrary(self):
-        self.allow_buttons(False)
-
         try:
             result = self.engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
