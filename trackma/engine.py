@@ -181,9 +181,9 @@ class Engine:
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
-        if type(filter_num) == None:
+        if isinstance(fliter_num, None):
             source_list = self.get_list()
-        elif type(filter_num) == list:
+        elif isinstance(filter_num, list):
             source_list = []
             for status in filter_num:
                 if status is not self.mediainfo['status_finish']:
