@@ -76,7 +76,7 @@ class Trackma_urwid():
         self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
-            ('fixed', 23, self.header_filter),
+            ('fixed', 30, self.header_filter),
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
 
@@ -173,6 +173,7 @@ class Trackma_urwid():
         self.lists = dict()
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
+        self.filters_sizes = []
 
         track_info = self.engine.tracker_status()
         if track_info:
@@ -182,8 +183,12 @@ class Trackma_urwid():
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
         self._rebuild_lists()
+        
+        # Put the number of shows in every status in a list
+        for status in self.filters_nums:
+            self.filters_sizes.append(len(self.lists[status].body))
+        
         self.set_filter(0)
-
         self.status('Ready.')
         self.started = True
 
@@ -233,7 +238,7 @@ class Trackma_urwid():
     def set_filter(self, filter_num):
         self.cur_filter = filter_num
         _filter = self.filters_nums[self.cur_filter]
-        self.header_filter.set_text("Filter:%s" % self.filters[_filter])
+        self.header_filter.set_text("Filter:%s (%d)" % (self.filters[_filter], self.filters_sizes[self.cur_filter]))
 
         self.listframe.body = self.lists[_filter]
 
