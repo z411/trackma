@@ -21,6 +21,10 @@ from trackma.tracker import tracker
 
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
+    
+    def _get_plex_file(self):
+        playing_file = plex.playing_file()
+        return playing_file
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, "Using Plex.")
