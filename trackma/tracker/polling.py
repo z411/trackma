@@ -24,9 +24,9 @@ from trackma.tracker import tracker
 class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
 
-    def get_playing_file(self, players):
+    def get_playing_file(self, watch_dir, players):
         try:
-            lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+            lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', watch_dir], stdout=subprocess.PIPE)
         except OSError:
             self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
             self.disable()
@@ -46,7 +46,7 @@ class PollingTracker(tracker.TrackerBase):
         self.msg.info(self.name, "pyinotify not available; using polling (slow).")
         while self.active:
             # This runs the tracker and update the playing show if necessary
-            filename = self.get_playing_file(self.process_name)
+            filename = self.get_playing_file(watch_dir, self.process_name)
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
