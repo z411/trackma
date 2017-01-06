@@ -778,9 +778,9 @@ class Engine:
                     (show_ep_start, show_ep_end) = show_ep
                 else:
                     show_ep_start = show_ep_end = show_ep
-                self.msg.debug(self.name, "File already in library: {}".format(fullpath))
+                self.msg.debug(self.name, "File in cache: {}".format(fullpath))
             else:
-                self.msg.debug(self.name, "File not in library cache: {}".format(fullpath))
+                self.msg.debug(self.name, "File in cache but skipped: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
@@ -793,16 +793,18 @@ class Engine:
             if show_title:
                 show = utils.guess_show(show_title, tracker_list)
                 if show:
+                    self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
+
                     show_id = show['id']
                     if show_ep_start == show_ep_end:
                         library_cache[filename] = (show['id'], show_ep_start)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
-
-                    self.msg.debug(self.name, "New file added to local library: {}".format(fullpath))
                 else:
+                    self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
                     library_cache[filename] = None
             else:
+                self.msg.debug(self.name, "Not recognized, skipping: {}".format(fullpath))
                 library_cache[filename] = None
 
         # After we got our information, add it to our library
