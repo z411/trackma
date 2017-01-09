@@ -16,11 +16,17 @@
 
 import ctypes
 import time
+import re
 
 from trackma.tracker import tracker
 
 class Win32Tracker(tracker.TrackerBase):
     name = 'Tracker (win32)'
+
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
+
+        self.winregex = re.compile("(\.mkv|\.mp4|\.avi)")
 
     def _foreach_window(self, hwnd, lParam):
         # Get class name and window title of the current hwnd
@@ -45,12 +51,11 @@ class Win32Tracker(tracker.TrackerBase):
         self.win32_hwnd_list = []
         self.EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
         ctypes.windll.user32.EnumWindows(self.EnumWindowsProc(self._foreach_window), 0)
-        winregex = re.compile("(\.mkv|\.mp4|\.avi)")
 
         for classname, title in self.win32_hwnd_list:
-            if classname == 'MediaPlayerClassicW' and winregex.search(title) is not None:
+            if classname == 'MediaPlayerClassicW' and self.winregex.search(title) is not None:
                 return title
-            elif classname == 'mpv' and winregex.search(title) is not None:
+            elif classname == 'mpv' and self.winregex.search(title) is not None:
                 return title.replace('mpv - ', '')
 
         return False
