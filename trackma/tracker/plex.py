@@ -14,36 +14,86 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import ntpath
 import time
-from trackma.extras import plex
+import urllib.parse
+import urllib.request
+import xml.dom.minidom as xdmd
 
+import trackma.utils as utils
 from trackma.tracker import tracker
+
+NOT_RUNNING = 0
+ACTIVE = 1
+IDLE = 2
 
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
-    
-    def _get_plex_file(self):
-        playing_file = plex.playing_file()
-        return playing_file
+
+    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+        self.config = utils.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
+        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
+
+    def get_plex_status(self):
+        # returns the plex status of the first active session
+        try:
+            active = int(self._get_xml_info("MediaContainer", "size"))
+
+            if active:
+                return ACTIVE
+            else:
+                return IDLE
+        except urllib.request.URLError:
+            return NOT_RUNNING
+
+    def playing_file(self):
+        # returns the filename of the currently playing file
+        if self.get_plex_status() == IDLE:
+            return None
+
+        attr = self._get_xml_info("Part", "file")
+        name = urllib.parse.unquote(ntpath.basename(attr))
+
+        return name
+
+    def timer_from_file(self):
+        # returns 80% of video duration for the update timer,
+        # roughly the time of the video minus the OP and ED
+        if self.get_plex_status() == IDLE:
+            return None
+
+        duration = int(self._get_xml_info("Video", "duration"))
+
+        return round((duration*0.80)/60000)*60
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, "Using Plex.")
 
         while self.active:
-            # This stores the last two states of the plex server and only
-            # updates if it's ACTIVE.
-            plex_status = plex.status()
-            self.plex_log.append(plex_status)
-
-            if self.plex_log[-1] == "ACTIVE" or self.plex_log[-1] == "IDLE":
-                self.wait_s = plex.timer_from_file()
-                filename = self._get_plex_file()
+            status = self.get_plex_status()
+            
+            if status == ACTIVE or status == IDLE:
+                if status == IDLE:
+                    self.msg.info(self.name, "Using Plex.")
+                    
+                self.wait_s = self.timer_from_file()
+                filename = self.playing_file()
                 (state, show_tuple) = self._get_playing_show(filename)
                 self.update_show_if_needed(state, show_tuple)
-            elif (self.plex_log[-2] != "NOT_RUNNING" and self.plex_log[-1] == "NOT_RUNNING"):
+                
+            elif status == NOT_RUNNING:
                 self.msg.warn(self.name, "Plex Media Server is not running.")
 
-            del self.plex_log[0]
             # Wait for the interval before running check again
             time.sleep(interval)
 
+    def _get_xml_info(self, tag, attr):
+        # Get the required info from the /status/sessions url
+        host_port = self.config['plex_host']+":"+self.config['plex_port']
+
+        session_url = "http://"+host_port+"/status/sessions"
+        sdoc = xdmd.parse(urllib.request.urlopen(session_url))
+
+        res = sdoc.getElementsByTagName(tag)[0].getAttribute(attr)
+
+        return res
