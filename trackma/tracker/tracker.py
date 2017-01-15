@@ -36,8 +36,6 @@ class TrackerBase(object):
     last_updated = False
     last_close_queue = None
     timer = None
-    plex_enabled = False
-    plex_log = [None, None]
 
     name = 'Tracker'
 
