@@ -459,7 +459,9 @@ class libkitsu(lib):
 
         info.update({
             'id': int(media['id']),
-            'title':       attr['canonicalTitle'],
+            # TODO : Some shows actually don't have a canonicalTitle; this should be fixed in the future.
+            # For now I'm just picking the romaji title in these cases.
+            'title':       attr['canonicalTitle'] or attr['titles']['en_jp'],
             'total':       total or 0,
             'image':       attr['posterImage']['small'],
             'image_thumb': attr['posterImage']['tiny'],
