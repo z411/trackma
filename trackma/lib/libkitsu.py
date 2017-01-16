@@ -270,9 +270,11 @@ class libkitsu(lib):
             params = {
                 "filter[user_id]": self._get_userconfig('userid'),
                 "filter[kind]": self.mediatype,
-                "include": self.mediatype,
+                #"include": self.mediatype, # TODO : This returns a 500 for some reason.
+                "include": "media",
+                # TODO : List for manga should be different
                 "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,subtype,posterImage",
-                "page[limit]": "100",
+                "page[limit]": "250",
             }
 
             url = "{}/library-entries?{}".format(self.prefix, urllib.parse.urlencode(params))
@@ -291,7 +293,9 @@ class libkitsu(lib):
                 links = data_json['links']
 
                 for entry in entries:
-                    showid = int(entry['relationships'][self.mediatype]['data']['id'])
+                    # TODO : Including the mediatype returns a 500 for some reason.
+                    #showid = int(entry['relationships'][self.mediatype]['data']['id'])
+                    showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
                     rating = entry['attributes']['rating']
 
