@@ -1812,18 +1812,20 @@ class Settings(Gtk.Window):
         ### Play Next ###
         lbl_player = Gtk.Label('Media Player')
         lbl_player.set_size_request(120, -1)
+        lbl_player.set_xalign(0)
         self.txt_player = Gtk.Entry()
         self.txt_player.set_max_length(4096)
         playerbrowse_button = Gtk.Button('Browse...')
         playerbrowse_button.connect("clicked", self.__do_browse, 'Select player', self.txt_player)
 
         header0 = Gtk.Label()
-        header0.set_text('<span size="10000"><b>Play Next</b></span>')
+        header0.set_text('<b>Play Next</b>')
         header0.set_use_markup(True)
+        header0.set_xalign(0)
 
         line0 = Gtk.HBox(False, 5)
-        line0.pack_start(lbl_player, False, False, 0)
-        line0.pack_start(self.txt_player, False, False, 0)
+        line0.pack_start(lbl_player, False, False, 5)
+        line0.pack_start(self.txt_player, True, True, 0)
         line0.pack_start(playerbrowse_button, False, False, 0)
 
         ### Tracker ###
@@ -1831,16 +1833,22 @@ class Settings(Gtk.Window):
         # Labels
         lbl_process = Gtk.Label('Process Name')
         lbl_process.set_size_request(120, -1)
+        lbl_process.set_xalign(0)
         lbl_searchdir = Gtk.Label('Library Directory')
         lbl_searchdir.set_size_request(120, -1)
+        lbl_searchdir.set_xalign(0)
         lbl_tracker_enabled = Gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
+        lbl_tracker_enabled.set_xalign(0)
         lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
         lbl_tracker_plex_host_port.set_size_request(120, -1)
+        lbl_tracker_plex_host_port.set_xalign(0)
         lbl_tracker_update_wait = Gtk.Label('Wait before update')
         lbl_tracker_update_wait.set_size_request(120, -1)
+        lbl_tracker_update_wait.set_xalign(0)
         lbl_tracker_update_options = Gtk.Label('Update options')
         lbl_tracker_update_options.set_size_request(120, -1)
+        lbl_tracker_update_options.set_xalign(0)
 
         # Entries
         self.txt_process = Gtk.Entry()
@@ -1880,43 +1888,45 @@ class Settings(Gtk.Window):
 
         # HBoxes
         header1 = Gtk.Label()
-        header1.set_text('<span size="10000"><b>Tracker Options</b></span>')
+        header1.set_text('<b>Tracker Options</b>')
         header1.set_use_markup(True)
+        header1.set_xalign(0)
 
         line1 = Gtk.HBox(False, 5)
-        line1.pack_start(lbl_searchdir, False, False, 0)
+        line1.pack_start(lbl_searchdir, False, False, 5)
         line1.pack_start(self.txt_searchdir, True, True, 0)
         line1.pack_start(self.browse_button, False, False, 0)
 
         line2 = Gtk.HBox(False, 5)
-        line2.pack_start(lbl_process, False, False, 0)
+        line2.pack_start(lbl_process, False, False, 5)
         line2.pack_start(self.txt_process, True, True, 0)
 
         line7 = Gtk.HBox(False, 5)
-        line7.pack_start(lbl_tracker_plex_host_port, False, False, 0)
+        line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
         line7.pack_start(self.txt_plex_host, True, True, 0)
         line7.pack_start(self.txt_plex_port, True, True, 0)
 
         line3 = Gtk.HBox(False, 5)
-        line3.pack_start(lbl_tracker_enabled, False, False, 0)
+        line3.pack_start(lbl_tracker_enabled, False, False, 5)
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
         line3.pack_start(self.rbtn_tracker_local, False, False, 0)
         line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
 
         line8 = Gtk.HBox(False, 5)
-        line8.pack_start(lbl_tracker_update_wait, False, False, 0)
+        line8.pack_start(lbl_tracker_update_wait, False, False, 5)
         line8.pack_start(self.spin_tracker_update_wait, False, False, 0)
         line8.pack_start(Gtk.Label('seconds'), False, False, 0)
 
         line9 = Gtk.HBox(False, 5)
-        line9.pack_start(lbl_tracker_update_options, False, False, 0)
+        line9.pack_start(lbl_tracker_update_options, False, False, 5)
         line9.pack_start(self.chk_tracker_update_close, False, False, 0)
         line9.pack_start(self.chk_tracker_update_prompt, False, False, 0)
 
         ### Auto-retrieve ###
         header2 = Gtk.Label()
-        header2.set_text('<span size="10000"><b>Auto-retrieve</b></span>')
+        header2.set_text('<b>Auto-retrieve</b>')
         header2.set_use_markup(True)
+        header2.set_xalign(0)
 
         # Radio buttons
         self.rbtn_autoret_off = Gtk.RadioButton.new_with_label_from_widget(None, 'Disabled')
@@ -1940,8 +1950,9 @@ class Settings(Gtk.Window):
 
         ### Auto-send ###
         header3 = Gtk.Label()
-        header3.set_text('<span size="10000"><b>Auto-send</b></span>')
+        header3.set_text('<b>Auto-send</b>')
         header3.set_use_markup(True)
+        header3.set_xalign(0)
 
         # Radio buttons
         self.rbtn_autosend_off = Gtk.RadioButton.new_with_label_from_widget(None, 'Disabled')
@@ -1979,23 +1990,27 @@ class Settings(Gtk.Window):
 
         ### Additional options
         header_additional = Gtk.Label()
-        header_additional.set_text('<span size="10000"><b>Additional options</b></span>')
+        header_additional.set_text('<b>Additional options</b>')
         header_additional.set_use_markup(True)
+        header_additional.set_xalign(0)
 
         self.chk_auto_status_change = Gtk.CheckButton('Change status automatically')
         self.chk_auto_status_change_if_scored = Gtk.CheckButton('Change status automatically only if scored')
         self.chk_auto_status_change_if_scored.set_sensitive(False)
         self.chk_auto_status_change.connect("toggled", self.radio_toggled, self.chk_auto_status_change_if_scored)
         self.chk_auto_date_change = Gtk.CheckButton('Change start and finish dates automatically')
+        line_auto_status_change_if_scored = Gtk.HBox(False, 5)
+        line_auto_status_change_if_scored.pack_start(self.chk_auto_status_change_if_scored, False, False, 20)
         line_additional = Gtk.VBox(False, 5)
         line_additional.pack_start(self.chk_auto_status_change, False, False, 0)
-        line_additional.pack_start(self.chk_auto_status_change_if_scored, False, False, 0)
+        line_additional.pack_start(line_auto_status_change_if_scored, False, False, 0)
         line_additional.pack_start(self.chk_auto_date_change, False, False, 0)
 
         ### GTK Interface ###
         header4 = Gtk.Label()
-        header4.set_text('<span size="10000"><b>GTK Interface</b></span>')
+        header4.set_text('<b>GTK Interface</b>')
         header4.set_use_markup(True)
+        header4.set_xalign(0)
 
         self.chk_show_tray = Gtk.CheckButton('Show Tray Icon')
         self.chk_close_to_tray = Gtk.CheckButton('Close to Tray')
@@ -2009,18 +2024,27 @@ class Settings(Gtk.Window):
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_close_to_tray)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_start_in_tray)
         self.chk_show_tray.connect("toggled", self.radio_toggled, self.chk_tray_api_icon)
+
+        line_close_to_tray = Gtk.HBox(False, 5)
+        line_close_to_tray.pack_start(self.chk_close_to_tray, False, False, 20)
+        line_start_in_tray = Gtk.HBox(False, 5)
+        line_start_in_tray.pack_start(self.chk_start_in_tray, False, False, 20)
+        line_tray_api_icon = Gtk.HBox(False, 5)
+        line_tray_api_icon.pack_start(self.chk_tray_api_icon, False, False, 20)
+
         line6 = Gtk.VBox(False, 5)
         line6.pack_start(self.chk_show_tray, False, False, 0)
-        line6.pack_start(self.chk_close_to_tray, False, False, 0)
-        line6.pack_start(self.chk_start_in_tray, False, False, 0)
-        line6.pack_start(self.chk_tray_api_icon, False, False, 0)
+        line6.pack_start(line_close_to_tray, False, False, 0)
+        line6.pack_start(line_start_in_tray, False, False, 0)
+        line6.pack_start(line_tray_api_icon, False, False, 0)
         line6.pack_start(self.chk_remember_geometry, False, False, 0)
         line6.pack_start(self.chk_classic_progress, False, False, 0)
 
         ### Colors ###
         header5 = Gtk.Label()
-        header5.set_text('<span size="10000"><b>Color Scheme</b></span>')
+        header5.set_text('<b>Color Scheme</b>')
         header5.set_use_markup(True)
+        header5.set_xalign(0)
         self.colors = {}
         pages = [('rows',    'Row text'),
                  ('progress','Progress widget')]
@@ -2039,11 +2063,12 @@ class Settings(Gtk.Window):
 
         col_notebook = Gtk.Notebook()
         for (key,tab_title) in pages:
-            rows = Gtk.VBox(False, 10)
+            rows = Gtk.VBox(False, 5)
+            rows.set_border_width(10)
             rows_lines = []
             for (c_key,text) in self.colors[key]: # Generate widgets for each color
                 line = Gtk.HBox(False, 5)
-                label = Gtk.Label(text)
+                label = Gtk.Label(text, xalign=0)
                 picker = Gtk.ColorButton.new_with_color(getColor(self.config['colors'][c_key]))
                 self.col_pickers[c_key] = picker
                 line.pack_start(label, True, True, 0)
@@ -2058,7 +2083,7 @@ class Settings(Gtk.Window):
         notebook = Gtk.Notebook()
 
         page0 = Gtk.VBox(False, 10)
-        page0.set_border_width(5)
+        page0.set_border_width(10)
         page0.pack_start(header0, False, False, 0)
         page0.pack_start(line0, False, False, 0)
         page0.pack_start(header1, False, False, 0)
@@ -2070,7 +2095,7 @@ class Settings(Gtk.Window):
         page0.pack_start(line9, False, False, 0)
 
         page1 = Gtk.VBox(False, 10)
-        page1.set_border_width(5)
+        page1.set_border_width(10)
         page1.pack_start(header2, False, False, 0)
         page1.pack_start(line4, False, False, 0)
         page1.pack_start(header3, False, False, 0)
@@ -2079,7 +2104,7 @@ class Settings(Gtk.Window):
         page1.pack_start(line_additional, False, False, 0)
 
         page2 = Gtk.VBox(False, 10)
-        page2.set_border_width(5)
+        page2.set_border_width(10)
         page2.pack_start(header4, False, False, 0)
         page2.pack_start(line6, False, False, 0)
         page2.pack_start(header5, False, False, 0)
