@@ -328,6 +328,7 @@ class libkitsu(lib):
         show['aliases'] = info['aliases']
         show['url']     = info['url']
         show['total']   = info['total']
+        show['image']   = info['image']
         show['image_thumb'] = info['image_thumb']
 
     def request_info(self, item_list):
