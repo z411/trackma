@@ -195,15 +195,23 @@ class libkitsu(lib):
         except:
             return None
 
-    def _request_access_token(self):
-        self.msg.info(self.name, 'Requesting access token...')
+    def _request_access_token(self, refresh=False):
         params = {
-            'grant_type':    'password',
-            'username':      self.username,
-            'password':      self.password,
             'client_id':     self._client_id,
             'client_secret': self._client_secret,
         }
+
+        if refresh:
+            self.msg.info(self.name, 'Refreshing access token...')
+
+            params['grant_type']    = 'refresh_token'
+            params['refresh_token'] = self._get_userconfig('refresh_token')
+        else:
+            self.msg.info(self.name, 'Requesting access token...')
+
+            params['grant_type'] = 'password'
+            params['username']   = self.username
+            params['password']   = self.password
 
         response = self._request('POST', self.url + '/oauth/token', post=params)
         data = json.loads(response)
@@ -218,18 +226,6 @@ class libkitsu(lib):
         self.logged_in = True
         self._refresh_user_info()
         self._emit_signal('userconfig_changed')
-
-    def _refresh_access_token(self):
-        self.msg.info(self.name, 'Refreshing access token...')
-        param = {
-            'grant_type': 'refresh_token',
-            'client_id': self._client_id,
-            'client_secret': self._client_secret,
-            'refresh_token': self._get_userconfig('refresh_token'),
-        }
-
-        # TODO : Where's the refresh endpoint?
-        raise NotImplementedError
 
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
@@ -252,9 +248,9 @@ class libkitsu(lib):
         timestamp = int(time.time())
 
         if not self._get_userconfig('access_token'):
-            self._request_access_token()
+            self._request_access_token(False)
         elif (timestamp+60) > self._get_userconfig('expires'):
-            self._refresh_access_token()
+            self._request_access_token(True)
         else:
             self.logged_in = True
 
@@ -272,10 +268,10 @@ class libkitsu(lib):
 
             # Get first page and continue from there
             params = {
-                "filter[userId]": self._get_userconfig('userid'),
-                "filter[media_type]": self.mediatype.capitalize(),
-                "include": "media",
-                "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,showType,posterImage",
+                "filter[user_id]": self._get_userconfig('userid'),
+                "filter[kind]": self.mediatype,
+                "include": self.mediatype,
+                "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,subtype,posterImage",
                 "page[limit]": "100",
             }
 
@@ -295,7 +291,7 @@ class libkitsu(lib):
                 links = data_json['links']
 
                 for entry in entries:
-                    showid = int(entry['relationships']['media']['data']['id'])
+                    showid = int(entry['relationships'][self.mediatype]['data']['id'])
                     status = entry['attributes']['status']
                     rating = entry['attributes']['rating']
 
@@ -467,7 +463,7 @@ class libkitsu(lib):
             'aliases': [], # TODO : handle aliases
             'extra': [
                 ('Synopsis', attr['synopsis']),
-                ('Type',     attr[type_str]),
+                ('Type',     attr['subtype']),
             ]
         })
 
