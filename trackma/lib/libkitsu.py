@@ -273,7 +273,7 @@ class libkitsu(lib):
                 #"include": self.mediatype, # TODO : This returns a 500 for some reason.
                 "include": "media",
                 # TODO : List for manga should be different
-                "fields[anime]": "id,slug,canonicalTitle,episodeCount,synopsis,subtype,posterImage",
+                "fields[anime]": "id,slug,canonicalTitle,titles,episodeCount,synopsis,subtype,posterImage",
                 "page[limit]": "250",
             }
 
@@ -324,11 +324,11 @@ class libkitsu(lib):
             raise utils.APIError("Error getting list.")
 
     def merge(self, show, info):
-        show['title'] = info['title']
-        show['total'] = info['total']
-        show['image'] = info['image']
-
-        # TODO implement all
+        show['title']   = info['title']
+        show['aliases'] = info['aliases']
+        show['url']     = info['url']
+        show['total']   = info['total']
+        show['image_thumb'] = info['image_thumb']
 
     def request_info(self, item_list):
         print("These are missing: " + repr(item_list))
@@ -464,7 +464,7 @@ class libkitsu(lib):
             'image':       attr['posterImage']['small'],
             'image_thumb': attr['posterImage']['tiny'],
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
-            'aliases': [], # TODO : handle aliases
+            'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
                 ('Synopsis', attr['synopsis']),
                 ('Type',     attr['subtype']),
