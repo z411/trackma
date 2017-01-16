@@ -44,8 +44,7 @@ available_libs = {
             "http://omaera.org/trackma/anilist.html",
             "https://anilist.co/api/auth/authorize?grant_type=authorization_pin&client_id=z411-gdjc3&response_type=pin"
                 ),
-    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg',          LOGIN_PASSWD),
-    'kitsu':    ('Kitsu',        datadir + '/data/hb.jpg',          LOGIN_PASSWD),
+    'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
     'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
