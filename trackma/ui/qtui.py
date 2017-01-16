@@ -2474,7 +2474,7 @@ class AccountDialog(QDialog):
         for k, account in accounts:
             self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2)
             self.table.setItem(i, 0, AccountItem(k, account['username']))
-            self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons[account['api']]))
+            self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons.get(account['api'])))
 
             i += 1
 
