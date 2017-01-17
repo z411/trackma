@@ -32,7 +32,7 @@ from trackma import utils
 
 class libkitsu(lib):
     """
-    API class to communicate with Hummingbird
+    API class to communicate with Kitsu
     Should inherit a base library interface.
 
     Website: https://kitsu.io/
