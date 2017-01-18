@@ -1,3 +1,22 @@
+v0.7
+- New: Added Kitsu.io support (libkitsu, experimental!)
+- New: (Tracker) Prompt to add a show if it's not in the list
+- Improvement: (Tracker) Tracker status is now shown in a separate line in the status bar
+- Improvement: (Tracker) lsof dependency is now necessary only for the polling tracker (uses procfs for inotify)
+- Improvement: Autosend interval is now expressed in minutes rather than hours
+- Improvement: (CLI) Showing tracker status messages properly now
+- Improvement: (curses) Improved default keybinds
+- Improvement: (curses) Title bar now shows total shows in list
+- Removed: Hummingbird support (switch to Kitsu)
+- Removed: Melative support
+- Bugfix: (Tracker) Polling tracker only polls the search directory
+- Bugfix: (Tracker) Fixing "closed before update" message
+- Bugfix: (Qt) Fixed crash in some cases where thumbnail could not be downloaded
+- Bugfix: (Qt) Fixed not being able to edit tags on just added items
+- Bugfix: (curses) Fixed bug when trying to do operations on an empty list
+- Bugfix: (GTK) Fixed crash when tracker attempted to change the show status
+- Bugfix: Other minor bugfixes, cosmetic changes and code refactoring
+
 v0.6.2
 - New: Play Next now uses the library instead of rescanning the directory every time
 - New: Library auto-rescanning at start
