@@ -304,11 +304,11 @@ class libshikimori(lib):
             user_rate = {}
             dest_url = "/api/user_rates/{}".format(item['my_id'])
 
-        if 'my_progress' in item.keys():
+        if 'my_progress' in item:
             user_rate[self.watched_str] = item['my_progress']
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             user_rate['status'] = item['my_status']
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             user_rate['score'] = item['my_score']
 
         values = {'user_rate': user_rate}

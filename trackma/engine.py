@@ -588,7 +588,7 @@ class Engine:
 
         # Check if the status is valid
         _statuses = self.mediainfo['statuses_dict']
-        if newstatus not in _statuses.keys():
+        if newstatus not in _statuses:
             raise utils.EngineError('Invalid status.')
 
         # Get the show and update it
@@ -747,9 +747,9 @@ class Engine:
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
         # Only remove if the filename matches library entry
-        if filename in library_cache.keys() and library_cache[filename]:
+        if filename in library_cache and library_cache[filename]:
             (show_id, show_ep) = library_cache[filename]
-            if show_id and show_id in library.keys() \
+            if show_id and show_id in library \
                     and show_ep and show_ep in library[show_id].keys():
                 if library[show_id][show_ep] == fullpath:
                     self.msg.debug(self.name, "File removed from local library: %s" % fullpath)
@@ -767,7 +767,7 @@ class Engine:
 
     def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
         show_id = None
-        if not rescan and filename in library_cache.keys():
+        if not rescan and filename in library_cache:
             # If the filename was already seen before
             # use the cached information, if there's no information (None)
             # then it means it doesn't correspond to any show in the list
@@ -809,7 +809,7 @@ class Engine:
 
         # After we got our information, add it to our library
         if show_id:
-            if show_id not in library.keys():
+            if show_id not in library:
                 library[show_id] = {}
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
@@ -842,7 +842,7 @@ class Engine:
 
         for showid, eps in library.items():
             show = self.get_show_info(showid)
-            if show['my_progress'] + 1 in eps.keys():
+            if show['my_progress'] + 1 in eps:
                 newep.append(show)
 
         if not newep:

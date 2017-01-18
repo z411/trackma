@@ -423,11 +423,11 @@ class libkitsu(lib):
         # Update necessary keys
         if item['my_id']:
             values['data']['id'] = str(item['my_id'])
-        if 'my_progress' in item.keys():
+        if 'my_progress' in item:
             values['data']['attributes']['progress'] = item['my_progress']
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             values['data']['attributes']['status'] = item['my_status']
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             values['data']['attributes']['rating'] = item['my_score'] or None
 
         return json.dumps(values)
