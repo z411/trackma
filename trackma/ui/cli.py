@@ -84,7 +84,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def __init__(self, account_num=None, debug=False):
         print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
-        print('This program comes with ABSOLUTELY NO WARRANTY; for details type `info\'')
+        print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
         print('This is free software, and you are welcome to redistribute it')
         print('under certain conditions; see the COPYING file for details.')
         print()
@@ -166,6 +166,21 @@ class Trackma_cmd(cmd.Cmd):
         print("Ready. Type 'help' for a list of commands.")
         print("Press tab for autocompletion and up/down for command history.")
         self.do_filter(None) # Show available filters
+        print()
+
+    def do_about(self, args):
+        print("Trackma {}  by z411 (z411@omaera.org)".format(utils.VERSION))
+        print("Trackma is an open source client for media tracking websites.")
+        print("https://github.com/z411/trackma")
+        print()
+        print("This program is licensed under the GPLv3 and it comes with ASOLUTELY NO WARRANTY.")
+        print("Many contributors have helped to run this project; for more information see the AUTHORS file.")
+        print("For more information about the license, see the COPYING file.")
+        print()
+        print("If you encounter any problems please report them in https://github.com/z411/trackma/issues")
+        print()
+        print("This is the CLI version of Trackma. To see available commands type `help'.")
+        print("For other available interfaces please see the README file.")
         print()
 
     def do_help(self, arg):
