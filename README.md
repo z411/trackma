@@ -47,17 +47,37 @@ Documentation
 
 The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
 
-Requirements
+Dependencies
 ------------
 
+The only required dependency to run Trackma is:
+
 - Python 3.4/3.5
-- lsof - for the media player detection tracker.
-- (Optional) inotify *or* pyinotify - for instant media recognition (Linux only)
-- (Optional) PyQt - for the Qt Interface
-- (Optional) PyGI (python3-gi and python3-cairo) - for the GTK interface.
-- (Optional) Urwid (python3-urwid) - for the curses/urwid interface.
-- (Optional/Recommended) PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 - python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
+
+But only basic features will work (only CLI interface and no tracker). Everything else is optional.
+
+The following media recognition trackers are available and their requirements are as follows:
+
+| Tracker | Description | Dependencies |
+| --- | --- | --- |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
+| Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
+| Plex | Connects to Plex server. Enabled manually. | None |
+| Win32 | Recognition for Windows platforms. | None |
+
+For the user interfaces:
+
+| UI | Dependencies |
+| --- | --- |
+| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
+| GTK 3 | PyGI (python3-gi and python3-cairo) |
+| curses | Urwid (python3-urwid) |
+| CLI | None |
+
+An additional optional dependency is:
+
+- PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
