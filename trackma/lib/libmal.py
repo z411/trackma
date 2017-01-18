@@ -399,22 +399,22 @@ class libmal(lib):
             progressname = 'chapter'
 
         # Update necessary keys
-        if 'my_progress' in item.keys():
+        if 'my_progress' in item:
             episode = ET.SubElement(root, progressname)
             episode.text = str(item['my_progress'])
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             score = ET.SubElement(root, "score")
             score.text = str(item['my_score'])
-        if 'my_start_date' in item.keys():
+        if 'my_start_date' in item:
             start_date = ET.SubElement(root, "date_start")
             start_date.text = self._date2str(item['my_start_date'])
-        if 'my_finish_date' in item.keys():
+        if 'my_finish_date' in item:
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
-        if 'my_tags' in item.keys():
+        if 'my_tags' in item:
             tags = ET.SubElement(root, "tags")
             tags.text = str(item['my_tags'])
 

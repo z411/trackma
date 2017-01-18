@@ -270,7 +270,7 @@ class libvndb(lib):
         self.check_credentials()
 
         # Update status with set vnlist
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             self.msg.info(self.name, 'Updating VN %s (status)...' % item['title'])
 
             if self.mediatype == 'wishlist':
@@ -284,7 +284,7 @@ class libvndb(lib):
                 raise utils.APIError("Invalid response (%s)" % name)
 
         # Update vote with set votelist
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             self.msg.info(self.name, 'Updating VN %s (vote)...' % item['title'])
 
             if item['my_score'] > 0:

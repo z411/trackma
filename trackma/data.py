@@ -266,7 +266,7 @@ class Data():
         key: The key that will be modified (it must exist beforehand)
         value: The value that it should be changed to
         """
-        if key not in show.keys():
+        if key not in show:
             raise utils.DataError('Invalid key for queue update.')
 
         # Do update on memory

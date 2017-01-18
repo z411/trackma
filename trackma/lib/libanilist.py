@@ -356,11 +356,11 @@ class libanilist(lib):
 
     def _update_entry(self, item, method):
         values = { 'id': item['id'] }
-        if 'my_progress' in item.keys():
+        if 'my_progress' in item:
             values[self.watched_str] = item['my_progress']
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             values['list_status'] = item['my_status']
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             values['score'] = item['my_score']
 
         data = self._request(method, "{}list".format(self.mediatype), post=values, auth=True)
