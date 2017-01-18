@@ -338,7 +338,7 @@ class Trackma_urwid():
             self.error(e)
 
     def do_help(self):
-        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
