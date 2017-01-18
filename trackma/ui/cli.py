@@ -83,10 +83,10 @@ class Trackma_cmd(cmd.Cmd):
     }
 
     def __init__(self, account_num=None, debug=False):
-        print('Trackma v'+utils.VERSION+'  Copyright (C) 2012  z411')
+        print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
         print('This program comes with ABSOLUTELY NO WARRANTY; for details type `info\'')
         print('This is free software, and you are welcome to redistribute it')
-        print('under certain conditions; see the file COPYING for details.')
+        print('under certain conditions; see the COPYING file for details.')
         print()
 
         self.debug = debug
