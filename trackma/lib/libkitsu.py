@@ -334,6 +334,7 @@ class libkitsu(lib):
 
         show['start_date'] = info['start_date']
         show['end_date']   = info['end_date']
+        show['status']     = info['status']
 
     def request_info(self, item_list):
         print("These are missing: " + repr(item_list))
@@ -446,6 +447,22 @@ class libkitsu(lib):
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None # Ignore date if it's invalid
 
+    def _guess_status(self, start_date, end_date):
+        # Try to guess show status by checking start and end dates
+        now = datetime.datetime.now()
+
+        if end_date and end_date < now:
+            return utils.STATUS_FINISHED
+
+        if start_date:
+            if start_date > now:
+                return utils.STATUS_NOTYET
+            else:
+                return utils.STATUS_AIRING
+
+        # Safe to assume dates haven't even been announced yet
+        return utils.STATUS_NOTYET
+
     def _parse_info(self, media):
         info = utils.show()
         attr = media['attributes']
@@ -455,13 +472,10 @@ class libkitsu(lib):
 
         if media['type'] == 'anime':
             total = attr['episodeCount']
-            type_str = 'showType'
         elif media['type'] == 'manga':
             total = attr['chapterCount']
-            type_str = 'mangaType'
         elif media['type'] == 'drama':
             total = attr['episodeCount'] # TODO Unconfirmed
-            type_str = 'dramaType'
 
         info.update({
             'id': int(media['id']),
@@ -480,6 +494,14 @@ class libkitsu(lib):
                 ('Type',     attr['subtype']),
             ]
         })
+
+        # WORKAROUND: Shows with 1 episode (TVs, SPs, OVAs) end the same day they start
+        if total == 1:
+            info['end_date'] = info['start_date']
+
+        # WORKAROUND: Since there's no way to get the formal status,
+        # use the helper function to guess it.
+        info['status'] = self._guess_status(info['start_date'], info['end_date'])
 
         return info
 
