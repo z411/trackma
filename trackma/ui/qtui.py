@@ -840,7 +840,7 @@ class Trackma(QMainWindow):
             # Regenerate Play Episode Menu
             self.generate_episode_menus(self.menu_play, show['total'], show['my_progress'])
         else:
-            self.show_progress.setMaximum(utils.estimate_aired_episodes(show))
+            self.show_progress.setMaximum(utils.estimate_aired_episodes(show) or 10000)
             self.generate_episode_menus(self.menu_play, utils.estimate_aired_episodes(show),show['my_progress'])
 
         # Update information
@@ -1168,11 +1168,14 @@ class Trackma(QMainWindow):
         ep_default = 1
         ep_min = 1
         ep_max = utils.estimate_aired_episodes(show)
-        if ep_max is None:
-            ep_max = max(show['total'],1)
+        if not ep_max:
+            # If we don't know the total just allow anything
+            ep_max = show['total'] or 10000
+
         episode, ok = QInputDialog.getInt(self, 'Play Episode',
             'Enter an episode number of %s to play:' % show['title'],
             ep_default, ep_min, ep_max)
+
         if ok:
             self.s_play(False, episode)
 
