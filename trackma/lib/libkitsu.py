@@ -273,7 +273,7 @@ class libkitsu(lib):
                 #"include": self.mediatype, # TODO : This returns a 500 for some reason.
                 "include": "media",
                 # TODO : List for manga should be different
-                "fields[anime]": "id,slug,canonicalTitle,titles,episodeCount,synopsis,subtype,posterImage",
+                "fields[anime]": "id,slug,canonicalTitle,titles,episodeCount,synopsis,subtype,posterImage,startDate,endDate",
                 "page[limit]": "250",
             }
 
@@ -329,7 +329,11 @@ class libkitsu(lib):
         show['url']     = info['url']
         show['total']   = info['total']
         show['image']   = info['image']
+
         show['image_thumb'] = info['image_thumb']
+
+        show['start_date'] = info['start_date']
+        show['end_date']   = info['end_date']
 
     def request_info(self, item_list):
         print("These are missing: " + repr(item_list))
@@ -433,13 +437,13 @@ class libkitsu(lib):
         return json.dumps(values)
 
     def _str2date(self, string):
-        if string != '0000-00-00':
-            try:
-                return datetime.datetime.strptime(string, "%Y-%m-%d")
-            except:
-                return None # Ignore date if it's invalid
-        else:
+        if string is None:
             return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%d")
+        except:
+            return None # Ignore date if it's invalid
 
     def _parse_info(self, media):
         info = utils.show()
@@ -466,6 +470,8 @@ class libkitsu(lib):
             'total':       total or 0,
             'image':       attr['posterImage']['small'],
             'image_thumb': attr['posterImage']['tiny'],
+            'start_date':  self._str2date(attr['startDate']),
+            'end_date':    self._str2date(attr['endDate']),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
