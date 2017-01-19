@@ -692,6 +692,9 @@ class Engine:
         return best_candidate[0], best_candidate[2]
 
     def get_new_episodes(self, showlist):
+        # DEPRECATED !
+        self.msg.debug(self.name, "DEPRECATED: get_new_episodes")
+
         results = list()
         total = len(showlist)
         t = time.time()
