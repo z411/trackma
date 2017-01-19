@@ -443,6 +443,7 @@ class libkitsu(lib):
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
         except:
+            self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None # Ignore date if it's invalid
 
     def _parse_info(self, media):
