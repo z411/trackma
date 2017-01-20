@@ -733,7 +733,7 @@ class Trackma(QMainWindow):
         title_str = show['title']
         if altname:
             title_str += " [%s]" % altname
-        progress_str = "%d / %d" % (show['my_progress'], show['total'])
+        progress_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
         percent_widget = EpisodeBar(self, self.config['colors'])
         percent_widget.setRange(0, 100)
         percent_widget.setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])

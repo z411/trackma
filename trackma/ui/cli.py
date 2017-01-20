@@ -830,7 +830,7 @@ class Trackma_cmd(cmd.Cmd):
         # List shows
         for index, show in showlist:
             if self.engine.mediainfo['has_progress']:
-                episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'])
+                episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'] or '?')
             else:
                 episodes_str = "-"
 
