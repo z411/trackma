@@ -1003,7 +1003,7 @@ class ShowWalker(urwid.SimpleListWalker):
 class ShowItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True, altname=None, eps=None):
         if has_progress:
-            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
+            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total'] or '?'))
         else:
             self.episodes_str = urwid.Text("-")
 
