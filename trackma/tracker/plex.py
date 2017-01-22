@@ -33,6 +33,7 @@ class PlexTracker(tracker.TrackerBase):
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         self.config = utils.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
         super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
+        self.update_wait = update_wait
 
     def get_plex_status(self):
         # returns the plex status of the first active session
@@ -76,7 +77,11 @@ class PlexTracker(tracker.TrackerBase):
                 if status == IDLE:
                     self.msg.info(self.name, "Using Plex.")
                     
-                self.wait_s = self.timer_from_file()
+                if self.config['plex_obey_update_wait_s']:
+                    self.wait_s = self.update_wait
+                else:
+                    self.wait_s = self.timer_from_file()
+                    
                 filename = self.playing_file()
                 (state, show_tuple) = self._get_playing_show(filename)
                 self.update_show_if_needed(state, show_tuple)
