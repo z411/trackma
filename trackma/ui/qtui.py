@@ -1787,8 +1787,6 @@ class SettingsDialog(QDialog):
         self.tracker_type_local.toggled.connect(self.tracker_type_change)
         self.tracker_type_plex = QRadioButton('Plex media server')
         self.tracker_type_plex.toggled.connect(self.tracker_type_change)
-        self.plex_host = QLineEdit()
-        self.plex_port = QLineEdit()
         self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
@@ -1805,14 +1803,25 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow(self.tracker_type_plex)
         g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
         g_media_layout.addRow('Process name (regex)', self.tracker_process)
-        g_media_layout.addRow('Plex host', self.plex_host)
-        g_media_layout.addRow('Plex port', self.plex_port)
         g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
         g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
         g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
         g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
+        
+        # Group: Plex settings
+        g_plex = QGroupBox('Plex Media Server')
+        g_plex.setFlat(True)
+        self.plex_host = QLineEdit()
+        self.plex_port = QLineEdit()
+        
+        g_plex_layout = QGridLayout()
+        g_plex_layout.addWidget(QLabel('Host and Port'),                0, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_host,                         0, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_port,                         0, 2, 1, 2)
+        
+        g_plex.setLayout(g_plex_layout)
 
         # Group: Play Next
         g_playnext = QGroupBox('Play Next')
