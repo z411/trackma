@@ -287,6 +287,7 @@ config_defaults = {
     'tracker_type': "local",
     'plex_host': "localhost",
     'plex_port': "32400",
+    'plex_obey_update_wait_s': False,
 }
 userconfig_defaults = {
     'mediatype': '',
