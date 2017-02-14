@@ -1787,8 +1787,6 @@ class SettingsDialog(QDialog):
         self.tracker_type_local.toggled.connect(self.tracker_type_change)
         self.tracker_type_plex = QRadioButton('Plex media server')
         self.tracker_type_plex.toggled.connect(self.tracker_type_change)
-        self.plex_host = QLineEdit()
-        self.plex_port = QLineEdit()
         self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
@@ -1805,14 +1803,28 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow(self.tracker_type_plex)
         g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
         g_media_layout.addRow('Process name (regex)', self.tracker_process)
-        g_media_layout.addRow('Plex host', self.plex_host)
-        g_media_layout.addRow('Plex port', self.plex_port)
         g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
         g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
         g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
         g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
+        
+        # Group: Plex settings
+        g_plex = QGroupBox('Plex Media Server')
+        g_plex.setFlat(True)
+        self.plex_host = QLineEdit()
+        self.plex_port = QLineEdit()
+        self.plex_obey_wait = QCheckBox()
+        
+        g_plex_layout = QGridLayout()
+        g_plex_layout.addWidget(QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_host,                            0, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_port,                            0, 2, 1, 2)
+        g_plex_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_obey_wait,                       1, 2, 1, 1)
+        
+        g_plex.setLayout(g_plex_layout)
 
         # Group: Play Next
         g_playnext = QGroupBox('Play Next')
@@ -2079,11 +2091,13 @@ class SettingsDialog(QDialog):
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
+        self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
 
         if tracker_type == 'local':
             self.tracker_type_local.setChecked(True)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
+            self.plex_obey_wait.setEnabled(False)
         elif tracker_type == 'plex':
             self.tracker_type_plex.setChecked(True)
             self.tracker_process.setEnabled(False)
@@ -2153,6 +2167,7 @@ class SettingsDialog(QDialog):
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
+        engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -2221,15 +2236,18 @@ class SettingsDialog(QDialog):
                 self.tracker_process.setEnabled(True)
                 self.plex_host.setEnabled(False)
                 self.plex_port.setEnabled(False)
+                self.plex_obey_wait.setEnabled(False)
             elif self.tracker_type_plex.isChecked():
                 self.plex_host.setEnabled(True)
                 self.plex_port.setEnabled(True)
+                self.plex_obey_wait.setEnabled(True)
                 self.tracker_process.setEnabled(False)
         else:
             self.tracker_type_local.setEnabled(False)
             self.tracker_type_plex.setEnabled(False)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
+            self.plex_obey_wait.setEnabled(False)
             self.tracker_process.setEnabled(False)
             self.tracker_interval.setEnabled(False)
             self.tracker_update_wait.setEnabled(False)
