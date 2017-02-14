@@ -1827,7 +1827,7 @@ class Settings(Gtk.Window):
         line0.pack_start(lbl_player, False, False, 5)
         line0.pack_start(self.txt_player, True, True, 0)
         line0.pack_start(playerbrowse_button, False, False, 0)
-
+        
         ### Tracker ###
 
         # Labels
@@ -1840,9 +1840,6 @@ class Settings(Gtk.Window):
         lbl_tracker_enabled = Gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         lbl_tracker_enabled.set_xalign(0)
-        lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
-        lbl_tracker_plex_host_port.set_size_request(120, -1)
-        lbl_tracker_plex_host_port.set_xalign(0)
         lbl_tracker_update_wait = Gtk.Label('Wait before update')
         lbl_tracker_update_wait.set_size_request(120, -1)
         lbl_tracker_update_wait.set_xalign(0)
@@ -1858,11 +1855,6 @@ class Settings(Gtk.Window):
         self.browse_button = Gtk.Button('Browse...')
         self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
         self.chk_tracker_enabled = Gtk.CheckButton()
-        self.txt_plex_host = Gtk.Entry()
-        self.txt_plex_host.set_max_length(4096)
-        self.txt_plex_port = Gtk.Entry()
-        self.txt_plex_port.set_max_length(5)
-        self.txt_plex_port.set_width_chars(5)
         self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
         self.spin_tracker_update_wait = Gtk.SpinButton()
         self.spin_tracker_update_wait.set_adjustment(Gtk.Adjustment(value=5, lower=0, upper=500, step_incr=1, page_incr=10))
@@ -1901,11 +1893,6 @@ class Settings(Gtk.Window):
         line2.pack_start(lbl_process, False, False, 5)
         line2.pack_start(self.txt_process, True, True, 0)
 
-        line7 = Gtk.HBox(False, 5)
-        line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
-        line7.pack_start(self.txt_plex_host, True, True, 0)
-        line7.pack_start(self.txt_plex_port, True, True, 0)
-
         line3 = Gtk.HBox(False, 5)
         line3.pack_start(lbl_tracker_enabled, False, False, 5)
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
@@ -1921,6 +1908,37 @@ class Settings(Gtk.Window):
         line9.pack_start(lbl_tracker_update_options, False, False, 5)
         line9.pack_start(self.chk_tracker_update_close, False, False, 0)
         line9.pack_start(self.chk_tracker_update_prompt, False, False, 0)
+        
+        ### Plex ###
+        header6 = Gtk.Label()
+        header6.set_text('<b>Plex Media Server</b>')
+        header6.set_use_markup(True)
+        header6.set_xalign(0)
+        
+        # Labels
+        lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
+        lbl_tracker_plex_host_port.set_size_request(120, -1)
+        lbl_tracker_plex_host_port.set_xalign(0)
+        lbl_tracker_plex_obey_wait = Gtk.Label('Use "wait before update" time')
+        lbl_tracker_plex_obey_wait.set_size_request(120, -1)
+        lbl_tracker_plex_obey_wait.set_xalign(0)
+        
+        # Entries
+        self.txt_plex_host = Gtk.Entry()
+        self.txt_plex_host.set_max_length(4096)
+        self.txt_plex_port = Gtk.Entry()
+        self.txt_plex_port.set_max_length(5)
+        self.txt_plex_port.set_width_chars(5)
+        self.chk_tracker_plex_obey_wait = Gtk.CheckButton()
+        
+        # HBoxes
+        line7 = Gtk.HBox(False, 5)
+        line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
+        line7.pack_start(self.txt_plex_host, True, True, 0)
+        line7.pack_start(self.txt_plex_port, True, True, 0)
+        line10 = Gtk.HBox(False, 5)
+        line10.pack_start(lbl_tracker_plex_obey_wait, False, False, 5)
+        line10.pack_start(self.chk_tracker_plex_obey_wait, False, False, 0)
 
         ### Auto-retrieve ###
         header2 = Gtk.Label()
@@ -2090,9 +2108,11 @@ class Settings(Gtk.Window):
         page0.pack_start(line3, False, False, 0)
         page0.pack_start(line1, False, False, 0)
         page0.pack_start(line2, False, False, 0)
-        page0.pack_start(line7, False, False, 0)
         page0.pack_start(line8, False, False, 0)
         page0.pack_start(line9, False, False, 0)
+        page0.pack_start(header6, False, False, 0)
+        page0.pack_start(line7, False, False, 0)
+        page0.pack_start(line10, False, False, 0)
 
         page1 = Gtk.VBox(False, 10)
         page1.set_border_width(10)
@@ -2126,6 +2146,7 @@ class Settings(Gtk.Window):
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
+        self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
         self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
@@ -2136,6 +2157,7 @@ class Settings(Gtk.Window):
             self.rbtn_tracker_local.set_active(True)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
+            self.chk_tracker_plex_obey_wait.set_sensitive(False)
         elif self.engine.get_config('tracker_type') == 'plex':
             self.rbtn_tracker_plex.set_active(True)
             self.txt_process.set_sensitive(False)
@@ -2175,6 +2197,7 @@ class Settings(Gtk.Window):
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
+        self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
         self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
@@ -2243,9 +2266,11 @@ class Settings(Gtk.Window):
                 self.txt_process.set_sensitive(True)
                 self.txt_plex_host.set_sensitive(False)
                 self.txt_plex_port.set_sensitive(False)
+                self.chk_tracker_plex_obey_wait.set_sensitive(False)
             elif self.rbtn_tracker_plex.get_active():
                 self.txt_plex_host.set_sensitive(True)
                 self.txt_plex_port.set_sensitive(True)
+                self.chk_tracker_plex_obey_wait.set_sensitive(True)
                 self.txt_process.set_sensitive(False)
             self.spin_tracker_update_wait.set_sensitive(True)
         else:
@@ -2253,6 +2278,7 @@ class Settings(Gtk.Window):
             self.spin_tracker_update_wait.set_sensitive(False)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
+            self.chk_tracker_plex_obey_wait.set_sensitive(False)
 
     def __do_browse(self, widget, title, entry, dironly=False):
         browsew = Gtk.FileChooserDialog(title,
