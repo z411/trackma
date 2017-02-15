@@ -76,7 +76,7 @@ class PlexTracker(tracker.TrackerBase):
             
             if self.status_log[-1] == ACTIVE or self.status_log[-1] == IDLE:
                 if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
-                    self.msg.info(self.name, "Using Plex.")
+                    self.msg.info(self.name, "Reconnected to Plex.")
                 
                 if self.config['plex_obey_update_wait_s']:
                     self.wait_s = self.update_wait
