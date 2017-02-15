@@ -32,8 +32,9 @@ class PlexTracker(tracker.TrackerBase):
 
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         self.config = utils.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
-        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
         self.update_wait = update_wait
+        self.status_log = [None, None]
+        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
 
     def get_plex_status(self):
         # returns the plex status of the first active session
@@ -71,12 +72,12 @@ class PlexTracker(tracker.TrackerBase):
         self.msg.info(self.name, "Using Plex.")
 
         while self.active:
-            status = self.get_plex_status()
+            self.status_log.append(self.get_plex_status())
             
-            if status == ACTIVE or status == IDLE:
-                if status == IDLE:
+            if self.status_log[-1] == ACTIVE or self.status_log[-1] == IDLE:
+                if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
                     self.msg.info(self.name, "Using Plex.")
-                    
+                
                 if self.config['plex_obey_update_wait_s']:
                     self.wait_s = self.update_wait
                 else:
@@ -85,9 +86,10 @@ class PlexTracker(tracker.TrackerBase):
                 filename = self.playing_file()
                 (state, show_tuple) = self._get_playing_show(filename)
                 self.update_show_if_needed(state, show_tuple)
-                
-            elif status == NOT_RUNNING:
+            elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
                 self.msg.warn(self.name, "Plex Media Server is not running.")
+                
+            del self.status_log[0]
 
             # Wait for the interval before running check again
             time.sleep(interval)
