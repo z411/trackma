@@ -1213,7 +1213,7 @@ class Trackma(QMainWindow):
         if queue:
             reply = QMessageBox.question(self, 'Confirmation',
                 'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
-                QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
 
             if reply == QMessageBox.Yes:
                 self.s_send(True)
