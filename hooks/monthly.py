@@ -12,7 +12,7 @@ if not ACCESS_TOKEN:
 import urllib.parse, urllib.request, json
 import trackma.utils as utils
 
-MONTHLY_URL = "http://www.monthly.moe/api"
+MONTHLY_URL = "https://www.monthly.moe/api/v1/user/library/taiga"
 HEADERS = {'User-Agent': 'Trackma/{}'.format(utils.VERSION)}
 
 def episode_changed(engine, show):
@@ -25,13 +25,15 @@ def episode_changed(engine, show):
 
     data = urllib.parse.urlencode({
         'token': ACCESS_TOKEN,
-        'mal_id': show['id'],
-        'type': 'episode',
-        'number': show['my_progress'],
-    })
+        'id': show['id'],
+        'service': 'myanimelist',
+        'playstatus': 'updated',
+        'watched': show['my_progress'],
+        'total': show['total'],
+    }).encode('utf-8')
     req = urllib.request.Request(MONTHLY_URL, data, HEADERS)
     response = urllib.request.urlopen(req)
-    json_data = json.load(response)
+    json_data = json.loads(response.read().decode('utf-8'))
 
     if not json_data['success']:
         engine.msg.warn('Monthly.moe', "Problem updating episode.")
