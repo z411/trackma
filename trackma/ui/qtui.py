@@ -112,6 +112,7 @@ class Trackma(QMainWindow):
     config = None
     tray = None
     accountman = None
+    accountman_widget = None
     worker = None
     image_worker = None
     started = False
@@ -141,9 +142,12 @@ class Trackma(QMainWindow):
         if default:
             self.start(default)
         else:
-            self.accountman_widget = AccountDialog(None, self.accountman)
-            self.accountman_widget.selected.connect(self.accountman_selected)
-            self.accountman_widget.show()
+            self.accountman_create()
+            accountman_widget.show()
+
+    def accountman_create(self):
+        self.accountman_widget = AccountDialog(None, self.accountman)
+        self.accountman_widget.selected.connect(self.accountman_selected)
 
     def accountman_selected(self, account_num, remember):
         account = self.accountman.get_account(account_num)
@@ -1232,6 +1236,9 @@ class Trackma(QMainWindow):
             self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
+        if not self.accountman_widget:
+            self.accountman_create()
+
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
 
