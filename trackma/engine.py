@@ -193,6 +193,7 @@ class Engine:
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
+                                 'total': show['total'],
                                  'type': None,
                                  'titles': self.data_handler.get_show_titles(show),
                                  })  # TODO types
