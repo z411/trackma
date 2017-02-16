@@ -121,6 +121,12 @@ class TrackerBase(object):
             elif action:
                 action()
 
+    def _ignore_current(self):
+        # Stops attempt to update current episode
+        self.last_updated = True
+        self.last_state = utils.TRACKER_IGNORED
+        self._emit_signal('state', utils.TRACKER_IGNORED, None)
+
     def _update_state(self, state):
         # Call when show or state is changed. Perform queued update if any, and clear playing flag.
         if self.last_close_queue:
@@ -146,10 +152,12 @@ class TrackerBase(object):
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
                 if episode != (show['my_progress'] + 1):
-                    self.msg.warn(self.name, 'Player is not playing the next episode of %s. Ignoring.' % show['title'])
-                    self.last_updated = True
-                    self.last_state = utils.TRACKER_IGNORED
-                    self._emit_signal('state', utils.TRACKER_IGNORED, None)
+                    self.msg.warn(self.name, 'Not playing the next episode of %s. Ignoring.' % show['title'])
+                    self._ignore_current()
+                    return
+                if episode < 1 or (show['total'] and episode > show['total']):
+                    self.msg.warn(self.name, 'Playing an invalid episode of %s. Ignoring.' % show['title'])
+                    self._ignore_current()
                     return
 
             # Start our countdown
