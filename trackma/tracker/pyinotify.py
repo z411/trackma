@@ -51,6 +51,7 @@ class pyinotifyTracker(tracker.TrackerBase):
                         # Get process name
                         with open('/proc/%s/cmdline' % p, 'rb') as f:
                             pname = f.read()
+                        self.msg.debug(self.name, 'Playing process: {} {}'.format(p, pname))
 
                         # Check if it's our process
                         if self.re_players.match(pname):
@@ -58,16 +59,24 @@ class pyinotifyTracker(tracker.TrackerBase):
             except OSError:
                 pass
 
+        self.msg.debug(self.name, "Couldn't find playing process.")
         return False
 
     def _proc_open(self, pathname, filename):
+        self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(pathname, filename))
+
         if self._is_being_played(pathname):
             self.open_pathname = pathname
 
             (state, show_tuple) = self._get_playing_show(filename)
+            self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
+        else:
+            self.msg.debug(self.name, "Not played by player, ignoring.")
 
     def _proc_close(self, pathname):
+        self.msg.debug(self.name, 'Got CLOSE event: {}'.format(pathname))
+
         if pathname == self.open_pathname:
             self.open_pathname = None
 
@@ -136,6 +145,7 @@ class pyinotifyTracker(tracker.TrackerBase):
                     else:
                         timeout = 1000  # Check each second for counting
                 else:
+                    self.msg.debug(self.name, "Sending last state {} {}".format(self.last_state, self.last_show_tuple))
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
         finally:
             notifier.stop()
