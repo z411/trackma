@@ -109,6 +109,7 @@ class Trackma(QMainWindow):
     Main GUI class
 
     """
+    debug = False
     config = None
     tray = None
     accountman = None
@@ -121,8 +122,9 @@ class Trackma(QMainWindow):
     finish = False
     was_maximized = False
 
-    def __init__(self):
+    def __init__(self, debug=False):
         QMainWindow.__init__(self, None)
+        self.debug = debug
 
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
@@ -484,7 +486,7 @@ class Trackma(QMainWindow):
         self._tray()
 
         # Connect worker signals
-        self.worker.changed_status.connect(self.status)
+        self.worker.changed_status.connect(self.ws_changed_status)
         self.worker.raised_error.connect(self.error)
         self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
@@ -1312,6 +1314,12 @@ class Trackma(QMainWindow):
                 showlist.setColumnWidth(index, MIN_WIDTH)
 
     ### Worker slots
+    def ws_changed_status(self, classname, msgtype, msg):
+        if msgtype != messenger.TYPE_DEBUG:
+            self.status('{}: {}'.format(classname, msg))
+        elif self.debug:
+            print('[D] {}: {}'.format(classname, msg))
+
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
             if not self.show_lists:
@@ -2892,7 +2900,7 @@ class Engine_Worker(QtCore.QThread):
     finished = QtCore.pyqtSignal(dict)
 
     # Message handler signals
-    changed_status = QtCore.pyqtSignal(str)
+    changed_status = QtCore.pyqtSignal(str, int, str)
     raised_error = QtCore.pyqtSignal(str)
     raised_fatal = QtCore.pyqtSignal(str)
 
@@ -2942,7 +2950,7 @@ class Engine_Worker(QtCore.QThread):
         }
 
     def _messagehandler(self, classname, msgtype, msg):
-        self.changed_status.emit("%s: %s" % (classname, msg))
+        self.changed_status.emit(classname, msgtype, msg)
 
     def _error(self, msg):
         self.raised_error.emit(str(msg))
@@ -3170,9 +3178,23 @@ def getColor(colorString):
 
 
 def main():
+    debug = False
+
+    print("Trackma-qt v{}".format(utils.VERSION))
+
+    if '-h' in sys.argv:
+        print("Usage: trackma-qt [options]")
+        print()
+        print('Options:')
+        print(' -d  Shows debugging information')
+        print(' -h  Shows this help')
+        return
+    if '-d' in sys.argv:
+        debug = True
+
     app = QApplication(sys.argv)
     try:
-        mainwindow = Trackma()
+        mainwindow = Trackma(debug)
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
         QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
