@@ -131,6 +131,7 @@ class pyinotifyTracker(tracker.TrackerBase):
 
         handler = EventHandler(parent=self)
         notifier = pyinotify.Notifier(wm, handler)
+        self.msg.debug(self.name, 'Watching directory {}'.format(watch_dir))
         wdd = wm.add_watch(watch_dir, mask, rec=True, auto_add=True)
 
         try:
