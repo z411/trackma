@@ -50,11 +50,12 @@ class pyinotifyTracker(tracker.TrackerBase):
                     if f == filename:
                         # Get process name
                         with open('/proc/%s/cmdline' % p, 'rb') as f:
-                            pname = f.read()
-                        self.msg.debug(self.name, 'Playing process: {} {}'.format(p, pname))
+                            cmdline = f.read()
+                            pname = cmdline.partition(b'\x00')[0]
+                        self.msg.debug(self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
 
                         # Check if it's our process
-                        if self.re_players.match(pname):
+                        if self.re_players.search(pname):
                             return True
             except OSError:
                 pass
