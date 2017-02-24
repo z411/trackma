@@ -18,6 +18,7 @@ import pyinotify
 
 import os
 import re
+import time
 
 from trackma.tracker import tracker
 from trackma import utils
@@ -25,7 +26,7 @@ from trackma import utils
 class pyinotifyTracker(tracker.TrackerBase):
     name = 'Tracker (pyinotify)'
 
-    open_pathname = None
+    open_file = (None, None, None)
 
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
@@ -56,33 +57,60 @@ class pyinotifyTracker(tracker.TrackerBase):
 
                         # Check if it's our process
                         if self.re_players.search(pname):
-                            return True
+                            return p, fd
+                        else:
+                            self.msg.debug(self.name, "Not read by player ({})".format(pname))
             except OSError:
                 pass
 
         self.msg.debug(self.name, "Couldn't find playing process.")
-        return False
+        return None, None
 
-    def _proc_open(self, pathname, filename):
-        self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(pathname, filename))
+    def _closed_handle(self, pid, fd):
+        """ Check if this pid has closed this handle (or never opened it) """
+        d = "/proc/%s/fd/%s" % (pid, fd)
+        return not os.path.islink(d)
 
-        if self._is_being_played(pathname):
-            self.open_pathname = pathname
+    def _proc_open(self, path, name):
+        self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(path, name))
+        pathname = os.path.join(path, name)
 
-            (state, show_tuple) = self._get_playing_show(filename)
+        if self.open_file[0]:
+            self.msg.debug(self.name, "There's already a tracked open file.")
+            return
+
+        pid, fd = self._is_being_played(pathname)
+
+        if pid:
+            self._emit_signal('detected', path, name)
+            self.open_file = (pathname, pid, fd)
+
+            (state, show_tuple) = self._get_playing_show(name)
             self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
         else:
             self.msg.debug(self.name, "Not played by player, ignoring.")
 
-    def _proc_close(self, pathname):
-        self.msg.debug(self.name, 'Got CLOSE event: {}'.format(pathname))
+    def _proc_close(self, path, name):
+        self.msg.debug(self.name, 'Got CLOSE event: {} {}'.format(path, name))
+        pathname = os.path.join(path, name)
 
-        if pathname == self.open_pathname:
-            self.open_pathname = None
+        open_pathname, pid, fd = self.open_file
+        time.sleep(0.1) # TODO : If we don't wait the filehandle will still be there
 
-            (state, show_tuple) = self._get_playing_show(None)
-            self.update_show_if_needed(state, show_tuple)
+        if pathname != open_pathname:
+            self.msg.debug(self.name, "A different file was closed.")
+            return
+
+        if not self._closed_handle(pid, fd):
+            self.msg.debug(self.name, "Our pid hasn't closed the file.")
+            return
+
+        self._emit_signal('detected', path, name)
+        self.open_file = (None, None, None)
+
+        (state, show_tuple) = self._get_playing_show(None)
+        self.update_show_if_needed(state, show_tuple)
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, 'Using pyinotify.')
@@ -101,18 +129,15 @@ class pyinotifyTracker(tracker.TrackerBase):
 
             def process_IN_OPEN(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
-                    self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._proc_open(event.pathname, event.name)
+                    self.parent._proc_open(event.path, event.name)
 
             def process_IN_CLOSE_NOWRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
-                    self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._proc_close(event.pathname)
+                    self.parent._proc_close(event.path, event.name)
 
             def process_IN_CLOSE_WRITE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
-                    self.parent._emit_signal('detected', event.path, event.name)
-                    self.parent._proc_close(event.pathname)
+                    self.parent._proc_close(event.path, event.name)
 
             def process_IN_CREATE(self, event):
                 if not event.mask & pyinotify.IN_ISDIR:
