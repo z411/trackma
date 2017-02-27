@@ -16,101 +16,11 @@
 
 import pyinotify
 
-import os
-import re
-import time
-
-from trackma.tracker import tracker
+from trackma.tracker import inotifyBase
 from trackma import utils
 
-class pyinotifyTracker(tracker.TrackerBase):
+class pyinotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (pyinotify)'
-
-    open_file = (None, None, None)
-
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
-        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
-
-        self.re_players = re.compile(self.process_name.encode('utf-8'))
-
-    def _is_being_played(self, filename):
-        """
-        This function makes sure that the filename is being played
-        by the player specified in players.
-
-        It uses procfs so if we're using inotify that means we're using Linux
-        thus we should be safe.
-        """
-
-        for p in os.listdir("/proc/"):
-            if not p.isdigit(): continue
-            d = "/proc/%s/fd/" % p
-            try:
-                for fd in os.listdir(d):
-                    f = os.readlink(d+fd)
-                    if f == filename:
-                        # Get process name
-                        with open('/proc/%s/cmdline' % p, 'rb') as f:
-                            cmdline = f.read()
-                            pname = cmdline.partition(b'\x00')[0]
-                        self.msg.debug(self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
-
-                        # Check if it's our process
-                        if self.re_players.search(pname):
-                            return p, fd
-                        else:
-                            self.msg.debug(self.name, "Not read by player ({})".format(pname))
-            except OSError:
-                pass
-
-        self.msg.debug(self.name, "Couldn't find playing process.")
-        return None, None
-
-    def _closed_handle(self, pid, fd):
-        """ Check if this pid has closed this handle (or never opened it) """
-        d = "/proc/%s/fd/%s" % (pid, fd)
-        return not os.path.islink(d)
-
-    def _proc_open(self, path, name):
-        self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(path, name))
-        pathname = os.path.join(path, name)
-
-        if self.open_file[0]:
-            self.msg.debug(self.name, "There's already a tracked open file.")
-            return
-
-        pid, fd = self._is_being_played(pathname)
-
-        if pid:
-            self._emit_signal('detected', path, name)
-            self.open_file = (pathname, pid, fd)
-
-            (state, show_tuple) = self._get_playing_show(name)
-            self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
-            self.update_show_if_needed(state, show_tuple)
-        else:
-            self.msg.debug(self.name, "Not played by player, ignoring.")
-
-    def _proc_close(self, path, name):
-        self.msg.debug(self.name, 'Got CLOSE event: {} {}'.format(path, name))
-        pathname = os.path.join(path, name)
-
-        open_pathname, pid, fd = self.open_file
-        time.sleep(0.1) # TODO : If we don't wait the filehandle will still be there
-
-        if pathname != open_pathname:
-            self.msg.debug(self.name, "A different file was closed.")
-            return
-
-        if not self._closed_handle(pid, fd):
-            self.msg.debug(self.name, "Our pid hasn't closed the file.")
-            return
-
-        self._emit_signal('detected', path, name)
-        self.open_file = (None, None, None)
-
-        (state, show_tuple) = self._get_playing_show(None)
-        self.update_show_if_needed(state, show_tuple)
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, 'Using pyinotify.')
