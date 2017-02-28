@@ -1,3 +1,15 @@
+v0.7.1
+- New: (Plex tracker) Adding option to use regular custom interval instead of Plex timer
+- Improvement: Showing ? instead of 0 when total number of episodes isn't known
+- Improvement: (Kitsu) Retrieving start and end dates for shows, guessing airing status from that
+- Bugfix: (Tracker) inotify trackers were picking up file close events from unrelated programs in the system due to a mistake in procfs logic.
+- Bugfix: (Tracker) Stop attempts at updating invalid episode numbers (ie. less than 0 or more than the maximum)
+- Bugfix: (Qt) Fixed crash when trying to apply settings
+- Bugfix: (Qt) Fixed crash with Discard Queue dialog
+- Bugfix: (Qt) Fixed crash when opening the Switch Account dialog manually
+- Bugfix: (Qt) Fixing strange behavior when the total number of episodes isn't known
+- Bugfix: Fixed crash when the tracker can't update the episode
+
 v0.7
 - New: Added Kitsu.io support (libkitsu, experimental!)
 - New: (Tracker) Prompt to add a show if it's not in the list
