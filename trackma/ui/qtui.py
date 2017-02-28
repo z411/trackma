@@ -1824,21 +1824,21 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
-        
+
         # Group: Plex settings
         g_plex = QGroupBox('Plex Media Server')
         g_plex.setFlat(True)
         self.plex_host = QLineEdit()
         self.plex_port = QLineEdit()
         self.plex_obey_wait = QCheckBox()
-        
+
         g_plex_layout = QGridLayout()
         g_plex_layout.addWidget(QLabel('Host and Port'),                   0, 0, 1, 1)
         g_plex_layout.addWidget(self.plex_host,                            0, 1, 1, 1)
         g_plex_layout.addWidget(self.plex_port,                            0, 2, 1, 2)
         g_plex_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
         g_plex_layout.addWidget(self.plex_obey_wait,                       1, 2, 1, 1)
-        
+
         g_plex.setLayout(g_plex_layout)
 
         # Group: Play Next
@@ -1866,6 +1866,7 @@ class SettingsDialog(QDialog):
 
         # Media form
         page_media_layout.addWidget(g_media)
+        page_media_layout.addWidget(g_plex)
         page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
 
