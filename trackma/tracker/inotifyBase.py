@@ -65,15 +65,12 @@ class inotifyBase(tracker.TrackerBase):
     def _closed_handle(self, pid, fd):
         """ Check if this pid has closed this handle (or never opened it) """
         d = "/proc/%s/fd/%s" % (pid, fd)
+        time.sleep(0.1) # TODO : If we don't wait the filehandle will still be there
         return not os.path.islink(d)
 
     def _proc_open(self, path, name):
         self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(path, name))
         pathname = os.path.join(path, name)
-
-        if self.open_file[0]:
-            self.msg.debug(self.name, "There's already a tracked open file.")
-            return
 
         pid, fd = self._is_being_played(pathname)
 
@@ -92,7 +89,6 @@ class inotifyBase(tracker.TrackerBase):
         pathname = os.path.join(path, name)
 
         open_pathname, pid, fd = self.open_file
-        time.sleep(0.1) # TODO : If we don't wait the filehandle will still be there
 
         if pathname != open_pathname:
             self.msg.debug(self.name, "A different file was closed.")
