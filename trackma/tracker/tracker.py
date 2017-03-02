@@ -125,6 +125,7 @@ class TrackerBase(object):
         # Stops attempt to update current episode
         self.last_updated = True
         self.last_state = utils.TRACKER_IGNORED
+        self.timer = None
         self._emit_signal('state', utils.TRACKER_IGNORED, None)
 
     def _update_state(self, state):
@@ -148,6 +149,7 @@ class TrackerBase(object):
             self._update_state(state)
             # There's a new show/ep detected, so let's save the show information
             self.last_show_tuple = show_tuple
+            self.last_updated = False
             if state == utils.TRACKER_PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
