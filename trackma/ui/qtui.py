@@ -145,7 +145,7 @@ class Trackma(QMainWindow):
             self.start(default)
         else:
             self.accountman_create()
-            accountman_widget.show()
+            self.accountman_widget.show()
 
     def accountman_create(self):
         self.accountman_widget = AccountDialog(None, self.accountman)
