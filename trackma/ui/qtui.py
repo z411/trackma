@@ -2423,6 +2423,7 @@ class AccountDialog(QDialog):
         self.edit_btns.activated.connect(self.s_edit)
         select_btn = QPushButton('Select')
         select_btn.clicked.connect(self.select)
+        select_btn.setDefault(True)
         bottom_layout.addWidget(self.remember_chk)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
