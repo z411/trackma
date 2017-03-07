@@ -38,6 +38,7 @@ class inotifyBase(tracker.TrackerBase):
         thus we should be safe.
         """
 
+        time.sleep(0.01)
         for p in os.listdir("/proc/"):
             if not p.isdigit(): continue
             d = "/proc/%s/fd/" % p
