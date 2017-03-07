@@ -1,3 +1,8 @@
+v0.7.2
+- Bugfix: (Tracker) Fixing issue when subsequent episode weren't being updated if there was an episode open before (ie. playlists)
+- Bugfix: (inotify) Fixing issue with inotify ignoring open events if an open one didn't close
+- Bugfix: (Qt) Fixing crash when attempting to create account select dialog
+
 v0.7.1
 - New: (Plex tracker) Adding option to use regular custom interval instead of Plex timer
 - Improvement: Showing ? instead of 0 when total number of episodes isn't known
