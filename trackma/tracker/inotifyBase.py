@@ -65,7 +65,7 @@ class inotifyBase(tracker.TrackerBase):
     def _closed_handle(self, pid, fd):
         """ Check if this pid has closed this handle (or never opened it) """
         d = "/proc/%s/fd/%s" % (pid, fd)
-        time.sleep(0.1) # TODO : If we don't wait the filehandle will still be there
+        time.sleep(0.01) # TODO : If we don't wait the filehandle will still be there
         return not os.path.islink(d)
 
     def _proc_open(self, path, name):
