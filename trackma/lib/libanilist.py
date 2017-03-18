@@ -304,7 +304,7 @@ class libanilist(lib):
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, criteria), get=param)
+        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, urllib.parse.quote_plus(criteria)), get=param)
 
         if type(data) == dict:
             # In case of error API returns a small JSON payload
