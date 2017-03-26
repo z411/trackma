@@ -32,6 +32,7 @@ class PlexTracker(tracker.TrackerBase):
 
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         self.config = utils.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
+        self.host_port = self.config['plex_host']+":"+self.config['plex_port']
         self.update_wait = update_wait
         self.status_log = [None, None]
         super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
@@ -53,8 +54,11 @@ class PlexTracker(tracker.TrackerBase):
         if self.get_plex_status() == IDLE:
             return None
 
-        attr = self._get_xml_info("Part", "file")
-        name = urllib.parse.unquote(ntpath.basename(attr))
+        meta = self._get_xml_info("Video", "key")
+        meta_url = "http://"+self.host_port+meta
+        mdoc = xdmd.parse(urllib.request.urlopen(meta_url))
+        mres = mdoc.getElementsByTagName("Part")[0].getAttribute("file")
+        name = urllib.parse.unquote(ntpath.basename(mres))
 
         return name
 
@@ -96,9 +100,7 @@ class PlexTracker(tracker.TrackerBase):
 
     def _get_xml_info(self, tag, attr):
         # Get the required info from the /status/sessions url
-        host_port = self.config['plex_host']+":"+self.config['plex_port']
-
-        session_url = "http://"+host_port+"/status/sessions"
+        session_url = "http://"+self.host_port+"/status/sessions"
         sdoc = xdmd.parse(urllib.request.urlopen(session_url))
 
         res = sdoc.getElementsByTagName(tag)[0].getAttribute(attr)
