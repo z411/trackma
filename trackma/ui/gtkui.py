@@ -1754,7 +1754,7 @@ class InfoWidget(Gtk.VBox):
             self.w_image.image_show(imagefile)
         else:
             self.w_image.pholder_show('Loading...')
-            self.image_thread = ImageTask(self.w_image, show['image'], imagefile)
+            self.image_thread = ImageTask(self.w_image, show['image'], imagefile, (200, 298))
             self.image_thread.start()
 
         # Start info loading thread
