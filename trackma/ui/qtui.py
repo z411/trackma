@@ -1595,7 +1595,7 @@ class DetailsWidget(QWidget):
             self.s_show_image(filename)
         else:
             self.show_image.setText('Downloading...')
-            self.image_worker = Image_Worker(show['image'], filename)
+            self.image_worker = Image_Worker(show['image'], filename, (200, 280))
             self.image_worker.finished.connect(self.s_show_image)
             self.image_worker.start()
 
