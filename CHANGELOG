@@ -1,6 +1,8 @@
 v0.7.3
 - Improvement: (Qt/GTK) Resizing image to a reasonable size in show details dialog
+- Improvement: (Flex) Fixed Plex tracker to work with new Plex release (1.4.4.3495)
 - Bugfix: (PyPI) Adding missing suffix for Qt4 script
+- Bugfix: (Anilist) Fixed search issue that caused a 400 error
 
 v0.7.2
 - Bugfix: (Tracker) Fixing issue when subsequent episode weren't being updated if there was an episode open before (ie. playlists)
