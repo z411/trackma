@@ -2322,9 +2322,11 @@ class AccountSelectAdd(Gtk.Window):
         # Entries
         self.txt_user = Gtk.Entry()
         self.txt_user.set_max_length(128)
+        self.txt_user.set_activates_default(True)
         self.txt_passwd = Gtk.Entry()
         self.txt_passwd.set_max_length(128)
         self.txt_passwd.set_visibility(False)
+        self.txt_passwd.set_activates_default(True)
 
         # Combobox
         self.model_api = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
@@ -2335,6 +2337,7 @@ class AccountSelectAdd(Gtk.Window):
         self.cmb_api = Gtk.ComboBox.new_with_model(self.model_api)
         cell_icon = Gtk.CellRendererPixbuf()
         cell_name = Gtk.CellRendererText()
+        self.cmb_api.set_activates_default(True)
         self.cmb_api.pack_start(cell_icon, False)
         self.cmb_api.pack_start(cell_name, True)
         self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
@@ -2348,6 +2351,8 @@ class AccountSelectAdd(Gtk.Window):
         alignment = Gtk.Alignment(xalign=0.5, xscale=0)
         bottombar = Gtk.HBox(False, 5)
         self.add_button = Gtk.Button(stock=Gtk.STOCK_APPLY)
+        self.add_button.set_can_default(True)
+        self.add_button.grab_default()
         close_button = Gtk.Button(stock=Gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.__do_close)
         bottombar.pack_start(self.add_button, False, False, 0)
