@@ -1,3 +1,7 @@
+v0.7.3
+- Improvement: (Qt/GTK) Resizing image to a reasonable size in show details dialog
+- Bugfix: (PyPI) Adding missing suffix for Qt4 script
+
 v0.7.2
 - Bugfix: (Tracker) Fixing issue when subsequent episode weren't being updated if there was an episode open before (ie. playlists)
 - Bugfix: (inotify) Fixing issue with inotify ignoring open events if an open one didn't close
