@@ -2337,7 +2337,6 @@ class AccountSelectAdd(Gtk.Window):
         self.cmb_api = Gtk.ComboBox.new_with_model(self.model_api)
         cell_icon = Gtk.CellRendererPixbuf()
         cell_name = Gtk.CellRendererText()
-        self.cmb_api.set_activates_default(True)
         self.cmb_api.pack_start(cell_icon, False)
         self.cmb_api.pack_start(cell_name, True)
         self.cmb_api.add_attribute(cell_icon, 'pixbuf', 2)
