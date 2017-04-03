@@ -526,6 +526,8 @@ class Trackma(QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
+            if pyqt_version is 5 and self.finish:
+                QApplication.instance().quit()
         elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
             self.s_hide()
