@@ -318,6 +318,8 @@ class libanilist(lib):
 
         showlist = []
         for item in data:
+            if type(item) is not dict:
+                return []
             show = utils.show()
             showid = item['id']
             showdata = {
