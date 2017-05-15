@@ -230,9 +230,9 @@ class libkitsu(lib):
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
         params = {
-                "filter[name]": self.username,
+                "filter[self]": 'true',
         }
-        data = self._request('GET', self.prefix + "/users", get=params)
+        data = self._request('GET', self.prefix + "/users", get=params, auth=True)
         json_data = json.loads(data)
         user = json_data['data'][0]
 
