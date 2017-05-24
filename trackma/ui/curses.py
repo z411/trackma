@@ -334,9 +334,6 @@ class Trackma_urwid():
             self.error(e)
             return
 
-        self.status('Ready.')
- 
-
     def do_send(self):
         self.engine.list_upload()
         self.status("Ready.")
@@ -587,8 +584,6 @@ class Trackma_urwid():
             except utils.TrackmaError as e:
                 self.error(e)
                 return
-
-            self.status('Ready.')
 
     def prompt_update_request(self, data):
         (show, episode) = self.last_update_prompt
