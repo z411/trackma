@@ -56,7 +56,7 @@ from trackma.accounts import AccountManager
 from trackma import utils
 from trackma import messenger
 
-class Trackma_gtk():
+class Trackma_gtk(object):
     engine = None
     config = None
     show_lists = dict()
@@ -64,6 +64,9 @@ class Trackma_gtk():
     close_thread = None
     hidden = False
     quit = False
+
+    def __init__(self, debug=False):
+        self.debug = debug
 
     def main(self):
         """Start the Account Selector"""
@@ -999,11 +1002,13 @@ class Trackma_gtk():
 
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
-        print("%s: %s" % (classname, msg))
+        #print("%s: %s" % (classname, msg))
         if msgtype == messenger.TYPE_WARN:
             GObject.idle_add(self.status_push, "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
             GObject.idle_add(self.status_push, "%s: %s" % (classname, msg))
+        elif self.debug:
+            print('[D] {}: {}'.format(classname, msg))
 
     def error(self, msg, icon=Gtk.MessageType.ERROR):
         # Thread safe
@@ -1022,6 +1027,7 @@ class Trackma_gtk():
         GObject.idle_add(self.status_push, msg)
 
     def status_push(self, msg):
+        print(msg)
         self.statusbar.push(0, msg)
 
     def allow_buttons(self, boolean):
@@ -2741,7 +2747,21 @@ def scale(w, h, x, y, maximum=True):
     return x, nh or 1
 
 def main():
-    app = Trackma_gtk()
+    debug = False
+
+    print("Trackma-gtk v{}".format(utils.VERSION))
+
+    if '-h' in sys.argv:
+        print("Usage: trackma-qt [options]")
+        print()
+        print('Options:')
+        print(' -d  Shows debugging information')
+        print(' -h  Shows this help')
+        return
+    if '-d' in sys.argv:
+        debug = True
+
+    app = Trackma_gtk(debug)
     try:
         Gdk.threads_enter()
         app.main()
