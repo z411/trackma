@@ -17,13 +17,14 @@
 import sys
 try:
     import gi
-    gi.require_version('Gtk', '3.0')
+    #gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk
     from gi.repository import Gdk
     from gi.repository import GdkPixbuf
     from gi.repository import Pango
     from gi.repository import GObject
 except ImportError as ex:
+    raise
     print("Couldn't import GTK dependencies. Make sure you "
           "installed the PyGTK package and %s module." % ex.name)
     sys.exit(-1)
@@ -125,6 +126,8 @@ class Trackma_gtk():
         mb_show = Gtk.Menu()
         self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
         self.mb_play.connect("activate", self.__do_play, True)
+        self.mb_play_random = Gtk.MenuItem('Play random')
+        self.mb_play_random.connect("activate", self.__do_play_random)
         mb_scanlibrary = Gtk.MenuItem('Re-scan library')
         self.mb_folder = Gtk.MenuItem("Open containing folder")
         self.mb_folder.connect("activate", self.do_containingFolder)
@@ -145,6 +148,7 @@ class Trackma_gtk():
         self.mb_addsearch.connect("activate", self._do_addsearch)
 
         mb_show.append(self.mb_addsearch)
+        mb_show.append(self.mb_play_random)
         mb_show.append(Gtk.SeparatorMenuItem())
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
@@ -370,6 +374,8 @@ class Trackma_gtk():
 
         key, mod = Gtk.accelerator_parse("<Control>N")
         self.mb_play.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        key, mod = Gtk.accelerator_parse("<Control>R")
+        self.mb_play_random.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>A")
         self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>S")
@@ -639,6 +645,9 @@ class Trackma_gtk():
     def __do_play(self, widget, playnext, ep=None):
         threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
+    def __do_play_random(self, widget):
+        threading.Thread(target=self.task_play_random).start()
+
     def __do_scanlibrary(self, widget):
         threading.Thread(target=self.task_scanlibrary).start()
 
@@ -766,6 +775,17 @@ class Trackma_gtk():
                 if not ep:
                     ep = self.show_ep_num.get_value_as_int()
                 self.engine.play_episode(show, ep)
+        except utils.TrackmaError as e:
+            self.error(e)
+
+        self.status("Ready.")
+        self.allow_buttons(True)
+
+    def task_play_random(self):
+        self.allow_buttons(False)
+
+        try:
+            self.engine.play_random()
         except utils.TrackmaError as e:
             self.error(e)
 
