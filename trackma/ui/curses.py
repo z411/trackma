@@ -59,7 +59,8 @@ class Trackma_urwid():
     def __init__(self):
         """Creates main widgets and creates mainloop"""
         self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
-        keymap = self.config['keymap']
+        keymap = utils.curses_defaults['keymap']
+        keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
         self.keymapping = self.map_key_to_func(keymap)
 
