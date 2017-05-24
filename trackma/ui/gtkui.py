@@ -17,16 +17,16 @@
 import sys
 try:
     import gi
-    #gi.require_version('Gtk', '3.0')
+    gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk
     from gi.repository import Gdk
     from gi.repository import GdkPixbuf
     from gi.repository import Pango
     from gi.repository import GObject
 except ImportError as ex:
-    raise
     print("Couldn't import GTK dependencies. Make sure you "
-          "installed the PyGTK package and %s module." % ex.name)
+          "installed the PyGTK package and {} module.".format(ex.name))
+    print("Details: {}".format(ex))
     sys.exit(-1)
 
 Gdk.threads_init() # We'll use threads
