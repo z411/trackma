@@ -297,7 +297,7 @@ userconfig_defaults = {
 curses_defaults = {
     'show_help': True,
     'keymap': {
-        'help': 'f1',
+        'help': '?',
         'prev_filter': 'left',
         'next_filter': 'right',
         'sort': 'f3',
