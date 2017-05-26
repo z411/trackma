@@ -127,7 +127,7 @@ class Trackma_gtk(object):
 
         # Menus
         mb_show = Gtk.Menu()
-        self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
+        self.mb_play = Gtk.ImageMenuItem('Play Next', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
         self.mb_play.connect("activate", self.__do_play, True)
         self.mb_play_random = Gtk.MenuItem('Play random')
         self.mb_play_random.connect("activate", self.__do_play_random)
@@ -1123,6 +1123,17 @@ class Trackma_gtk(object):
         if show['url']:
             Gtk.show_uri(None, show['url'], Gdk.CURRENT_TIME)
 
+    def _build_episode_menu(self, show):
+        menu_eps = Gtk.Menu()
+        for i in range(1, show['total'] + 1):
+            mb_playep = Gtk.CheckMenuItem(str(i))
+            if i <= show['my_progress']:
+                mb_playep.set_active(True)
+            mb_playep.connect("activate", self.__do_play, False, i)
+            menu_eps.append(mb_playep)
+
+        return menu_eps
+
     def showview_context_menu(self, treeview, event):
         if event.button == 3:
             x = int(event.x)
@@ -1135,7 +1146,7 @@ class Trackma_gtk(object):
                 show = self.engine.get_show_info(self.selected_show)
 
                 menu = Gtk.Menu()
-                mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
+                mb_play = Gtk.ImageMenuItem('Play Next', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
                 mb_play.connect("activate", self.__do_play, True)
                 mb_info = Gtk.MenuItem("Show details...")
                 mb_info.connect("activate", self.__do_info)
@@ -1153,11 +1164,8 @@ class Trackma_gtk(object):
                 menu.append(mb_play)
 
                 if show['total']:
-                    menu_eps = Gtk.Menu()
-                    for i in range(1, show['total'] + 1):
-                        mb_playep = Gtk.MenuItem(str(i))
-                        mb_playep.connect("activate", self.__do_play, False, i)
-                        menu_eps.append(mb_playep)
+                    menu_eps = self._build_episode_menu(show)
+
                     mb_playep = Gtk.MenuItem("Play episode")
                     mb_playep.set_submenu(menu_eps)
                     menu.append(mb_playep)
