@@ -1871,6 +1871,10 @@ class Settings(Gtk.Window):
         lbl_searchdir = Gtk.Label('Library Directory')
         lbl_searchdir.set_size_request(120, -1)
         lbl_searchdir.set_xalign(0)
+        lbl_library_options = Gtk.Label('Library options')
+        lbl_library_options.set_size_request(120, -1)
+        lbl_library_options.set_xalign(0)
+
         lbl_tracker_enabled = Gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         lbl_tracker_enabled.set_xalign(0)
@@ -1886,6 +1890,7 @@ class Settings(Gtk.Window):
         self.txt_process.set_max_length(4096)
         self.txt_searchdir = Gtk.Entry()
         self.txt_searchdir.set_max_length(4096)
+        self.chk_library_autoscan = Gtk.CheckButton('Auto-scan at start')
         self.browse_button = Gtk.Button('Browse...')
         self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
         self.chk_tracker_enabled = Gtk.CheckButton()
@@ -1894,6 +1899,7 @@ class Settings(Gtk.Window):
         self.spin_tracker_update_wait.set_adjustment(Gtk.Adjustment(value=5, lower=0, upper=500, step_incr=1, page_incr=10))
         self.chk_tracker_update_close = Gtk.CheckButton('Wait for the player to close')
         self.chk_tracker_update_prompt = Gtk.CheckButton('Ask before updating')
+        self.chk_tracker_not_found_prompt = Gtk.CheckButton('Ask to add if not in list')
 
         # Radio buttons
         self.rbtn_tracker_local = Gtk.RadioButton.new_with_label_from_widget(None, 'Local')
@@ -1933,6 +1939,10 @@ class Settings(Gtk.Window):
         line3.pack_start(self.rbtn_tracker_local, False, False, 0)
         line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
 
+        lin_library_options = Gtk.HBox(False, 5)
+        lin_library_options.pack_start(lbl_library_options, False, False, 5)
+        lin_library_options.pack_start(self.chk_library_autoscan, False, False, 0)
+
         line8 = Gtk.HBox(False, 5)
         line8.pack_start(lbl_tracker_update_wait, False, False, 5)
         line8.pack_start(self.spin_tracker_update_wait, False, False, 0)
@@ -1940,8 +1950,11 @@ class Settings(Gtk.Window):
 
         line9 = Gtk.HBox(False, 5)
         line9.pack_start(lbl_tracker_update_options, False, False, 5)
-        line9.pack_start(self.chk_tracker_update_close, False, False, 0)
-        line9.pack_start(self.chk_tracker_update_prompt, False, False, 0)
+        line9a = Gtk.VBox(False, 0)
+        line9a.pack_start(self.chk_tracker_update_close, False, False, 0)
+        line9a.pack_start(self.chk_tracker_update_prompt, False, False, 0)
+        line9a.pack_start(self.chk_tracker_not_found_prompt, False, False, 0)
+        line9.pack_start(line9a, False, False, 0)
         
         ### Plex ###
         header6 = Gtk.Label()
@@ -2141,6 +2154,7 @@ class Settings(Gtk.Window):
         page0.pack_start(header1, False, False, 0)
         page0.pack_start(line3, False, False, 0)
         page0.pack_start(line1, False, False, 0)
+        page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(line2, False, False, 0)
         page0.pack_start(line8, False, False, 0)
         page0.pack_start(line9, False, False, 0)
@@ -2178,6 +2192,7 @@ class Settings(Gtk.Window):
         self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
+        self.chk_library_autoscan.set_active(self.engine.get_config('library_autoscan'))
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
@@ -2186,6 +2201,7 @@ class Settings(Gtk.Window):
         self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
         self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
         self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
+        self.chk_tracker_not_found_prompt.set_active(self.engine.get_config('tracker_not_found_prompt'))
 
         if self.engine.get_config('tracker_type') == 'local':
             self.rbtn_tracker_local.set_active(True)
@@ -2229,6 +2245,7 @@ class Settings(Gtk.Window):
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
+        self.engine.set_config('library_autoscan', self.chk_library_autoscan.get_active())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
@@ -2237,6 +2254,7 @@ class Settings(Gtk.Window):
         self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
         self.engine.set_config('tracker_update_close', self.chk_tracker_update_close.get_active())
         self.engine.set_config('tracker_update_prompt', self.chk_tracker_update_prompt.get_active())
+        self.engine.set_config('tracker_not_found_prompt', self.chk_tracker_not_found_prompt.get_active())
 
         # Tracker type
         if self.rbtn_tracker_local.get_active():
