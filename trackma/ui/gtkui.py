@@ -1124,8 +1124,10 @@ class Trackma_gtk(object):
             Gtk.show_uri(None, show['url'], Gdk.CURRENT_TIME)
 
     def _build_episode_menu(self, show):
+        total = show['total'] or utils.estimate_aired_episodes(show) or 0
+
         menu_eps = Gtk.Menu()
-        for i in range(1, show['total'] + 1):
+        for i in range(1, total + 1):
             mb_playep = Gtk.CheckMenuItem(str(i))
             if i <= show['my_progress']:
                 mb_playep.set_active(True)
@@ -1163,12 +1165,11 @@ class Trackma_gtk(object):
 
                 menu.append(mb_play)
 
-                if show['total']:
-                    menu_eps = self._build_episode_menu(show)
+                menu_eps = self._build_episode_menu(show)
 
-                    mb_playep = Gtk.MenuItem("Play episode")
-                    mb_playep.set_submenu(menu_eps)
-                    menu.append(mb_playep)
+                mb_playep = Gtk.MenuItem("Play episode")
+                mb_playep.set_submenu(menu_eps)
+                menu.append(mb_playep)
 
                 menu.append(mb_info)
                 menu.append(mb_web)
@@ -1422,7 +1423,7 @@ class ShowView(Gtk.TreeView):
         self.store.clear()
 
     def append(self, show, altname=None, eps=None):
-        episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+        episodes_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
         if show['total'] and show['my_progress'] <= show['total']:
             progress = (float(show['my_progress']) / show['total']) * 100
         else:
