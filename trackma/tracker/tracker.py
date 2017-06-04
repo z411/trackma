@@ -134,7 +134,7 @@ class TrackerBase(object):
             self.last_close_queue()
             self.last_close_queue = None
         self.last_time = time.time()
-        if self.last_show_tuple and self.last_state == utils.TRACKER_PLAYING:
+        if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
             self._emit_signal('playing', last_show['id'], False, last_show_ep)
 
