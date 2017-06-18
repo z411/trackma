@@ -35,12 +35,13 @@ class PlexTracker(tracker.TrackerBase):
         self.host_port = self.config['plex_host']+":"+self.config['plex_port']
         self.update_wait = update_wait
         self.status_log = [None, None]
+        self.token = self._get_plex_token()
         super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
 
     def get_plex_status(self):
         # returns the plex status of the first active session
         try:
-            active = int(self._get_xml_info("MediaContainer", "size"))
+            active = int(self._get_sessions_info("MediaContainer", "size"))
 
             if active:
                 return ACTIVE
@@ -54,10 +55,9 @@ class PlexTracker(tracker.TrackerBase):
         if self.get_plex_status() == IDLE:
             return None
 
-        meta = self._get_xml_info("Video", "key")
+        meta = self._get_sessions_info("Video", "key")
         meta_url = "http://"+self.host_port+meta
-        mdoc = xdmd.parse(urllib.request.urlopen(meta_url))
-        mres = mdoc.getElementsByTagName("Part")[0].getAttribute("file")
+        mres = self._get_xml_info(meta_url, "Part", "file")
         name = urllib.parse.unquote(ntpath.basename(mres))
 
         return name
@@ -68,7 +68,7 @@ class PlexTracker(tracker.TrackerBase):
         if self.get_plex_status() == IDLE:
             return None
 
-        duration = int(self._get_xml_info("Video", "duration"))
+        duration = int(self._get_sessions_info("Video", "duration"))
 
         return round((duration*0.80)/60000)*60
 
@@ -97,12 +97,43 @@ class PlexTracker(tracker.TrackerBase):
 
             # Wait for the interval before running check again
             time.sleep(interval)
+            
+    def _get_plex_token(self):
+        username = self.config['plex_user']
+        password = self.config['plex_passwd']
+        uuid = self.config['plex_uuid']
+        
+        if not (username and password):
+            return ''
+        
+        body = bytes('user[login]=%s&user[password]=%s' % (username, password), "utf-8")
+        headers={'X-Plex-Client-Identifier': uuid,
+                'X-Plex-Product': "Trackma",
+                'X-Plex-Version': utils.VERSION}
+        
+        req = urllib.request.Request('https://plex.tv/users/sign_in.xml', body, headers=headers)
+        response = urllib.request.urlopen(req)
+        data = response.read().decode("utf-8")
+        
+        tdoc = xdmd.parseString(data)
+        token = tdoc.getElementsByTagName("user")[0].getAttribute("authToken")
+        
+        return "?X-Plex-Token="+token
 
-    def _get_xml_info(self, tag, attr):
-        # Get the required info from the /status/sessions url
-        session_url = "http://"+self.host_port+"/status/sessions"
-        sdoc = xdmd.parse(urllib.request.urlopen(session_url))
-
-        res = sdoc.getElementsByTagName(tag)[0].getAttribute(attr)
+    def _get_xml_info(self, url, tag, attr):
+        try:
+            uop = urllib.request.urlopen(url)
+        except urllib.request.URLError:
+            uop = urllib.request.urlopen(url+self.token)
+            
+        doc = xdmd.parse(uop)
+        res = doc.getElementsByTagName(tag)[0].getAttribute(attr)
 
         return res
+        
+    def _get_sessions_info(self, tag, attr):
+        # Get the required info from the /status/sessions url
+        session_url = "http://"+self.host_port+"/status/sessions"
+        info = self._get_xml_info(session_url, tag, attr)
+
+        return info
