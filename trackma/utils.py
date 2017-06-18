@@ -20,6 +20,7 @@ import datetime
 import json
 import difflib
 import pickle
+import uuid
 
 VERSION = '0.7.3'
 
@@ -288,6 +289,9 @@ config_defaults = {
     'plex_host': "localhost",
     'plex_port': "32400",
     'plex_obey_update_wait_s': False,
+    'plex_user': '',
+    'plex_passwd': '',
+    'plex_uuid': str(uuid.uuid1()),
 }
 userconfig_defaults = {
     'mediatype': '',
