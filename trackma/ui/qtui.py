@@ -1832,6 +1832,9 @@ class SettingsDialog(QDialog):
         g_plex.setFlat(True)
         self.plex_host = QLineEdit()
         self.plex_port = QLineEdit()
+        self.plex_user = QLineEdit()
+        self.plex_passw = QLineEdit()
+        self.plex_passw.setEchoMode(QLineEdit.Password)
         self.plex_obey_wait = QCheckBox()
 
         g_plex_layout = QGridLayout()
@@ -1840,6 +1843,9 @@ class SettingsDialog(QDialog):
         g_plex_layout.addWidget(self.plex_port,                            0, 2, 1, 2)
         g_plex_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
         g_plex_layout.addWidget(self.plex_obey_wait,                       1, 2, 1, 1)
+        g_plex_layout.addWidget(QLabel('myPlex login (claimed server)'),   2, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_user,                            2, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_passw,                           2, 2, 1, 2)
 
         g_plex.setLayout(g_plex_layout)
 
@@ -2110,6 +2116,8 @@ class SettingsDialog(QDialog):
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
         self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
+        self.plex_user.setText(engine.get_config('plex_user'))
+        self.plex_passw.setText(engine.get_config('plex_passwd'))
 
         if tracker_type == 'local':
             self.tracker_type_local.setChecked(True)
@@ -2186,6 +2194,8 @@ class SettingsDialog(QDialog):
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
         engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
+        engine.set_config('plex_user',         self.plex_user.text())
+        engine.set_config('plex_passwd',       self.plex_passw.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
