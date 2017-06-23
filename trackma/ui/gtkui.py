@@ -1970,6 +1970,9 @@ class Settings(Gtk.Window):
         lbl_tracker_plex_obey_wait = Gtk.Label('Use "wait before update" time')
         lbl_tracker_plex_obey_wait.set_size_request(120, -1)
         lbl_tracker_plex_obey_wait.set_xalign(0)
+        lbl_tracker_plex_login = Gtk.Label('myPlex login (claimed server)')
+        lbl_tracker_plex_login.set_size_request(120, -1)
+        lbl_tracker_plex_login.set_xalign(0)
         
         # Entries
         self.txt_plex_host = Gtk.Entry()
@@ -1977,6 +1980,11 @@ class Settings(Gtk.Window):
         self.txt_plex_port = Gtk.Entry()
         self.txt_plex_port.set_max_length(5)
         self.txt_plex_port.set_width_chars(5)
+        self.txt_plex_user = Gtk.Entry()
+        self.txt_plex_user.set_max_length(4096)
+        self.txt_plex_passw = Gtk.Entry()
+        self.txt_plex_passw.set_max_length(128)
+        self.txt_plex_passw.set_visibility(False)
         self.chk_tracker_plex_obey_wait = Gtk.CheckButton()
         
         # HBoxes
@@ -1987,6 +1995,10 @@ class Settings(Gtk.Window):
         line10 = Gtk.HBox(False, 5)
         line10.pack_start(lbl_tracker_plex_obey_wait, False, False, 5)
         line10.pack_start(self.chk_tracker_plex_obey_wait, False, False, 0)
+        line11 = Gtk.HBox(False, 5)
+        line11.pack_start(lbl_tracker_plex_login, False, False, 5)
+        line11.pack_start(self.txt_plex_user, True, True, 0)
+        line11.pack_start(self.txt_plex_passw, True, True, 0)
 
         ### Auto-retrieve ###
         header2 = Gtk.Label()
@@ -2162,6 +2174,7 @@ class Settings(Gtk.Window):
         page0.pack_start(header6, False, False, 0)
         page0.pack_start(line7, False, False, 0)
         page0.pack_start(line10, False, False, 0)
+        page0.pack_start(line11, False, False, 0)
 
         page1 = Gtk.VBox(False, 10)
         page1.set_border_width(10)
@@ -2197,6 +2210,8 @@ class Settings(Gtk.Window):
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
+        self.txt_plex_user.set_text(self.engine.get_config('plex_user'))
+        self.txt_plex_passw.set_text(self.engine.get_config('plex_passwd'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
         self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
@@ -2250,6 +2265,8 @@ class Settings(Gtk.Window):
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
+        self.engine.set_config('plex_user', self.txt_plex_user.get_text())
+        self.engine.set_config('plex_passwd', self.txt_plex_passw.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
         self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
