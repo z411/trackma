@@ -1,3 +1,13 @@
+v0.7.4
+- Improvement: (Flex) Added optional login functionality
+- Improvement: (curses) Added Play Random function
+- Improvement: (GTK) Added -d debug command line flag
+- Improvement: (GTK) Showing checkboxes in episode number list (Play episode)
+- Bugfix: (Qt) Fixed issue when closing with KDE 5/Qt 5
+- Bugfix: (Kitsu) Fixed issue where using e-mail instead of username wouldn't work
+- Bugfix: Fixed issue where Playing flag wasn't being cleared if show got
+ignored
+
 v0.7.3
 - Improvement: (Qt/GTK) Resizing image to a reasonable size in show details dialog
 - Improvement: (Flex) Fixed Plex tracker to work with new Plex release (1.4.4.3495)
