@@ -109,9 +109,11 @@ class Trackma(QMainWindow):
     Main GUI class
 
     """
+    debug = False
     config = None
     tray = None
     accountman = None
+    accountman_widget = None
     worker = None
     image_worker = None
     started = False
@@ -120,8 +122,9 @@ class Trackma(QMainWindow):
     finish = False
     was_maximized = False
 
-    def __init__(self):
+    def __init__(self, debug=False):
         QMainWindow.__init__(self, None)
+        self.debug = debug
 
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
@@ -141,9 +144,12 @@ class Trackma(QMainWindow):
         if default:
             self.start(default)
         else:
-            self.accountman_widget = AccountDialog(None, self.accountman)
-            self.accountman_widget.selected.connect(self.accountman_selected)
+            self.accountman_create()
             self.accountman_widget.show()
+
+    def accountman_create(self):
+        self.accountman_widget = AccountDialog(None, self.accountman)
+        self.accountman_widget.selected.connect(self.accountman_selected)
 
     def accountman_selected(self, account_num, remember):
         account = self.accountman.get_account(account_num)
@@ -480,7 +486,7 @@ class Trackma(QMainWindow):
         self._tray()
 
         # Connect worker signals
-        self.worker.changed_status.connect(self.status)
+        self.worker.changed_status.connect(self.ws_changed_status)
         self.worker.raised_error.connect(self.error)
         self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
@@ -520,6 +526,8 @@ class Trackma(QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
+            if pyqt_version is 5 and self.finish:
+                QApplication.instance().quit()
         elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
             self.s_hide()
@@ -1212,7 +1220,7 @@ class Trackma(QMainWindow):
         if queue:
             reply = QMessageBox.question(self, 'Confirmation',
                 'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
-                QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
 
             if reply == QMessageBox.Yes:
                 self.s_send(True)
@@ -1231,6 +1239,9 @@ class Trackma(QMainWindow):
             self.worker_call('list_upload', self.r_generic_ready)
 
     def s_switch_account(self):
+        if not self.accountman_widget:
+            self.accountman_create()
+
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
 
@@ -1304,6 +1315,12 @@ class Trackma(QMainWindow):
                 showlist.setColumnWidth(index, MIN_WIDTH)
 
     ### Worker slots
+    def ws_changed_status(self, classname, msgtype, msg):
+        if msgtype != messenger.TYPE_DEBUG:
+            self.status('{}: {}'.format(classname, msg))
+        elif self.debug:
+            print('[D] {}: {}'.format(classname, msg))
+
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
             if not self.show_lists:
@@ -1579,7 +1596,7 @@ class DetailsWidget(QWidget):
             self.s_show_image(filename)
         else:
             self.show_image.setText('Downloading...')
-            self.image_worker = Image_Worker(show['image'], filename)
+            self.image_worker = Image_Worker(show['image'], filename, (200, 280))
             self.image_worker.finished.connect(self.s_show_image)
             self.image_worker.start()
 
@@ -1786,8 +1803,6 @@ class SettingsDialog(QDialog):
         self.tracker_type_local.toggled.connect(self.tracker_type_change)
         self.tracker_type_plex = QRadioButton('Plex media server')
         self.tracker_type_plex.toggled.connect(self.tracker_type_change)
-        self.plex_host = QLineEdit()
-        self.plex_port = QLineEdit()
         self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
@@ -1804,14 +1819,34 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow(self.tracker_type_plex)
         g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
         g_media_layout.addRow('Process name (regex)', self.tracker_process)
-        g_media_layout.addRow('Plex host', self.plex_host)
-        g_media_layout.addRow('Plex port', self.plex_port)
         g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
         g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
         g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
         g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
 
         g_media.setLayout(g_media_layout)
+
+        # Group: Plex settings
+        g_plex = QGroupBox('Plex Media Server')
+        g_plex.setFlat(True)
+        self.plex_host = QLineEdit()
+        self.plex_port = QLineEdit()
+        self.plex_user = QLineEdit()
+        self.plex_passw = QLineEdit()
+        self.plex_passw.setEchoMode(QLineEdit.Password)
+        self.plex_obey_wait = QCheckBox()
+
+        g_plex_layout = QGridLayout()
+        g_plex_layout.addWidget(QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_host,                            0, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_port,                            0, 2, 1, 2)
+        g_plex_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_obey_wait,                       1, 2, 1, 1)
+        g_plex_layout.addWidget(QLabel('myPlex login (claimed server)'),   2, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_user,                            2, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_passw,                           2, 2, 1, 2)
+
+        g_plex.setLayout(g_plex_layout)
 
         # Group: Play Next
         g_playnext = QGroupBox('Play Next')
@@ -1841,6 +1876,7 @@ class SettingsDialog(QDialog):
 
         # Media form
         page_media_layout.addWidget(g_media)
+        page_media_layout.addWidget(g_plex)
         page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
 
@@ -2082,11 +2118,15 @@ class SettingsDialog(QDialog):
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
+        self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
+        self.plex_user.setText(engine.get_config('plex_user'))
+        self.plex_passw.setText(engine.get_config('plex_passwd'))
 
         if tracker_type == 'local':
             self.tracker_type_local.setChecked(True)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
+            self.plex_obey_wait.setEnabled(False)
         elif tracker_type == 'plex':
             self.tracker_type_plex.setChecked(True)
             self.tracker_process.setEnabled(False)
@@ -2157,6 +2197,9 @@ class SettingsDialog(QDialog):
         engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
+        engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
+        engine.set_config('plex_user',         self.plex_user.text())
+        engine.set_config('plex_passwd',       self.plex_passw.text())
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -2225,15 +2268,18 @@ class SettingsDialog(QDialog):
                 self.tracker_process.setEnabled(True)
                 self.plex_host.setEnabled(False)
                 self.plex_port.setEnabled(False)
+                self.plex_obey_wait.setEnabled(False)
             elif self.tracker_type_plex.isChecked():
                 self.plex_host.setEnabled(True)
                 self.plex_port.setEnabled(True)
+                self.plex_obey_wait.setEnabled(True)
                 self.tracker_process.setEnabled(False)
         else:
             self.tracker_type_local.setEnabled(False)
             self.tracker_type_plex.setEnabled(False)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
+            self.plex_obey_wait.setEnabled(False)
             self.tracker_process.setEnabled(False)
             self.tracker_interval.setEnabled(False)
             self.tracker_update_wait.setEnabled(False)
@@ -2393,6 +2439,7 @@ class AccountDialog(QDialog):
         self.edit_btns.activated.connect(self.s_edit)
         select_btn = QPushButton('Select')
         select_btn.clicked.connect(self.select)
+        select_btn.setDefault(True)
         bottom_layout.addWidget(self.remember_chk)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
@@ -2871,7 +2918,7 @@ class Engine_Worker(QtCore.QThread):
     finished = QtCore.pyqtSignal(dict)
 
     # Message handler signals
-    changed_status = QtCore.pyqtSignal(str)
+    changed_status = QtCore.pyqtSignal(str, int, str)
     raised_error = QtCore.pyqtSignal(str)
     raised_fatal = QtCore.pyqtSignal(str)
 
@@ -2921,7 +2968,7 @@ class Engine_Worker(QtCore.QThread):
         }
 
     def _messagehandler(self, classname, msgtype, msg):
-        self.changed_status.emit("%s: %s" % (classname, msg))
+        self.changed_status.emit(classname, msgtype, msg)
 
     def _error(self, msg):
         self.raised_error.emit(str(msg))
@@ -3149,9 +3196,23 @@ def getColor(colorString):
 
 
 def main():
+    debug = False
+
+    print("Trackma-qt v{}".format(utils.VERSION))
+
+    if '-h' in sys.argv:
+        print("Usage: trackma-qt [options]")
+        print()
+        print('Options:')
+        print(' -d  Shows debugging information')
+        print(' -h  Shows this help')
+        return
+    if '-d' in sys.argv:
+        debug = True
+
     app = QApplication(sys.argv)
     try:
-        mainwindow = Trackma()
+        mainwindow = Trackma(debug)
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
         QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)

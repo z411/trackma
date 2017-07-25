@@ -20,8 +20,9 @@ import datetime
 import json
 import difflib
 import pickle
+import uuid
 
-VERSION = '0.7'
+VERSION = '0.7.4'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -288,6 +289,10 @@ config_defaults = {
     'tracker_type': "local",
     'plex_host': "localhost",
     'plex_port': "32400",
+    'plex_obey_update_wait_s': False,
+    'plex_user': '',
+    'plex_passwd': '',
+    'plex_uuid': str(uuid.uuid1()),
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -297,13 +302,14 @@ userconfig_defaults = {
 curses_defaults = {
     'show_help': True,
     'keymap': {
-        'help': 'f1',
+        'help': '?',
         'prev_filter': 'left',
         'next_filter': 'right',
         'sort': 'f3',
         'sort_order': 'r',
         'update': 'u',
         'play': 'p',
+        'play_random': '&',
         'status': 'f6',
         'score': 'k',
         'send': 's',
