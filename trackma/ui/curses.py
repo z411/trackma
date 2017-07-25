@@ -59,7 +59,8 @@ class Trackma_urwid():
     def __init__(self):
         """Creates main widgets and creates mainloop"""
         self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
-        keymap = self.config['keymap']
+        keymap = utils.curses_defaults['keymap']
+        keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
         self.keymapping = self.map_key_to_func(keymap)
 
@@ -130,6 +131,7 @@ class Trackma_urwid():
                     'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
+                    'play_random': self.do_play_random,
                     'status': self.do_status,
                     'score': self.do_score,
                     'send': self.do_send,
@@ -325,6 +327,13 @@ class Trackma_urwid():
             show = self.engine.get_show_info(item.showid)
             self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
 
+    def do_play_random(self):
+        try:
+            self.engine.play_random()
+        except utils.TrackmaError as e:
+            self.error(e)
+            return
+
     def do_send(self):
         self.engine.list_upload()
         self.status("Ready.")
@@ -343,7 +352,7 @@ class Trackma_urwid():
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
-        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {switch_account}: Change account"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
         helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
@@ -575,8 +584,6 @@ class Trackma_urwid():
             except utils.TrackmaError as e:
                 self.error(e)
                 return
-
-            self.status('Ready.')
 
     def prompt_update_request(self, data):
         (show, episode) = self.last_update_prompt

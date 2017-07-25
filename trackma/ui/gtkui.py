@@ -25,7 +25,8 @@ try:
     from gi.repository import GObject
 except ImportError as ex:
     print("Couldn't import GTK dependencies. Make sure you "
-          "installed the PyGTK package and %s module." % ex.name)
+          "installed the PyGTK package and {} module.".format(ex.name))
+    print("Details: {}".format(ex))
     sys.exit(-1)
 
 Gdk.threads_init() # We'll use threads
@@ -55,7 +56,7 @@ from trackma.accounts import AccountManager
 from trackma import utils
 from trackma import messenger
 
-class Trackma_gtk():
+class Trackma_gtk(object):
     engine = None
     config = None
     show_lists = dict()
@@ -63,6 +64,9 @@ class Trackma_gtk():
     close_thread = None
     hidden = False
     quit = False
+
+    def __init__(self, debug=False):
+        self.debug = debug
 
     def main(self):
         """Start the Account Selector"""
@@ -123,8 +127,10 @@ class Trackma_gtk():
 
         # Menus
         mb_show = Gtk.Menu()
-        self.mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
+        self.mb_play = Gtk.ImageMenuItem('Play Next', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
         self.mb_play.connect("activate", self.__do_play, True)
+        self.mb_play_random = Gtk.MenuItem('Play random')
+        self.mb_play_random.connect("activate", self.__do_play_random)
         mb_scanlibrary = Gtk.MenuItem('Re-scan library')
         self.mb_folder = Gtk.MenuItem("Open containing folder")
         self.mb_folder.connect("activate", self.do_containingFolder)
@@ -145,6 +151,7 @@ class Trackma_gtk():
         self.mb_addsearch.connect("activate", self._do_addsearch)
 
         mb_show.append(self.mb_addsearch)
+        mb_show.append(self.mb_play_random)
         mb_show.append(Gtk.SeparatorMenuItem())
         mb_show.append(self.mb_play)
         mb_show.append(self.mb_info)
@@ -370,6 +377,8 @@ class Trackma_gtk():
 
         key, mod = Gtk.accelerator_parse("<Control>N")
         self.mb_play.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        key, mod = Gtk.accelerator_parse("<Control>R")
+        self.mb_play_random.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>A")
         self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>S")
@@ -639,6 +648,9 @@ class Trackma_gtk():
     def __do_play(self, widget, playnext, ep=None):
         threading.Thread(target=self.task_play, args=(playnext,ep)).start()
 
+    def __do_play_random(self, widget):
+        threading.Thread(target=self.task_play_random).start()
+
     def __do_scanlibrary(self, widget):
         threading.Thread(target=self.task_scanlibrary).start()
 
@@ -766,6 +778,17 @@ class Trackma_gtk():
                 if not ep:
                     ep = self.show_ep_num.get_value_as_int()
                 self.engine.play_episode(show, ep)
+        except utils.TrackmaError as e:
+            self.error(e)
+
+        self.status("Ready.")
+        self.allow_buttons(True)
+
+    def task_play_random(self):
+        self.allow_buttons(False)
+
+        try:
+            self.engine.play_random()
         except utils.TrackmaError as e:
             self.error(e)
 
@@ -977,11 +1000,13 @@ class Trackma_gtk():
 
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
-        print("%s: %s" % (classname, msg))
+        #print("%s: %s" % (classname, msg))
         if msgtype == messenger.TYPE_WARN:
             GObject.idle_add(self.status_push, "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
             GObject.idle_add(self.status_push, "%s: %s" % (classname, msg))
+        elif self.debug:
+            print('[D] {}: {}'.format(classname, msg))
 
     def error(self, msg, icon=Gtk.MessageType.ERROR):
         # Thread safe
@@ -1000,6 +1025,7 @@ class Trackma_gtk():
         GObject.idle_add(self.status_push, msg)
 
     def status_push(self, msg):
+        print(msg)
         self.statusbar.push(0, msg)
 
     def allow_buttons(self, boolean):
@@ -1095,6 +1121,19 @@ class Trackma_gtk():
         if show['url']:
             Gtk.show_uri(None, show['url'], Gdk.CURRENT_TIME)
 
+    def _build_episode_menu(self, show):
+        total = show['total'] or utils.estimate_aired_episodes(show) or 0
+
+        menu_eps = Gtk.Menu()
+        for i in range(1, total + 1):
+            mb_playep = Gtk.CheckMenuItem(str(i))
+            if i <= show['my_progress']:
+                mb_playep.set_active(True)
+            mb_playep.connect("activate", self.__do_play, False, i)
+            menu_eps.append(mb_playep)
+
+        return menu_eps
+
     def showview_context_menu(self, treeview, event):
         if event.button == 3:
             x = int(event.x)
@@ -1107,7 +1146,7 @@ class Trackma_gtk():
                 show = self.engine.get_show_info(self.selected_show)
 
                 menu = Gtk.Menu()
-                mb_play = Gtk.ImageMenuItem('Play', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
+                mb_play = Gtk.ImageMenuItem('Play Next', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
                 mb_play.connect("activate", self.__do_play, True)
                 mb_info = Gtk.MenuItem("Show details...")
                 mb_info.connect("activate", self.__do_info)
@@ -1124,15 +1163,11 @@ class Trackma_gtk():
 
                 menu.append(mb_play)
 
-                if show['total']:
-                    menu_eps = Gtk.Menu()
-                    for i in range(1, show['total'] + 1):
-                        mb_playep = Gtk.MenuItem(str(i))
-                        mb_playep.connect("activate", self.__do_play, False, i)
-                        menu_eps.append(mb_playep)
-                    mb_playep = Gtk.MenuItem("Play episode")
-                    mb_playep.set_submenu(menu_eps)
-                    menu.append(mb_playep)
+                menu_eps = self._build_episode_menu(show)
+
+                mb_playep = Gtk.MenuItem("Play episode")
+                mb_playep.set_submenu(menu_eps)
+                menu.append(mb_playep)
 
                 menu.append(mb_info)
                 menu.append(mb_web)
@@ -1386,7 +1421,7 @@ class ShowView(Gtk.TreeView):
         self.store.clear()
 
     def append(self, show, altname=None, eps=None):
-        episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+        episodes_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
         if show['total'] and show['my_progress'] <= show['total']:
             progress = (float(show['my_progress']) / show['total']) * 100
         else:
@@ -1752,7 +1787,7 @@ class InfoWidget(Gtk.VBox):
             self.w_image.image_show(imagefile)
         else:
             self.w_image.pholder_show('Loading...')
-            self.image_thread = ImageTask(self.w_image, show['image'], imagefile)
+            self.image_thread = ImageTask(self.w_image, show['image'], imagefile, (200, 298))
             self.image_thread.start()
 
         # Start info loading thread
@@ -1825,7 +1860,7 @@ class Settings(Gtk.Window):
         line0.pack_start(lbl_player, False, False, 5)
         line0.pack_start(self.txt_player, True, True, 0)
         line0.pack_start(playerbrowse_button, False, False, 0)
-
+        
         ### Tracker ###
 
         # Labels
@@ -1835,12 +1870,13 @@ class Settings(Gtk.Window):
         lbl_searchdir = Gtk.Label('Library Directory')
         lbl_searchdir.set_size_request(120, -1)
         lbl_searchdir.set_xalign(0)
+        lbl_library_options = Gtk.Label('Library options')
+        lbl_library_options.set_size_request(120, -1)
+        lbl_library_options.set_xalign(0)
+
         lbl_tracker_enabled = Gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         lbl_tracker_enabled.set_xalign(0)
-        lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
-        lbl_tracker_plex_host_port.set_size_request(120, -1)
-        lbl_tracker_plex_host_port.set_xalign(0)
         lbl_tracker_update_wait = Gtk.Label('Wait before update')
         lbl_tracker_update_wait.set_size_request(120, -1)
         lbl_tracker_update_wait.set_xalign(0)
@@ -1853,21 +1889,18 @@ class Settings(Gtk.Window):
         self.txt_process.set_max_length(4096)
         self.txt_searchdir = Gtk.Entry()
         self.txt_searchdir.set_max_length(4096)
+        self.chk_library_autoscan = Gtk.CheckButton('Auto-scan at start')
         self.browse_button = Gtk.Button('Browse...')
         self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
         self.chk_library_autoscan = Gtk.CheckButton('Rescan library at startup')
         self.chk_scan_whole_list  = Gtk.CheckButton('Scan through whole list')
         self.chk_tracker_enabled = Gtk.CheckButton()
-        self.txt_plex_host = Gtk.Entry()
-        self.txt_plex_host.set_max_length(4096)
-        self.txt_plex_port = Gtk.Entry()
-        self.txt_plex_port.set_max_length(5)
-        self.txt_plex_port.set_width_chars(5)
         self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
         self.spin_tracker_update_wait = Gtk.SpinButton()
         self.spin_tracker_update_wait.set_adjustment(Gtk.Adjustment(value=5, lower=0, upper=500, step_incr=1, page_incr=10))
         self.chk_tracker_update_close = Gtk.CheckButton('Wait for the player to close')
         self.chk_tracker_update_prompt = Gtk.CheckButton('Ask before updating')
+        self.chk_tracker_not_found_prompt = Gtk.CheckButton('Ask to add if not in list')
 
         # Radio buttons
         self.rbtn_tracker_local = Gtk.RadioButton.new_with_label_from_widget(None, 'Local')
@@ -1906,16 +1939,15 @@ class Settings(Gtk.Window):
         line2.pack_start(lbl_process, False, False, 5)
         line2.pack_start(self.txt_process, True, True, 0)
 
-        line7 = Gtk.HBox(False, 5)
-        line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
-        line7.pack_start(self.txt_plex_host, True, True, 0)
-        line7.pack_start(self.txt_plex_port, True, True, 0)
-
         line3 = Gtk.HBox(False, 5)
         line3.pack_start(lbl_tracker_enabled, False, False, 5)
         line3.pack_start(self.chk_tracker_enabled, False, False, 0)
         line3.pack_start(self.rbtn_tracker_local, False, False, 0)
         line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
+
+        lin_library_options = Gtk.HBox(False, 5)
+        lin_library_options.pack_start(lbl_library_options, False, False, 5)
+        lin_library_options.pack_start(self.chk_library_autoscan, False, False, 0)
 
         line8 = Gtk.HBox(False, 5)
         line8.pack_start(lbl_tracker_update_wait, False, False, 5)
@@ -1924,8 +1956,54 @@ class Settings(Gtk.Window):
 
         line9 = Gtk.HBox(False, 5)
         line9.pack_start(lbl_tracker_update_options, False, False, 5)
-        line9.pack_start(self.chk_tracker_update_close, False, False, 0)
-        line9.pack_start(self.chk_tracker_update_prompt, False, False, 0)
+        line9a = Gtk.VBox(False, 0)
+        line9a.pack_start(self.chk_tracker_update_close, False, False, 0)
+        line9a.pack_start(self.chk_tracker_update_prompt, False, False, 0)
+        line9a.pack_start(self.chk_tracker_not_found_prompt, False, False, 0)
+        line9.pack_start(line9a, False, False, 0)
+        
+        ### Plex ###
+        header6 = Gtk.Label()
+        header6.set_text('<b>Plex Media Server</b>')
+        header6.set_use_markup(True)
+        header6.set_xalign(0)
+        
+        # Labels
+        lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
+        lbl_tracker_plex_host_port.set_size_request(120, -1)
+        lbl_tracker_plex_host_port.set_xalign(0)
+        lbl_tracker_plex_obey_wait = Gtk.Label('Use "wait before update" time')
+        lbl_tracker_plex_obey_wait.set_size_request(120, -1)
+        lbl_tracker_plex_obey_wait.set_xalign(0)
+        lbl_tracker_plex_login = Gtk.Label('myPlex login (claimed server)')
+        lbl_tracker_plex_login.set_size_request(120, -1)
+        lbl_tracker_plex_login.set_xalign(0)
+        
+        # Entries
+        self.txt_plex_host = Gtk.Entry()
+        self.txt_plex_host.set_max_length(4096)
+        self.txt_plex_port = Gtk.Entry()
+        self.txt_plex_port.set_max_length(5)
+        self.txt_plex_port.set_width_chars(5)
+        self.txt_plex_user = Gtk.Entry()
+        self.txt_plex_user.set_max_length(4096)
+        self.txt_plex_passw = Gtk.Entry()
+        self.txt_plex_passw.set_max_length(128)
+        self.txt_plex_passw.set_visibility(False)
+        self.chk_tracker_plex_obey_wait = Gtk.CheckButton()
+        
+        # HBoxes
+        line7 = Gtk.HBox(False, 5)
+        line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
+        line7.pack_start(self.txt_plex_host, True, True, 0)
+        line7.pack_start(self.txt_plex_port, True, True, 0)
+        line10 = Gtk.HBox(False, 5)
+        line10.pack_start(lbl_tracker_plex_obey_wait, False, False, 5)
+        line10.pack_start(self.chk_tracker_plex_obey_wait, False, False, 0)
+        line11 = Gtk.HBox(False, 5)
+        line11.pack_start(lbl_tracker_plex_login, False, False, 5)
+        line11.pack_start(self.txt_plex_user, True, True, 0)
+        line11.pack_start(self.txt_plex_passw, True, True, 0)
 
         ### Auto-retrieve ###
         header2 = Gtk.Label()
@@ -2094,10 +2172,14 @@ class Settings(Gtk.Window):
         page0.pack_start(header1, False, False, 0)
         page0.pack_start(line3, False, False, 0)
         page0.pack_start(line1, False, False, 0)
+        page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(line2, False, False, 0)
-        page0.pack_start(line7, False, False, 0)
         page0.pack_start(line8, False, False, 0)
         page0.pack_start(line9, False, False, 0)
+        page0.pack_start(header6, False, False, 0)
+        page0.pack_start(line7, False, False, 0)
+        page0.pack_start(line10, False, False, 0)
+        page0.pack_start(line11, False, False, 0)
 
         page1 = Gtk.VBox(False, 10)
         page1.set_border_width(10)
@@ -2133,16 +2215,21 @@ class Settings(Gtk.Window):
         self.chk_scan_whole_list.set_active(self.engine.get_config('scan_whole_list'))
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
+        self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
+        self.txt_plex_user.set_text(self.engine.get_config('plex_user'))
+        self.txt_plex_passw.set_text(self.engine.get_config('plex_passwd'))
         self.chk_tracker_enabled.set_active(self.engine.get_config('tracker_enabled'))
         self.rbtn_autosend_at_exit.set_active(self.engine.get_config('autosend_at_exit'))
         self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
         self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
         self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
+        self.chk_tracker_not_found_prompt.set_active(self.engine.get_config('tracker_not_found_prompt'))
 
         if self.engine.get_config('tracker_type') == 'local':
             self.rbtn_tracker_local.set_active(True)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
+            self.chk_tracker_plex_obey_wait.set_sensitive(False)
         elif self.engine.get_config('tracker_type') == 'plex':
             self.rbtn_tracker_plex.set_active(True)
             self.txt_process.set_sensitive(False)
@@ -2186,11 +2273,15 @@ class Settings(Gtk.Window):
                 self.chk_scan_whole_list.get_active())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
+        self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
+        self.engine.set_config('plex_user', self.txt_plex_user.get_text())
+        self.engine.set_config('plex_passwd', self.txt_plex_passw.get_text())
         self.engine.set_config('tracker_enabled', self.chk_tracker_enabled.get_active())
         self.engine.set_config('autosend_at_exit', self.rbtn_autosend_at_exit.get_active())
         self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
         self.engine.set_config('tracker_update_close', self.chk_tracker_update_close.get_active())
         self.engine.set_config('tracker_update_prompt', self.chk_tracker_update_prompt.get_active())
+        self.engine.set_config('tracker_not_found_prompt', self.chk_tracker_not_found_prompt.get_active())
 
         # Tracker type
         if self.rbtn_tracker_local.get_active():
@@ -2254,9 +2345,11 @@ class Settings(Gtk.Window):
                 self.txt_process.set_sensitive(True)
                 self.txt_plex_host.set_sensitive(False)
                 self.txt_plex_port.set_sensitive(False)
+                self.chk_tracker_plex_obey_wait.set_sensitive(False)
             elif self.rbtn_tracker_plex.get_active():
                 self.txt_plex_host.set_sensitive(True)
                 self.txt_plex_port.set_sensitive(True)
+                self.chk_tracker_plex_obey_wait.set_sensitive(True)
                 self.txt_process.set_sensitive(False)
             self.spin_tracker_update_wait.set_sensitive(True)
         else:
@@ -2264,6 +2357,7 @@ class Settings(Gtk.Window):
             self.spin_tracker_update_wait.set_sensitive(False)
             self.txt_plex_host.set_sensitive(False)
             self.txt_plex_port.set_sensitive(False)
+            self.chk_tracker_plex_obey_wait.set_sensitive(False)
 
     def __do_browse(self, widget, title, entry, dironly=False):
         browsew = Gtk.FileChooserDialog(title,
@@ -2307,9 +2401,11 @@ class AccountSelectAdd(Gtk.Window):
         # Entries
         self.txt_user = Gtk.Entry()
         self.txt_user.set_max_length(128)
+        self.txt_user.set_activates_default(True)
         self.txt_passwd = Gtk.Entry()
         self.txt_passwd.set_max_length(128)
         self.txt_passwd.set_visibility(False)
+        self.txt_passwd.set_activates_default(True)
 
         # Combobox
         self.model_api = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
@@ -2333,6 +2429,8 @@ class AccountSelectAdd(Gtk.Window):
         alignment = Gtk.Alignment(xalign=0.5, xscale=0)
         bottombar = Gtk.HBox(False, 5)
         self.add_button = Gtk.Button(stock=Gtk.STOCK_APPLY)
+        self.add_button.set_can_default(True)
+        self.add_button.grab_default()
         close_button = Gtk.Button(stock=Gtk.STOCK_CLOSE)
         close_button.connect("clicked", self.__do_close)
         bottombar.pack_start(self.add_button, False, False, 0)
@@ -2702,7 +2800,21 @@ def scale(w, h, x, y, maximum=True):
     return x, nh or 1
 
 def main():
-    app = Trackma_gtk()
+    debug = False
+
+    print("Trackma-gtk v{}".format(utils.VERSION))
+
+    if '-h' in sys.argv:
+        print("Usage: trackma-qt [options]")
+        print()
+        print('Options:')
+        print(' -d  Shows debugging information')
+        print(' -h  Shows this help')
+        return
+    if '-d' in sys.argv:
+        debug = True
+
+    app = Trackma_gtk(debug)
     try:
         Gdk.threads_enter()
         app.main()

@@ -152,7 +152,10 @@ class Engine:
         if self.config['tracker_update_prompt']:
             self._emit_signal('prompt_for_update', show, episode)
         else:
-            self.set_episode(show['id'], episode)
+            try:
+                self.set_episode(show['id'], episode)
+            except utils.TrackmaError as e:
+                self.msg.warn(self.name, "Can't update episode: {}".format(e))
 
     def _tracker_unrecognised(self, show_title, episode):
         if self.config['tracker_not_found_prompt']:
@@ -197,6 +200,7 @@ class Engine:
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
+                                 'total': show['total'],
                                  'type': None,
                                  'titles': self.data_handler.get_show_titles(show),
                                  })  # TODO types

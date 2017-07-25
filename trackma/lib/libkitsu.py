@@ -230,9 +230,9 @@ class libkitsu(lib):
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
         params = {
-                "filter[name]": self.username,
+                "filter[self]": 'true',
         }
-        data = self._request('GET', self.prefix + "/users", get=params)
+        data = self._request('GET', self.prefix + "/users", get=params, auth=True)
         json_data = json.loads(data)
         user = json_data['data'][0]
 
@@ -481,7 +481,7 @@ class libkitsu(lib):
             'id': int(media['id']),
             # TODO : Some shows actually don't have a canonicalTitle; this should be fixed in the future.
             # For now I'm just picking the romaji title in these cases.
-            'title':       attr['canonicalTitle'] or attr['titles']['en_jp'],
+            'title':       attr['titles'].get('en_jp') or attr.get('canonicalTitle') or attr['titles'].get('en'),
             'total':       total or 0,
             'image':       attr['posterImage']['small'],
             'image_thumb': attr['posterImage']['tiny'],
@@ -504,4 +504,3 @@ class libkitsu(lib):
         info['status'] = self._guess_status(info['start_date'], info['end_date'])
 
         return info
-

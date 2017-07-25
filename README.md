@@ -57,6 +57,15 @@ The only required dependency to run Trackma is:
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
+The following user interfaces are available and their requirements are as follows:
+
+| UI | Dependencies |
+| --- | --- |
+| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
+| GTK 3 | PyGI (python3-gi and python3-cairo) |
+| curses | Urwid (python3-urwid) |
+| CLI | None |
+
 The following media recognition trackers are available and their requirements are as follows:
 
 | Tracker | Description | Dependencies |
@@ -66,16 +75,7 @@ The following media recognition trackers are available and their requirements ar
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Win32 | Recognition for Windows platforms. | None |
 
-For the user interfaces:
-
-| UI | Dependencies |
-| --- | --- |
-| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
-| GTK 3 | PyGI (python3-gi and python3-cairo) |
-| curses | Urwid (python3-urwid) |
-| CLI | None |
-
-An additional optional dependency is:
+Additional optional dependencies:
 
 - PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 

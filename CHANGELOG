@@ -1,3 +1,36 @@
+v0.7.4
+- Improvement: (Flex) Added optional login functionality
+- Improvement: (curses) Added Play Random function
+- Improvement: (GTK) Added -d debug command line flag
+- Improvement: (GTK) Showing checkboxes in episode number list (Play episode)
+- Bugfix: (Qt) Fixed issue when closing with KDE 5/Qt 5
+- Bugfix: (Kitsu) Fixed issue where using e-mail instead of username wouldn't work
+- Bugfix: Fixed issue where Playing flag wasn't being cleared if show got
+ignored
+
+v0.7.3
+- Improvement: (Qt/GTK) Resizing image to a reasonable size in show details dialog
+- Improvement: (Flex) Fixed Plex tracker to work with new Plex release (1.4.4.3495)
+- Bugfix: (PyPI) Adding missing suffix for Qt4 script
+- Bugfix: (Anilist) Fixed search issue that caused a 400 error
+
+v0.7.2
+- Bugfix: (Tracker) Fixing issue when subsequent episode weren't being updated if there was an episode open before (ie. playlists)
+- Bugfix: (inotify) Fixing issue with inotify ignoring open events if an open one didn't close
+- Bugfix: (Qt) Fixing crash when attempting to create account select dialog
+
+v0.7.1
+- New: (Plex tracker) Adding option to use regular custom interval instead of Plex timer
+- Improvement: Showing ? instead of 0 when total number of episodes isn't known
+- Improvement: (Kitsu) Retrieving start and end dates for shows, guessing airing status from that
+- Bugfix: (Tracker) inotify trackers were picking up file close events from unrelated programs in the system due to a mistake in procfs logic.
+- Bugfix: (Tracker) Stop attempts at updating invalid episode numbers (ie. less than 0 or more than the maximum)
+- Bugfix: (Qt) Fixed crash when trying to apply settings
+- Bugfix: (Qt) Fixed crash with Discard Queue dialog
+- Bugfix: (Qt) Fixed crash when opening the Switch Account dialog manually
+- Bugfix: (Qt) Fixing strange behavior when the total number of episodes isn't known
+- Bugfix: Fixed crash when the tracker can't update the episode
+
 v0.7
 - New: Added Kitsu.io support (libkitsu, experimental!)
 - New: (Tracker) Prompt to add a show if it's not in the list
