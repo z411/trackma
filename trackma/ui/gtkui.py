@@ -796,8 +796,6 @@ class Trackma_gtk(object):
         self.allow_buttons(True)
 
     def task_scanlibrary(self):
-        self.allow_buttons(False)
-
         try:
             result = self.engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
@@ -1894,6 +1892,8 @@ class Settings(Gtk.Window):
         self.chk_library_autoscan = Gtk.CheckButton('Auto-scan at start')
         self.browse_button = Gtk.Button('Browse...')
         self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
+        self.chk_library_autoscan = Gtk.CheckButton('Rescan library at startup')
+        self.chk_scan_whole_list  = Gtk.CheckButton('Scan through whole list')
         self.chk_tracker_enabled = Gtk.CheckButton()
         self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
         self.spin_tracker_update_wait = Gtk.SpinButton()
@@ -1925,10 +1925,15 @@ class Settings(Gtk.Window):
         header1.set_use_markup(True)
         header1.set_xalign(0)
 
+        line0 = Gtk.HBox(False, 5)
+        line0.pack_start(lbl_searchdir, False, False, 0)
+        line0.pack_start(self.txt_searchdir, True, True, 0)
+        line0.pack_start(self.browse_button, False, False, 0)
+
         line1 = Gtk.HBox(False, 5)
-        line1.pack_start(lbl_searchdir, False, False, 5)
-        line1.pack_start(self.txt_searchdir, True, True, 0)
-        line1.pack_start(self.browse_button, False, False, 0)
+        line1.pack_start(lbl_library, False, False, 0)
+        line1.pack_start(self.chk_library_autoscan, False, False, 0)
+        line1.pack_start(self.chk_scan_whole_list, False, False, 0)
 
         line2 = Gtk.HBox(False, 5)
         line2.pack_start(lbl_process, False, False, 5)
@@ -2207,6 +2212,7 @@ class Settings(Gtk.Window):
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_library_autoscan.set_active(self.engine.get_config('library_autoscan'))
+        self.chk_scan_whole_list.set_active(self.engine.get_config('scan_whole_list'))
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
@@ -2261,7 +2267,10 @@ class Settings(Gtk.Window):
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
-        self.engine.set_config('library_autoscan', self.chk_library_autoscan.get_active())
+        self.engine.set_config('library_autoscan',
+                self.chk_library_autoscan.get_active())
+        self.engine.set_config('scan_whole_list',
+                self.chk_scan_whole_list.get_active())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
