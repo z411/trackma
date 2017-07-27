@@ -184,7 +184,7 @@ class Engine:
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
-        if isinstance(fliter_num, None):
+        if isinstance(filter_num, type(None)):
             source_list = self.get_list()
         elif isinstance(filter_num, list):
             source_list = []
