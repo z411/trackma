@@ -1925,15 +1925,10 @@ class Settings(Gtk.Window):
         header1.set_use_markup(True)
         header1.set_xalign(0)
 
-        line0 = Gtk.HBox(False, 5)
-        line0.pack_start(lbl_searchdir, False, False, 0)
-        line0.pack_start(self.txt_searchdir, True, True, 0)
-        line0.pack_start(self.browse_button, False, False, 0)
-
         line1 = Gtk.HBox(False, 5)
-        line1.pack_start(lbl_library, False, False, 0)
-        line1.pack_start(self.chk_library_autoscan, False, False, 0)
-        line1.pack_start(self.chk_scan_whole_list, False, False, 0)
+        line1.pack_start(lbl_searchdir, False, False, 0)
+        line1.pack_start(self.txt_searchdir, True, True, 0)
+        line1.pack_start(self.browse_button, False, False, 0)
 
         line2 = Gtk.HBox(False, 5)
         line2.pack_start(lbl_process, False, False, 5)
@@ -1948,6 +1943,7 @@ class Settings(Gtk.Window):
         lin_library_options = Gtk.HBox(False, 5)
         lin_library_options.pack_start(lbl_library_options, False, False, 5)
         lin_library_options.pack_start(self.chk_library_autoscan, False, False, 0)
+        lin_library_options.pack_start(self.chk_scan_whole_list, False, False, 0)
 
         line8 = Gtk.HBox(False, 5)
         line8.pack_start(lbl_tracker_update_wait, False, False, 5)
@@ -2168,10 +2164,9 @@ class Settings(Gtk.Window):
         page0 = Gtk.VBox(False, 10)
         page0.set_border_width(10)
         page0.pack_start(header0, False, False, 0)
-        page0.pack_start(line0, False, False, 0)
+        page0.pack_start(line1, False, False, 0)
         page0.pack_start(header1, False, False, 0)
         page0.pack_start(line3, False, False, 0)
-        page0.pack_start(line1, False, False, 0)
         page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(line2, False, False, 0)
         page0.pack_start(line8, False, False, 0)
