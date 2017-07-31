@@ -829,6 +829,7 @@ class Trackma(QMainWindow):
             self.show_progress.setEnabled(False)
             self.show_score.setEnabled(False)
             self.show_progress_bar.setValue(0)
+            self.show_progress_bar.setFormat('?/?')
             self.show_status.setEnabled(False)
             self.show_progress_btn.setEnabled(False)
             self.show_score_btn.setEnabled(False)
@@ -844,12 +845,14 @@ class Trackma(QMainWindow):
         # Set proper ranges
         if show['total']:
             self.show_progress.setMaximum(show['total'])
+            self.show_progress_bar.setFormat('%v/%m')
             self.show_progress_bar.setMaximum(show['total'])
             # Regenerate Play Episode Menu
             self.generate_episode_menus(self.menu_play, show['total'], show['my_progress'])
         else:
             self.show_progress.setMaximum(utils.estimate_aired_episodes(show) or 10000)
             self.generate_episode_menus(self.menu_play, utils.estimate_aired_episodes(show),show['my_progress'])
+            self.show_progress_bar.setFormat('{}/?'.format(show['my_progress']))
 
         # Update information
         self.show_title.setText(show['title'])
