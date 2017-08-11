@@ -844,12 +844,19 @@ class Trackma_gtk(object):
     def task_sync(self, send, retrieve):
         self.allow_buttons(False)
 
-        if send:
-            self.engine.list_upload()
-        if retrieve:
-            self.engine.list_download()
+        try:
+            if send:
+                self.engine.list_upload()
+            if retrieve:
+                self.engine.list_download()
 
-        GObject.idle_add(self.build_all_lists)
+            GObject.idle_add(self.build_all_lists)
+        except utils.TrackmaError as e:
+            self.error(e)
+        except utils.TrackmaFatal as e:
+            self.idle_restart()
+            self.error("Fatal engine error: %s" % e)
+            return
 
         self.status("Ready.")
         self.allow_buttons(True)
@@ -862,7 +869,6 @@ class Trackma_gtk(object):
             try:
                 self.engine.start()
             except utils.TrackmaFatal as e:
-                print("Fatal engine error: %s" % e)
                 self.idle_restart()
                 self.error("Fatal engine error: %s" % e)
                 return
@@ -1016,6 +1022,7 @@ class Trackma_gtk(object):
         dialog = Gtk.MessageDialog(self.main, Gtk.DialogFlags.MODAL, icon, Gtk.ButtonsType.OK, str(msg))
         dialog.show_all()
         dialog.connect("response", self.modal_close)
+        print('Error: {}'.format(msg))
 
     def modal_close(self, widget, response_id):
         widget.destroy()
