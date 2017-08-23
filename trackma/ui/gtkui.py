@@ -972,6 +972,9 @@ class Trackma_gtk(object):
                     self.image_thread.start()
                 else:
                     self.show_image.pholder_show("PIL library\nnot available")
+        else:
+            self.show_image.pholder_show("No Image")
+
 
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
@@ -1786,16 +1789,19 @@ class InfoWidget(Gtk.VBox):
         self._show = show
 
         # Load image
-        imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
-        imagefile = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
+        if show.get('image'):
+            imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
+            imagefile = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
 
-
-        if os.path.isfile(imagefile):
-            self.w_image.image_show(imagefile)
+            if os.path.isfile(imagefile):
+                self.w_image.image_show(imagefile)
+            else:
+                self.w_image.pholder_show('Loading...')
+                self.image_thread = ImageTask(self.w_image, show['image'], imagefile, (200, 298))
+                self.image_thread.start()
         else:
-            self.w_image.pholder_show('Loading...')
-            self.image_thread = ImageTask(self.w_image, show['image'], imagefile, (200, 298))
-            self.image_thread.start()
+            self.w_image.pholder_show('No Image')
+
 
         # Start info loading thread
         threading.Thread(target=self.task_load).start()
