@@ -888,6 +888,8 @@ class Trackma(QMainWindow):
                     self.image_timer.start()
                 else:
                     self.show_image.setText('Not available')
+        else:
+            self.show_image.setText('No image')
 
         if show['total'] > 0:
             self.show_progress_bar.setValue( show['my_progress'] )
@@ -1593,15 +1595,18 @@ class DetailsWidget(QWidget):
         api_info = self.worker.engine.api_info
 
         # Load show image
-        filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
+        if show.get('image'):
+            filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
 
-        if os.path.isfile(filename):
-            self.s_show_image(filename)
+            if os.path.isfile(filename):
+                self.s_show_image(filename)
+            else:
+                self.show_image.setText('Downloading...')
+                self.image_worker = Image_Worker(show['image'], filename, (200, 280))
+                self.image_worker.finished.connect(self.s_show_image)
+                self.image_worker.start()
         else:
-            self.show_image.setText('Downloading...')
-            self.image_worker = Image_Worker(show['image'], filename, (200, 280))
-            self.image_worker.finished.connect(self.s_show_image)
-            self.image_worker.start()
+            self.show_image.setText('No image')
 
     def s_show_image(self, filename):
         self.show_image.setPixmap( QtGui.QPixmap( filename ) )
