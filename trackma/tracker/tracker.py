@@ -87,12 +87,20 @@ class TrackerBase(object):
         raise NotImplementedError
 
     def get_status(self):
-        return {
-            'state': self.last_state,
-            'timer': self.timer,
-            'show': self.last_show_tuple,
-            'filename': self.last_filename,
-        }
+        if self.last_state == utils.TRACKER_NOT_FOUND:
+            return {
+                    'state': self.last_state,
+                    'timer': self.timer,
+                    'show': None,
+                    'filename': self.last_filename
+                    }
+        else:
+            return {
+                    'state': self.last_state,
+                    'timer': self.timer,
+                    'show': self.last_show_tuple,
+                    'filename': self.last_filename,
+                    }
 
     def _emit_signal(self, signal, *args):
         try:
@@ -136,7 +144,10 @@ class TrackerBase(object):
         self.last_time = time.time()
         if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
-            self._emit_signal('playing', last_show['id'], False, last_show_ep)
+            if self.last_state == utils.TRACKER_NOT_FOUND:
+                self._emit_signal('unrecognised', last_show, last_show_ep)
+            else: 
+                self._emit_signal('playing', last_show['id'], False, last_show_ep)
 
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
