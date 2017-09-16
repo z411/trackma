@@ -1673,6 +1673,7 @@ class AddDialog(QDialog):
         # Create table
         columns = ['Title', 'Type', 'Total']
         self.table = QTableWidget()
+        self.table.setSortingEnabled(True)
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setHighlightSections(False)
