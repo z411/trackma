@@ -2636,7 +2636,7 @@ class ShowSearchView(Gtk.TreeView):
         Gtk.TreeView.__init__(self)
 
         self.cols = dict()
-        i = 0
+        i = 1
         for name in ('Title', 'Type', 'Total'):
             self.cols[name] = Gtk.TreeViewColumn(name)
             self.cols[name].set_sort_column_id(i)
