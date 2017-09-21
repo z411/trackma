@@ -1643,6 +1643,7 @@ class DetailsWidget(QWidget):
 class AddDialog(QDialog):
     worker = None
     selected_show = None
+    results = []
 
     def __init__(self, parent, worker, current_status, default=None):
         QMainWindow.__init__(self, parent)
@@ -1674,6 +1675,7 @@ class AddDialog(QDialog):
         columns = ['Title', 'Type', 'Total']
         self.table = QTableWidget()
         self.table.setSortingEnabled(True)
+        self.table.horizontalHeader().sortIndicatorChanged.connect(self.sort_results)
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
         self.table.horizontalHeader().setHighlightSections(False)
@@ -1713,6 +1715,17 @@ class AddDialog(QDialog):
     def _enable_widgets(self, enable):
         self.search_btn.setEnabled(enable)
         self.table.setEnabled(enable)
+
+    def sort_results(self, index, order):
+        if not self.results:
+            return
+        rev = bool(order)
+        if index == 0:
+            self.results.sort(key=lambda s: s['title'], reverse=rev)
+        elif index == 1:
+            self.results.sort(key=lambda s: s['type'], reverse=rev)
+        else:
+            self.results.sort(key=lambda s: str(s['total']), reverse=rev)
 
     # Slots
     def s_search(self):
