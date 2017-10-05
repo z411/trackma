@@ -718,15 +718,25 @@ class Trackma(QMainWindow):
 
         i = 0
 
-        if status == self.worker.engine.mediainfo['status_start']:
-            for show in showlist:
-                self._update_row( widget, i, show, altnames.get(show['id']), library.get(show['id']) )
-                i += 1
+        if not self.worker.engine.config['scan_whole_list']:
+            if status == self.worker.engine.mediainfo['status_start']:
+                for show in showlist:
+                    self._update_row( widget, i, show, altnames.get(show['id']), library.get(show['id']) )
+                    i += 1
+            else:
+                for show in showlist:
+                    self._update_row( widget, i, show, altnames.get(show['id']) )
+                    i += 1                    
         else:
-            for show in showlist:
-                self._update_row( widget, i, show, altnames.get(show['id']) )
-                i += 1
-
+            if status != self.worker.engine.mediainfo['status_finish']:
+                for show in showlist:
+                    self._update_row( widget, i, show, altnames.get(show['id']), library.get(show['id']) )
+                    i += 1
+            else:
+                for show in showlist:
+                    self._update_row( widget, i, show, altnames.get(show['id']) )
+                    i += 1                    
+            
         widget.setSortingEnabled(True)
         widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
 
