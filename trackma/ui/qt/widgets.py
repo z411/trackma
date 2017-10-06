@@ -1,0 +1,310 @@
+# This file is part of Trackma.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import os
+
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QGridLayout,
+    QScrollArea, QProgressBar, QTableWidget, QTableWidgetItem)
+
+from trackma.ui.qt.workers import ImageWorker
+from trackma.ui.qt.util import getColor
+
+from trackma import utils
+
+class DetailsWidget(QWidget):
+    def __init__(self, parent, worker):
+        self.worker = worker
+
+        QWidget.__init__(self, parent)
+
+        # Build layout
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.show_title = QLabel()
+        show_title_font = QtGui.QFont()
+        show_title_font.setBold(True)
+        show_title_font.setPointSize(12)
+        self.show_title.setAlignment( QtCore.Qt.AlignCenter )
+        self.show_title.setFont(show_title_font)
+
+        info_area = QWidget()
+        info_layout = QGridLayout()
+
+        self.show_image = QLabel()
+        self.show_image.setAlignment( QtCore.Qt.AlignTop )
+        self.show_info = QLabel()
+        self.show_info.setWordWrap(True)
+        self.show_info.setAlignment( QtCore.Qt.AlignTop )
+        self.show_description = QLabel()
+        self.show_description.setWordWrap(True)
+        self.show_description.setAlignment( QtCore.Qt.AlignTop )
+
+        info_layout.addWidget( self.show_image,        0,0,1,1 )
+        info_layout.addWidget( self.show_info,         1,0,1,1 )
+        info_layout.addWidget( self.show_description,  0,1,2,1 )
+
+        info_area.setLayout(info_layout)
+
+        scroll_area = QScrollArea()
+        scroll_area.setBackgroundRole(QtGui.QPalette.Light)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(info_area)
+
+        main_layout.addWidget(self.show_title)
+        main_layout.addWidget(scroll_area)
+
+        self.setLayout(main_layout)
+
+    def worker_call(self, function, ret_function, *args, **kwargs):
+        # Run worker in a thread
+        self.worker.set_function(function, ret_function, *args, **kwargs)
+        self.worker.start()
+
+    def load(self, show):
+        self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], show['title']) )
+        self.show_title.setTextFormat(QtCore.Qt.RichText)
+        self.show_title.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.show_title.setOpenExternalLinks(True)
+
+        # Load show info
+        self.show_info.setText('Wait...')
+        self.worker_call('get_show_details', self.r_details_loaded, show)
+        api_info = self.worker.engine.api_info
+
+        # Load show image
+        if show.get('image'):
+            filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
+
+            if os.path.isfile(filename):
+                self.s_show_image(filename)
+            else:
+                self.show_image.setText('Downloading...')
+                self.image_worker = ImageWorker(show['image'], filename, (200, 280))
+                self.image_worker.finished.connect(self.s_show_image)
+                self.image_worker.start()
+        else:
+            self.show_image.setText('No image')
+
+    def s_show_image(self, filename):
+        self.show_image.setPixmap( QtGui.QPixmap( filename ) )
+
+    def r_details_loaded(self, result):
+        if result['success']:
+            details = result['details']
+
+            info_strings = []
+            description_strings = []
+            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'} # This might come down to personal preference
+            list_keys = {'Genres'} # Anilist gives genres as a list, need a special case to fix formatting
+
+            for line in details['extra']:
+                if line[0] and line[1]:
+                    if line[0] in description_keys:
+                        description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                    else:
+                        if line[0] in list_keys:
+                            description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
+                        elif len("%s" % line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
+                            info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                        else:
+                            info_strings.append( "<p><b>%s:</b> %s</p>" % (line[0], line[1]) )
+
+            info_string = ''.join(info_strings)
+            self.show_info.setText( info_string )
+            description_string = ''.join(description_strings)
+            self.show_description.setText( description_string )
+        else:
+            self.show_info.setText( 'There was an error while getting details.' )
+
+class EpisodeBar(QProgressBar):
+    """
+  Custom progress bar to show detailed information
+  about episodes
+    """
+    # Enum BarStyle
+    BarStyleBasic = 0   # Basic native ProgressBar appearance
+    BarStyle04 = 1      # Rectangular dual bar of Trackma v0.4
+    BarStyleHybrid = 2  # Native ProgressBar with v0.4 library subbar overlaid
+
+    _subvalue = -1
+    _episodes = []
+    _subheight = 5
+    _bar_style = BarStyle04
+    _show_text = False
+
+    def __init__(self, parent, colors):
+        QProgressBar.__init__(self, parent)
+        self.colors = colors
+
+    def paintEvent(self, event):
+        rect = QtCore.QRect(0,0,self.width(), self.height())
+
+        if self._bar_style is self.BarStyleBasic:
+            painter = QtGui.QPainter(self)
+            prog_options = QStyleOptionProgressBar()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            prog_options.textVisible = self._show_text
+            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+
+        elif self._bar_style is self.BarStyle04:
+            painter = QtGui.QPainter(self)
+            painter.setBrush(getColor(self.colors['progress_bg']))
+            painter.setPen(QtCore.Qt.transparent)
+            painter.drawRect(rect)
+            self.paintSubValue(painter)
+            if self.value() > 0:
+                if self.value() >= self.maximum():
+                    painter.setBrush(getColor(self.colors['progress_complete']))
+                    mid = self.width()
+                else:
+                    painter.setBrush(getColor(self.colors['progress_fg']))
+                    mid = int(self.width() / float(self.maximum()) * self.value())
+                progressRect = QtCore.QRect(0, 0, mid, self.height())
+                painter.drawRect(progressRect)
+            self.paintEpisodes(painter)
+
+        elif self._bar_style is self.BarStyleHybrid:
+            buffer = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+            painter = QtGui.QPainter(buffer)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+            painter.fillRect(rect, QtCore.Qt.transparent)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            prog_options = QStyleOptionProgressBar()
+            prog_options.maximum = self.maximum()
+            prog_options.progress = self.value()
+            prog_options.rect = rect
+            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
+            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
+            painter.setPen(QtCore.Qt.transparent)
+            self.paintSubValue(painter)
+            self.paintEpisodes(painter)
+            painter = QtGui.QPainter(self)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+            painter.drawImage(rect, buffer)
+            if self._show_text:
+                self.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
+
+    def paintSubValue(self, painter):
+        if self.subValue() > 0:
+            painter.setBrush(getColor(self.colors['progress_sub_bg']))
+            mid = int(self.width() / float(self.maximum()) * self.subValue())
+            progressRect = QtCore.QRect(
+                0,
+                self.height()-self._subheight,
+                mid,
+                self.height()-(self.height()-self._subheight)
+            )
+            painter.drawRect(progressRect)
+
+    def paintEpisodes(self, painter):
+        if self.episodes():
+            for episode in self.episodes():
+                painter.setBrush(getColor(self.colors['progress_sub_fg']))
+                if episode <= self.maximum():
+                    start = int(self.width() / float(self.maximum()) * (episode - 1))
+                    finish = int(self.width() / float(self.maximum()) * episode)
+                    progressRect = QtCore.QRect(
+                        start,
+                        self.height()-self._subheight,
+                        finish-start,
+                        self.height()-(self.height()-self._subheight)
+                    )
+                    painter.drawRect(progressRect)
+
+    def setSubValue(self, subvalue):
+        if subvalue > self.maximum():
+            self._subvalue = self.maximum()
+        else:
+            self._subvalue = subvalue
+
+        self.update()
+
+    def subValue(self):
+        return self._subvalue
+
+    def setEpisodes(self, episodes):
+        self._episodes = episodes
+        self.update()
+
+    def episodes(self):
+        return self._episodes
+
+    def setBarStyle(self, style, show_text):
+        self._bar_style = style
+        self._show_text = show_text
+        
+class ShowsTableWidget(QTableWidget):
+    """
+    Regular table widget with context menu for show actions.
+
+    """
+    def __init__(self, parent=None):
+        QTableWidget.__init__(self, parent)
+
+    def contextMenuEvent(self, event):
+        action = self.context_menu.exec_(event.globalPos())
+
+
+class ShowItem(QTableWidgetItem):
+    """
+    Regular item able to show colors and alignment
+
+    """
+
+    def __init__(self, text, color=None, alignment=None):
+        QTableWidgetItem.__init__(self, text)
+        if alignment:
+            self.setTextAlignment(alignment)
+        if color:
+            self.setBackground(color)
+
+
+class ShowItemNum(ShowItem):
+    def __init__(self, num, text, color=None):
+        ShowItem.__init__(self, text, color)
+        self.setTextAlignment(QtCore.Qt.AlignHCenter)
+        self.num = num
+
+    def __lt__(self, other):
+        return self.num < other.num
+
+
+class ShowItemDate(ShowItem):
+    def __init__(self, date, color=None):
+        if date:
+            try:
+                datestr = date.strftime("%Y-%m-%d")
+            except ValueError:
+                datestr = '?'
+        else:
+            datestr = '-'
+
+        self.date = date
+
+        ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
+
+    def __lt__(self, other):
+        if self.date and other.date:
+            return self.date < other.date
+        else:
+            return True
