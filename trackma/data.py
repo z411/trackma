@@ -36,7 +36,7 @@ class Data():
 
     """
     name = 'Data'
-    version = 5
+    version = 6
 
     msg = None
     api = None
@@ -208,9 +208,9 @@ class Data():
         """Get list from memory"""
         return self.showlist
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         # Tell API to search
-        results = self.api.search(criteria)
+        results = self.api.search(criteria, method)
         self.api.logout()
         if results:
             return results

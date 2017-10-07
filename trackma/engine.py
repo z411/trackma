@@ -403,13 +403,13 @@ class Engine:
         else:
             return None
 
-    def search(self, criteria):
+    def search(self, criteria, method="kw"):
         """
         Request a remote list of shows matching the criteria
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        return self.data_handler.search(str(criteria).strip())
+        return self.data_handler.search(criteria, method)
 
     def add_show(self, show, status=None):
         """

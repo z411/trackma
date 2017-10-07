@@ -18,13 +18,11 @@ pyqt_version = 5
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
-    QDialog, QGridLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit,
-    QPushButton, QTableView, QListView, QAbstractItemView, QHeaderView,
-    QDialogButtonBox)
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
+    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton)
 
-from trackma.ui.qt.models import AddTableModel, AddListModel
-from trackma.ui.qt.delegates import AddListDelegate
-from trackma.ui.qt.widgets import DetailsWidget
+from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
 
 class AddDialog(QDialog):
     worker = None
@@ -41,70 +39,73 @@ class AddDialog(QDialog):
         if default:
             self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
 
-        layout = QGridLayout()
+        layout = QVBoxLayout()
 
         # Create top layout
         top_layout = QHBoxLayout()
-        search_lbl = QLabel('Search terms:')
-        self.search_txt = QLineEdit(self)
+        self.search_rad = QRadioButton('By keyword:')
+        self.search_rad.setChecked(True)
+        self.search_txt = QLineEdit()
         self.search_txt.returnPressed.connect(self.s_search)
         self.search_txt.setFocus()
         if default:
             self.search_txt.setText(default)
         self.search_btn = QPushButton('Search')
         self.search_btn.clicked.connect(self.s_search)
-        top_layout.addWidget(search_lbl)
+        top_layout.addWidget(self.search_rad)
         top_layout.addWidget(self.search_txt)
         top_layout.addWidget(self.search_btn)
-
-        # Create table
-        #self.model = AddTableModel()
-        #self.table = QTableView()
         
-        self.model = AddListModel(api_info=self.worker.engine.api_info)
-        self.table = QListView()
-        self.table.setItemDelegate(AddListDelegate())
-        self.table.setFlow(QListView.LeftToRight)
-        self.table.setWrapping(True)
-
-        self.table.setModel(self.model)
-        #self.table.setSortingEnabled(True)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #self.table.setGridStyle(QtCore.Qt.NoPen)
+        # Create filter line
+        filters_layout = QHBoxLayout()
+        filters_layout.setAlignment(QtCore.Qt.AlignLeft)
         
-        self.model.setResults([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
+        self.season_rad = QRadioButton('By season:')
+        self.season_combo = QComboBox()
+        self.season_combo.addItem('Winter')
+        self.season_combo.addItem('Spring')
+        self.season_combo.addItem('Summer')
+        self.season_combo.addItem('Fall')
         
-        #if pyqt_version is 5:
-        #    self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        #else:
-        #    self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
-            
-        #self.table.currentItemChanged.connect(self.s_show_selected)
+        self.season_year = QSpinBox()
+        self.season_year.setRange(1900, 2017)
+        self.season_year.setValue(2017)
+        
+        view_combo = QComboBox()
+        view_combo.addItem('Table view')
+        view_combo.addItem('Card view')
+        view_combo.currentIndexChanged.connect(self.s_change_view)
+        
+        filters_layout.addWidget(self.season_rad)
+        filters_layout.addWidget(self.season_combo)
+        filters_layout.addWidget(self.season_year)
+        filters_layout.addWidget(view_combo)
 
-        """columns = ['Title', 'Type', 'Total']
-        self.table = QTableWidget()
-        self.table.horizontalHeader().sortIndicatorChanged.connect(self.sort_results)
-        self.table.setColumnCount(len(columns))
-        self.table.setHorizontalHeaderLabels(columns)
-        self.table.horizontalHeader().setHighlightSections(False)
-        """
+        # Create central content
+        self.contents = QStackedWidget()
+        
+        # Set up views
+        tableview = AddTableDetailsView(None, self.worker)
+        tableview.changed.connect(self.s_selected)
+        self.contents.addWidget(tableview)
+        
+        cardview = AddCardView(api_info=self.worker.engine.api_info)
+        cardview.changed.connect(self.s_selected)
+        self.contents.addWidget(cardview)
+        
+        self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
-        bottom_buttons = QDialogButtonBox(self)
+        bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
-        self.select_btn = bottom_buttons.addButton("Add", QDialogButtonBox.AcceptRole)
+        self.add_btn = bottom_buttons.addButton("Add", QDialogButtonBox.AcceptRole)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
-        # Info box
-        self.details = DetailsWidget(self, worker)
-
         # Finish layout
-        layout.addLayout(top_layout,     0, 0, 1, 2)
-        layout.addWidget(self.table,     1, 0, 1, 2)
-        #layout.addWidget(self.details,   1, 1, 1, 1)
-        layout.addWidget(bottom_buttons, 2, 0, 1, 2)
+        layout.addLayout(top_layout)
+        layout.addLayout(filters_layout)
+        layout.addWidget(self.contents)
+        layout.addWidget(bottom_buttons)
         self.setLayout(layout)
 
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -114,68 +115,57 @@ class AddDialog(QDialog):
 
     def _enable_widgets(self, enable):
         self.search_btn.setEnabled(enable)
-        self.table.setEnabled(enable)
+        self.contents.currentWidget().setEnabled(enable)
 
-    def sort_results(self, index, order):
-        if not self.results:
-            return
-        rev = bool(order)
-        if index == 0:
-            self.results.sort(key=lambda s: s['title'], reverse=rev)
-        elif index == 1:
-            self.results.sort(key=lambda s: s['type'], reverse=rev)
-        else:
-            self.results.sort(key=lambda s: str(s['total']), reverse=rev)
+    def set_results(self, results):
+        self.results = results
+        self.contents.currentWidget().setResults(self.results)
 
     # Slots
+    def s_change_view(self, item):
+        self.contents.currentWidget().getModel().setResults(None)
+        self.contents.setCurrentIndex(item)
+        self.contents.currentWidget().getModel().setResults(self.results)
+        
     def s_search(self):
-        self.search_btn.setEnabled(False)
-        self.select_btn.setEnabled(False)
-        self.table.clearSelection()
-        self.table.setEnabled(False)
-
-        self.worker_call('search', self.r_searched, self.search_txt.text())
-
-    def s_show_selected(self, new, old=None):
-        if not new:
-            return
-
-        index = new.row()
-        self.selected_show = self.results[index]
-        self.details.load(self.selected_show)
-        self.select_btn.setEnabled(True)
-
+        if self.search_rad.isChecked():
+            criteria = self.search_txt.text().strip()
+            if not criteria:
+                return
+            method = "kw"
+        elif self.season_rad.isChecked():
+            criteria = (self.season_combo.currentText().lower(), self.season_year.value())
+            method = "season"
+        
+        self.contents.currentWidget().clearSelection()
+        self.selected_show = None
+        
+        self._enable_widgets(True)
+        self.add_btn.setEnabled(False)
+        
+        self.worker_call('search', self.r_searched, criteria, method)
+    
+    def s_selected(self, show):
+        self.selected_show = show
+        self.add_btn.setEnabled(True)
+        
     def s_add(self):
         if self.selected_show:
             self.worker_call('add_show', self.r_added, self.selected_show, self.current_status)
 
     # Worker responses
     def r_searched(self, result):
+        self._enable_widgets(True)
+        
         if result['success']:
-            self.search_btn.setEnabled(True)
-            self.table.setEnabled(True)
-
-            self.results = result['results']
-            self.model.setResults(result['results'])
+            self.set_results(result['results'])
             
-            """self.table.setRowCount(len(self.results))
-            i = 0
-            for res in self.results:
-                self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2);
-                self.table.setItem(i, 0, ShowItem(res['title']))
-                self.table.setItem(i, 1, ShowItem(res['type']))
-                self.table.setItem(i, 2, ShowItem(str(res['total'])))
-
-                i += 1
+            """
             if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!
                 self.s_show_selected(self.table.item(0, 0))
             self.table.setCurrentItem(self.table.item(0, 0))"""
         else:
-            self.model.setResults(None)
-            #self.table.setRowCount(0)
-
-        self.search_btn.setEnabled(True)
-        self.table.setEnabled(True)
+            self.set_results(None)
 
     def r_added(self, result):
         if result['success']:

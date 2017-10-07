@@ -292,9 +292,9 @@ class EngineWorker(QtCore.QThread):
 
         return {'success': True, 'details': details}
 
-    def _search(self, terms):
+    def _search(self, criteria, method):
         try:
-            results = self.engine.search(terms)
+            results = self.engine.search(criteria, method)
         except utils.TrackmaError as e:
             self._error(e)
             return {'success': False}

@@ -20,7 +20,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QDialog, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QTableWidget,
     QAbstractItemView, QCheckBox, QPushButton, QComboBox, QHeaderView,
-    QMessageBox)
+    QMessageBox, QFormLayout, QLabel, QLineEdit, QDialogButtonBox)
     
 from trackma import utils
 

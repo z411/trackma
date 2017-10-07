@@ -21,6 +21,11 @@ class AddListDelegate(QStyledItemDelegate):
         self.fh = fm.height()
 
         super().__init__(parent)
+        
+    def _get_extra(self, extra, key):
+        for k, v in extra:
+            if k == key:
+                return v
 
     def paint(self, painter, option, index):
         outerRect = option.rect - QtCore.QMargins(MARGIN, MARGIN, MARGIN, MARGIN)
@@ -30,9 +35,11 @@ class AddListDelegate(QStyledItemDelegate):
         
         painter.save()
         
+        color = index.data(QtCore.Qt.BackgroundRole)
+        
         # Draw background box
         painter.setPen(QtGui.QPen(QtGui.QColor(210, 210, 210)))
-        painter.setBrush(QtGui.QBrush(QtGui.QColor(250, 250, 250)))
+        painter.setBrush(QtGui.QBrush(color.lighter(135)))
         painter.drawRect(outerRect)
         
         # Prepare to draw inside
@@ -46,7 +53,7 @@ class AddListDelegate(QStyledItemDelegate):
         # Create text QRect and draw the title background
         textRect = baseRect.adjusted(COLUMN_A+5, 0, 0, 0)
         textRect.setHeight(self.fh + 5)
-        painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 240, 200)))
+        painter.setBrush(QtGui.QBrush(color))
         painter.drawRect(textRect);
         
         # Set our font to bold
@@ -74,17 +81,27 @@ class AddListDelegate(QStyledItemDelegate):
         # Draw data
         painter.setFont(self.font)
         
+        # Dates
+        if data.get('start_date'):
+            d_from = data['start_date'].strftime('%d/%m/%y')
+        else:
+            d_from = '?'
+        if data.get('end_date'):
+            d_end = data['end_date'].strftime('%d/%m/%y')
+        else:
+            d_end = '?'
+        
         dataRect.translate(0, self.fh + 10)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop, "{} to {}".format(data.get('start_date'), data.get('end_date')))
+        painter.drawText(dataRect, QtCore.Qt.AlignTop, "{} to {}".format(d_from, d_end))
         dataRect.translate(0, self.fh + 5)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop, data['total'])
+        painter.drawText(dataRect, QtCore.Qt.AlignTop, str(data.get('total') or '?'))
         
         # Draw synopsis
         textRect.translate(0, self.fh + 5)
         textRect.setBottomRight(baseRect.bottomRight())
         
         if 'extra' in data:
-            painter.drawText(textRect, QtCore.Qt.AlignTop, data['extra'].get('synopsis'))
+            painter.drawText(textRect, QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self._get_extra(data['extra'], 'Synopsis'))
         
         # Draw select box
         if option.state & QStyle.State_Selected:

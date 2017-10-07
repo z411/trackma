@@ -46,6 +46,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'can_search_season': True,
         'date_next_ep': True,
         'status_start': 'watching',
         'status_finish': 'completed',
@@ -68,6 +69,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+        'can_search_season': False,
         'status_start': 'reading',
         'status_finish': 'completed',
         'statuses':  ['reading', 'completed', 'on-hold', 'dropped', 'plan to read'],
@@ -299,12 +301,26 @@ class libanilist(lib):
             # when the delete worked.
             pass
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
-        self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "{0}/search/{1}".format(self.mediatype, urllib.parse.quote_plus(criteria)), get=param)
+
+        if method == "kw":
+            self.msg.info(self.name, "Searching for {}...".format(criteria))
+            url = "{0}/search/{1}".format(self.mediatype, urllib.parse.quote_plus(criteria))
+        elif method == "season":
+            ssn, year = criteria
+            if ssn not in ["winter", "spring", "summer", "fall"]:
+                raise utils.APIError("Invalid season.")
+
+            self.msg.info(self.name, "Browsing {} {}...".format(ssn, year))
+            url = "browse/{}".format(self.mediatype)
+            param['season'] = ssn
+        else:
+            raise utils.APIError("Search method unsupported.")
+
+        data = self._request("GET", url, get=param)
 
         if type(data) == dict:
             # In case of error API returns a small JSON payload

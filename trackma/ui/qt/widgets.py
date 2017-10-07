@@ -19,12 +19,17 @@ import os
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QGridLayout,
-    QScrollArea, QProgressBar, QTableWidget, QTableWidgetItem)
+    QScrollArea, QProgressBar, QTableWidget, QTableWidgetItem,
+    QTableView, QAbstractItemView, QSplitter, QHeaderView, QListView)
 
+from trackma.ui.qt.delegates import AddListDelegate
+from trackma.ui.qt.models import AddTableModel, AddListModel, AddListProxy
 from trackma.ui.qt.workers import ImageWorker
 from trackma.ui.qt.util import getColor
 
 from trackma import utils
+
+pyqt_version = 5
 
 class DetailsWidget(QWidget):
     def __init__(self, parent, worker):
@@ -308,3 +313,91 @@ class ShowItemDate(ShowItem):
             return self.date < other.date
         else:
             return True
+
+class AddCardView(QListView):
+    changed = QtCore.pyqtSignal(dict)
+    
+    def __init__(self, parent=None, api_info=None):
+        super().__init__(parent)
+        
+        m = AddListModel(api_info=api_info)
+        proxy = AddListProxy()
+        proxy.setSourceModel(m)
+        proxy.sort(0, QtCore.Qt.AscendingOrder)
+        
+        self.setItemDelegate(AddListDelegate())
+        self.setFlow(QListView.LeftToRight)
+        self.setWrapping(True)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setModel(proxy)
+        
+        self.selectionModel().currentRowChanged.connect(self.s_show_selected)
+    
+    def s_show_selected(self, new, old=None):
+        if not new:
+            return
+
+        index = self.model().mapToSource(new).row()
+        selected_show = self.getModel().results[index]
+        
+        self.changed.emit(selected_show)
+        
+    def setResults(self, results):
+        self.getModel().setResults(results)
+        
+    def getModel(self):
+        return self.model().sourceModel()
+
+
+class AddTableDetailsView(QSplitter):
+    """ This is a splitter widget that contains a table and
+    a details widget. Used in the Add Show dialog. """
+    
+    changed = QtCore.pyqtSignal(dict)
+    
+    def __init__(self, parent=None, worker=None):
+        super().__init__(parent)
+        
+        self.table = QTableView()
+        m = AddTableModel()
+        proxy = QtCore.QSortFilterProxyModel()
+        proxy.setSourceModel(m)
+        
+        self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setModel(proxy)
+        self.table.setSortingEnabled(True)
+        
+        if pyqt_version is 5:
+            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        else:
+            self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
+        
+        self.table.selectionModel().currentRowChanged.connect(self.s_show_selected)
+        self.addWidget(self.table)
+        
+        self.details = DetailsWidget(parent, worker)
+        self.addWidget(self.details)
+
+    def s_show_selected(self, new, old=None):
+        if not new:
+            return
+
+        index = self.table.model().mapToSource(new).row()
+        selected_show = self.getModel().results[index]
+        self.details.load(selected_show)
+        
+        self.changed.emit(selected_show)
+        
+    def setResults(self, results):
+        self.getModel().setResults(results)
+
+    def getModel(self):
+        return self.table.model().sourceModel()
+        
+    def clearSelection(self):
+        return self.table.clearSelection()
