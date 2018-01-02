@@ -17,6 +17,7 @@
 
 import sys
 import os
+import subprocess
 
 pyqt_version = 0
 skip_pyqt5 = "PYQT4" in os.environ  # TODO: Make this a program argument or something
@@ -227,6 +228,8 @@ class Trackma(QMainWindow):
         action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QAction('Rescan &Library', self)
         action_scan_library.triggered.connect(self.s_scan_library)
+        action_open_folder = QAction('Open containing folder', self)
+        action_open_folder.triggered.connect(self.s_open_folder)
 
         action_reload = QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
@@ -261,6 +264,7 @@ class Trackma(QMainWindow):
         #self.menu_show_context.addAction(action_play_dialog)
         self.menu_show_context.addMenu(self.menu_play)
         self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(action_open_folder)
         self.menu_show_context.addAction(action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
@@ -1228,6 +1232,23 @@ class Trackma(QMainWindow):
         if ok:
             self.worker.engine.altname(self.selected_show_id, str(new_altname))
             self.ws_changed_show(show, altname=new_altname)
+
+
+    def s_open_folder(self):
+        #get needed show info
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        try:
+            filename = self.worker.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+            self.error("No folder found.")
 
     def s_retrieve(self):
         queue = self.worker.engine.get_queue()
