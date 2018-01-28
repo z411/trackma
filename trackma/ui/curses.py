@@ -368,7 +368,7 @@ class Trackma_urwid():
         if item:
             show = self.engine.get_show_info(item.showid)
             self.status(show['title'])
-            self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
+            self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(item.showid))
 
     def do_score(self):
         item = self._get_selected_item()
