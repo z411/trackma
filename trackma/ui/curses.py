@@ -23,6 +23,7 @@ except ImportError:
           "urwid package.")
     sys.exit(-1)
 
+import os
 import re
 import urwid
 import webbrowser
@@ -66,7 +67,7 @@ class Trackma_urwid():
 
         palette = []
         for k, color in self.config['palette'].items():
-            palette.append( (k, color[0], color[1]) )
+            palette.append(tuple([k] + color))
 
         # Prepare header
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
@@ -117,7 +118,13 @@ class Trackma_urwid():
         self.viewing_info = False
 
         self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
-        self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
+
+        # Set up screen, enabling 256-color mode if the terminal supports it
+        screen = urwid.raw_display.Screen()
+        if os.environ['TERM'].endswith('-256color'):
+            screen.set_terminal_properties(colors=256)
+
+        self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=screen)
 
         self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
