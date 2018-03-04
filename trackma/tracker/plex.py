@@ -55,12 +55,13 @@ class PlexTracker(tracker.TrackerBase):
         if self.get_plex_status() == IDLE:
             return None
 
-        meta = self._get_sessions_info("Video", "key")
-        meta_url = "http://"+self.host_port+meta
-        mres = self._get_xml_info(meta_url, "Part", "file")
-        name = urllib.parse.unquote(ntpath.basename(mres))
+        try:
+            title = self._get_sessions_info("Video", "grandparentTitle")
+            ep = self._get_sessions_info("Video", "index")
+            return title + ' - ' + ep + '.mkv'
+        except IndexError:
+            return None
 
-        return name
 
     def timer_from_file(self):
         # returns 80% of video duration for the update timer,
