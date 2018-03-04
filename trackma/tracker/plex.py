@@ -68,9 +68,11 @@ class PlexTracker(tracker.TrackerBase):
         if self.get_plex_status() == IDLE:
             return None
 
-        duration = int(self._get_sessions_info("Video", "duration"))
-
-        return round((duration*0.80)/60000)*60
+        try:
+            duration = int(self._get_sessions_info("Video", "duration"))
+            return round((duration*0.80)/60000)*60
+        except IndexError:
+            return None
 
     def observe(self, watch_dir, interval):
         self.msg.info(self.name, "Using Plex.")
@@ -87,9 +89,12 @@ class PlexTracker(tracker.TrackerBase):
                 else:
                     self.wait_s = self.timer_from_file()
                     
-                filename = self.playing_file()
-                (state, show_tuple) = self._get_playing_show(filename)
-                self.update_show_if_needed(state, show_tuple)
+                try:
+                    filename = self.playing_file()
+                    (state, show_tuple) = self._get_playing_show(filename)
+                    self.update_show_if_needed(state, show_tuple)
+                except IndexError:
+                    pass
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
                 self.msg.warn(self.name, "Plex Media Server is not running.")
                 
