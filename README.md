@@ -109,6 +109,7 @@ Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUS
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
+- **Void Linux:** https://github.com/voidlinux/void-packages/blob/master/srcpkgs/trackma/template
 
 Configuration
 -------------
