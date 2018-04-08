@@ -103,7 +103,7 @@ $ trackma-gtk
 $ trackma-qt
 </pre>
 
-Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUSE.
+Trackma also has user-provided packages for several distributions.
 
 - **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
@@ -113,7 +113,7 @@ Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUS
 
 A user from the community also is providing a Docker image:
 
-- https://hub.docker.com/r/frosty5689/trackma/
+- **Docker:** https://hub.docker.com/r/frosty5689/trackma/
 
 Configuration
 -------------
