@@ -111,6 +111,10 @@ Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUS
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
 - **Void Linux:** https://github.com/voidlinux/void-packages/blob/master/srcpkgs/trackma/template
 
+A user from the community also is providing a Docker image:
+
+- https://hub.docker.com/r/frosty5689/trackma/
+
 Configuration
 -------------
 
