@@ -15,6 +15,8 @@
 #
 
 import sys
+import os
+import subprocess
 
 try:
     import urwid
@@ -131,6 +133,7 @@ class Trackma_urwid():
                     'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
+                    'openfolder': self.do_openfolder,
                     'play_random': self.do_play_random,
                     'status': self.do_status,
                     'score': self.do_score,
@@ -327,6 +330,24 @@ class Trackma_urwid():
             show = self.engine.get_show_info(item.showid)
             self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
 
+    def do_openfolder(self):
+        item = self._get_selected_item()
+
+        try:
+            show = self.engine.get_show_info(item.showid)
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+             self.error("No folder found.")
+
+
     def do_play_random(self):
         try:
             self.engine.play_random()
@@ -352,7 +373,7 @@ class Trackma_urwid():
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
-        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
         helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
