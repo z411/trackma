@@ -309,6 +309,7 @@ curses_defaults = {
         'sort_order': 'r',
         'update': 'u',
         'play': 'p',
+        'openfolder': 'o',
         'play_random': '&',
         'status': 'f6',
         'score': 'k',
