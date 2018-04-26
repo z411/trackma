@@ -15,6 +15,8 @@
 #
 
 import sys
+import os
+import subprocess
 
 try:
     import readline
@@ -77,6 +79,7 @@ class Trackma_cmd(cmd.Cmd):
         'add':          1,
         'delete':       1,
         'play':         (1, 2),
+        'openfolder':   1,
         'update':       2,
         'score':        2,
         'status':       2,
@@ -486,6 +489,26 @@ class Trackma_cmd(cmd.Cmd):
                 playing_next = True
 
             played_episode = self.engine.play_episode(show, episode)
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
+    def do_openfolder(self, args):
+        """
+        Opens the folder containing the show
+
+        :param show Show index or name.
+        :usage openfolder <show index or name>
+        """
+
+        try:
+            show = self._get_show(args[0])
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            self.display_error("Could not open folder.")
         except utils.TrackmaError as e:
             self.display_error(e)
 
