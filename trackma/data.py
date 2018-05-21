@@ -371,8 +371,12 @@ class Data():
 
             # Run through queue
             items_processed = []
-            for i in range(len(self.queue)):
-                item = self.queue.pop(0)
+            while True:
+                try:
+                    item = self.queue.pop(0)
+                except IndexError:
+                    break
+
                 showid = item['id']
 
                 try:
