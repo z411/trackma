@@ -730,7 +730,7 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
+                    i += 1
         else:
             if status != self.worker.engine.mediainfo['status_finish']:
                 for show in showlist:
@@ -739,8 +739,8 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
-            
+                    i += 1
+
         widget.setSortingEnabled(True)
         widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
 
@@ -789,10 +789,13 @@ class Trackma(QMainWindow):
         widget.setItem(row, 4, ShowItemNum( percent, "{:.0%}".format(percent), color ))
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
-        and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show \
-        and dateutil_available:
-            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
+                and self.mediainfo['date_next_ep'] \
+                and 'next_ep_time' in show \
+                and dateutil_available:
+            if type(show['next_ep_time']) is int:
+              next_ep_dt = datetime.datetime.fromtimestamp(show['next_ep_time'], dateutil.tz.tzutc())
+            else:
+              next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
             delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
             widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
         else:
