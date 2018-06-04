@@ -43,7 +43,7 @@ TRACKER_IGNORED = 4
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
             "http://omaera.org/trackma/anilist.html",
-            "https://anilist.co/api/auth/authorize?grant_type=authorization_pin&client_id=z411-gdjc3&response_type=pin"
+            "https://anilist.co/api/v2/oauth/authorize?client_id=524&response_type=code"
                 ),
     'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),

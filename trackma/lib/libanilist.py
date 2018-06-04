@@ -49,13 +49,13 @@ class libanilist(lib):
         'date_next_ep': True,
         'status_start': 'watching',
         'status_finish': 'completed',
-        'statuses':  ['Watching', 'Completed', 'Paused', 'Dropped', 'Planning'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
-            'Watching': 'Watching',
-            'Completed': 'Completed',
-            'Paused': 'On Hold',
-            'Dropped': 'Dropped',
-            'Planning': 'Plan to Watch'
+            'CURRENT': 'Watching',
+            'COMPLETED': 'Completed',
+            'PAUSED': 'On Hold',
+            'DROPPED': 'Dropped',
+            'PLANNING': 'Plan to Watch'
         },
         'score_max': 100,
         'score_step': 1,
@@ -70,13 +70,13 @@ class libanilist(lib):
         'can_play': False,
         'status_start': 'reading',
         'status_finish': 'completed',
-        'statuses':  ['reading', 'completed', 'on-hold', 'dropped', 'plan to read'],  # TODO
+        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
-            'reading': 'Reading',
-            'completed': 'Completed',
-            'on-hold': 'On Hold',
-            'dropped': 'Dropped',
-            'plan to read': 'Plan to Read'
+            'CURRENT': 'Watching',
+            'COMPLETED': 'Completed',
+            'PAUSED': 'On Hold',
+            'DROPPED': 'Dropped',
+            'PLANNING': 'Plan to Read'
         },
         'score_max': 100,
         'score_step': 1,
@@ -92,9 +92,6 @@ class libanilist(lib):
     query_url = 'https://graphql.anilist.co'
     client_id = '524'  # Trackma v2 testing
     _client_secret = 'mBxS3BNBtVHdluPC00KenhVKAgwm5NSem6sIfxua'
-    #url = 'https://anilist.co/api/'
-    #client_id = "z411-gdjc3"
-    #_client_secret = "MyzwuYoMqPPglXwCTcexG1i"
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
@@ -229,6 +226,7 @@ class libanilist(lib):
       name
       isCustomList
       isSplitCompletedList
+      status
       entries {
         ... mediaListEntry
       }
@@ -284,7 +282,7 @@ fragment mediaListEntry on MediaList {
             return showlist
 
         for remotelist in data['lists']:
-            my_status = remotelist['name']
+            my_status = remotelist['status']
             if my_status not in self.media_info()['statuses']:
                 continue
             if remotelist['isCustomList']:
@@ -295,10 +293,12 @@ fragment mediaListEntry on MediaList {
                 show = utils.show()
                 media = item['media']
                 showid = media['id']
+                aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
                 showdata = {
+                    'my_id': item['id'],
                     'id': showid,
                     'title': media['title']['userPreferred'],
-                    'aliases': [media['title']['romaji'], media['title']['english'], media['title']['native']],
+                    'aliases': aliases,
                     'type': media['format'],  # Need to reformat output
                     'status': self.status_translate[media['status']],
                     'my_progress': self._c(item['progress']),
@@ -320,30 +320,76 @@ fragment mediaListEntry on MediaList {
                 showlist[showid] = show
         return showlist
 
+    def compare_friend_lists(self, my_list, their_lists):
+        for id,show in my_list.items():
+            if 'friends_progress' not in show:
+                show['friends_progress'] = {}
+            for friend,list in their_lists.items():
+                if id in list:
+                    show['friends_progress'][friend] = list[id]['my_progress']
+                else:
+                    show['friends_progress'][friend] = -1
+        return my_list
+
+    args_SaveMediaListEntry = {
+        'id': 'Int',                         # The list entry id, required for updating
+        'mediaId': 'Int',                    # The id of the media the entry is of
+        'status': 'MediaListStatus',         # The watching/reading status
+        'score': 'Float',                    # The score of the media in the user's chosen scoring method
+        'scoreRaw': 'Int',                   # The score of the media in 100 point
+        'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
+        'progressVolumes': 'Int',            # The amount of volumes read by the user
+        'repeat': 'Int',                     # The amount of times the user has rewatched/read the media
+        'priority': 'Int',                   # Priority of planning
+        'private': 'Boolean',                # If the entry should only be visible to authenticated user
+        'notes': 'String',                   # Text notes
+        'hiddenFromStatusLists': 'Boolean',  # If the entry shown be hidden from non-custom lists
+        'customLists': '[String]',           # Array of custom list names which should be enabled for this entry
+        'advancedScores': '[Float]',         # Array of advanced scores
+        'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
+        'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
+    }
+    def _update_entry(self, item):
+        """
+        New entries will lack a list entry id, while updates will include one.
+        In the case of a new entry, we want to record the new id.
+        """
+        values = { 'mediaId': item['id'] }
+        if 'my_id' in item and item['my_id']:
+            values['id'] = item['my_id']
+        if 'my_progress' in item:
+            values['progress'] = item['my_progress']
+        if 'my_status' in item:
+            values['status'] = item['my_status']
+        if 'my_score' in item:
+            values['score'] = item['my_score']
+
+        vars_defn = ', '.join(['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
+        subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
+        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id}} }}'.format(vars_defn, subs_defn)
+
+        data = self._request(query, values)['data']
+        return data['SaveMediaListEntry']['id']
+
     def add_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Adding item %s..." % item['title'])
-        self._update_entry(item, "POST")
+        return self._update_entry(item)
 
     def update_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Updating item %s..." % item['title'])
-        self._update_entry(item, "PUT")
+        self._update_entry(item)
 
     def delete_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
-
-        try:
-            data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
-        except ValueError:
-            # An empty document, without any JSON, is returned
-            # when the delete worked.
-            pass
+        query = 'mutation ($id: Int) {DeleteMediaListEntry(id: $id){deleted} }'
+        variables = {'id': item['my_id']}
+        self._request(query, variables)
 
     def search(self, criteria):
         self.check_credentials()
-
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 
         query = '''query ($query: String, $type: MediaType) {
@@ -417,6 +463,10 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+      relations {
+          edges {relationType}
+          nodes { id type title {userPreferred} }
+      }
   }
 }'''
 
@@ -431,33 +481,6 @@ fragment mediaListEntry on MediaList {
     def media_info(self):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
-
-    def _update_entry(self, item, method):
-        values = { 'id': item['id'] }
-        if 'my_progress' in item:
-            values[self.watched_str] = item['my_progress']
-        if 'my_status' in item:
-            values['list_status'] = item['my_status']
-        if 'my_score' in item:
-            values['score'] = item['my_score']
-
-        query = '''
-mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $private: Boolean, $notes: String, $hiddenFromStatusLists: Boolean, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
-  SaveMediaListEntry(mediaId: $mediaId, status: $status, score: $score, progress: $progress, private: $private, notes: $notes, hiddenFromStatusLists: $hiddenFromStatusLists, startedAt: $startedAt, completedAt: $completedAt) {
-    id
-    status
-    score
-    progress
-    private
-    notes
-    hiddenFromStatusLists
-    startedAt
-    completedAt
-  }
-}'''
-
-        data = self._request(method, "{}list".format(self.mediatype), post=values, auth=True)
-        return True
 
     def _parse_info(self, item):
         info = utils.show()
