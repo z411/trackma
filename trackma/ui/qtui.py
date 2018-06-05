@@ -742,7 +742,7 @@ class Trackma(QMainWindow):
                     i += 1                    
             
         widget.setSortingEnabled(True)
-        widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
+        widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
         # Update tab name with total
         tab_index = self.statuses_nums.index(status)
@@ -1091,6 +1091,10 @@ class Trackma(QMainWindow):
             self._select_show(show)
         else:
             self._select_show(None)
+
+    def s_update_sort(self, index, order):
+        self.config['sort_index'] = index
+        self.config['sort_order'] = order
 
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -1467,6 +1471,7 @@ class Trackma(QMainWindow):
                     self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
+                self.show_lists[status].horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
