@@ -402,6 +402,8 @@ qt_defaults = {
         'progress_sub_fg': '#5187B1',
         'progress_complete': '#00D200',
     },
+    'sort_index': 1,
+    'sort_order': 0,
 }
 
 qt_per_api_defaults = {
