@@ -80,7 +80,7 @@ class Trackma_cmd(cmd.Cmd):
         'delete':       1,
         'play':         (1, 2),
         'openfolder':   1,
-        'update':       2,
+        'update':       (1, 2),
         'score':        2,
         'status':       2,
     }
@@ -269,7 +269,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_filter(self, args):
         """
-        Changes the filtering of list by status.s
+        Changes the filtering of list by status (shows current if empty).
 
         :optparam status Name of status to filter
         :usage filter [filter type]
@@ -302,7 +302,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_mediatype(self, args):
         """
-        Reloads engine with different mediatype.
+        Reloads engine with different mediatype (shows current if empty).
         Call with no arguments to see supported mediatypes.
 
         :optparam mediatype Mediatype name
@@ -467,7 +467,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_play(self, args):
         """
-        Starts the media player with the specified episode number (next if not specified).
+        Starts the media player with the specified episode number (next if unspecified).
 
         :param show Episode index or title.
         :optparam ep Episode number. Assume next if not specified.
@@ -514,15 +514,19 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_update(self, args):
         """
-        Updates the progress of a show to the specified episode.
+        Updates the progress of a show to the specified episode (next if unspecified).
 
         :param show Show index or name.
-        :param ep Episode number (numeric).
-        :usage update <show index or name> <episode number>
+        :optparam ep Episode number (numeric).
+        :usage update <show index or name> [episode number]
         """
         try:
             show = self._get_show(args[0])
-            self.engine.set_episode(show['id'], args[1])
+
+            if len(args) > 1:
+                self.engine.set_episode(show['id'], args[1])
+            else:
+                self.engine.set_episode(show['id'], show['my_progress']+1)
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -574,7 +578,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_altname(self, args):
         """
-        Changes the alternative name of a show.
+        Changes the alternative name of a show (removes if unspecified).
         Use the command 'altname' without arguments to clear the alternative
         name.
 

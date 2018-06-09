@@ -322,7 +322,7 @@ class Trackma_urwid():
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
-            self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
+            self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress']+1)
 
     def do_play(self):
         item = self._get_selected_item()
