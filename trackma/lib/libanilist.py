@@ -143,10 +143,8 @@ class libanilist(lib):
             ))
 
         try:
-            print(url)
-            print(repr(post))
             response = self.opener.open(request, timeout = 10)
-            return json.loads(response.read().decode('utf-8'))
+            return json.load(response)
         except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid request: %s" % e.read())
@@ -161,7 +159,7 @@ class libanilist(lib):
         else:
             data = {'query': query}
 
-        return self._raw_request('POST', self.query_url, jsonpost=data)
+        return self._raw_request('POST', self.query_url, jsonpost=data, auth=True)
 
     def check_credentials(self):
         if not self.userid:
