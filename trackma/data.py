@@ -371,6 +371,7 @@ class Data():
 
             # Run through queue
             items_processed = []
+            items_failed = []
             while True:
                 try:
                     item = self.queue.pop(0)
@@ -408,12 +409,15 @@ class Data():
                 except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
                     self.msg.debug(self.name, "Info: %s" % e)
-                    self.queue.append(item)
+                    items_failed.append(item)
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
-                    self.queue.append(item)
+                    items_failed.append(item)
                 #except TypeError:
                 #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
+
+            if items_failed:
+                self.queue += items_failed
 
             self.api.logout()
             self._save_cache()
