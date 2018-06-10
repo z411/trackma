@@ -1855,7 +1855,12 @@ class Settings(Gtk.Window):
         self.set_title('Global Settings')
         self.set_border_width(10)
 
-        ### Play Next ###
+        ### Library ###
+        header0 = Gtk.Label()
+        header0.set_text('<b>Library</b>')
+        header0.set_use_markup(True)
+        header0.set_xalign(0)
+
         lbl_player = Gtk.Label('Media Player')
         lbl_player.set_size_request(120, -1)
         lbl_player.set_xalign(0)
@@ -1864,29 +1869,45 @@ class Settings(Gtk.Window):
         playerbrowse_button = Gtk.Button('Browse...')
         playerbrowse_button.connect("clicked", self.__do_browse, 'Select player', self.txt_player)
 
-        header0 = Gtk.Label()
-        header0.set_text('<b>Play Next</b>')
-        header0.set_use_markup(True)
-        header0.set_xalign(0)
-
         line0 = Gtk.HBox(False, 5)
         line0.pack_start(lbl_player, False, False, 5)
         line0.pack_start(self.txt_player, True, True, 0)
         line0.pack_start(playerbrowse_button, False, False, 0)
-        
+
+        lbl_searchdir = Gtk.Label('Library Directory')
+        lbl_searchdir.set_size_request(120, -1)
+        lbl_searchdir.set_xalign(0)
+        self.txt_searchdir = Gtk.Entry()
+        self.txt_searchdir.set_max_length(4096)
+        self.browse_button = Gtk.Button('Browse...')
+        self.browse_button.connect("clicked", self.__do_browse, 'Select library directory', self.txt_searchdir, True)
+
+        line1 = Gtk.HBox(False, 5)
+        line1.pack_start(lbl_searchdir, False, False, 5)
+        line1.pack_start(self.txt_searchdir, True, True, 0)
+        line1.pack_start(self.browse_button, False, False, 0)
+
+        lbl_library_options = Gtk.Label('Library options')
+        lbl_library_options.set_size_request(120, -1)
+        lbl_library_options.set_xalign(0)
+        self.chk_library_autoscan = Gtk.CheckButton('Rescan library at startup')
+        self.chk_scan_whole_list  = Gtk.CheckButton('Scan through whole list')
+        self.chk_library_full_path  = Gtk.CheckButton('Take subdirectory name into account')
+
+        lin_library_options = Gtk.HBox(False, 5)
+        lin_library_options.pack_start(lbl_library_options, False, False, 5)
+        lin_library_options_v = Gtk.VBox(False, 0)
+        lin_library_options_v.pack_start(self.chk_library_autoscan, False, False, 0)
+        lin_library_options_v.pack_start(self.chk_scan_whole_list, False, False, 0)
+        lin_library_options_v.pack_start(self.chk_library_full_path, False, False, 0)
+        lin_library_options.pack_start(lin_library_options_v, False, False, 0)
+
         ### Tracker ###
 
         # Labels
         lbl_process = Gtk.Label('Process Name')
         lbl_process.set_size_request(120, -1)
         lbl_process.set_xalign(0)
-        lbl_searchdir = Gtk.Label('Library Directory')
-        lbl_searchdir.set_size_request(120, -1)
-        lbl_searchdir.set_xalign(0)
-        lbl_library_options = Gtk.Label('Library options')
-        lbl_library_options.set_size_request(120, -1)
-        lbl_library_options.set_xalign(0)
-
         lbl_tracker_enabled = Gtk.Label('Enable Tracker')
         lbl_tracker_enabled.set_size_request(120, -1)
         lbl_tracker_enabled.set_xalign(0)
@@ -1900,13 +1921,6 @@ class Settings(Gtk.Window):
         # Entries
         self.txt_process = Gtk.Entry()
         self.txt_process.set_max_length(4096)
-        self.txt_searchdir = Gtk.Entry()
-        self.txt_searchdir.set_max_length(4096)
-        self.chk_library_autoscan = Gtk.CheckButton('Auto-scan at start')
-        self.browse_button = Gtk.Button('Browse...')
-        self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
-        self.chk_library_autoscan = Gtk.CheckButton('Rescan library at startup')
-        self.chk_scan_whole_list  = Gtk.CheckButton('Scan through whole list')
         self.chk_tracker_enabled = Gtk.CheckButton()
         self.chk_tracker_enabled.connect("toggled", self.tracker_type_sensitive)
         self.spin_tracker_update_wait = Gtk.SpinButton()
@@ -1934,14 +1948,9 @@ class Settings(Gtk.Window):
 
         # HBoxes
         header1 = Gtk.Label()
-        header1.set_text('<b>Tracker Options</b>')
+        header1.set_text('<b>Tracker</b>')
         header1.set_use_markup(True)
         header1.set_xalign(0)
-
-        line1 = Gtk.HBox(False, 5)
-        line1.pack_start(lbl_searchdir, False, False, 0)
-        line1.pack_start(self.txt_searchdir, True, True, 0)
-        line1.pack_start(self.browse_button, False, False, 0)
 
         line2 = Gtk.HBox(False, 5)
         line2.pack_start(lbl_process, False, False, 5)
@@ -1953,10 +1962,6 @@ class Settings(Gtk.Window):
         line3.pack_start(self.rbtn_tracker_local, False, False, 0)
         line3.pack_start(self.rbtn_tracker_plex, False, False, 0)
 
-        lin_library_options = Gtk.HBox(False, 5)
-        lin_library_options.pack_start(lbl_library_options, False, False, 5)
-        lin_library_options.pack_start(self.chk_library_autoscan, False, False, 0)
-        lin_library_options.pack_start(self.chk_scan_whole_list, False, False, 0)
 
         line8 = Gtk.HBox(False, 5)
         line8.pack_start(lbl_tracker_update_wait, False, False, 5)
@@ -2177,10 +2182,11 @@ class Settings(Gtk.Window):
         page0 = Gtk.VBox(False, 10)
         page0.set_border_width(10)
         page0.pack_start(header0, False, False, 0)
+        page0.pack_start(line0, False, False, 0)
         page0.pack_start(line1, False, False, 0)
+        page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(header1, False, False, 0)
         page0.pack_start(line3, False, False, 0)
-        page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(line2, False, False, 0)
         page0.pack_start(line8, False, False, 0)
         page0.pack_start(line9, False, False, 0)
@@ -2221,6 +2227,7 @@ class Settings(Gtk.Window):
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_library_autoscan.set_active(self.engine.get_config('library_autoscan'))
         self.chk_scan_whole_list.set_active(self.engine.get_config('scan_whole_list'))
+        self.chk_library_full_path.set_active(self.engine.get_config('library_full_path'))
         self.txt_plex_host.set_text(self.engine.get_config('plex_host'))
         self.txt_plex_port.set_text(self.engine.get_config('plex_port'))
         self.chk_tracker_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
@@ -2279,6 +2286,8 @@ class Settings(Gtk.Window):
                 self.chk_library_autoscan.get_active())
         self.engine.set_config('scan_whole_list',
                 self.chk_scan_whole_list.get_active())
+        self.engine.set_config('library_full_path',
+                self.chk_library_full_path.get_active())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())

@@ -15,6 +15,8 @@
 #
 
 import sys
+import os
+import subprocess
 
 try:
     import readline
@@ -77,7 +79,8 @@ class Trackma_cmd(cmd.Cmd):
         'add':          1,
         'delete':       1,
         'play':         (1, 2),
-        'update':       2,
+        'openfolder':   1,
+        'update':       (1, 2),
         'score':        2,
         'status':       2,
     }
@@ -266,7 +269,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_filter(self, args):
         """
-        Changes the filtering of list by status.s
+        Changes the filtering of list by status (shows current if empty).
 
         :optparam status Name of status to filter
         :usage filter [filter type]
@@ -299,7 +302,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_mediatype(self, args):
         """
-        Reloads engine with different mediatype.
+        Reloads engine with different mediatype (shows current if empty).
         Call with no arguments to see supported mediatypes.
 
         :optparam mediatype Mediatype name
@@ -464,7 +467,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_play(self, args):
         """
-        Starts the media player with the specified episode number (next if not specified).
+        Starts the media player with the specified episode number (next if unspecified).
 
         :param show Episode index or title.
         :optparam ep Episode number. Assume next if not specified.
@@ -489,17 +492,41 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
-    def do_update(self, args):
+    def do_openfolder(self, args):
         """
-        Updates the progress of a show to the specified episode.
+        Opens the folder containing the show
 
         :param show Show index or name.
-        :param ep Episode number (numeric).
-        :usage update <show index or name> <episode number>
+        :usage openfolder <show index or name>
+        """
+
+        try:
+            show = self._get_show(args[0])
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            self.display_error("Could not open folder.")
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
+    def do_update(self, args):
+        """
+        Updates the progress of a show to the specified episode (next if unspecified).
+
+        :param show Show index or name.
+        :optparam ep Episode number (numeric).
+        :usage update <show index or name> [episode number]
         """
         try:
             show = self._get_show(args[0])
-            self.engine.set_episode(show['id'], args[1])
+
+            if len(args) > 1:
+                self.engine.set_episode(show['id'], args[1])
+            else:
+                self.engine.set_episode(show['id'], show['my_progress']+1)
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -551,7 +578,7 @@ class Trackma_cmd(cmd.Cmd):
 
     def do_altname(self, args):
         """
-        Changes the alternative name of a show.
+        Changes the alternative name of a show (removes if unspecified).
         Use the command 'altname' without arguments to clear the alternative
         name.
 

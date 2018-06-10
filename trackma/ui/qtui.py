@@ -17,6 +17,8 @@
 
 import sys
 import os
+import datetime
+import subprocess
 
 pyqt_version = 0
 skip_pyqt5 = "PYQT4" in os.environ  # TODO: Make this a program argument or something
@@ -92,16 +94,6 @@ except ImportError:
         print("Warning: PIL or Pillow isn't available. "
               "Preview images will be disabled.")
         imaging_available = False
-
-try:
-    import dateutil.parser
-    import dateutil.tz
-    import datetime
-    dateutil_available = True
-except ImportError:
-    print("Warning: DateUtil is unavailable. "
-          "Next episode countdown will be disabled.")
-    dateutil_available = False
 
 
 class Trackma(QMainWindow):
@@ -227,6 +219,8 @@ class Trackma(QMainWindow):
         action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QAction('Rescan &Library', self)
         action_scan_library.triggered.connect(self.s_scan_library)
+        action_open_folder = QAction('Open containing folder', self)
+        action_open_folder.triggered.connect(self.s_open_folder)
 
         action_reload = QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
@@ -261,6 +255,7 @@ class Trackma(QMainWindow):
         #self.menu_show_context.addAction(action_play_dialog)
         self.menu_show_context.addMenu(self.menu_play)
         self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(action_open_folder)
         self.menu_show_context.addAction(action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
@@ -738,7 +733,7 @@ class Trackma(QMainWindow):
                     i += 1                    
             
         widget.setSortingEnabled(True)
-        widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
+        widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
         # Update tab name with total
         tab_index = self.statuses_nums.index(status)
@@ -786,10 +781,8 @@ class Trackma(QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show \
-        and dateutil_available:
-            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
-            delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+        and 'next_ep_time' in show:
+            delta = show['next_ep_time'] - datetime.datetime.utcnow()
             widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
         else:
             widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))
@@ -1088,6 +1081,10 @@ class Trackma(QMainWindow):
         else:
             self._select_show(None)
 
+    def s_update_sort(self, index, order):
+        self.config['sort_index'] = index
+        self.config['sort_order'] = order
+
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
@@ -1228,6 +1225,23 @@ class Trackma(QMainWindow):
         if ok:
             self.worker.engine.altname(self.selected_show_id, str(new_altname))
             self.ws_changed_show(show, altname=new_altname)
+
+
+    def s_open_folder(self):
+        #get needed show info
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        try:
+            filename = self.worker.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+            self.error("No folder found.")
 
     def s_retrieve(self):
         queue = self.worker.engine.get_queue()
@@ -1446,6 +1460,7 @@ class Trackma(QMainWindow):
                     self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
+                self.show_lists[status].horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
@@ -1880,8 +1895,8 @@ class SettingsDialog(QDialog):
 
         g_plex.setLayout(g_plex_layout)
 
-        # Group: Play Next
-        g_playnext = QGroupBox('Play Next')
+        # Group: Library
+        g_playnext = QGroupBox('Library')
         g_playnext.setFlat(True)
         self.player = QLineEdit()
         self.player_browse = QPushButton('Browse...')
@@ -1890,7 +1905,8 @@ class SettingsDialog(QDialog):
         self.searchdir_browse = QPushButton('Browse...')
         self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
         self.library_autoscan = QCheckBox()
-        self.scan_whole_list   = QCheckBox()
+        self.scan_whole_list = QCheckBox()
+        self.library_full_path = QCheckBox()
 
         g_playnext_layout = QGridLayout()
         g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
@@ -1903,6 +1919,8 @@ class SettingsDialog(QDialog):
         g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
         g_playnext_layout.addWidget(QLabel('Scan through whole list'),   3, 0, 1, 2)
         g_playnext_layout.addWidget(self.scan_whole_list,                 3, 2, 1, 1)
+        g_playnext_layout.addWidget(QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
+        g_playnext_layout.addWidget(self.library_full_path,              4, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
@@ -2148,6 +2166,7 @@ class SettingsDialog(QDialog):
         self.searchdir.setText(engine.get_config('searchdir'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
+        self.library_full_path.setChecked(engine.get_config('library_full_path'))
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
         self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
@@ -2227,6 +2246,7 @@ class SettingsDialog(QDialog):
         engine.set_config('searchdir',         self.searchdir.text())
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
         engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
+        engine.set_config('library_full_path', self.library_full_path.isChecked())
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
         engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())

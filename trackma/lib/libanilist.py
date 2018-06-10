@@ -36,7 +36,7 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '1.1', 'merge': False }
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.0', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -46,17 +46,16 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'can_search_season': True,
         'date_next_ep': True,
-        'status_start': 'watching',
-        'status_finish': 'completed',
-        'statuses':  ['watching', 'completed', 'on-hold', 'dropped', 'plan to watch'],
+        'status_start': 'CURRENT',
+        'status_finish': 'COMPLETED',
+        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
-            'watching': 'Watching',
-            'completed': 'Completed',
-            'on-hold': 'On Hold',
-            'dropped': 'Dropped',
-            'plan to watch': 'Plan to Watch'
+            'CURRENT': 'Watching',
+            'COMPLETED': 'Completed',
+            'PAUSED': 'On Hold',
+            'DROPPED': 'Dropped',
+            'PLANNING': 'Plan to Watch'
         },
         'score_max': 100,
         'score_step': 1,
@@ -69,299 +68,363 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
-        'can_search_season': False,
-        'status_start': 'reading',
-        'status_finish': 'completed',
-        'statuses':  ['reading', 'completed', 'on-hold', 'dropped', 'plan to read'],
+        'status_start': 'CURRENT',
+        'status_finish': 'COMPLETED',
+        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
-            'reading': 'Reading',
-            'completed': 'Completed',
-            'on-hold': 'On Hold',
-            'dropped': 'Dropped',
-            'plan to read': 'Plan to Read'
+            'CURRENT': 'Watching',
+            'COMPLETED': 'Completed',
+            'PAUSED': 'On Hold',
+            'DROPPED': 'Dropped',
+            'PLANNING': 'Plan to Read'
         },
         'score_max': 100,
         'score_step': 1,
     }
     default_mediatype = 'anime'
 
+    release_formats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC', 'MANGA', 'NOVEL', 'ONE_SHOT']
+
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
-    url = "https://anilist.co/api/"
-    client_id = "z411-gdjc3"
-    _client_secret = "MyzwuYoMqPPglXwCTcexG1i"
+    auth_url = "https://anilist.co/api/v2/"
+    query_url = "https://graphql.anilist.co"
+    client_id = "537"
+    _client_secret = "9Hl31gyz2q9xMhhJwLKRA8DAn0pXl9sOHFf6I1YO"
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
         super(libanilist, self).__init__(messenger, account, userconfig)
 
         self.pin = account['password'].strip()
-        self.userid = userconfig['userid']
+        self.userid = self._get_userconfig('userid')
 
-        if len(self.pin) != 40:
-            raise utils.APIFatal("Invalid PIN.")
+        if len(self.pin) == 40:  # Old pins were 40 digits, new ones seem to be 654 digits
+            raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using Anilist.")
+        #elif len(self.pin) != 654:
+        #    raise utils.APIFatal("Invalid PIN.")
 
         if self.mediatype == 'manga':
-            self.total_str = "total_chapters"
+            self.total_str = "chapters"
             self.watched_str = "chapters_read"
-            self.airing_str = "publishing_status"
-            self.status_translate = {
-                'publishing': utils.STATUS_AIRING,
-                'finished publishing': utils.STATUS_FINISHED,
-                'not yet published': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
-            }
         else:
-            self.total_str = "total_episodes"
+            self.total_str = "episodes"
             self.watched_str = "episodes_watched"
-            self.airing_str = "airing_status"
-            self.status_translate = {
-                'currently airing': utils.STATUS_AIRING,
-                'finished airing': utils.STATUS_FINISHED,
-                'not yet aired': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
-            }
+        self.status_translate = {
+            'RELEASING': utils.STATUS_AIRING,
+            'FINISHED': utils.STATUS_FINISHED,
+            'NOT_YET_RELEASED': utils.STATUS_NOTYET,
+            'CANCELLED': utils.STATUS_CANCELLED,
+        }
 
         #handler=urllib.request.HTTPHandler(debuglevel=1)
         #self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
 
-    def _request(self, method, url, get=None, post=None, auth=False):
+    def _raw_request(self, method, url, get=None, post=None, jsonpost=None, auth=False):
         if get:
             url = "{}?{}".format(url, urllib.parse.urlencode(get))
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
+        if jsonpost:
+            post = json.dumps(jsonpost, ensure_ascii=False).encode('utf-8')
 
-        request = urllib.request.Request(self.url + url, post)
+        request = urllib.request.Request(url, post)
         request.get_method = lambda: method
 
+        request.add_header('Content-Type', 'application/json')
+        request.add_header('Accept', 'application/json')
+
         if auth:
-            request.add_header('Content-Type', 'application/x-www-form-urlencoded')
-            request.add_header('Authorization', '{0} {1}'.format(
-                self._get_userconfig('token_type').capitalize(),
-                self._get_userconfig('access_token'),
+            request.add_header('Authorization', 'Bearer {}'.format(
+                self.pin,
             ))
 
         try:
             response = self.opener.open(request, timeout = 10)
-            return json.loads(response.read().decode('utf-8'))
+            return json.load(response)
         except urllib.request.HTTPError as e:
             if e.code == 400:
-                raise utils.APIError("Invalid PIN. It is either probably expired or meant for another application.")
+                raise utils.APIError("Invalid request: %s" % e.read())
             else:
-                raise utils.APIError("Connection error: %s" % e)
+                raise utils.APIError("Connection error: %s" % e.read())
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
 
-    def _request_access_token(self):
-        self.msg.info(self.name, 'Requesting access token...')
-        param = {
-            'grant_type': 'authorization_pin',
-            'client_id':  self.client_id,
-            'client_secret': self._client_secret,
-            'code': self.pin,
-        }
-        data = self._request("POST", "auth/access_token", get=param)
+    def _request(self, query, variables=None):
+        if variables:
+            data = {'query': query, 'variables': variables}
+        else:
+            data = {'query': query}
 
-        self._set_userconfig('access_token', data['access_token'])
-        self._set_userconfig('token_type', data['token_type'])
-        self._set_userconfig('expires', data['expires'])
-        self._set_userconfig('refresh_token', data['refresh_token'])
+        return self._raw_request('POST', self.query_url, jsonpost=data, auth=True)
 
-        self.logged_in = True
-        self._refresh_user_info()
-        self._emit_signal('userconfig_changed')
+    def check_credentials(self):
+        if not self.userid:
+            self._refresh_user_info()
 
-    def _refresh_access_token(self):
-        self.msg.info(self.name, 'Refreshing access token...')
-        param = {
-            'grant_type': 'refresh_token',
-            'client_id': self.client_id,
-            'client_secret': self._client_secret,
-            'refresh_token': self._get_userconfig('refresh_token'),
-        }
-        data = self._request("POST", "auth/access_token", get=param)
-
-        self._set_userconfig('access_token', data['access_token'])
-        self._set_userconfig('token_type', data['token_type'])
-        self._set_userconfig('expires', data['expires'])
-
-        self.logged_in = True
-        self._refresh_user_info()
-        self._emit_signal('userconfig_changed')
+        return True
 
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
-        param = {'access_token': self._get_userconfig('access_token')}
-
-        data = self._request("GET", "user", get=param)
+        query = '{Viewer{ id name avatar{large} options{titleLanguage displayAdultContent} mediaListOptions{scoreFormat} }}'
+        data = self._request(query)['data']['Viewer']
 
         self._set_userconfig('userid', data['id'])
-        self._set_userconfig('username', data['display_name'])
+        self._set_userconfig('username', data['name'])
+        self._emit_signal('userconfig_changed')
 
         self.userid = data['id']
-
-    def check_credentials(self):
-        """
-        Log into Anilist. Since it uses OAuth, we either request an access token
-        or refresh the current one. If neither is necessary, just continue.
-        """
-        timestamp = int(time.time())
-
-        if not self._get_userconfig('access_token'):
-            self._request_access_token()
-        elif (timestamp+60) > self._get_userconfig('expires'):
-            self._refresh_access_token()
-        else:
-            self.logged_in = True
-        return True
 
     def fetch_list(self):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
 
-        param = {'access_token': self._get_userconfig('access_token')}
-        data = self._request("GET", "user/{0}/{1}list".format(self.userid, self.mediatype), get=param)
+        query = '''query ($id: Int!, $listType: MediaType) {
+  MediaListCollection (userId: $id, type: $listType) {
+    lists {
+      name
+      isCustomList
+      isSplitCompletedList
+      status
+      entries {
+        ... mediaListEntry
+      }
+    }
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+      mediaListOptions {
+        scoreFormat
+        rowOrder
+      }
+    }
+  }
+}
+
+fragment mediaListEntry on MediaList {
+  id
+  score
+  scoreRaw: score (format: POINT_100)
+  progress
+  progressVolumes
+  repeat
+  private
+  notes
+  hiddenFromStatusLists
+  startedAt { year month day }
+  completedAt { year month day }
+  updatedAt
+  createdAt
+  media {
+    id
+    title { userPreferred romaji english native }
+    coverImage { large medium }
+    format
+    status
+    chapters episodes
+    nextAiringEpisode { airingAt episode }
+    startDate { year month day }
+    endDate { year month day }
+    siteUrl
+  }
+}'''
+        variables = {'id': self.userid, 'listType': self.mediatype.upper()}
+        data = self._request(query, variables)['data']['MediaListCollection']
 
         showlist = {}
-        airinglist = []
 
-        #with open('list', 'w') as f:
-        #    json.dump(data, f, indent=2)
-
-        if not data["lists"]:
+        if not data['lists']:
             # No lists returned so no need to continue
             return showlist
 
-        for remotelist in data["lists"].values():
-            for item in remotelist:
-                if item['list_status'] not in self.media_info()['statuses']:
-                    continue
-
+        for remotelist in data['lists']:
+            my_status = remotelist['status']
+            if my_status not in self.media_info()['statuses']:
+                continue
+            if remotelist['isCustomList']:
+                continue  # Maybe do something with this later
+            if remotelist['isSplitCompletedList']:
+                continue  # Maybe do something with this later
+            for item in remotelist['entries']:
                 show = utils.show()
-                showid = item[self.mediatype]['id']
+                media = item['media']
+                showid = media['id']
+                aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
                 showdata = {
+                    'my_id': item['id'],
                     'id': showid,
-                    'title': item[self.mediatype]['title_romaji'],
-                    'aliases': [item[self.mediatype]['title_english']],
-                    'type': item[self.mediatype]['type'],
-                    'status': self.status_translate[item[self.mediatype][self.airing_str]],
-                    'my_progress': self._c(item[self.watched_str]),
-                    'my_status': item['list_status'],
+                    'title': media['title']['userPreferred'],
+                    'aliases': aliases,
+                    'type': media['format'],  # Need to reformat output
+                    'status': self.status_translate[media['status']],
+                    'my_progress': self._c(item['progress']),
+                    'my_status': my_status,
                     'my_score': self._c(item['score']),
-                    'total': self._c(item[self.mediatype][self.total_str]),
-                    'image': item[self.mediatype]['image_url_lge'],
-                    'image_thumb': item[self.mediatype]['image_url_med'],
-                    'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
+                    'total': self._c(media[self.total_str]),
+                    'image': media['coverImage']['large'],
+                    'image_thumb': media['coverImage']['medium'],
+                    'url': media['siteUrl'],
+                    'start_date': self._dict2date(media['startDate']),
+                    'end_date': self._dict2date(media['endDate']),
+                    'my_start_date': self._dict2date(item['startedAt']),
+                    'my_finish_date': self._dict2date(item['completedAt']),
                 }
+                if media['nextAiringEpisode']:
+                  showdata['next_ep_number'] = media['nextAiringEpisode']['episode']
+                  showdata['next_ep_time'] = self._int2date(media['nextAiringEpisode']['airingAt'])
                 show.update({k:v for k,v in showdata.items() if v})
-
-                if show['status'] == 1:
-                    airinglist.append(showid)
-
                 showlist[showid] = show
-
-        if self.mediatype == 'anime': # Airing data unavailable for manga
-            if len(airinglist) > 0:
-                browseparam = {'access_token': self._get_userconfig('access_token'),
-                         'status': 'Currently Airing',
-                         'airing_data': 'true',
-                         'full_page': 'true'}
-                data = self._request("GET", "browse/anime", get=browseparam)
-                for item in data:
-                    id = item['id']
-                    if id in showlist and 'airing' in item:
-                        if item['airing']:
-                            showlist[id].update({
-                                'next_ep_number': item['airing']['next_episode'],
-                                'next_ep_time': item['airing']['time'],
-                            })
         return showlist
+
+    args_SaveMediaListEntry = {
+        'id': 'Int',                         # The list entry id, required for updating
+        'mediaId': 'Int',                    # The id of the media the entry is of
+        'status': 'MediaListStatus',         # The watching/reading status
+        'score': 'Float',                    # The score of the media in the user's chosen scoring method
+        'scoreRaw': 'Int',                   # The score of the media in 100 point
+        'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
+        'progressVolumes': 'Int',            # The amount of volumes read by the user
+        'repeat': 'Int',                     # The amount of times the user has rewatched/read the media
+        'priority': 'Int',                   # Priority of planning
+        'private': 'Boolean',                # If the entry should only be visible to authenticated user
+        'notes': 'String',                   # Text notes
+        'hiddenFromStatusLists': 'Boolean',  # If the entry shown be hidden from non-custom lists
+        'customLists': '[String]',           # Array of custom list names which should be enabled for this entry
+        'advancedScores': '[Float]',         # Array of advanced scores
+        'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
+        'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
+    }
+    def _update_entry(self, item):
+        """
+        New entries will lack a list entry id, while updates will include one.
+        In the case of a new entry, we want to record the new id.
+        """
+        values = { 'mediaId': item['id'] }
+        if 'my_id' in item and item['my_id']:
+            values['id'] = item['my_id']
+        if 'my_progress' in item:
+            values['progress'] = item['my_progress']
+        if 'my_status' in item:
+            values['status'] = item['my_status']
+        if 'my_score' in item:
+            values['score'] = item['my_score']
+
+        vars_defn = ', '.join(['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
+        subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
+        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id}} }}'.format(vars_defn, subs_defn)
+
+        data = self._request(query, values)['data']
+        return data['SaveMediaListEntry']['id']
 
     def add_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Adding item %s..." % item['title'])
-        self._update_entry(item, "POST")
+        return self._update_entry(item)
 
     def update_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Updating item %s..." % item['title'])
-        self._update_entry(item, "PUT")
+        self._update_entry(item)
 
     def delete_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
+        query = 'mutation ($id: Int) {DeleteMediaListEntry(id: $id){deleted} }'
+        variables = {'id': item['my_id']}
+        self._request(query, variables)
 
-        try:
-            data = self._request("DELETE", "{}list/{}".format(self.mediatype, item['id']), auth=True)
-        except ValueError:
-            # An empty document, without any JSON, is returned
-            # when the delete worked.
-            pass
-
-    def search(self, criteria, method):
+    def search(self, criteria):
         self.check_credentials()
+        self.msg.info(self.name, "Searching for {}...".format(criteria))
 
-        param = {'access_token': self._get_userconfig('access_token')}
-
-        if method == "kw":
-            self.msg.info(self.name, "Searching for {}...".format(criteria))
-            url = "{0}/search/{1}".format(self.mediatype, urllib.parse.quote_plus(criteria))
-        elif method == "season":
-            ssn, year = criteria
-            if ssn not in ["winter", "spring", "summer", "fall"]:
-                raise utils.APIError("Invalid season.")
-
-            self.msg.info(self.name, "Browsing {} {}...".format(ssn, year))
-            url = "browse/{}".format(self.mediatype)
-            param['season'] = ssn
-        else:
-            raise utils.APIError("Search method unsupported.")
-
-        data = self._request("GET", url, get=param)
-
-        if type(data) == dict:
-            # In case of error API returns a small JSON payload
-            # which translates into a dict with the key 'error'
-            # instead of a list.
-            if data['error']['messages'][0] == 'No Results.':
-                data = []
-            else:
-                raise utils.APIError("Error while searching for \
-                        {0}: {1}".format(criteria, str(data)))
+        query = '''query ($query: String, $type: MediaType) {
+  Page {
+    media(search: $query, type: $type) {
+      id
+      title { userPreferred romaji english native }
+      coverImage { medium large }
+      format
+      averageScore
+      popularity
+      chapters episodes
+      season
+      status
+      isAdult
+      startDate { year month day }
+      endDate { year month day }
+      siteUrl
+      mediaListEntry { status progress score }
+    }
+  }
+}'''
+        variables = {'query': urllib.parse.quote_plus(criteria), 'listType': self.mediatype.upper()}
+        data = self._request(query, variables)['data']['Page']['media']
 
         showlist = []
-        for item in data:
+        for media in data:
             show = utils.show()
-            showid = item['id']
+            showid = media['id']
             showdata = {
                 'id': showid,
-                'title': item['title_romaji'],
-                'aliases': [item['title_english']],
-                'type': item['type'],
-                'status': item[self.airing_str],
-                'my_status': self.media_info()['status_start'],
-                'total': item[self.total_str],
-                'image': item['image_url_lge'],
-                'image_thumb': item['image_url_med'],
-                'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
+                'title': media['title']['userPreferred'],
+                'aliases': [media['title']['romaji'], media['title']['english'], media['title']['native']],
+                'type': media['format'],  # Need to reformat output
+                'status': self.status_translate[media['status']],
+                'total': self._c(media[self.total_str]),
+                'image': media['coverImage']['large'],
+                'image_thumb': media['coverImage']['medium'],
+                'url': media['siteUrl'],
             }
+            if media['mediaListEntry']:
+                showdata['my_progress'] = self._c(media['mediaListEntry']['progress'])
+                showdata['my_status'] = media['mediaListEntry']['status']
+                showdata['my_score'] = self._c(media['mediaListEntry']['score'])
             show.update({k:v for k,v in showdata.items() if v})
-
-            showlist.append( show )
+            showlist.append(show)
 
         return showlist
 
     def request_info(self, itemlist):
         self.check_credentials()
-        param = {'access_token': self._get_userconfig('access_token')}
         infolist = []
 
+        query = '''query ($id: Int!, $type: MediaType) {
+  Media(id: $id, type: $type) {
+      id
+      title { userPreferred romaji english native }
+      coverImage { medium large }
+      format
+      averageScore
+      popularity
+      chapters episodes
+      season
+      status
+      isAdult
+      startDate { year month day }
+      endDate { year month day }
+      siteUrl
+      mediaListEntry { status progress score }
+      description
+      genres
+      synonyms
+      averageScore
+      relations {
+          edges {relationType}
+          nodes { id type title {userPreferred} }
+      }
+  }
+}'''
+
         for show in itemlist:
-            data = self._request("GET", "{0}/{1}".format(self.mediatype, show['id']), get=param)
-            infolist.append( self._parse_info(data) )
+            variables = {'id': show['id'], 'listType': self.mediatype.upper()}
+            data = self._request(query, variables)['data']['Media']
+            infolist.append(self._parse_info(data))
 
         self._emit_signal('show_info_changed', infolist)
         return infolist
@@ -370,53 +433,49 @@ class libanilist(lib):
         """Return information about the currently selected mediatype."""
         return self.mediatypes[self.mediatype]
 
-    def _update_entry(self, item, method):
-        values = { 'id': item['id'] }
-        if 'my_progress' in item:
-            values[self.watched_str] = item['my_progress']
-        if 'my_status' in item:
-            values['list_status'] = item['my_status']
-        if 'my_score' in item:
-            values['score'] = item['my_score']
-
-        data = self._request(method, "{}list".format(self.mediatype), post=values, auth=True)
-        return True
-
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
         info.update({
             'id': showid,
-            'title': item['title_romaji'],
-            'status': self.status_translate[item[self.airing_str]],
-            'image': item['image_url_lge'],
-            'url': str("https://anilist.co/%s/%d" % (self.mediatype, showid)),
-            'start_date': self._str2date(item.get('start_date')),
-            'end_date': self._str2date(item.get('end_date')),
+            'title': item['title']['userPreferred'],
+            'status': self.status_translate[item['status']],
+            'image': item['coverImage']['large'],
+            'url': item['siteUrl'],
+            'start_date': self._dict2date(item.get('startDate')),
+            'end_date': self._dict2date(item.get('endDate')),
             'extra': [
-                ('English',         item.get('title_english')),
-                ('Japanese',        item.get('title_japanese')),
-                ('Classification',  item.get('classification')),
+                ('English',         item['title'].get('english')),
+                ('Romaji',          item['title'].get('romaji')),
+                ('Japanese',        item['title'].get('native')),
+                ('Synonyms',        item['title'].get('synonyms')),
+                #('Classification',  item.get('classification')),
                 ('Genres',          item.get('genres')),
                 ('Synopsis',        item.get('description')),
-                ('Type',            item.get('type')),
-                ('Average score',   item.get('average_score')),
-                ('Status',          item.get(self.airing_str)),
-                ('Start Date',      item.get('start_date')),
-                ('End Date',        item.get('end_date')),
+                ('Type',            item.get('format')),
+                ('Average score',   item.get('averageScore')),
+                ('Status',          self.status_translate[item['status']]),
+                #('Start Date',      item.get('start_date')),
+                #('End Date',        item.get('end_date')),
             ]
         })
         return info
 
-    def _str2date(self, string):
-        if string is not None:
-            try:
-                return datetime.datetime.strptime(string[:10], "%Y-%m-%d")
-            except ValueError:
-                return None # Ignore date if it's invalid
-        else:
+    def _dict2date(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime(item['year'], item['month'], item['day'])
+        except (TypeError, ValueError):
             return None
 
+    def _int2date(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime.utcfromtimestamp(item)
+        except ValueError:
+            return None
 
     def _c(self, s):
         if s is None:

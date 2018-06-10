@@ -42,7 +42,7 @@ class libmal(lib):
     logged_in = False
     opener = None
 
-    api_info =  { 'name': 'MyAnimeList', 'shortname': 'mal', 'version': 'v0.3', 'merge': False }
+    api_info =  { 'name': 'MyAnimeList', 'shortname': 'mal', 'version': '', 'merge': False }
 
     default_mediatype = 'anime'
     mediatypes = dict()

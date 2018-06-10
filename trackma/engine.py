@@ -732,8 +732,10 @@ class Engine:
             raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
             raise utils.EngineError('Media directory is not set.')
-        if not utils.dir_exists(self.config['searchdir']):
-            raise utils.EngineError('The set media directory doesn\'t exist.')
+
+        searchdir = utils.expand_path(self.config['searchdir'])
+        if not utils.dir_exists(searchdir):
+            raise utils.EngineError('The set media directory ({}) doesn\'t exist.'.format(searchdir))
 
         t = time.time()
         library = {}
@@ -746,12 +748,14 @@ class Engine:
                 my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
-        self.msg.debug(self.name, "Directory: %s" % self.config['searchdir'])
+        self.msg.debug(self.name, "Directory: %s" % searchdir)
         tracker_list = self._get_tracker_list(my_status)
 
 
         # Do a full listing of the media directory
-        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
+        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
+            if self.config['library_full_path']:
+                filename = self._get_show_name_from_full_path(fullpath).strip()
             (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
         self.msg.debug(self.name, "Time: %s" % (time.time() - t))
@@ -880,10 +884,6 @@ class Engine:
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
-        if not self.config['searchdir']:
-            raise utils.EngineError('Media directory is not set.')
-        if not utils.dir_exists(self.config['searchdir']):
-            raise utils.EngineError('The set media directory doesn\'t exist.')
 
         try:
             playep = int(playep)
@@ -971,3 +971,9 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
+    def _get_show_name_from_full_path(self, fullpath):
+        """Joins the directory name with the file name to return the show name."""
+        searchdir = utils.expand_path(self.config['searchdir'])
+        relative = fullpath[len(searchdir):]
+        
+        return relative.replace(os.path.sep, " ")

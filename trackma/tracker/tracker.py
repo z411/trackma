@@ -55,7 +55,7 @@ class TrackerBase(object):
         self.list = tracker_list
         self.process_name = process_name
 
-        tracker_args = (watch_dir, interval)
+        tracker_args = (utils.expand_path(watch_dir), interval)
         self.wait_s = update_wait
         self.wait_close = update_close
         self.not_found_prompt = not_found_prompt
@@ -113,7 +113,7 @@ class TrackerBase(object):
             if state == utils.TRACKER_PLAYING:
                 action = lambda: self._emit_signal('update', show['id'], episode)
             elif state == utils.TRACKER_NOT_FOUND:
-                action = lambda: self._emit_signal('unrecognised', show, episode)
+                action = lambda: self._emit_signal('unrecognised', show['title'], episode)
 
             if self.wait_close:
                 self.msg.info(self.name, 'Waiting for the player to close.')
@@ -136,7 +136,8 @@ class TrackerBase(object):
         self.last_time = time.time()
         if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
-            self._emit_signal('playing', last_show['id'], False, last_show_ep)
+            if last_show['id']:
+                self._emit_signal('playing', last_show['id'], False, last_show_ep)
 
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
@@ -167,7 +168,7 @@ class TrackerBase(object):
             if state == utils.TRACKER_PLAYING:
                 self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s))
             elif state == utils.TRACKER_NOT_FOUND:
-                self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show, episode, self.wait_s))
+                self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show['title'], episode, self.wait_s))
             self._update_show(state, show_tuple)
 
         elif self.last_state != state:
@@ -215,7 +216,9 @@ class TrackerBase(object):
             else:
                 # Show not in list
                 if self.not_found_prompt:
-                    return (utils.TRACKER_NOT_FOUND, (show_title, show_ep))
+                    # Dummy show to search for
+                    show = {'id': 0, 'title': show_title}
+                    return (utils.TRACKER_NOT_FOUND, (show, show_ep))
                 else:
                     return (utils.TRACKER_NOT_FOUND, None)
         else:

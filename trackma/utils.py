@@ -49,8 +49,8 @@ TRACKER_IGNORED = 4
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "http://omaera.org/trackma/anilist.html",
-            "https://anilist.co/api/auth/authorize?grant_type=authorization_pin&client_id=z411-gdjc3&response_type=pin"
+            "http://omaera.org/trackma/anilistv2",
+            "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
     'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
@@ -102,6 +102,9 @@ def save_data(data, filename):
 def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
         logfile.write(msg)
+
+def expand_path(path):
+    return os.path.expanduser(path)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -288,6 +291,7 @@ config_defaults = {
     'autosend_size': 5,
     'autosend_at_exit': True,
     'library_autoscan': True,
+    'library_full_path': False,
     'scan_whole_list': False,
     'debug_disable_lock': True,
     'auto_status_change': True,
@@ -316,6 +320,7 @@ curses_defaults = {
         'sort_order': 'r',
         'update': 'u',
         'play': 'p',
+        'openfolder': 'o',
         'play_random': '&',
         'status': 'f6',
         'score': 'k',
@@ -408,6 +413,8 @@ qt_defaults = {
         'progress_sub_fg': '#5187B1',
         'progress_complete': '#00D200',
     },
+    'sort_index': 1,
+    'sort_order': 0,
 }
 
 qt_per_api_defaults = {
