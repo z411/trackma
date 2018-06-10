@@ -465,7 +465,7 @@ fragment mediaListEntry on MediaList {
         if not item:
             return None
         try:
-            return datetime.date(item['year'], item['month'], item['day'])
+            return datetime.datetime(item['year'], item['month'], item['day'])
         except (TypeError, ValueError):
             return None
 
