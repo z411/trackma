@@ -44,7 +44,7 @@ class Data():
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': {}, 'library': {}, 'library_cache': {}, }
+    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'apiversion': '', 'altnames': {}, 'library': {}, 'library_cache': {}, }
 
     autosend_timer = None
 
@@ -83,6 +83,9 @@ class Data():
         # Instance API
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, account, self.userconfig)
+
+        # Get API version
+        self.api_version = self.api.api_info['version']
 
         # Set mediatype
         mediatype = self.userconfig.get('mediatype')
@@ -137,17 +140,17 @@ class Data():
         if self._meta_exists():
             self._load_meta()
 
-        if self._queue_exists() and self.meta.get('version') == self.version:
+        if self._queue_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             self._load_queue()
             self._emit_signal('queue_changed', self.queue)
 
-        if self._info_exists() and self.meta.get('version') == self.version:
+        if self._info_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             # Load info cache only if we're on the same database version
             self._load_info()
 
         # If there is a list cache, load from it
         # otherwise query the API for a remote list
-        if self._cache_exists() and self.meta.get('version') == self.version:
+        if self._cache_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
             if self._is_queue_ready():
                 self.process_queue()
@@ -577,6 +580,7 @@ class Data():
         # Update last retrieved time
         self.meta['lastget'] = time.time()
         self.meta['version'] = self.version
+        self.meta['apiversion'] = self.api_version
         self._save_meta()
 
     def _cache_exists(self):
