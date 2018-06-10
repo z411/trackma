@@ -1861,13 +1861,26 @@ class Settings(Gtk.Window):
         header0.set_use_markup(True)
         header0.set_xalign(0)
 
+        lbl_player = Gtk.Label('Media Player')
+        lbl_player.set_size_request(120, -1)
+        lbl_player.set_xalign(0)
+        self.txt_player = Gtk.Entry()
+        self.txt_player.set_max_length(4096)
+        playerbrowse_button = Gtk.Button('Browse...')
+        playerbrowse_button.connect("clicked", self.__do_browse, 'Select player', self.txt_player)
+
+        line0 = Gtk.HBox(False, 5)
+        line0.pack_start(lbl_player, False, False, 5)
+        line0.pack_start(self.txt_player, True, True, 0)
+        line0.pack_start(playerbrowse_button, False, False, 0)
+
         lbl_searchdir = Gtk.Label('Library Directory')
         lbl_searchdir.set_size_request(120, -1)
         lbl_searchdir.set_xalign(0)
         self.txt_searchdir = Gtk.Entry()
         self.txt_searchdir.set_max_length(4096)
         self.browse_button = Gtk.Button('Browse...')
-        self.browse_button.connect("clicked", self.__do_browse, 'Select search directory', self.txt_searchdir, True)
+        self.browse_button.connect("clicked", self.__do_browse, 'Select library directory', self.txt_searchdir, True)
 
         line1 = Gtk.HBox(False, 5)
         line1.pack_start(lbl_searchdir, False, False, 5)
@@ -2169,6 +2182,7 @@ class Settings(Gtk.Window):
         page0 = Gtk.VBox(False, 10)
         page0.set_border_width(10)
         page0.pack_start(header0, False, False, 0)
+        page0.pack_start(line0, False, False, 0)
         page0.pack_start(line1, False, False, 0)
         page0.pack_start(lin_library_options, False, False, 0)
         page0.pack_start(header1, False, False, 0)
@@ -2208,6 +2222,7 @@ class Settings(Gtk.Window):
 
     def load_config(self):
         """Engine Configuration"""
+        self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
         self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_library_autoscan.set_active(self.engine.get_config('library_autoscan'))
@@ -2264,6 +2279,7 @@ class Settings(Gtk.Window):
 
     def save_config(self):
         """Engine Configuration"""
+        self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('library_autoscan',
