@@ -754,7 +754,8 @@ class Engine:
 
         # Do a full listing of the media directory
         for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
-            filename = self._get_show_name_from_full_path(fullpath)
+            filename = self._get_show_name_from_full_path(fullpath).strip()
+            print(filename)
             (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
         self.msg.debug(self.name, "Time: %s" % (time.time() - t))
