@@ -284,6 +284,7 @@ config_defaults = {
     'autosend_size': 5,
     'autosend_at_exit': True,
     'library_autoscan': True,
+    'library_full_path': False,
     'scan_whole_list': False,
     'debug_disable_lock': True,
     'auto_status_change': True,
