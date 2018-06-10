@@ -17,6 +17,7 @@
 
 import sys
 import os
+import datetime
 import subprocess
 
 pyqt_version = 0
@@ -93,16 +94,6 @@ except ImportError:
         print("Warning: PIL or Pillow isn't available. "
               "Preview images will be disabled.")
         imaging_available = False
-
-try:
-    import dateutil.parser
-    import dateutil.tz
-    import datetime
-    dateutil_available = True
-except ImportError:
-    print("Warning: DateUtil is unavailable. "
-          "Next episode countdown will be disabled.")
-    dateutil_available = False
 
 
 class Trackma(QMainWindow):
@@ -790,10 +781,8 @@ class Trackma(QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show \
-        and dateutil_available:
-            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
-            delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+        and 'next_ep_time' in show:
+            delta = show['next_ep_time'] - datetime.datetime.utcnow()
             widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
         else:
             widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))

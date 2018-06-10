@@ -277,7 +277,7 @@ fragment mediaListEntry on MediaList {
                 }
                 if media['nextAiringEpisode']:
                   showdata['next_ep_number'] = media['nextAiringEpisode']['episode']
-                  showdata['next_ep_time'] = media['nextAiringEpisode']['airingAt']
+                  showdata['next_ep_time'] = self._int2date(media['nextAiringEpisode']['airingAt'])
                 show.update({k:v for k,v in showdata.items() if v})
                 showlist[showid] = show
         return showlist
@@ -467,6 +467,14 @@ fragment mediaListEntry on MediaList {
         try:
             return datetime.datetime(item['year'], item['month'], item['day'])
         except (TypeError, ValueError):
+            return None
+
+    def _int2date(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime.utcfromtimestamp(item)
+        except ValueError:
             return None
 
     def _c(self, s):
