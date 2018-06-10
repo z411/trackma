@@ -378,7 +378,7 @@ class libkitsu(lib):
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
-    def search(self, query):
+    def search(self, query, method):
         self.msg.info(self.name, "Searching for %s..." % query)
 
         values = {

@@ -339,7 +339,7 @@ fragment mediaListEntry on MediaList {
         variables = {'id': item['my_id']}
         self._request(query, variables)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 

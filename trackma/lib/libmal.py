@@ -219,7 +219,7 @@ class libmal(lib):
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         """Searches MyAnimeList database for the queried show"""
         self.msg.info(self.name, "Searching for %s..." % criteria)
 

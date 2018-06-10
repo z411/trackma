@@ -241,7 +241,7 @@ class libshikimori(lib):
 
         data = self._request("DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))

@@ -309,7 +309,7 @@ class libvndb(lib):
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
         results = list()
