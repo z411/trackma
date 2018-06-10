@@ -96,6 +96,9 @@ def log_error(msg):
     with open(get_root_filename('error.log'), 'a') as logfile:
         logfile.write(msg)
 
+def expand_path(path):
+    return os.path.expanduser(path)
+
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
 

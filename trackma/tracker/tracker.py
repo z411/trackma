@@ -55,7 +55,7 @@ class TrackerBase(object):
         self.list = tracker_list
         self.process_name = process_name
 
-        tracker_args = (watch_dir, interval)
+        tracker_args = (utils.expand_path(watch_dir), interval)
         self.wait_s = update_wait
         self.wait_close = update_close
         self.not_found_prompt = not_found_prompt
