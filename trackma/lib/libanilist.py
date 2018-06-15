@@ -363,7 +363,7 @@ fragment mediaListEntry on MediaList {
     }
   }
 }'''
-        variables = {'query': urllib.parse.quote_plus(criteria), 'listType': self.mediatype.upper()}
+        variables = {'query': urllib.parse.quote_plus(criteria), 'type': self.mediatype.upper()}
         data = self._request(query, variables)['data']['Page']['media']
 
         showlist = []
