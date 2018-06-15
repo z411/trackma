@@ -46,6 +46,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'can_date': True,
         'date_next_ep': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
@@ -68,6 +69,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+        'can_date': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
         'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -92,6 +94,7 @@ class libanilist(lib):
     query_url = "https://graphql.anilist.co"
     client_id = "537"
     _client_secret = "9Hl31gyz2q9xMhhJwLKRA8DAn0pXl9sOHFf6I1YO"
+    user_agent = 'Trackma/{}'.format(utils.VERSION)
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
@@ -118,10 +121,8 @@ class libanilist(lib):
             'CANCELLED': utils.STATUS_CANCELLED,
         }
 
-        #handler=urllib.request.HTTPHandler(debuglevel=1)
-        #self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
-        self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
+        self.opener.addheaders = [('User-agent', self.user_agent)]
 
     def _raw_request(self, method, url, get=None, post=None, jsonpost=None, auth=False):
         if get:
@@ -210,17 +211,9 @@ class libanilist(lib):
 fragment mediaListEntry on MediaList {
   id
   score
-  scoreRaw: score (format: POINT_100)
   progress
-  progressVolumes
-  repeat
-  private
-  notes
-  hiddenFromStatusLists
   startedAt { year month day }
   completedAt { year month day }
-  updatedAt
-  createdAt
   media {
     id
     title { userPreferred romaji english native }
@@ -287,16 +280,7 @@ fragment mediaListEntry on MediaList {
         'mediaId': 'Int',                    # The id of the media the entry is of
         'status': 'MediaListStatus',         # The watching/reading status
         'score': 'Float',                    # The score of the media in the user's chosen scoring method
-        'scoreRaw': 'Int',                   # The score of the media in 100 point
         'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
-        'progressVolumes': 'Int',            # The amount of volumes read by the user
-        'repeat': 'Int',                     # The amount of times the user has rewatched/read the media
-        'priority': 'Int',                   # Priority of planning
-        'private': 'Boolean',                # If the entry should only be visible to authenticated user
-        'notes': 'String',                   # Text notes
-        'hiddenFromStatusLists': 'Boolean',  # If the entry shown be hidden from non-custom lists
-        'customLists': '[String]',           # Array of custom list names which should be enabled for this entry
-        'advancedScores': '[Float]',         # Array of advanced scores
         'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
         'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
     }
@@ -314,6 +298,10 @@ fragment mediaListEntry on MediaList {
             values['status'] = item['my_status']
         if 'my_score' in item:
             values['score'] = item['my_score']
+        if 'my_start_date' in item:
+            values['startedAt'] = self._date2dict(item['my_start_date'])
+        if 'my_finish_date' in item:
+            values['completedAt'] = self._date2dict(item['my_finish_date'])
 
         vars_defn = ', '.join(['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
         subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
@@ -353,7 +341,6 @@ fragment mediaListEntry on MediaList {
       averageScore
       popularity
       chapters episodes
-      season
       status
       isAdult
       startDate { year month day }
@@ -401,23 +388,15 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
-      popularity
       chapters episodes
-      season
       status
-      isAdult
       startDate { year month day }
       endDate { year month day }
       siteUrl
-      mediaListEntry { status progress score }
       description
       genres
       synonyms
       averageScore
-      relations {
-          edges {relationType}
-          nodes { id type title {userPreferred} }
-      }
   }
 }'''
 
@@ -468,6 +447,15 @@ fragment mediaListEntry on MediaList {
             return datetime.datetime(item['year'], item['month'], item['day'])
         except (TypeError, ValueError):
             return None
+
+    def _date2dict(self, date):
+        if not date:
+            return {}
+        try:
+            return {'year': date.year, 'month': date.month, 'day': date.day}
+        except (TypeError, ValueError):
+            return {}
+
 
     def _int2date(self, item):
         if not item:
