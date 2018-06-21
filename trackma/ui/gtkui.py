@@ -1826,7 +1826,10 @@ class InfoWidget(Gtk.VBox):
             detail = list()
             for line in self.details['extra']:
                 if line[0] and line[1]:
-                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+                    title, content, *_ = line
+                    if isinstance(content, list):
+                        content = ", ".join(filter(None, content))
+                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(title)), cgi.escape(str(content))))
 
             self.w_content.set_text("\n\n".join(detail))
             self.w_content.set_use_markup(True)
@@ -1975,13 +1978,13 @@ class Settings(Gtk.Window):
         line9a.pack_start(self.chk_tracker_update_prompt, False, False, 0)
         line9a.pack_start(self.chk_tracker_not_found_prompt, False, False, 0)
         line9.pack_start(line9a, False, False, 0)
-        
+
         ### Plex ###
         header6 = Gtk.Label()
         header6.set_text('<b>Plex Media Server</b>')
         header6.set_use_markup(True)
         header6.set_xalign(0)
-        
+
         # Labels
         lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
         lbl_tracker_plex_host_port.set_size_request(120, -1)
@@ -1992,7 +1995,7 @@ class Settings(Gtk.Window):
         lbl_tracker_plex_login = Gtk.Label('myPlex login (claimed server)')
         lbl_tracker_plex_login.set_size_request(120, -1)
         lbl_tracker_plex_login.set_xalign(0)
-        
+
         # Entries
         self.txt_plex_host = Gtk.Entry()
         self.txt_plex_host.set_max_length(4096)
@@ -2005,7 +2008,7 @@ class Settings(Gtk.Window):
         self.txt_plex_passw.set_max_length(128)
         self.txt_plex_passw.set_visibility(False)
         self.chk_tracker_plex_obey_wait = Gtk.CheckButton()
-        
+
         # HBoxes
         line7 = Gtk.HBox(False, 5)
         line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
