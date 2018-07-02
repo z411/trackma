@@ -2420,7 +2420,6 @@ class AccountSelectAdd(Gtk.Window):
         self.txt_user.set_max_length(128)
         self.txt_user.set_activates_default(True)
         self.txt_passwd = Gtk.Entry()
-        self.txt_passwd.set_max_length(128)
         self.txt_passwd.set_visibility(False)
         self.txt_passwd.set_activates_default(True)
 
