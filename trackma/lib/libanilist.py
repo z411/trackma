@@ -370,10 +370,11 @@ fragment mediaListEntry on MediaList {
         for media in data:
             show = utils.show()
             showid = media['id']
+            aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
             showdata = {
                 'id': showid,
                 'title': media['title']['userPreferred'],
-                'aliases': [media['title']['romaji'], media['title']['english'], media['title']['native']],
+                'aliases': aliases,
                 'type': media['format'],  # Need to reformat output
                 'status': self.status_translate[media['status']],
                 'total': self._c(media[self.total_str]),
