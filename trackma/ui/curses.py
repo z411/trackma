@@ -121,6 +121,7 @@ class Trackma_urwid():
         self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
 
+    def run(self):
         self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
 
@@ -274,6 +275,10 @@ class Trackma_urwid():
         except KeyError:
             # Unbinded key pressed; do nothing
             pass
+
+    def forget_account(self):
+        manager = AccountManager()
+        manager.set_default(None)
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
@@ -1140,9 +1145,11 @@ class QuestionAsker(Asker):
             urwid.emit_signal(self, 'done', key.lower())
 
 def main():
+    ui = Trackma_urwid()
     try:
-        Trackma_urwid()
+        ui.run()
     except utils.TrackmaFatal as e:
+        ui.forget_account()
         print("Fatal error: %s" % e)
 
 if __name__ == '__main__':

@@ -107,6 +107,9 @@ class Trackma_cmd(cmd.Cmd):
         else:
             self.account = self.accountman.select_account(False)
 
+    def forget_account(self):
+        self.accountman.set_default(None)
+
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
                 u  = self.engine.get_userconfig('username'),
@@ -1025,6 +1028,7 @@ def main():
         main_cmd.start()
         main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
+        main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))
 
 if __name__ == '__main__':
