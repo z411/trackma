@@ -85,8 +85,10 @@ class Trackma_gtk(object):
 
         Gtk.main()
 
-    def __do_switch_account(self, widget, switch=True):
+    def __do_switch_account(self, widget, switch=True, forget=False):
         manager = AccountManager()
+        if forget:
+            manager.set_default(None)
         self.accountsel = AccountSelect(manager = AccountManager(), switch=switch)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
@@ -573,7 +575,7 @@ class Trackma_gtk(object):
     def idle_restart_push(self):
         self.quit = False
         self.main.destroy()
-        self.__do_switch_account(None, False)
+        self.__do_switch_account(None, False, forget=True)
 
     def on_destroy(self, widget):
         if self.quit:
