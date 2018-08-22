@@ -159,7 +159,7 @@ class libanilist(lib):
 
     def check_credentials(self):
         if len(self.pin) == 40:  # Old pins were 40 digits, new ones seem to be 654 digits
-            raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using Anilist."
+            raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using AniList."
                                  " Please re-authorize or re-create your AniList account.")
 
         if not self.userid:
