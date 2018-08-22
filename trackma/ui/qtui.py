@@ -540,6 +540,7 @@ class Trackma(QMainWindow):
 
     def fatal(self, msg):
         QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
+        self.accountman.set_default(None)
         self._busy()
         self.finish = False
         self.worker_call('unload', self.r_engine_unloaded)
@@ -1270,6 +1271,8 @@ class Trackma(QMainWindow):
     def s_switch_account(self):
         if not self.accountman_widget:
             self.accountman_create()
+        else:
+            self.accountman_widget.update()
 
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
@@ -2471,8 +2474,6 @@ class AccountDialog(QDialog):
 
         bottom_layout = QHBoxLayout()
         self.remember_chk = QCheckBox('Remember')
-        if self.accountman.get_default() is not None:
-            self.remember_chk.setChecked(True)
         cancel_btn = QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
         add_btn = QPushButton('Add')
@@ -2504,12 +2505,16 @@ class AccountDialog(QDialog):
             self.icons[libname] = QIcon(lib[1])
 
         # Populate list
+        self.update()
         self.rebuild()
 
         # Finish layout
         layout.addWidget(self.table)
         layout.addLayout(bottom_layout)
         self.setLayout(layout)
+
+    def update(self):
+        self.remember_chk.setChecked(self.accountman.get_default() is not None)
 
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
