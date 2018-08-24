@@ -1219,9 +1219,12 @@ class ImageTask(threading.Thread):
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
         img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
-            im = Image.open(img_file)
-            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-            im.save(self.local)
+            if imaging_available:
+                im = Image.open(img_file)
+                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                im.save(self.local)
+            else:
+                self.show_image.pholder_show("PIL library\nnot available")
         else:
             with open(self.local, 'wb') as f:
                 f.write(img_file.read())
@@ -1229,9 +1232,10 @@ class ImageTask(threading.Thread):
         if self.cancelled:
             return
 
-        Gdk.threads_enter()
-        self.show_image.image_show(self.local)
-        Gdk.threads_leave()
+        if os.path.exists(self.local):
+            Gdk.threads_enter()
+            self.show_image.image_show(self.local)
+            Gdk.threads_leave()
 
     def cancel(self):
         self.cancelled = True
