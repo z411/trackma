@@ -722,7 +722,7 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
+                    i += 1
         else:
             if status != self.worker.engine.mediainfo['status_finish']:
                 for show in showlist:
@@ -731,8 +731,8 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
-            
+                    i += 1
+
         widget.setSortingEnabled(True)
         widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
@@ -2943,9 +2943,10 @@ class Image_Worker(QtCore.QThread):
         try:
             img_file = BytesIO(urllib.request.urlopen(req).read())
             if self.size:
-                im = Image.open(img_file)
-                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-                im.save(self.local)
+                if imaging_available:
+                    im = Image.open(img_file)
+                    im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                    im.save(self.local)
             else:
                 with open(self.local, 'wb') as f:
                     f.write(img_file.read())
