@@ -478,7 +478,7 @@ fragment mediaListEntry on MediaList {
         if score == 0:
             return 0
 
-        if self.scoreformat == 'POINT_10_DECIMAL':
+        if self.scoreformat in ['POINT_10', 'POINT_10_DECIMAL']:
             return int(score*10)
         elif self.scoreformat == 'POINT_5':
             return int(score*20)
