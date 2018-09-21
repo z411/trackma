@@ -85,6 +85,14 @@ class libanilist(lib):
     }
     default_mediatype = 'anime'
 
+    score_types = {
+        'POINT_100': (100, 1),
+        'POINT_10_DECIMAL': (10, 0.1),
+        'POINT_10': (10, 1),
+        'POINT_5': (5, 1),
+        'POINT_3': (3, 1),
+    }
+
     release_formats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC', 'MANGA', 'NOVEL', 'ONE_SHOT']
 
     # Supported signals for the data handler
@@ -102,6 +110,7 @@ class libanilist(lib):
 
         self.pin = account['password'].strip()
         self.userid = self._get_userconfig('userid')
+        
 
         if self.mediatype == 'manga':
             self.total_str = "chapters"
@@ -115,6 +124,11 @@ class libanilist(lib):
             'NOT_YET_RELEASED': utils.STATUS_NOTYET,
             'CANCELLED': utils.STATUS_CANCELLED,
         }
+        
+        # If we already know the scoreFormat of the cached list, apply it now
+        scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
+        if scoreformat:
+            self._apply_scoreformat(scoreformat)
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', self.user_agent)]
@@ -194,14 +208,8 @@ class libanilist(lib):
       }
     }
     user {
-      id
-      name
-      avatar {
-        large
-      }
       mediaListOptions {
         scoreFormat
-        rowOrder
       }
     }
   }
@@ -234,6 +242,13 @@ fragment mediaListEntry on MediaList {
         if not data['lists']:
             # No lists returned so no need to continue
             return showlist
+
+        # Handle different score formats provided by Anilist
+        fmt = data['user']['mediaListOptions']['scoreFormat']
+        self._apply_scoreformat(fmt)
+        
+        self._set_userconfig('scoreformat_' + self.mediatype, fmt)
+        self._emit_signal('userconfig_changed')
 
         for remotelist in data['lists']:
             my_status = remotelist['status']
@@ -439,6 +454,10 @@ fragment mediaListEntry on MediaList {
             ]
         })
         return info
+
+    def _apply_scoreformat(self, fmt):
+        media = self.media_info()
+        (media['score_max'], media['score_step']) = self.score_types[fmt]
 
     def _dict2date(self, item):
         if not item:
