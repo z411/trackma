@@ -661,6 +661,17 @@ class Trackma(QMainWindow):
         Using a full showlist, rebuilds every QTreeView
 
         """
+        
+        # Set allowed ranges (this should be reported by the engine later)
+        decimal_places = 0
+        if isinstance(self.mediainfo['score_step'], float):
+            decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
+
+        self.show_score.setRange(0, self.mediainfo['score_max'])
+        self.show_score.setDecimals(decimal_places)
+        self.show_score.setSingleStep(self.mediainfo['score_step'])
+
+        # Rebuild each available list
         statuses_nums = self.worker.engine.mediainfo['statuses']
         filtered_list = dict()
         for status in statuses_nums:
@@ -1436,15 +1447,6 @@ class Trackma(QMainWindow):
 
             self.statuses_nums = self.mediainfo['statuses']
             self.statuses_names = self.mediainfo['statuses_dict']
-
-            # Set allowed ranges (this should be reported by the engine later)
-            decimal_places = 0
-            if isinstance(self.mediainfo['score_step'], float):
-                decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
-
-            self.show_score.setRange(0, self.mediainfo['score_max'])
-            self.show_score.setDecimals(decimal_places)
-            self.show_score.setSingleStep(self.mediainfo['score_step'])
 
             # Build notebook
             for status in self.statuses_nums:
