@@ -110,7 +110,6 @@ class libanilist(lib):
 
         self.pin = account['password'].strip()
         self.userid = self._get_userconfig('userid')
-        
 
         if self.mediatype == 'manga':
             self.total_str = "chapters"
@@ -126,9 +125,9 @@ class libanilist(lib):
         }
         
         # If we already know the scoreFormat of the cached list, apply it now
-        scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
-        if scoreformat:
-            self._apply_scoreformat(scoreformat)
+        self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
+        if self.scoreformat:
+            self._apply_scoreformat(self.scoreformat)
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', self.user_agent)]
@@ -244,10 +243,10 @@ fragment mediaListEntry on MediaList {
             return showlist
 
         # Handle different score formats provided by Anilist
-        fmt = data['user']['mediaListOptions']['scoreFormat']
-        self._apply_scoreformat(fmt)
+        self.scoreformat = data['user']['mediaListOptions']['scoreFormat']
+        self._apply_scoreformat(self.scoreformat)
         
-        self._set_userconfig('scoreformat_' + self.mediatype, fmt)
+        self._set_userconfig('scoreformat_' + self.mediatype, self.scoreformat)
         self._emit_signal('userconfig_changed')
 
         for remotelist in data['lists']:
@@ -293,7 +292,7 @@ fragment mediaListEntry on MediaList {
         'id': 'Int',                         # The list entry id, required for updating
         'mediaId': 'Int',                    # The id of the media the entry is of
         'status': 'MediaListStatus',         # The watching/reading status
-        'score': 'Float',                    # The score of the media in the user's chosen scoring method
+        'scoreRaw': 'Int',                   # The score of the media in 100 point
         'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
         'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
         'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
@@ -311,7 +310,7 @@ fragment mediaListEntry on MediaList {
         if 'my_status' in item:
             values['status'] = item['my_status']
         if 'my_score' in item:
-            values['score'] = item['my_score']
+            values['scoreRaw'] = self._score2raw(item['my_score'])
         if 'my_start_date' in item:
             values['startedAt'] = self._date2dict(item['my_start_date'])
         if 'my_finish_date' in item:
@@ -475,6 +474,18 @@ fragment mediaListEntry on MediaList {
         except (TypeError, ValueError):
             return {}
 
+    def _score2raw(self, score):
+        if score == 0:
+            return 0
+
+        if self.scoreformat == 'POINT_10_DECIMAL':
+            return int(score*10)
+        elif self.scoreformat == 'POINT_5':
+            return int(score*20)
+        elif self.scoreformat == 'POINT_3':
+            return int(score*25)
+        else:
+            return score
 
     def _int2date(self, item):
         if not item:
