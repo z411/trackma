@@ -473,15 +473,6 @@ class Trackma_gtk(object):
             self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
 
-        self.score_decimal_places = 0
-        if isinstance( self.engine.mediainfo['score_step'], float ):
-            self.score_decimal_places = len(str(self.engine.mediainfo['score_step']).split('.')[1])
-
-        self.show_score.set_value(0)
-        self.show_score.set_digits(self.score_decimal_places)
-        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
-        self.show_score.get_adjustment().set_step_increment(self.engine.mediainfo['score_step'])
-
         can_play = self.engine.mediainfo['can_play']
         can_update = self.engine.mediainfo['can_update']
 
@@ -519,7 +510,6 @@ class Trackma_gtk(object):
                     status,
                     self.config['colors'],
                     self.config['visible_columns'],
-                    self.score_decimal_places,
                     self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.__do_info)
@@ -852,6 +842,7 @@ class Trackma_gtk(object):
             if retrieve:
                 self.engine.list_download()
 
+            GObject.idle_add(self._set_score_ranges)
             GObject.idle_add(self.build_all_lists)
         except utils.TrackmaError as e:
             self.error(e)
@@ -878,6 +869,7 @@ class Trackma_gtk(object):
         Gdk.threads_enter()
         self.statusbox.handler_block(self.statusbox_handler)
         self._clear_gui()
+        self._set_score_ranges()
         self._create_lists()
         self.build_all_lists()
 
@@ -980,6 +972,19 @@ class Trackma_gtk(object):
 
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
+
+    def _set_score_ranges(self):
+        self.score_decimal_places = 0
+        if isinstance( self.engine.mediainfo['score_step'], float ):
+            self.score_decimal_places = len(str(self.engine.mediainfo['score_step']).split('.')[1])
+
+        self.show_score.set_value(0)
+        self.show_score.set_digits(self.score_decimal_places)
+        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
+        self.show_score.get_adjustment().set_step_increment(self.engine.mediainfo['score_step'])
+
+        for view in self.show_lists.values():
+            view.decimals = self.score_decimal_places
 
     def build_all_lists(self):
         for status in self.show_lists.keys():
@@ -1281,7 +1286,7 @@ class ShowView(Gtk.TreeView):
     __gsignals__ = {'column-toggled': (GObject.SIGNAL_RUN_LAST, \
             GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
 
-    def __init__(self, status, colors, visible_columns, decimals=0, progress_style=1):
+    def __init__(self, status, colors, visible_columns, progress_style=1, decimals=0):
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
