@@ -77,6 +77,7 @@ class Trackma_cmd(cmd.Cmd):
         'info':         1,
         'search':       1,
         'add':          1,
+        'del':          1,
         'delete':       1,
         'play':         (1, 2),
         'openfolder':   1,
@@ -400,10 +401,14 @@ class Trackma_cmd(cmd.Cmd):
             except utils.TrackmaError as e:
                 self.display_error(e)
 
+    def do_del(self, args):
+        self.do_delete(args)
+
     def do_delete(self, args):
         """
         Deletes a show from the local list.
 
+        :name delete|del
         :param show Show index or title.
         :usage delete <show index or title>
         """
