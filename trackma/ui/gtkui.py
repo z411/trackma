@@ -1227,7 +1227,7 @@ class ImageTask(threading.Thread):
             if imaging_available:
                 im = Image.open(img_file)
                 im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-                im.save(self.local)
+                im.convert("RGB").save(self.local)
             else:
                 self.show_image.pholder_show("PIL library\nnot available")
         else:
