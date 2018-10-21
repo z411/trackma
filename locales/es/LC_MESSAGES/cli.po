@@ -1,0 +1,235 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-10-20 14:18-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ui/cli.py:94
+msgid "This program comes with ABSOLUTELY NO WARRANTY; for details type `about'"
+msgstr ""
+
+#: ui/cli.py:95
+msgid "This is free software, and you are welcome to redistribute it"
+msgstr ""
+
+#: ui/cli.py:96
+msgid "under certain conditions; see the COPYING file for details."
+msgstr ""
+
+#: ui/cli.py:160
+msgid "Initializing engine..."
+msgstr ""
+
+#: ui/cli.py:176
+msgid "Ready. Type 'help' for a list of commands."
+msgstr ""
+
+#: ui/cli.py:177
+msgid "Press tab for autocompletion and up/down for command history."
+msgstr ""
+
+#: ui/cli.py:183
+msgid "Trackma is an open source client for media tracking websites."
+msgstr ""
+
+#: ui/cli.py:186
+msgid "This program is licensed under the GPLv3 and it comes with ASOLUTELY NO WARRANTY."
+msgstr ""
+
+#: ui/cli.py:187
+msgid "Many contributors have helped to run this project; for more information see the AUTHORS file."
+msgstr ""
+
+#: ui/cli.py:188
+msgid "For more information about the license, see the COPYING file."
+msgstr ""
+
+#: ui/cli.py:190
+msgid "If you encounter any problems please report them in https://github.com/z411/trackma/issues"
+msgstr ""
+
+#: ui/cli.py:192
+msgid "This is the CLI version of Trackma. To see available commands type `help'."
+msgstr ""
+
+#: ui/cli.py:193
+msgid "For other available interfaces please see the README file."
+msgstr ""
+
+#: ui/cli.py:208
+msgid ""
+"\n"
+"  Arguments:"
+msgstr ""
+
+#: ui/cli.py:221
+msgid "No help available."
+msgstr ""
+
+#: ui/cli.py:260
+msgid "Use `help <command>` for detailed information."
+msgstr ""
+
+#: ui/cli.py:292 ui/cli.py:581
+msgid "Invalid filter."
+msgstr ""
+
+#: ui/cli.py:308
+msgid "Invalid sort."
+msgstr ""
+
+#: ui/cli.py:327
+msgid "Invalid mediatype."
+msgstr ""
+
+#: ui/cli.py:390
+msgid "Choose show to add (blank to cancel): "
+msgstr ""
+
+#: ui/cli.py:395
+msgid "Choice must be numeric."
+msgstr ""
+
+#: ui/cli.py:398
+msgid "Invalid show."
+msgstr ""
+
+#: ui/cli.py:450
+msgid "- Tracker status -"
+msgstr ""
+
+#: ui/cli.py:473
+msgid "Show: N/A"
+msgstr ""
+
+#: ui/cli.py:475
+msgid "Not started"
+msgstr ""
+
+#: ui/cli.py:542 ui/cli.py:558 ui/cli.py:575
+msgid "Missing arguments."
+msgstr ""
+
+#: ui/cli.py:606
+msgid "Missing arguments"
+msgstr ""
+
+#: ui/cli.py:626
+msgid "There are unqueued changes. Overwrite local list? [y/N] "
+msgstr ""
+
+#: ui/cli.py:650
+msgid "Queue:"
+msgstr ""
+
+#: ui/cli.py:654
+msgid "Queue is empty."
+msgstr ""
+
+#: ui/cli.py:670
+msgid "Bye!"
+msgstr "Adios!"
+
+#: ui/cli.py:912
+msgid "--- Accounts ---"
+msgstr ""
+
+#: ui/cli.py:914
+msgid "Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): "
+msgstr ""
+
+#: ui/cli.py:919
+msgid "--- Add account ---"
+msgstr ""
+
+#: ui/cli.py:925
+msgid "Invalid API."
+msgstr ""
+
+#: ui/cli.py:929
+msgid "Enter username: "
+msgstr ""
+
+#: ui/cli.py:932
+msgid "Enter account name: "
+msgstr ""
+
+#: ui/cli.py:933
+msgid "OAuth Authentication"
+msgstr ""
+
+#: ui/cli.py:934
+msgid "--------------------"
+msgstr ""
+
+#: ui/cli.py:935
+msgid "This website requires OAuth authentication."
+msgstr ""
+
+#: ui/cli.py:936
+msgid "Please go to the following URL with your browser,"
+msgstr ""
+
+#: ui/cli.py:937
+msgid "follow the steps and paste the given PIN code here."
+msgstr ""
+
+#: ui/cli.py:945
+msgid "Done."
+msgstr ""
+
+#: ui/cli.py:949
+msgid "--- Delete account ---"
+msgstr ""
+
+#: ui/cli.py:950
+msgid "Account number to delete: "
+msgstr ""
+
+#: ui/cli.py:959 ui/cli.py:979
+msgid "Invalid value."
+msgstr ""
+
+#: ui/cli.py:961 ui/cli.py:981
+msgid "Account doesn't exist."
+msgstr ""
+
+#: ui/cli.py:987
+msgid "Available accounts:"
+msgstr ""
+
+#: ui/cli.py:995
+msgid "No accounts."
+msgstr ""
+
+#: ui/cli.py:999
+msgid "Usage: trackma [options]"
+msgstr ""
+
+#: ui/cli.py:1001
+msgid "Options:"
+msgstr ""
+
+#: ui/cli.py:1006
+msgid "Example:"
+msgstr ""
+
+#: ui/cli.py:1008
+msgid "or:"
+msgstr ""
+
+#: ui/cli.py:1028
+msgid "Enabling debug messages."
+msgstr ""
+

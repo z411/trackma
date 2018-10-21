@@ -216,6 +216,29 @@ def get_terminal_size(fd=1):
 
     return hw
 
+def get_locale():
+    """
+    Returns locale to use for translations.
+    First uses locale defined in config.
+    If user has not defined a locale in config, it tries os locale.
+    Checks if locale user wants has been translated by trackma.
+    If language has not been translated, it falls back to english
+    """
+
+    self.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
+
+    if self.config['locale'] in gettext.find('cli', 'locales'):
+        userLocale=self.config['locale']
+    elif os.environ['LANGUAGE'] in gettext.find('cli', 'locales'):
+        userLocale=os.environ['LANGUAGE']
+    else:
+        print("Defaulting to English")
+        userLocale="en"
+
+    return userLocale
+
+
+
 def show():
     return {
         'id':           0,
@@ -297,6 +320,7 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'locale': 'en',
 }
 userconfig_defaults = {
     'mediatype': '',
