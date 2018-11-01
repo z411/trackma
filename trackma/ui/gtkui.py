@@ -65,14 +65,17 @@ class Trackma_gtk(object):
     hidden = False
     quit = False
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, background=False):
         self.debug = debug
+        self.background = background
 
     def main(self):
         """Start the Account Selector"""
         self.configfile = utils.get_root_filename('ui-Gtk.json')
         self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
-
+        if self.background:
+            self.config['start_in_tray'] = True
+            self.config['show_tray'] = True
         manager = AccountManager()
 
         # Use the remembered account if there's one
@@ -2831,6 +2834,7 @@ def scale(w, h, x, y, maximum=True):
 
 def main():
     debug = False
+    background = False
 
     print("Trackma-gtk v{}".format(utils.VERSION))
 
@@ -2840,11 +2844,14 @@ def main():
         print('Options:')
         print(' -d  Shows debugging information')
         print(' -h  Shows this help')
+        print(' -b  Start Trackma in the background')
         return
     if '-d' in sys.argv:
         debug = True
+    if '-b' in sys.argv:
+        background = True
 
-    app = Trackma_gtk(debug)
+    app = Trackma_gtk(debug, background)
     try:
         Gdk.threads_enter()
         app.main()
