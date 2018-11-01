@@ -153,7 +153,7 @@ class libanilist(lib):
 
         try:
             response = self.opener.open(request, timeout = 10)
-            return json.load(response)
+            return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid request: %s" % e.read())
