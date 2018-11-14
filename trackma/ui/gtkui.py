@@ -51,6 +51,9 @@ except ImportError:
         print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
+# Icon tray isn't available in Wayland
+tray_available = not Gdk.Display.get_default().get_name().lower().startswith('wayland')
+
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
 from trackma import utils
@@ -64,6 +67,8 @@ class Trackma_gtk(object):
     close_thread = None
     hidden = False
     quit = False
+
+    statusicon = None
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -415,15 +420,16 @@ class Trackma_gtk(object):
         self.main.add_accel_group(accelgrp)
 
         # Status icon
-        self.statusicon = Gtk.StatusIcon()
-        self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
-        self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
-        self.statusicon.connect('activate', self.status_event)
-        self.statusicon.connect('popup-menu', self.status_menu_event)
-        if self.config['show_tray']:
-            self.statusicon.set_visible(True)
-        else:
-            self.statusicon.set_visible(False)
+        if tray_available:
+            self.statusicon = Gtk.StatusIcon()
+            self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
+            self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
+            self.statusicon.connect('activate', self.status_event)
+            self.statusicon.connect('popup-menu', self.status_menu_event)
+            if self.config['show_tray']:
+                self.statusicon.set_visible(True)
+            else:
+                self.statusicon.set_visible(False)
 
         # Engine configuration
         self.engine.set_message_handler(self.message_handler)
@@ -443,7 +449,7 @@ class Trackma_gtk(object):
         self.allow_buttons(False)
 
         # Don't show the main dialog if start in tray option is set
-        if self.config['show_tray'] and self.config['start_in_tray']:
+        if self.statusicon and self.config['show_tray'] and self.config['start_in_tray']:
             self.hidden = True
         else:
             self.main.show()
@@ -465,7 +471,7 @@ class Trackma_gtk(object):
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
-        if self.config['tray_api_icon']:
+        if self.statusicon and self.config['tray_api_icon']:
             self.statusicon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
             self.engine.get_userconfig('username'),
@@ -600,7 +606,7 @@ class Trackma_gtk(object):
         menu.popup(None, None, None, pos, button, time)
 
     def delete_event(self, widget, event, data=None):
-        if self.statusicon.get_visible() and self.config['close_to_tray']:
+        if self.statusicon and self.statusicon.get_visible() and self.config['close_to_tray']:
             self.hidden = True
             self.main.hide()
         else:
@@ -2149,6 +2155,10 @@ class Settings(Gtk.Window):
         line6.pack_start(self.chk_remember_geometry, False, False, 0)
         line6.pack_start(self.chk_classic_progress, False, False, 0)
 
+        if not tray_available:
+            self.chk_show_tray.set_label('Show Tray Icon (Not supported in this environment)')
+            self.chk_show_tray.set_sensitive(False)
+
         ### Colors ###
         header5 = Gtk.Label()
         header5.set_text('<b>Color Scheme</b>')
@@ -2282,10 +2292,12 @@ class Settings(Gtk.Window):
         self.chk_auto_date_change.set_active(self.engine.get_config('auto_date_change'))
 
         """GTK Interface Configuration"""
-        self.chk_show_tray.set_active(self.config['show_tray'])
-        self.chk_close_to_tray.set_active(self.config['close_to_tray'])
-        self.chk_start_in_tray.set_active(self.config['start_in_tray'])
-        self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+        if tray_available:
+            self.chk_show_tray.set_active(self.config['show_tray'])
+            self.chk_close_to_tray.set_active(self.config['close_to_tray'])
+            self.chk_start_in_tray.set_active(self.config['start_in_tray'])
+            self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+
         self.chk_remember_geometry.set_active(self.config['remember_geometry'])
         self.chk_classic_progress.set_active(not self.config['episodebar_style'])
 
