@@ -1,0 +1,55 @@
+{
+    "app-id" : "io.github.TrackmaQt5",
+    "runtime" : "org.kde.Platform",
+    "runtime-version" : "5.11",
+    "sdk" : "org.kde.Sdk",
+    "command" : "trackma-qt",
+    "build-options" : {
+        "build-args" : [
+            "--share=network"
+        ],
+        "env" : {
+            "DEBUG" : "true"
+        }
+    },
+    "finish-args" : [
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=session-bus",
+        "--filesystem=home",
+        "--share=network",
+        "--share=ipc",
+        "--filesystem=xdg-run/dconf",
+        "--filesystem=~/.config/dconf:ro",
+        "--talk-name=ca.desrt.dconf",
+        "--env=DCONF_USER_CONFIG_DIR=.config/dconf"
+    ],
+    "modules" : [
+        {
+            "name" : "PyQt5",
+            "buildsystem" : "simple",
+            "build-args" : [
+                "--share=network"
+            ],
+            "build-commands" : [
+                "pip3 install --prefix=/app PyQt5"
+            ]
+        },
+        {
+            "name" : "trackma-gtk",
+            "buildsystem" : "simple",
+            "build-args" : [
+                "--share=network"
+            ],
+            "sources":[
+                {
+                    "type": "git",
+                    "url": "https://github.com/z411/trackma.git"
+                }
+            ],
+            "build-commands" : [
+                "python3 setup.py install --prefix=/app"
+            ]
+        }
+    ]
+}

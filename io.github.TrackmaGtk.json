@@ -1,0 +1,45 @@
+{
+    "app-id" : "io.github.TrackmaGtk",
+    "runtime" : "org.gnome.Platform",
+    "runtime-version" : "3.30",
+    "sdk" : "org.gnome.Sdk",
+    "command" : "trackma-gtk",
+    "build-options" : {
+        "build-args" : [
+            "--share=network"
+        ],
+        "env" : {
+            "DEBUG" : "true"
+        }
+    },
+    "finish-args" : [
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=session-bus",
+        "--filesystem=home",
+        "--share=network",
+        "--share=ipc",
+        "--filesystem=xdg-run/dconf",
+        "--filesystem=~/.config/dconf:ro",
+        "--talk-name=ca.desrt.dconf",
+        "--env=DCONF_USER_CONFIG_DIR=.config/dconf"
+    ],
+    "modules" : [
+        {
+            "name" : "trackma-gtk",
+            "buildsystem" : "simple",
+            "build-args" : [
+                "--share=network"
+            ],
+            "sources":[
+                {
+                    "type": "git",
+                    "url": "https://github.com/z411/trackma.git"
+                }
+            ],
+            "build-commands" : [
+                "python3 setup.py install --prefix=/app"
+            ]
+        }
+    ]
+}

@@ -5,3 +5,6 @@
 *.swp
 *.out
 *.log
+build
+dist
+Trackma.egg-info
