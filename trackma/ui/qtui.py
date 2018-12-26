@@ -1415,7 +1415,10 @@ class Trackma(QMainWindow):
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
 
     def ws_prompt_add(self, show_title, episode):
-        addwindow = AddDialog(None, self.worker, None, default=show_title)
+        page = self.notebook.currentIndex()
+        current_status = self.statuses_nums[page]
+
+        addwindow = AddDialog(None, self.worker, current_status, default=show_title)
         addwindow.setModal(True)
         if addwindow.exec_():
             self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
