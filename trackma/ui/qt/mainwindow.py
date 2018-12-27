@@ -17,6 +17,8 @@
 pyqt_version = 5
 
 import os
+import datetime
+import subprocess
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
@@ -47,15 +49,6 @@ from trackma.accounts import AccountManager
 from trackma import messenger
 from trackma import utils
 
-try:
-    import dateutil.parser
-    import dateutil.tz
-    import datetime
-    dateutil_available = True
-except ImportError:
-    print("Warning: DateUtil is unavailable. "
-          "Next episode countdown will be disabled.")
-    dateutil_available = False
 
 class MainWindow(QMainWindow):
     """
@@ -180,6 +173,8 @@ class MainWindow(QMainWindow):
         action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QAction('Rescan &Library', self)
         action_scan_library.triggered.connect(self.s_scan_library)
+        action_open_folder = QAction('Open containing folder', self)
+        action_open_folder.triggered.connect(self.s_open_folder)
 
         action_reload = QAction('Switch &Account', self)
         action_reload.setStatusTip('Switch to a different account.')
@@ -197,6 +192,7 @@ class MainWindow(QMainWindow):
         self.menu_show.addAction(action_play_next)
         self.menu_show.addAction(action_play_dialog)
         self.menu_show.addAction(action_details)
+        self.menu_show_context.addAction(action_open_folder)
         self.menu_show.addAction(action_altname)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_play_random)
@@ -499,6 +495,7 @@ class MainWindow(QMainWindow):
 
     def fatal(self, msg):
         QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
+        self.accountman.set_default(None)
         self._busy()
         self.finish = False
         self.worker_call('unload', self.r_engine_unloaded)
@@ -619,6 +616,17 @@ class MainWindow(QMainWindow):
         Using a full showlist, rebuilds every QTreeView
 
         """
+
+        # Set allowed ranges (this will be reported by the engine later)
+        decimal_places = 0
+        if isinstance(self.mediainfo['score_step'], float):
+            decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
+
+        self.show_score.setRange(0, self.mediainfo['score_max'])
+        self.show_score.setDecimals(decimal_places)
+        self.show_score.setSingleStep(self.mediainfo['score_step'])
+
+        # Rebuild each available list
         statuses_nums = self.worker.engine.mediainfo['statuses']
         filtered_list = dict()
         for status in statuses_nums:
@@ -677,7 +685,7 @@ class MainWindow(QMainWindow):
             i += 1
 
         widget.setSortingEnabled(True)
-        widget.sortByColumn(1, QtCore.Qt.AscendingOrder)
+        widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
         # Update tab name with total
         tab_index = self.statuses_nums.index(status)
@@ -725,10 +733,8 @@ class MainWindow(QMainWindow):
         widget.setCellWidget(row, 4, percent_widget )
         if 'date_next_ep' in self.mediainfo \
         and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show \
-        and dateutil_available:
-            next_ep_dt = dateutil.parser.parse(show['next_ep_time'])
-            delta = next_ep_dt - datetime.datetime.now(dateutil.tz.tzutc())
+        and 'next_ep_time' in show:
+            delta = show['next_ep_time'] - datetime.datetime.utcnow()
             widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
         else:
             widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))
@@ -1027,6 +1033,10 @@ class MainWindow(QMainWindow):
         else:
             self._select_show(None)
 
+    def s_update_sort(self, index, order):
+        self.config['sort_index'] = index
+        self.config['sort_order'] = order
+
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
@@ -1168,6 +1178,21 @@ class MainWindow(QMainWindow):
             self.worker.engine.altname(self.selected_show_id, str(new_altname))
             self.ws_changed_show(show, altname=new_altname)
 
+    def s_open_folder(self):
+        show = self.worker.engine.get_show_info(self.selected_show_id)
+        try:
+            filename = self.worker.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+            self.error("No folder found.")
+
     def s_retrieve(self):
         queue = self.worker.engine.get_queue()
 
@@ -1195,6 +1220,8 @@ class MainWindow(QMainWindow):
     def s_switch_account(self):
         if not self.accountman_widget:
             self.accountman_create()
+        else:
+            self.accountman_widget.update()
 
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
@@ -1326,7 +1353,10 @@ class MainWindow(QMainWindow):
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
 
     def ws_prompt_add(self, show_title, episode):
-        addwindow = AddDialog(None, self.worker, None, default=show_title)
+        page = self.notebook.currentIndex()
+        current_status = self.statuses_nums[page]
+
+        addwindow = AddDialog(None, self.worker, current_status, default=show_title)
         addwindow.setModal(True)
         if addwindow.exec_():
             self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
@@ -1359,15 +1389,6 @@ class MainWindow(QMainWindow):
             self.statuses_nums = self.mediainfo['statuses']
             self.statuses_names = self.mediainfo['statuses_dict']
 
-            # Set allowed ranges (this should be reported by the engine later)
-            decimal_places = 0
-            if isinstance(self.mediainfo['score_step'], float):
-                decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
-
-            self.show_score.setRange(0, self.mediainfo['score_max'])
-            self.show_score.setDecimals(decimal_places)
-            self.show_score.setSingleStep(self.mediainfo['score_step'])
-
             # Build notebook
             for status in self.statuses_nums:
                 name = self.statuses_names[status]
@@ -1385,6 +1406,7 @@ class MainWindow(QMainWindow):
                     self.show_lists[status].horizontalHeader().setMovable(True)
                 self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
+                self.show_lists[status].horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
                 self.show_lists[status].verticalHeader().hide()
                 self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
                 self.show_lists[status].currentItemChanged.connect(self.s_show_selected)

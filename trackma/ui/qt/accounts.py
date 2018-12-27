@@ -49,8 +49,6 @@ class AccountDialog(QDialog):
 
         bottom_layout = QHBoxLayout()
         self.remember_chk = QCheckBox('Remember')
-        if self.accountman.get_default() is not None:
-            self.remember_chk.setChecked(True)
         cancel_btn = QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
         add_btn = QPushButton('Add')
@@ -82,12 +80,16 @@ class AccountDialog(QDialog):
             self.icons[libname] = QtGui.QIcon(lib[1])
 
         # Populate list
+        self.update()
         self.rebuild()
 
         # Finish layout
         layout.addWidget(self.table)
         layout.addLayout(bottom_layout)
         self.setLayout(layout)
+
+    def update(self):
+        self.remember_chk.setChecked(self.accountman.get_default() is not None)
 
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)

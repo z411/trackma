@@ -296,23 +296,21 @@ class ShowItemNum(ShowItem):
 
 class ShowItemDate(ShowItem):
     def __init__(self, date, color=None):
+        self.date = datetime.datetime(1, 1, 1)
+
         if date:
             try:
                 datestr = date.strftime("%Y-%m-%d")
+                self.date = date
             except ValueError:
                 datestr = '?'
         else:
             datestr = '-'
 
-        self.date = date
-
         ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
 
     def __lt__(self, other):
-        if self.date and other.date:
-            return self.date < other.date
-        else:
-            return True
+        return self.date < other.date
 
 class AddCardView(QListView):
     changed = QtCore.pyqtSignal(dict)

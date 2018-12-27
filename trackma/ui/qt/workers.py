@@ -54,9 +54,10 @@ class ImageWorker(QtCore.QThread):
         try:
             img_file = BytesIO(urllib.request.urlopen(req).read())
             if self.size:
-                im = Image.open(img_file)
-                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-                im.save(self.local)
+                if imaging_available:
+                    im = Image.open(img_file)
+                    im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                    im.convert("RGB").save(self.local)
             else:
                 with open(self.local, 'wb') as f:
                     f.write(img_file.read())
