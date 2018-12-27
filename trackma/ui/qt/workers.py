@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+
 from io import BytesIO
 import urllib.request
 
@@ -54,7 +56,7 @@ class ImageWorker(QtCore.QThread):
         try:
             img_file = BytesIO(urllib.request.urlopen(req).read())
             if self.size:
-                if imaging_available:
+                if "imaging_available" in os.environ:
                     im = Image.open(img_file)
                     im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
                     im.convert("RGB").save(self.local)
