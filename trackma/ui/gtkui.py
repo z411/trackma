@@ -51,6 +51,9 @@ except ImportError:
         print("Warning: PIL or Pillow isn't available. Preview images will be disabled.")
         imaging_available = False
 
+# Icon tray isn't available in Wayland
+tray_available = not Gdk.Display.get_default().get_name().lower().startswith('wayland')
+
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
 from trackma import utils
@@ -64,6 +67,8 @@ class Trackma_gtk(object):
     close_thread = None
     hidden = False
     quit = False
+
+    statusicon = None
 
     def __init__(self, debug=False):
         self.debug = debug
@@ -85,8 +90,10 @@ class Trackma_gtk(object):
 
         Gtk.main()
 
-    def __do_switch_account(self, widget, switch=True):
+    def __do_switch_account(self, widget, switch=True, forget=False):
         manager = AccountManager()
+        if forget:
+            manager.set_default(None)
         self.accountsel = AccountSelect(manager = AccountManager(), switch=switch)
         self.accountsel.use_button.connect("clicked", self.use_account)
         self.accountsel.create()
@@ -385,7 +392,7 @@ class Trackma_gtk(object):
         self.mb_sync.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>E")
         self.mb_send.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>R")
+        key, mod = Gtk.accelerator_parse("<Control>D")
         self.mb_retrieve.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>Right")
         self.add_epp_button.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
@@ -397,8 +404,6 @@ class Trackma_gtk(object):
         mb_scanlibrary.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>W")
         self.mb_web.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>D")
-        self.mb_info.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>Delete")
         self.mb_delete.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>Q")
@@ -415,15 +420,16 @@ class Trackma_gtk(object):
         self.main.add_accel_group(accelgrp)
 
         # Status icon
-        self.statusicon = Gtk.StatusIcon()
-        self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
-        self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
-        self.statusicon.connect('activate', self.status_event)
-        self.statusicon.connect('popup-menu', self.status_menu_event)
-        if self.config['show_tray']:
-            self.statusicon.set_visible(True)
-        else:
-            self.statusicon.set_visible(False)
+        if tray_available:
+            self.statusicon = Gtk.StatusIcon()
+            self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
+            self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
+            self.statusicon.connect('activate', self.status_event)
+            self.statusicon.connect('popup-menu', self.status_menu_event)
+            if self.config['show_tray']:
+                self.statusicon.set_visible(True)
+            else:
+                self.statusicon.set_visible(False)
 
         # Engine configuration
         self.engine.set_message_handler(self.message_handler)
@@ -443,7 +449,7 @@ class Trackma_gtk(object):
         self.allow_buttons(False)
 
         # Don't show the main dialog if start in tray option is set
-        if self.config['show_tray'] and self.config['start_in_tray']:
+        if self.statusicon and self.config['show_tray'] and self.config['start_in_tray']:
             self.hidden = True
         else:
             self.main.show()
@@ -465,20 +471,11 @@ class Trackma_gtk(object):
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
         self.api_icon.set_from_file(api_iconfile)
-        if self.config['tray_api_icon']:
+        if self.statusicon and self.config['tray_api_icon']:
             self.statusicon.set_from_file(api_iconfile)
         self.api_user.set_text("%s (%s)" % (
             self.engine.get_userconfig('username'),
             self.engine.api_info['mediatype']))
-
-        self.score_decimal_places = 0
-        if isinstance( self.engine.mediainfo['score_step'], float ):
-            self.score_decimal_places = len(str(self.engine.mediainfo['score_step']).split('.')[1])
-
-        self.show_score.set_value(0)
-        self.show_score.set_digits(self.score_decimal_places)
-        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
-        self.show_score.get_adjustment().set_step_increment(self.engine.mediainfo['score_step'])
 
         can_play = self.engine.mediainfo['can_play']
         can_update = self.engine.mediainfo['can_update']
@@ -517,7 +514,6 @@ class Trackma_gtk(object):
                     status,
                     self.config['colors'],
                     self.config['visible_columns'],
-                    self.score_decimal_places,
                     self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.__do_info)
@@ -573,7 +569,7 @@ class Trackma_gtk(object):
     def idle_restart_push(self):
         self.quit = False
         self.main.destroy()
-        self.__do_switch_account(None, False)
+        self.__do_switch_account(None, False, forget=True)
 
     def on_destroy(self, widget):
         if self.quit:
@@ -610,7 +606,7 @@ class Trackma_gtk(object):
         menu.popup(None, None, None, pos, button, time)
 
     def delete_event(self, widget, event, data=None):
-        if self.statusicon.get_visible() and self.config['close_to_tray']:
+        if self.statusicon and self.statusicon.get_visible() and self.config['close_to_tray']:
             self.hidden = True
             self.main.hide()
         else:
@@ -850,6 +846,7 @@ class Trackma_gtk(object):
             if retrieve:
                 self.engine.list_download()
 
+            GObject.idle_add(self._set_score_ranges)
             GObject.idle_add(self.build_all_lists)
         except utils.TrackmaError as e:
             self.error(e)
@@ -876,6 +873,7 @@ class Trackma_gtk(object):
         Gdk.threads_enter()
         self.statusbox.handler_block(self.statusbox_handler)
         self._clear_gui()
+        self._set_score_ranges()
         self._create_lists()
         self.build_all_lists()
 
@@ -978,6 +976,19 @@ class Trackma_gtk(object):
 
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
+
+    def _set_score_ranges(self):
+        self.score_decimal_places = 0
+        if isinstance( self.engine.mediainfo['score_step'], float ):
+            self.score_decimal_places = len(str(self.engine.mediainfo['score_step']).split('.')[1])
+
+        self.show_score.set_value(0)
+        self.show_score.set_digits(self.score_decimal_places)
+        self.show_score.set_range(0, self.engine.mediainfo['score_max'])
+        self.show_score.get_adjustment().set_step_increment(self.engine.mediainfo['score_step'])
+
+        for view in self.show_lists.values():
+            view.decimals = self.score_decimal_places
 
     def build_all_lists(self):
         for status in self.show_lists.keys():
@@ -1217,9 +1228,12 @@ class ImageTask(threading.Thread):
         req.add_header("User-agent", "TrackmaImage/{}".format(utils.VERSION))
         img_file = BytesIO(urllib.request.urlopen(req).read())
         if self.size:
-            im = Image.open(img_file)
-            im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-            im.save(self.local)
+            if imaging_available:
+                im = Image.open(img_file)
+                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                im.convert("RGB").save(self.local)
+            else:
+                self.show_image.pholder_show("PIL library\nnot available")
         else:
             with open(self.local, 'wb') as f:
                 f.write(img_file.read())
@@ -1227,9 +1241,10 @@ class ImageTask(threading.Thread):
         if self.cancelled:
             return
 
-        Gdk.threads_enter()
-        self.show_image.image_show(self.local)
-        Gdk.threads_leave()
+        if os.path.exists(self.local):
+            Gdk.threads_enter()
+            self.show_image.image_show(self.local)
+            Gdk.threads_leave()
 
     def cancel(self):
         self.cancelled = True
@@ -1275,7 +1290,7 @@ class ShowView(Gtk.TreeView):
     __gsignals__ = {'column-toggled': (GObject.SIGNAL_RUN_LAST, \
             GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
 
-    def __init__(self, status, colors, visible_columns, decimals=0, progress_style=1):
+    def __init__(self, status, colors, visible_columns, progress_style=1, decimals=0):
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
@@ -1826,7 +1841,10 @@ class InfoWidget(Gtk.VBox):
             detail = list()
             for line in self.details['extra']:
                 if line[0] and line[1]:
-                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(line[0])), cgi.escape(str(line[1]))))
+                    title, content, *_ = line
+                    if isinstance(content, list):
+                        content = ", ".join(filter(None, content))
+                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(title)), cgi.escape(str(content))))
 
             self.w_content.set_text("\n\n".join(detail))
             self.w_content.set_use_markup(True)
@@ -1975,13 +1993,13 @@ class Settings(Gtk.Window):
         line9a.pack_start(self.chk_tracker_update_prompt, False, False, 0)
         line9a.pack_start(self.chk_tracker_not_found_prompt, False, False, 0)
         line9.pack_start(line9a, False, False, 0)
-        
+
         ### Plex ###
         header6 = Gtk.Label()
         header6.set_text('<b>Plex Media Server</b>')
         header6.set_use_markup(True)
         header6.set_xalign(0)
-        
+
         # Labels
         lbl_tracker_plex_host_port = Gtk.Label('Host and Port')
         lbl_tracker_plex_host_port.set_size_request(120, -1)
@@ -1992,7 +2010,7 @@ class Settings(Gtk.Window):
         lbl_tracker_plex_login = Gtk.Label('myPlex login (claimed server)')
         lbl_tracker_plex_login.set_size_request(120, -1)
         lbl_tracker_plex_login.set_xalign(0)
-        
+
         # Entries
         self.txt_plex_host = Gtk.Entry()
         self.txt_plex_host.set_max_length(4096)
@@ -2005,7 +2023,7 @@ class Settings(Gtk.Window):
         self.txt_plex_passw.set_max_length(128)
         self.txt_plex_passw.set_visibility(False)
         self.chk_tracker_plex_obey_wait = Gtk.CheckButton()
-        
+
         # HBoxes
         line7 = Gtk.HBox(False, 5)
         line7.pack_start(lbl_tracker_plex_host_port, False, False, 5)
@@ -2136,6 +2154,10 @@ class Settings(Gtk.Window):
         line6.pack_start(line_tray_api_icon, False, False, 0)
         line6.pack_start(self.chk_remember_geometry, False, False, 0)
         line6.pack_start(self.chk_classic_progress, False, False, 0)
+
+        if not tray_available:
+            self.chk_show_tray.set_label('Show Tray Icon (Not supported in this environment)')
+            self.chk_show_tray.set_sensitive(False)
 
         ### Colors ###
         header5 = Gtk.Label()
@@ -2270,10 +2292,12 @@ class Settings(Gtk.Window):
         self.chk_auto_date_change.set_active(self.engine.get_config('auto_date_change'))
 
         """GTK Interface Configuration"""
-        self.chk_show_tray.set_active(self.config['show_tray'])
-        self.chk_close_to_tray.set_active(self.config['close_to_tray'])
-        self.chk_start_in_tray.set_active(self.config['start_in_tray'])
-        self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+        if tray_available:
+            self.chk_show_tray.set_active(self.config['show_tray'])
+            self.chk_close_to_tray.set_active(self.config['close_to_tray'])
+            self.chk_start_in_tray.set_active(self.config['start_in_tray'])
+            self.chk_tray_api_icon.set_active(self.config['tray_api_icon'])
+
         self.chk_remember_geometry.set_active(self.config['remember_geometry'])
         self.chk_classic_progress.set_active(not self.config['episodebar_style'])
 
@@ -2420,7 +2444,6 @@ class AccountSelectAdd(Gtk.Window):
         self.txt_user.set_max_length(128)
         self.txt_user.set_activates_default(True)
         self.txt_passwd = Gtk.Entry()
-        self.txt_passwd.set_max_length(128)
         self.txt_passwd.set_visibility(False)
         self.txt_passwd.set_activates_default(True)
 

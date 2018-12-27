@@ -46,6 +46,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+        'can_date': True,
         'date_next_ep': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
@@ -68,6 +69,7 @@ class libanilist(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+        'can_date': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
         'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -83,6 +85,14 @@ class libanilist(lib):
     }
     default_mediatype = 'anime'
 
+    score_types = {
+        'POINT_100': (100, 1),
+        'POINT_10_DECIMAL': (10, 0.1),
+        'POINT_10': (10, 1),
+        'POINT_5': (5, 1),
+        'POINT_3': (3, 1),
+    }
+
     release_formats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC', 'MANGA', 'NOVEL', 'ONE_SHOT']
 
     # Supported signals for the data handler
@@ -92,6 +102,7 @@ class libanilist(lib):
     query_url = "https://graphql.anilist.co"
     client_id = "537"
     _client_secret = "9Hl31gyz2q9xMhhJwLKRA8DAn0pXl9sOHFf6I1YO"
+    user_agent = 'Trackma/{}'.format(utils.VERSION)
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
@@ -99,11 +110,6 @@ class libanilist(lib):
 
         self.pin = account['password'].strip()
         self.userid = self._get_userconfig('userid')
-
-        if len(self.pin) == 40:  # Old pins were 40 digits, new ones seem to be 654 digits
-            raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using Anilist.")
-        #elif len(self.pin) != 654:
-        #    raise utils.APIFatal("Invalid PIN.")
 
         if self.mediatype == 'manga':
             self.total_str = "chapters"
@@ -117,11 +123,14 @@ class libanilist(lib):
             'NOT_YET_RELEASED': utils.STATUS_NOTYET,
             'CANCELLED': utils.STATUS_CANCELLED,
         }
+        
+        # If we already know the scoreFormat of the cached list, apply it now
+        self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
+        if self.scoreformat:
+            self._apply_scoreformat(self.scoreformat)
 
-        #handler=urllib.request.HTTPHandler(debuglevel=1)
-        #self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
-        self.opener.addheaders = [('User-agent', 'Trackma/0.1')]
+        self.opener.addheaders = [('User-agent', self.user_agent)]
 
     def _raw_request(self, method, url, get=None, post=None, jsonpost=None, auth=False):
         if get:
@@ -144,7 +153,7 @@ class libanilist(lib):
 
         try:
             response = self.opener.open(request, timeout = 10)
-            return json.load(response)
+            return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid request: %s" % e.read())
@@ -162,6 +171,10 @@ class libanilist(lib):
         return self._raw_request('POST', self.query_url, jsonpost=data, auth=True)
 
     def check_credentials(self):
+        if len(self.pin) == 40:  # Old pins were 40 digits, new ones seem to be 654 digits
+            raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using AniList."
+                                 " Please re-authorize or re-create your AniList account.")
+
         if not self.userid:
             self._refresh_user_info()
 
@@ -194,14 +207,8 @@ class libanilist(lib):
       }
     }
     user {
-      id
-      name
-      avatar {
-        large
-      }
       mediaListOptions {
         scoreFormat
-        rowOrder
       }
     }
   }
@@ -210,17 +217,9 @@ class libanilist(lib):
 fragment mediaListEntry on MediaList {
   id
   score
-  scoreRaw: score (format: POINT_100)
   progress
-  progressVolumes
-  repeat
-  private
-  notes
-  hiddenFromStatusLists
   startedAt { year month day }
   completedAt { year month day }
-  updatedAt
-  createdAt
   media {
     id
     title { userPreferred romaji english native }
@@ -242,6 +241,13 @@ fragment mediaListEntry on MediaList {
         if not data['lists']:
             # No lists returned so no need to continue
             return showlist
+
+        # Handle different score formats provided by Anilist
+        self.scoreformat = data['user']['mediaListOptions']['scoreFormat']
+        self._apply_scoreformat(self.scoreformat)
+        
+        self._set_userconfig('scoreformat_' + self.mediatype, self.scoreformat)
+        self._emit_signal('userconfig_changed')
 
         for remotelist in data['lists']:
             my_status = remotelist['status']
@@ -286,17 +292,8 @@ fragment mediaListEntry on MediaList {
         'id': 'Int',                         # The list entry id, required for updating
         'mediaId': 'Int',                    # The id of the media the entry is of
         'status': 'MediaListStatus',         # The watching/reading status
-        'score': 'Float',                    # The score of the media in the user's chosen scoring method
         'scoreRaw': 'Int',                   # The score of the media in 100 point
         'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
-        'progressVolumes': 'Int',            # The amount of volumes read by the user
-        'repeat': 'Int',                     # The amount of times the user has rewatched/read the media
-        'priority': 'Int',                   # Priority of planning
-        'private': 'Boolean',                # If the entry should only be visible to authenticated user
-        'notes': 'String',                   # Text notes
-        'hiddenFromStatusLists': 'Boolean',  # If the entry shown be hidden from non-custom lists
-        'customLists': '[String]',           # Array of custom list names which should be enabled for this entry
-        'advancedScores': '[Float]',         # Array of advanced scores
         'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
         'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
     }
@@ -313,7 +310,11 @@ fragment mediaListEntry on MediaList {
         if 'my_status' in item:
             values['status'] = item['my_status']
         if 'my_score' in item:
-            values['score'] = item['my_score']
+            values['scoreRaw'] = self._score2raw(item['my_score'])
+        if 'my_start_date' in item:
+            values['startedAt'] = self._date2dict(item['my_start_date'])
+        if 'my_finish_date' in item:
+            values['completedAt'] = self._date2dict(item['my_finish_date'])
 
         vars_defn = ', '.join(['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
         subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
@@ -353,7 +354,6 @@ fragment mediaListEntry on MediaList {
       averageScore
       popularity
       chapters episodes
-      season
       status
       isAdult
       startDate { year month day }
@@ -363,17 +363,18 @@ fragment mediaListEntry on MediaList {
     }
   }
 }'''
-        variables = {'query': urllib.parse.quote_plus(criteria), 'listType': self.mediatype.upper()}
+        variables = {'query': urllib.parse.quote_plus(criteria), 'type': self.mediatype.upper()}
         data = self._request(query, variables)['data']['Page']['media']
 
         showlist = []
         for media in data:
             show = utils.show()
             showid = media['id']
+            aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
             showdata = {
                 'id': showid,
                 'title': media['title']['userPreferred'],
-                'aliases': [media['title']['romaji'], media['title']['english'], media['title']['native']],
+                'aliases': aliases,
                 'type': media['format'],  # Need to reformat output
                 'status': self.status_translate[media['status']],
                 'total': self._c(media[self.total_str]),
@@ -401,23 +402,15 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
-      popularity
       chapters episodes
-      season
       status
-      isAdult
       startDate { year month day }
       endDate { year month day }
       siteUrl
-      mediaListEntry { status progress score }
       description
       genres
       synonyms
       averageScore
-      relations {
-          edges {relationType}
-          nodes { id type title {userPreferred} }
-      }
   }
 }'''
 
@@ -461,6 +454,10 @@ fragment mediaListEntry on MediaList {
         })
         return info
 
+    def _apply_scoreformat(self, fmt):
+        media = self.media_info()
+        (media['score_max'], media['score_step']) = self.score_types[fmt]
+
     def _dict2date(self, item):
         if not item:
             return None
@@ -468,6 +465,27 @@ fragment mediaListEntry on MediaList {
             return datetime.datetime(item['year'], item['month'], item['day'])
         except (TypeError, ValueError):
             return None
+
+    def _date2dict(self, date):
+        if not date:
+            return {}
+        try:
+            return {'year': date.year, 'month': date.month, 'day': date.day}
+        except (TypeError, ValueError):
+            return {}
+
+    def _score2raw(self, score):
+        if score == 0:
+            return 0
+
+        if self.scoreformat in ['POINT_10', 'POINT_10_DECIMAL']:
+            return int(score*10)
+        elif self.scoreformat == 'POINT_5':
+            return int(score*20)
+        elif self.scoreformat == 'POINT_3':
+            return int(score*25)
+        else:
+            return score
 
     def _int2date(self, item):
         if not item:

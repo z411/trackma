@@ -77,6 +77,7 @@ class Trackma_cmd(cmd.Cmd):
         'info':         1,
         'search':       1,
         'add':          1,
+        'del':          1,
         'delete':       1,
         'play':         (1, 2),
         'openfolder':   1,
@@ -106,6 +107,9 @@ class Trackma_cmd(cmd.Cmd):
                 self.account = self.accountman.select_account(True)
         else:
             self.account = self.accountman.select_account(False)
+
+    def forget_account(self):
+        self.accountman.set_default(None)
 
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
@@ -397,10 +401,14 @@ class Trackma_cmd(cmd.Cmd):
             except utils.TrackmaError as e:
                 self.display_error(e)
 
+    def do_del(self, args):
+        self.do_delete(args)
+
     def do_delete(self, args):
         """
         Deletes a show from the local list.
 
+        :name delete|del
         :param show Show index or title.
         :usage delete <show index or title>
         """
@@ -1025,6 +1033,7 @@ def main():
         main_cmd.start()
         main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
+        main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))
 
 if __name__ == '__main__':

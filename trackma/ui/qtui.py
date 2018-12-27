@@ -540,6 +540,7 @@ class Trackma(QMainWindow):
 
     def fatal(self, msg):
         QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
+        self.accountman.set_default(None)
         self._busy()
         self.finish = False
         self.worker_call('unload', self.r_engine_unloaded)
@@ -660,6 +661,17 @@ class Trackma(QMainWindow):
         Using a full showlist, rebuilds every QTreeView
 
         """
+        
+        # Set allowed ranges (this should be reported by the engine later)
+        decimal_places = 0
+        if isinstance(self.mediainfo['score_step'], float):
+            decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
+
+        self.show_score.setRange(0, self.mediainfo['score_max'])
+        self.show_score.setDecimals(decimal_places)
+        self.show_score.setSingleStep(self.mediainfo['score_step'])
+
+        # Rebuild each available list
         statuses_nums = self.worker.engine.mediainfo['statuses']
         filtered_list = dict()
         for status in statuses_nums:
@@ -721,7 +733,7 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
+                    i += 1
         else:
             if status != self.worker.engine.mediainfo['status_finish']:
                 for show in showlist:
@@ -730,8 +742,8 @@ class Trackma(QMainWindow):
             else:
                 for show in showlist:
                     self._update_row( widget, i, show, altnames.get(show['id']) )
-                    i += 1                    
-            
+                    i += 1
+
         widget.setSortingEnabled(True)
         widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
@@ -1270,6 +1282,8 @@ class Trackma(QMainWindow):
     def s_switch_account(self):
         if not self.accountman_widget:
             self.accountman_create()
+        else:
+            self.accountman_widget.update()
 
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
@@ -1401,7 +1415,10 @@ class Trackma(QMainWindow):
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
 
     def ws_prompt_add(self, show_title, episode):
-        addwindow = AddDialog(None, self.worker, None, default=show_title)
+        page = self.notebook.currentIndex()
+        current_status = self.statuses_nums[page]
+
+        addwindow = AddDialog(None, self.worker, current_status, default=show_title)
         addwindow.setModal(True)
         if addwindow.exec_():
             self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
@@ -1433,15 +1450,6 @@ class Trackma(QMainWindow):
 
             self.statuses_nums = self.mediainfo['statuses']
             self.statuses_names = self.mediainfo['statuses_dict']
-
-            # Set allowed ranges (this should be reported by the engine later)
-            decimal_places = 0
-            if isinstance(self.mediainfo['score_step'], float):
-                decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
-
-            self.show_score.setRange(0, self.mediainfo['score_max'])
-            self.show_score.setDecimals(decimal_places)
-            self.show_score.setSingleStep(self.mediainfo['score_step'])
 
             # Build notebook
             for status in self.statuses_nums:
@@ -2471,8 +2479,6 @@ class AccountDialog(QDialog):
 
         bottom_layout = QHBoxLayout()
         self.remember_chk = QCheckBox('Remember')
-        if self.accountman.get_default() is not None:
-            self.remember_chk.setChecked(True)
         cancel_btn = QPushButton('Cancel')
         cancel_btn.clicked.connect(self.cancel)
         add_btn = QPushButton('Add')
@@ -2504,12 +2510,16 @@ class AccountDialog(QDialog):
             self.icons[libname] = QIcon(lib[1])
 
         # Populate list
+        self.update()
         self.rebuild()
 
         # Finish layout
         layout.addWidget(self.table)
         layout.addLayout(bottom_layout)
         self.setLayout(layout)
+
+    def update(self):
+        self.remember_chk.setChecked(self.accountman.get_default() is not None)
 
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
@@ -2657,23 +2667,22 @@ class ShowItemNum(ShowItem):
 
 class ShowItemDate(ShowItem):
     def __init__(self, date, color=None):
+        self.date = datetime.datetime(1, 1, 1)
+
         if date:
             try:
                 datestr = date.strftime("%Y-%m-%d")
+                self.date = date
             except ValueError:
                 datestr = '?'
         else:
             datestr = '-'
 
-        self.date = date
 
         ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
 
     def __lt__(self, other):
-        if self.date and other.date:
-            return self.date < other.date
-        else:
-            return True
+        return self.date < other.date
 
 
 class FilterBar():
@@ -2939,9 +2948,10 @@ class Image_Worker(QtCore.QThread):
         try:
             img_file = BytesIO(urllib.request.urlopen(req).read())
             if self.size:
-                im = Image.open(img_file)
-                im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
-                im.save(self.local)
+                if imaging_available:
+                    im = Image.open(img_file)
+                    im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                    im.convert("RGB").save(self.local)
             else:
                 with open(self.local, 'wb') as f:
                     f.write(img_file.read())
