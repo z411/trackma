@@ -24,6 +24,8 @@ from PyQt5.QtWidgets import (
 
 from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
 
+from trackma import utils
+
 class AddDialog(QDialog):
     worker = None
     selected_show = None
@@ -62,10 +64,10 @@ class AddDialog(QDialog):
         
         self.season_rad = QRadioButton('By season:')
         self.season_combo = QComboBox()
-        self.season_combo.addItem('Winter')
-        self.season_combo.addItem('Spring')
-        self.season_combo.addItem('Summer')
-        self.season_combo.addItem('Fall')
+        self.season_combo.addItem('Winter', utils.SEASON_WINTER)
+        self.season_combo.addItem('Spring', utils.SEASON_SPRING)
+        self.season_combo.addItem('Summer', utils.SEASON_SUMMER)
+        self.season_combo.addItem('Fall', utils.SEASON_FALL)
         
         self.season_year = QSpinBox()
         self.season_year.setRange(1900, 2017)
@@ -132,10 +134,10 @@ class AddDialog(QDialog):
             criteria = self.search_txt.text().strip()
             if not criteria:
                 return
-            method = "kw"
+            method = utils.SEARCH_METHOD_KW
         elif self.season_rad.isChecked():
-            criteria = (self.season_combo.currentText().lower(), self.season_year.value())
-            method = "season"
+            criteria = (self.season_combo.itemData(self.season_combo.currentIndex()), self.season_year.value())
+            method = utils.SEARCH_METHOD_SEASON
         
         self.contents.currentWidget().clearSelection()
         self.selected_show = None

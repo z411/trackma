@@ -60,6 +60,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
+        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -82,6 +83,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
+        'search_methods': [utils.SEARCH_METHOD_KW],
     }
     default_mediatype = 'anime'
 
@@ -93,8 +95,25 @@ class libanilist(lib):
         'POINT_3': (3, 1),
     }
 
-    release_formats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC', 'MANGA', 'NOVEL', 'ONE_SHOT']
-
+    type_translate = {
+        'TV': utils.TYPE_TV,
+        'TV_SHORT': utils.TYPE_TV,
+        'MOVIE': utils.TYPE_MOVIE,
+        'SPECIAL': utils.TYPE_SP,
+        'OVA': utils.TYPE_OVA,
+        'ONA': utils.TYPE_OVA,
+        'MUSIC': utils.TYPE_OTHER,
+        'MANGA': utils.TYPE_OTHER,
+        'NOVEL': utils.TYPE_OTHER,
+        'ONE_SHOT': utils.TYPE_OTHER,
+    }
+    status_translate = {
+            'RELEASING': utils.STATUS_AIRING,
+            'FINISHED': utils.STATUS_FINISHED,
+            'NOT_YET_RELEASED': utils.STATUS_NOTYET,
+            'CANCELLED': utils.STATUS_CANCELLED,
+    }
+ 
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
@@ -117,13 +136,7 @@ class libanilist(lib):
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes_watched"
-        self.status_translate = {
-            'RELEASING': utils.STATUS_AIRING,
-            'FINISHED': utils.STATUS_FINISHED,
-            'NOT_YET_RELEASED': utils.STATUS_NOTYET,
-            'CANCELLED': utils.STATUS_CANCELLED,
-        }
-        
+       
         # If we already know the scoreFormat of the cached list, apply it now
         self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
         if self.scoreformat:
@@ -267,7 +280,7 @@ fragment mediaListEntry on MediaList {
                     'id': showid,
                     'title': media['title']['userPreferred'],
                     'aliases': aliases,
-                    'type': media['format'],  # Need to reformat output
+                    'type': self.type_translate[media['format']],
                     'status': self.status_translate[media['status']],
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
@@ -341,6 +354,7 @@ fragment mediaListEntry on MediaList {
         self._request(query, variables)
 
     def search(self, criteria, method):
+        print(repr(criteria))
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 
@@ -352,44 +366,27 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
-      popularity
       chapters episodes
       status
-      isAdult
       startDate { year month day }
       endDate { year month day }
       siteUrl
-      mediaListEntry { status progress score }
+      description
+      genres
+      synonyms
+      averageScore
     }
   }
 }'''
         variables = {'query': urllib.parse.quote_plus(criteria), 'type': self.mediatype.upper()}
         data = self._request(query, variables)['data']['Page']['media']
 
-        showlist = []
+        infolist = []
         for media in data:
-            show = utils.show()
-            showid = media['id']
-            aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
-            showdata = {
-                'id': showid,
-                'title': media['title']['userPreferred'],
-                'aliases': aliases,
-                'type': media['format'],  # Need to reformat output
-                'status': self.status_translate[media['status']],
-                'total': self._c(media[self.total_str]),
-                'image': media['coverImage']['large'],
-                'image_thumb': media['coverImage']['medium'],
-                'url': media['siteUrl'],
-            }
-            if media['mediaListEntry']:
-                showdata['my_progress'] = self._c(media['mediaListEntry']['progress'])
-                showdata['my_status'] = media['mediaListEntry']['status']
-                showdata['my_score'] = self._c(media['mediaListEntry']['score'])
-            show.update({k:v for k,v in showdata.items() if v})
-            showlist.append(show)
+            infolist.append(self._parse_info(media))
 
-        return showlist
+        self._emit_signal('show_info_changed', infolist)
+        return infolist
 
     def request_info(self, itemlist):
         self.check_credentials()
@@ -429,11 +426,17 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
+        aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a]
+        
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
+            'total': item[self.total_str],
+            'aliases': aliases,
+            'type': self.type_translate[item['format']],
             'status': self.status_translate[item['status']],
             'image': item['coverImage']['large'],
+            'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
             'start_date': self._dict2date(item.get('startDate')),
             'end_date': self._dict2date(item.get('endDate')),

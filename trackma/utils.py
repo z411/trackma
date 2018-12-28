@@ -46,6 +46,14 @@ TRACKER_UNRECOGNIZED = 2
 TRACKER_NOT_FOUND = 3
 TRACKER_IGNORED = 4
 
+SEASON_WINTER = 1
+SEASON_SPRING = 2
+SEASON_SUMMER = 3
+SEASON_FALL = 4
+
+SEARCH_METHOD_KW = 1
+SEARCH_METHOD_SEASON = 2
+
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
