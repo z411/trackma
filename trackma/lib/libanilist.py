@@ -113,6 +113,13 @@ class libanilist(lib):
             'NOT_YET_RELEASED': utils.STATUS_NOTYET,
             'CANCELLED': utils.STATUS_CANCELLED,
     }
+
+    season_translate = {
+        utils.SEASON_WINTER: 'WINTER',
+        utils.SEASON_SPRING: 'SPRING',
+        utils.SEASON_SUMMER: 'SUMMER',
+        utils.SEASON_FALL: 'FALL',
+    }
  
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
@@ -354,13 +361,19 @@ fragment mediaListEntry on MediaList {
         self._request(query, variables)
 
     def search(self, criteria, method):
-        print(repr(criteria))
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 
-        query = '''query ($query: String, $type: MediaType) {
-  Page {
-    media(search: $query, type: $type) {
+        if method == utils.SEARCH_METHOD_KW:
+            query = "query ($query: String, $type: MediaType) { Page { media(search: $query, type: $type) {"
+            variables = {'query': urllib.parse.quote_plus(criteria)}
+        elif method == utils.SEARCH_METHOD_SEASON:
+            season, seasonYear = criteria
+            
+            query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
+            variables = {'season': self.season_translate[season], 'seasonYear': seasonYear}
+
+        query += '''
       id
       title { userPreferred romaji english native }
       coverImage { medium large }
@@ -378,7 +391,7 @@ fragment mediaListEntry on MediaList {
     }
   }
 }'''
-        variables = {'query': urllib.parse.quote_plus(criteria), 'type': self.mediatype.upper()}
+        variables['type'] = self.mediatype.upper()
         data = self._request(query, variables)['data']['Page']['media']
 
         infolist = []
