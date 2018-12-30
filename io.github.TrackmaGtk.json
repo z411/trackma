@@ -1,7 +1,7 @@
 {
     "app-id" : "io.github.TrackmaGtk",
     "runtime" : "org.gnome.Platform",
-    "runtime-version" : "3.30",
+    "runtime-version" : "master",
     "sdk" : "org.gnome.Sdk",
     "command" : "trackma-gtk",
     "build-options" : {
