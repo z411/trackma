@@ -75,13 +75,17 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
             timeout = None
             while self.active:
                 if notifier.check_events(timeout):
+                    # Check again to avoid notifying while inactive
+                    if not self.active:
+                        return
+
                     notifier.read_events()
                     notifier.process_events()
                     if self.last_state == utils.TRACKER_NOVIDEO or self.last_updated:
                         timeout = None  # Block indefinitely
                     else:
                         timeout = 1000  # Check each second for counting
-                else:
+                elif self.active:
                     self.msg.debug(self.name, "Sending last state {} {}".format(self.last_state, self.last_show_tuple))
                     self.update_show_if_needed(self.last_state, self.last_show_tuple)
         finally:
