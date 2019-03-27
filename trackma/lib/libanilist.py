@@ -200,7 +200,6 @@ class libanilist(lib):
     lists {
       name
       isCustomList
-      isSplitCompletedList
       status
       entries {
         ... mediaListEntry
@@ -251,11 +250,10 @@ fragment mediaListEntry on MediaList {
 
         for remotelist in data['lists']:
             my_status = remotelist['status']
+
             if my_status not in self.media_info()['statuses']:
                 continue
             if remotelist['isCustomList']:
-                continue  # Maybe do something with this later
-            if remotelist['isSplitCompletedList']:
                 continue  # Maybe do something with this later
             for item in remotelist['entries']:
                 show = utils.show()
