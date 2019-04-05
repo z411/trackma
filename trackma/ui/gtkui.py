@@ -1884,25 +1884,36 @@ class Settings(Gtk.Window):
         self.txt_player = Gtk.Entry()
         self.txt_player.set_max_length(4096)
         playerbrowse_button = Gtk.Button('Browse...')
-        playerbrowse_button.connect("clicked", self.__do_browse, 'Select player', self.txt_player)
+        playerbrowse_button.connect("clicked", self.__do_browse, 'Select player', self.txt_player.set_text)
 
         line0 = Gtk.HBox(False, 5)
         line0.pack_start(lbl_player, False, False, 5)
         line0.pack_start(self.txt_player, True, True, 0)
         line0.pack_start(playerbrowse_button, False, False, 0)
 
-        lbl_searchdir = Gtk.Label('Library Directory')
-        lbl_searchdir.set_size_request(120, -1)
-        lbl_searchdir.set_xalign(0)
-        self.txt_searchdir = Gtk.Entry()
-        self.txt_searchdir.set_max_length(4096)
-        self.browse_button = Gtk.Button('Browse...')
-        self.browse_button.connect("clicked", self.__do_browse, 'Select library directory', self.txt_searchdir, True)
+        lbl_searchdirs = Gtk.Label('Library Directories')
+        lbl_searchdirs.set_size_request(120, -1)
+        lbl_searchdirs.set_xalign(0)
+        self.lst_searchdirs = Gtk.ListBox()
+        sw = Gtk.ScrolledWindow()
+        sw.set_size_request(-1, 100)
+        sw.add(self.lst_searchdirs)
+        
+        # Buttons
+        sd_alignment = Gtk.Alignment(yalign=0, yscale=0)
+        buttonbar = Gtk.VBox(False, 5)
+        self.dir_add_button = Gtk.Button('Add...')
+        self.dir_add_button.connect("clicked", self.__do_browse, 'Select library directory', self._add_dirs, True)
+        self.dir_del_button = Gtk.Button('Remove')
+        self.dir_del_button.connect("clicked", self.__do_dir_del)
+        buttonbar.pack_start(self.dir_add_button, False, False, 0)
+        buttonbar.pack_start(self.dir_del_button, False, False, 0)
+        sd_alignment.add(buttonbar)
 
         line1 = Gtk.HBox(False, 5)
-        line1.pack_start(lbl_searchdir, False, False, 5)
-        line1.pack_start(self.txt_searchdir, True, True, 0)
-        line1.pack_start(self.browse_button, False, False, 0)
+        line1.pack_start(lbl_searchdirs, False, False, 5)
+        line1.pack_start(sw, True, True, 0)
+        line1.pack_start(sd_alignment, False, False, 0)
 
         lbl_library_options = Gtk.Label('Library options')
         lbl_library_options.set_size_request(120, -1)
@@ -2245,7 +2256,6 @@ class Settings(Gtk.Window):
         """Engine Configuration"""
         self.txt_player.set_text(self.engine.get_config('player'))
         self.txt_process.set_text(self.engine.get_config('tracker_process'))
-        self.txt_searchdir.set_text(self.engine.get_config('searchdir'))
         self.chk_library_autoscan.set_active(self.engine.get_config('library_autoscan'))
         self.chk_scan_whole_list.set_active(self.engine.get_config('scan_whole_list'))
         self.chk_library_full_path.set_active(self.engine.get_config('library_full_path'))
@@ -2260,7 +2270,9 @@ class Settings(Gtk.Window):
         self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
         self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
         self.chk_tracker_not_found_prompt.set_active(self.engine.get_config('tracker_not_found_prompt'))
-
+        
+        self._add_dirs(self.engine.get_config('searchdir'))
+        
         if self.engine.get_config('tracker_type') == 'local':
             self.rbtn_tracker_local.set_active(True)
             self.txt_plex_host.set_sensitive(False)
@@ -2304,7 +2316,6 @@ class Settings(Gtk.Window):
         """Engine Configuration"""
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
-        self.engine.set_config('searchdir', self.txt_searchdir.get_text())
         self.engine.set_config('library_autoscan',
                 self.chk_library_autoscan.get_active())
         self.engine.set_config('scan_whole_list',
@@ -2323,6 +2334,8 @@ class Settings(Gtk.Window):
         self.engine.set_config('tracker_update_prompt', self.chk_tracker_update_prompt.get_active())
         self.engine.set_config('tracker_not_found_prompt', self.chk_tracker_not_found_prompt.get_active())
 
+        self.engine.set_config('searchdir', [row.data for row in self.lst_searchdirs])
+        
         # Tracker type
         if self.rbtn_tracker_local.get_active():
             self.engine.set_config('tracker_type', 'local')
@@ -2399,7 +2412,22 @@ class Settings(Gtk.Window):
             self.txt_plex_port.set_sensitive(False)
             self.chk_tracker_plex_obey_wait.set_sensitive(False)
 
-    def __do_browse(self, widget, title, entry, dironly=False):
+    def _add_dirs(self, paths):
+        if isinstance(paths, str):
+            paths = [paths]
+        for path in paths:
+            row = Gtk.ListBoxRow()
+            row.data = path
+            row.add(Gtk.Label(path))
+            self.lst_searchdirs.add(row)
+        self.lst_searchdirs.show_all()
+
+    def __do_dir_del(self, widget):
+        row = self.lst_searchdirs.get_selected_row()
+        if row:
+            self.lst_searchdirs.remove(row)
+
+    def __do_browse(self, widget, title, callback, dironly=False):
         browsew = Gtk.FileChooserDialog(title,
                                         None,
                                         Gtk.FileChooserAction.OPEN,
@@ -2412,7 +2440,7 @@ class Settings(Gtk.Window):
 
         response = browsew.run()
         if response == Gtk.ResponseType.OK:
-            entry.set_text(browsew.get_filename())
+            callback(browsew.get_filename())
         browsew.destroy()
 
     def __do_apply(self, widget):
