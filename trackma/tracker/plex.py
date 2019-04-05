@@ -30,13 +30,13 @@ IDLE = 2
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
         self.config = utils.parse_config(utils.get_root_filename('config.json'), utils.config_defaults)
         self.host_port = self.config['plex_host']+":"+self.config['plex_port']
         self.update_wait = update_wait
         self.status_log = [None, None]
         self.token = self._get_plex_token()
-        super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
+        super().__init__(messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt)
 
     def get_plex_status(self):
         # returns the plex status of the first active session
@@ -74,7 +74,7 @@ class PlexTracker(tracker.TrackerBase):
         except IndexError:
             return None
 
-    def observe(self, watch_dir, interval):
+    def observe(self, watch_dirs, interval):
         self.msg.info(self.name, "Using Plex.")
 
         while self.active:

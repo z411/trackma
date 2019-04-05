@@ -24,18 +24,18 @@ from trackma import utils
 class inotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (inotify)'
 
-    def observe(self, watch_dir, interval):
+    def observe(self, watch_dirs, interval):
         # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
 
-        watch_dir = watch_dir.encode('utf-8')
+        paths = (path.encode('utf-8') for path in watch_dirs)
         mask = (inotify.constants.IN_OPEN
                 | inotify.constants.IN_CLOSE
                 | inotify.constants.IN_CREATE
                 | inotify.constants.IN_MOVE
                 | inotify.constants.IN_DELETE)
 
-        i = inotify.adapters.InotifyTree(watch_dir, mask=mask)
+        i = inotify.adapters.InotifyTrees(paths, mask=mask)
 
         try:
             for event in i.event_gen():

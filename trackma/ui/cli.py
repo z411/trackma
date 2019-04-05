@@ -155,14 +155,14 @@ class Trackma_cmd(cmd.Cmd):
         Creates an Engine object and starts it.
         """
         print('Initializing engine...')
-        self.engine = Engine(self.account, self.messagehandler)
+        self.engine = Engine(self.messagehandler)
         self.engine.connect_signal('show_added', self._load_list)
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.connect_signal('prompt_for_update', self._ask_update)
         self.engine.connect_signal('prompt_for_add', self._ask_add)
-        self.engine.start()
+        self.engine.start(self.account)
 
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
