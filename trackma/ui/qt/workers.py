@@ -101,9 +101,9 @@ class EngineWorker(QtCore.QThread):
     prompt_for_update = QtCore.pyqtSignal(dict, int)
     prompt_for_add = QtCore.pyqtSignal(str, int)
 
-    def __init__(self, account):
+    def __init__(self):
         super(EngineWorker, self).__init__()
-        self.engine = Engine(account, self._messagehandler)
+        self.engine = Engine(self._messagehandler)
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
         self.engine.connect_signal('tags_changed', self._changed_show)
@@ -168,9 +168,9 @@ class EngineWorker(QtCore.QThread):
         self.prompt_for_add.emit(show_title, episode)
 
     # Callable functions
-    def _start(self):
+    def _start(self, account):
         try:
-            self.engine.start()
+            self.engine.start(account)
         except utils.TrackmaError as e:
             self._error(e)
             return {'success': False}

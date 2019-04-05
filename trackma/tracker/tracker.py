@@ -48,14 +48,14 @@ class TrackerBase(object):
                'unrecognised': None,
               }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
+    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
         self.list = tracker_list
         self.process_name = process_name
 
-        tracker_args = (utils.expand_path(watch_dir), interval)
+        tracker_args = (watch_dirs, interval)
         self.wait_s = update_wait
         self.wait_close = update_close
         self.not_found_prompt = not_found_prompt
@@ -81,7 +81,7 @@ class TrackerBase(object):
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
 
-    def observe(self, watch_dir, interval):
+    def observe(self, watch_dirs, interval):
         raise NotImplementedError
 
     def get_status(self):

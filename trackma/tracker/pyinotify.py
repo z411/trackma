@@ -22,7 +22,7 @@ from trackma import utils
 class pyinotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (pyinotify)'
 
-    def observe(self, watch_dir, interval):
+    def observe(self, watch_dirs, interval):
         self.msg.info(self.name, 'Using pyinotify.')
         wm = pyinotify.WatchManager()  # Watch Manager
         mask = (pyinotify.IN_OPEN
@@ -67,8 +67,9 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
 
         handler = EventHandler(parent=self)
         notifier = pyinotify.Notifier(wm, handler)
-        self.msg.debug(self.name, 'Watching directory {}'.format(watch_dir))
-        wdd = wm.add_watch(watch_dir, mask, rec=True, auto_add=True)
+        for path in watch_dirs:
+            self.msg.debug(self.name, 'Watching directory {}'.format(path))
+            wm.add_watch(path, mask, rec=True, auto_add=True)
 
         try:
             #notifier.loop()

@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
 
         """
         # Workers
-        self.worker = EngineWorker(account)
+        self.worker = EngineWorker()
         self.account = account
 
         # Timers
@@ -454,7 +454,7 @@ class MainWindow(QMainWindow):
         # Start loading engine
         self.started = True
         self._busy(False)
-        self.worker_call('start', self.r_engine_loaded)
+        self.worker_call('start', self.r_engine_loaded, account)
 
     def reload(self, account=None, mediatype=None):
         if account:

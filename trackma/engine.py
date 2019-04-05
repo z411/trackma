@@ -71,12 +71,8 @@ class Engine:
                 'tracker_state':     None,
         }
 
-    def __init__(self, account, message_handler=None):
-        """Reads configuration file and asks the data handler for the API info."""
+    def __init__(self, message_handler=None):
         self.msg = messenger.Messenger(message_handler)
-
-        self._load(account)
-        self._init_data_handler()
 
     def _load(self, account):
         self.account = account
@@ -96,6 +92,14 @@ class Engine:
             self.config = utils.parse_config(self.configfile, utils.config_defaults)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
+
+        # Expand media directories and ignore those that don't exist
+        if isinstance(self.config['searchdir'], str):
+            # Compatibility: Turn a string of a single directory into a list
+            self.msg.debug(self.name, "Fixing string searchdir to list.")
+            self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
+        else:
+            self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
 
         # Load hook files
         hooks_dir = utils.get_root_filename('hooks')
@@ -231,7 +235,7 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
 
-    def start(self):
+    def start(self, account, mediatype=None):
         """
         Starts the engine.
         This function should be called before doing anything with the engine,
@@ -239,6 +243,12 @@ class Engine:
         """
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
+
+        # Initialize
+        if account:
+            self._load(account)
+
+        self._init_data_handler(mediatype)
 
         # Start the data handler
         try:
@@ -280,7 +290,7 @@ class Engine:
             self.tracker = TrackerClass(self.msg,
                                    self._get_tracker_list(),
                                    self.config['tracker_process'],
-                                   self.config['searchdir'],
+                                   self.searchdirs,
                                    int(self.config['tracker_interval']),
                                    int(self.config['tracker_update_wait_s']),
                                    self.config['tracker_update_close'],
@@ -316,11 +326,7 @@ class Engine:
         if self.loaded:
             self.unload()
 
-        if account:
-            self._load(account)
-
-        self._init_data_handler(mediatype)
-        self.start()
+        self.start(account, mediatype)
 
     def get_config(self, key):
         """Returns the specified key from the configuration."""
@@ -737,11 +743,7 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
-            raise utils.EngineError('Media directory is not set.')
-
-        searchdir = utils.expand_path(self.config['searchdir'])
-        if not utils.dir_exists(searchdir):
-            raise utils.EngineError('The set media directory ({}) doesn\'t exist.'.format(searchdir))
+            raise utils.EngineError('Media directories not set.')
 
         t = time.time()
         library = {}
@@ -754,19 +756,20 @@ class Engine:
                 my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
-        self.msg.debug(self.name, "Directory: %s" % searchdir)
         tracker_list = self._get_tracker_list(my_status)
 
+        for searchdir in self.searchdirs:
+            self.msg.debug(self.name, "Directory: %s" % searchdir)
+            
+            # Do a full listing of the media directory
+            for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
+                if self.config['library_full_path']:
+                    filename = self._get_show_name_from_full_path(searchdir, fullpath).strip()
+                (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
 
-        # Do a full listing of the media directory
-        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
-            if self.config['library_full_path']:
-                filename = self._get_show_name_from_full_path(fullpath).strip()
-            (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
-
-        self.msg.debug(self.name, "Time: %s" % (time.time() - t))
-        self.data_handler.library_save(library)
-        self.data_handler.library_cache_save(library_cache)
+            self.msg.debug(self.name, "Time: %s" % (time.time() - t))
+            self.data_handler.library_save(library)
+            self.data_handler.library_cache_save(library_cache)
         return library
 
     def remove_from_library(self, path, filename):
@@ -977,9 +980,14 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
-    def _get_show_name_from_full_path(self, fullpath):
+    def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""
-        searchdir = utils.expand_path(self.config['searchdir'])
         relative = fullpath[len(searchdir):]
-        
         return relative.replace(os.path.sep, " ")
+
+    def _searchdir_exists(self, path):
+        """Variation of dir_exists that warns the user if the path doesn't exist."""
+        if not utils.dir_exists(path):
+            self.msg.warn(self.name, "The specified media directory {} doesn't exist!".format(path))
+            return False
+        return True

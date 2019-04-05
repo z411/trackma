@@ -224,7 +224,7 @@ class Trackma_urwid():
         self.started = False
 
         self.status("Starting engine...")
-        self.engine = Engine(account, self.message_handler)
+        self.engine = Engine(self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -238,7 +238,7 @@ class Trackma_urwid():
 
         # Engine start and list rebuildi
         self.status("Building lists...")
-        self.engine.start()
+        self.engine.start(account)
         self._rebuild()
 
     def set_filter(self, filter_num):

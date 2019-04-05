@@ -284,7 +284,7 @@ class APIFatal(TrackmaFatal):
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',
-    'searchdir': '/home/user/Videos',
+    'searchdir': ['/home/user/Videos'],
     'tracker_enabled': True,
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
