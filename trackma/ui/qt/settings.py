@@ -20,7 +20,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QDialog, QGridLayout, QListWidget, QListWidgetItem, QAbstractItemView,
     QWidget, QVBoxLayout, QGroupBox, QFormLayout, QCheckBox, QRadioButton,
-    QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget,
+    QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget, QSplitter,
     QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog)
 
 from trackma.ui.qt.widgets import EpisodeBar
@@ -124,24 +124,34 @@ class SettingsDialog(QDialog):
         self.player = QLineEdit()
         self.player_browse = QPushButton('Browse...')
         self.player_browse.clicked.connect(self.s_player_browse)
-        self.searchdir = QLineEdit()
-        self.searchdir_browse = QPushButton('Browse...')
-        self.searchdir_browse.clicked.connect(self.s_searchdir_browse)
+        lbl_searchdirs = QLabel('Media directories')
+        lbl_searchdirs.setAlignment(QtCore.Qt.AlignTop)
+        self.searchdirs = QListWidget()
+        self.searchdirs_add = QPushButton('Add...')
+        self.searchdirs_add.clicked.connect(self.s_searchdirs_add)
+        self.searchdirs_remove = QPushButton('Remove')
+        self.searchdirs_remove.clicked.connect(self.s_searchdirs_remove)
+        self.searchdirs_buttons = QVBoxLayout()
+        self.searchdirs_buttons.setAlignment(QtCore.Qt.AlignTop)
+        self.searchdirs_buttons.addWidget(self.searchdirs_add)
+        self.searchdirs_buttons.addWidget(self.searchdirs_remove)
+        self.searchdirs_buttons.addWidget(QSplitter())
         self.library_autoscan = QCheckBox()
         self.scan_whole_list = QCheckBox()
         self.library_full_path = QCheckBox()
+
 
         g_playnext_layout = QGridLayout()
         g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
         g_playnext_layout.addWidget(self.player,                         0, 1, 1, 1)
         g_playnext_layout.addWidget(self.player_browse,                  0, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Media directory'),           1, 0, 1, 1)
-        g_playnext_layout.addWidget(self.searchdir,                      1, 1, 1, 1)
-        g_playnext_layout.addWidget(self.searchdir_browse,               1, 2, 1, 1)
+        g_playnext_layout.addWidget(lbl_searchdirs,                      1, 0, 1, 1)
+        g_playnext_layout.addWidget(self.searchdirs,                     1, 1, 1, 1)
+        g_playnext_layout.addLayout(self.searchdirs_buttons,             1, 2, 1, 1)
         g_playnext_layout.addWidget(QLabel('Rescan Library at startup'), 2, 0, 1, 2)
         g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
         g_playnext_layout.addWidget(QLabel('Scan through whole list'),   3, 0, 1, 2)
-        g_playnext_layout.addWidget(self.scan_whole_list,                 3, 2, 1, 1)
+        g_playnext_layout.addWidget(self.scan_whole_list,                3, 2, 1, 1)
         g_playnext_layout.addWidget(QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
         g_playnext_layout.addWidget(self.library_full_path,              4, 2, 1, 1)
 
@@ -371,6 +381,9 @@ class SettingsDialog(QDialog):
 
         self.setLayout(layout)
 
+    def _add_dir(self, path):
+        self.searchdirs.addItem(path)
+
     def _load(self):
         engine = self.worker.engine
         tracker_type = engine.get_config('tracker_type')
@@ -386,7 +399,6 @@ class SettingsDialog(QDialog):
         self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
 
         self.player.setText(engine.get_config('player'))
-        self.searchdir.setText(engine.get_config('searchdir'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
         self.library_full_path.setChecked(engine.get_config('library_full_path'))
@@ -395,6 +407,9 @@ class SettingsDialog(QDialog):
         self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
         self.plex_user.setText(engine.get_config('plex_user'))
         self.plex_passw.setText(engine.get_config('plex_passwd'))
+
+        for path in engine.get_config('searchdir'):
+            self._add_dir(path)
 
         if tracker_type == 'local':
             self.tracker_type_local.setChecked(True)
@@ -466,7 +481,6 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
 
         engine.set_config('player',            self.player.text())
-        engine.set_config('searchdir',         self.searchdir.text())
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
         engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
         engine.set_config('library_full_path', self.library_full_path.isChecked())
@@ -475,6 +489,8 @@ class SettingsDialog(QDialog):
         engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
         engine.set_config('plex_user',         self.plex_user.text())
         engine.set_config('plex_passwd',       self.plex_passw.text())
+
+        engine.set_config('searchdir',         [self.searchdirs.item(i).text() for i in range(self.searchdirs.count())])
 
         if self.tracker_type_local.isChecked():
             engine.set_config('tracker_type', 'local')
@@ -589,8 +605,13 @@ class SettingsDialog(QDialog):
         else:
             self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable'))
 
-    def s_searchdir_browse(self):
-        self.searchdir.setText(QFileDialog.getExistingDirectory(caption='Choose media directory'))
+    def s_searchdirs_add(self):
+        self._add_dir(QFileDialog.getExistingDirectory(caption='Choose media directory'))
+
+    def s_searchdirs_remove(self):
+        row = self.searchdirs.currentRow()
+        if row != -1:
+            self.searchdirs.takeItem(row)
 
     def s_switch_page(self, new, old):
         if not new:
