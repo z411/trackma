@@ -164,7 +164,7 @@ class AddDialog(QDialog):
         self.contents.currentWidget().clearSelection()
         self.selected_show = None
         
-        self._enable_widgets(True)
+        self._enable_widgets(False)
         self.add_btn.setEnabled(False)
         
         self.worker_call('search', self.r_searched, criteria, method)
