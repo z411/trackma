@@ -412,7 +412,7 @@ class Engine:
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        if method not in self.mediainfo.get('search_methods'):
+        if method not in self.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW]):
             raise utils.EngineError('Search method not supported by API or mediatype.')
 
         return self.data_handler.search(criteria, method)

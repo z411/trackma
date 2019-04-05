@@ -16,11 +16,13 @@
 
 pyqt_version = 5
 
+from datetime import date
+
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
-    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton)
+    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter)
 
 from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
 
@@ -40,47 +42,66 @@ class AddDialog(QDialog):
         self.default = default
         if default:
             self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
+        
+        # Get available search methods and default to keyword search if not reported by the API
+        search_methods = self.worker.engine.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW])
 
         layout = QVBoxLayout()
 
         # Create top layout
         top_layout = QHBoxLayout()
-        self.search_rad = QRadioButton('By keyword:')
-        self.search_rad.setChecked(True)
-        self.search_txt = QLineEdit()
-        self.search_txt.returnPressed.connect(self.s_search)
-        self.search_txt.setFocus()
-        if default:
-            self.search_txt.setText(default)
-        self.search_btn = QPushButton('Search')
-        self.search_btn.clicked.connect(self.s_search)
-        top_layout.addWidget(self.search_rad)
-        top_layout.addWidget(self.search_txt)
+
+        if utils.SEARCH_METHOD_KW in search_methods:
+            self.search_rad = QRadioButton('By keyword:')
+            self.search_rad.setChecked(True)
+            self.search_txt = QLineEdit()
+            self.search_txt.returnPressed.connect(self.s_search)
+            self.search_txt.setFocus()
+            if default:
+                self.search_txt.setText(default)
+            self.search_btn = QPushButton('Search')
+            self.search_btn.clicked.connect(self.s_search)
+            top_layout.addWidget(self.search_rad)
+            top_layout.addWidget(self.search_txt)
+        else:
+            filters_layout.setAlignment(QtCore.Qt.AlignRight)
+
         top_layout.addWidget(self.search_btn)
         
         # Create filter line
         filters_layout = QHBoxLayout()
-        filters_layout.setAlignment(QtCore.Qt.AlignLeft)
         
-        self.season_rad = QRadioButton('By season:')
-        self.season_combo = QComboBox()
-        self.season_combo.addItem('Winter', utils.SEASON_WINTER)
-        self.season_combo.addItem('Spring', utils.SEASON_SPRING)
-        self.season_combo.addItem('Summer', utils.SEASON_SUMMER)
-        self.season_combo.addItem('Fall', utils.SEASON_FALL)
+        if utils.SEARCH_METHOD_SEASON in search_methods:
+            self.season_rad = QRadioButton('By season:')
+            self.season_combo = QComboBox()
+            self.season_combo.addItem('Winter', utils.SEASON_WINTER)
+            self.season_combo.addItem('Spring', utils.SEASON_SPRING)
+            self.season_combo.addItem('Summer', utils.SEASON_SUMMER)
+            self.season_combo.addItem('Fall', utils.SEASON_FALL)
         
-        self.season_year = QSpinBox()
-        self.season_year.setRange(1900, 2017)
-        self.season_year.setValue(2017)
+            self.season_year = QSpinBox()
+
+            today = date.today()
+            current_season = (today.month - 1) / 3
+
+            self.season_year.setRange(1900, today.year)
+            self.season_year.setValue(today.year)
+            self.season_combo.setCurrentIndex(current_season)
+
+            filters_layout.addWidget(self.season_rad)
+            filters_layout.addWidget(self.season_combo)
+            filters_layout.addWidget(self.season_year)
+        
+            filters_layout.setAlignment(QtCore.Qt.AlignLeft)
+            filters_layout.addWidget(QSplitter())
+        else:
+            filters_layout.setAlignment(QtCore.Qt.AlignRight)
         
         view_combo = QComboBox()
         view_combo.addItem('Table view')
         view_combo.addItem('Card view')
         view_combo.currentIndexChanged.connect(self.s_change_view)
         
-        filters_layout.addWidget(self.season_rad)
-        filters_layout.addWidget(self.season_combo)
-        filters_layout.addWidget(self.season_year)
         filters_layout.addWidget(view_combo)
 
         # Create central content
@@ -95,7 +116,8 @@ class AddDialog(QDialog):
         cardview.changed.connect(self.s_selected)
         self.contents.addWidget(cardview)
         
-        self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
+        # Use for testing
+        #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
         bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
