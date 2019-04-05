@@ -39,6 +39,9 @@ class inotifyTracker(inotifyBase.inotifyBase):
 
         try:
             for event in i.event_gen():
+                if not self.active:
+                    return
+
                 if event is not None:
                     # With inotifyx impl., only the event type was used,
                     # such that it only served to poll lsof when an

@@ -216,6 +216,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Forcing exit...")
             self.data_handler.unload(True)
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def connect_signal(self, signal, callback):
@@ -305,7 +307,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Unloading...")
             self.data_handler.unload()
-
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def reload(self, account=None, mediatype=None):

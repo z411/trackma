@@ -306,6 +306,8 @@ class libkitsu(lib):
                         'my_progress': entry['attributes']['progress'],
                         'my_score': float(rating) if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
+                        'my_start_date': self._iso2date(entry['attributes']['startedAt']),
+                        'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
                     })
 
                 if 'included' in data_json:
@@ -446,6 +448,16 @@ class libkitsu(lib):
         except:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None # Ignore date if it's invalid
+
+    def _iso2date(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        except:
+            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            return None # Ignore date if it's invalid            
 
     def _guess_status(self, start_date, end_date):
         # Try to guess show status by checking start and end dates

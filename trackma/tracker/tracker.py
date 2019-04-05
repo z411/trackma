@@ -69,10 +69,8 @@ class TrackerBase(object):
         self.msg = message_handler
 
     def disable(self):
+        self.msg.info(self.name, 'Unloading...')
         self.active = False
-
-    def enable(self):
-        self.active = True
 
     def update_list(self, tracker_list):
         self.list = tracker_list
