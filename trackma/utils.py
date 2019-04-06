@@ -57,7 +57,7 @@ SEARCH_METHOD_SEASON = 2
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "http://omaera.org/trackma/anilistv2",
+            "https://omaera.org/trackma/anilistv2",
             "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
     'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),

@@ -75,8 +75,6 @@ class MainWindow(QMainWindow):
         # Load QT specific configuration
         self.configfile = utils.get_root_filename('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
-        self.api_configfile = utils.get_root_filename('ui-qt.0.json')
-        self.api_config = {}
 
         # Build UI
         QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
@@ -118,6 +116,9 @@ class MainWindow(QMainWindow):
         # Workers
         self.worker = EngineWorker()
         self.account = account
+
+        # Get API specific configuration
+        self.api_config = self._get_api_config(account['api'])
 
         # Timers
         self.image_timer = QtCore.QTimer()
@@ -234,15 +235,9 @@ class MainWindow(QMainWindow):
         self.menu_columns_group = QActionGroup(self, exclusive=False)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
 
-        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % account['api'])
-        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
-        if self.config['columns_per_api']:
-            self.config['visible_columns'] = self.api_config['visible_columns']
-            self.config['columns_state'] = self.api_config['columns_state']
-
         for column_name in self.available_columns:
             action = QAction(column_name, self, checkable=True)
-            if column_name in self.config['visible_columns']:
+            if column_name in self.api_config['visible_columns']:
                 action.setChecked(True)
 
             self.menu_columns_group.addAction(action)
@@ -460,13 +455,12 @@ class MainWindow(QMainWindow):
         if account:
             self.account = account
 
-        self.api_configfile = utils.get_root_filename('ui-qt.%s.json' % self.account['api'])
-        self.api_config = utils.parse_config(self.api_configfile, utils.qt_per_api_defaults)
-        if self.config['columns_per_api']:
-            self.config['visible_columns'] = self.api_config['visible_columns']
+        # Get API specific configuration
+        self.api_config = self._get_api_config(account['api'])
+
         self.menu_columns_group.setEnabled(False)
         for action in self.menu_columns_group.actions():
-            action.setChecked(action.text() in self.config['visible_columns'])
+            action.setChecked(action.text() in self.api_config['visible_columns'])
         self.menu_columns_group.setEnabled(True)
 
         self.show()
@@ -506,6 +500,20 @@ class MainWindow(QMainWindow):
         self.worker.start()
 
     ### GUI Functions
+    def _get_api_config(self, api):
+        if self.config['columns_per_api']:
+            if 'api' not in self.config:
+                self.config['api'] = {}
+            if api not in self.config['api']:
+                self.config['api'][api] = dict(utils.qt_per_api_defaults)
+            return self.config['api'][api]
+        else:
+            # API settings are universal
+            return self.config
+
+    def _save_config(self):
+        utils.save_config(self.config, self.configfile)
+
     def _exit(self):
         self._busy()
         if self.config['remember_geometry']:
@@ -523,15 +531,14 @@ class MainWindow(QMainWindow):
         utils.save_config(self.config, self.configfile)
 
     def _store_columnstate(self):
-        self.config['columns_state'] = dict()
+        columns_state = {}
+
         for status in self.statuses_nums:
             state = self.show_lists[status].horizontalHeader().saveState()
-            self.config['columns_state'][status] = base64.b64encode(state).decode('ascii')
-        if self.config['columns_per_api']:
-            self.api_config['columns_state'] = self.config['columns_state']
-            utils.save_config(self.api_config, self.api_configfile)
-        else:
-            utils.save_config(self.config, self.configfile)
+            columns_state[status] = base64.b64encode(state).decode('ascii')
+
+        self.api_config['columns_state'] = columns_state
+        self._save_config()
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
@@ -658,7 +665,7 @@ class MainWindow(QMainWindow):
 
         # Hide invisible columns
         for i, column in enumerate(self.available_columns):
-            if column not in self.config['visible_columns']:
+            if column not in self.api_config['visible_columns']:
                 widget.setColumnHidden(i, True)
 
         if pyqt_version is 5:
@@ -1279,16 +1286,13 @@ class MainWindow(QMainWindow):
         MIN_WIDTH = 30  # Width to restore columns to if too small to see
 
         if visible:
-            if column_name not in self.config['visible_columns']:
-                self.config['visible_columns'].append(str(column_name))
+            if column_name not in self.api_config['visible_columns']:
+                self.api_config['visible_columns'].append(str(column_name))
         else:
-            if column_name in self.config['visible_columns']:
-                self.config['visible_columns'].remove(column_name)
+            if column_name in self.api_config['visible_columns']:
+                self.api_config['visible_columns'].remove(column_name)
 
-        utils.save_config(self.config, self.configfile)
-        if self.config['columns_per_api']:
-            self.api_config['visible_columns'] = self.config['visible_columns']
-            utils.save_config(self.api_config, self.api_configfile)
+        self._save_config()
 
         for showlist in self.show_lists.values():
             showlist.setColumnHidden(index, not visible)
