@@ -35,7 +35,7 @@ def status_changed(engine, show, old_status):
             msg += " - Score: %s/%s" % (show['my_score'], score_max)
         msg += " %s" % show['url']
 
-        if len(msg) <= 140:
+        if len(msg) <= 280:
             engine.msg.info('Twitter', "Tweeting: %s (%d)" % (msg, len(msg)))
             api.PostUpdate(msg)
         else:
