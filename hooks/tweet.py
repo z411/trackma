@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 #
 # This hook posts to Twitter whenever you complete a show.
-# You most provide consumer and access keys yourself.
 #
-# We should probably create an application and provide a access token
-# generator script.
-#
-# To use, copy this file to ~/.trackma/hooks/ and fill in the consumer/access tokens.
+# To use it, copy this file to ~/.trackma/hooks/ and fill in the consumer/access tokens.
+# You may use the twitter_authorize.py utility to fetch them.
 
-import twitter
-CONSUMER_KEY    = ""
-CONSUMER_SECRET = ""
+#########################
+
 ACCESS_KEY      = ""
 ACCESS_SECRET   = ""
+
+#########################
 
 if not ACCESS_KEY or not ACCESS_SECRET:
     raise Exception("You must provide the Twitter access token in the hook file.")
 
+CONSUMER_KEY    = "9Hb6ZdMmvuAWxi4GCkfhToRiH"
+CONSUMER_SECRET = "86kx9Mv9wJ5UTkDEw2jRBFYstpkDK2iP7ZAo12fhf0WooMln5w"
+
+import twitter
 api = twitter.Api(consumer_key=CONSUMER_KEY,
         consumer_secret=CONSUMER_SECRET,
         access_token_key=ACCESS_KEY,
