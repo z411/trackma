@@ -60,7 +60,7 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-        self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
+        self.config = utils.parse_config(utils.to_config_path('ui-curses.json'), utils.curses_defaults)
         keymap = utils.curses_defaults['keymap']
         keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
@@ -189,11 +189,11 @@ class Trackma_urwid():
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
         self._rebuild_lists()
-        
+
         # Put the number of shows in every status in a list
         for status in self.filters_nums:
             self.filters_sizes.append(len(self.lists[status].body))
-        
+
         self.set_filter(0)
         self.status('Ready.')
         self.started = True

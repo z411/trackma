@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         self.debug = debug
 
         # Load QT specific configuration
-        self.configfile = utils.get_root_filename('ui-qt.json')
+        self.configfile = utils.to_config_path('ui-qt.json')
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
@@ -839,8 +839,8 @@ class MainWindow(QMainWindow):
             if self.image_worker is not None:
                 self.image_worker.cancel()
 
-            utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
+            utils.make_dir(utils.to_cache_path())
+            filename = utils.to_cache_path("%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
@@ -1047,7 +1047,7 @@ class MainWindow(QMainWindow):
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
-        filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
+        filename = utils.to_cache_path("%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
         self.image_worker = ImageWorker(show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)

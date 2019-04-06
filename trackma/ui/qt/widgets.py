@@ -95,7 +95,7 @@ class DetailsWidget(QWidget):
 
         # Load show image
         if show.get('image'):
-            filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
+            filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
@@ -258,7 +258,7 @@ class EpisodeBar(QProgressBar):
     def setBarStyle(self, style, show_text):
         self._bar_style = style
         self._show_text = show_text
-        
+
 class ShowsTableWidget(QTableWidget):
     """
     Regular table widget with context menu for show actions.
@@ -315,15 +315,15 @@ class ShowItemDate(ShowItem):
 
 class AddCardView(QListView):
     changed = QtCore.pyqtSignal(dict)
-    
+
     def __init__(self, parent=None, api_info=None):
         super().__init__(parent)
-        
+
         m = AddListModel(api_info=api_info)
         proxy = AddListProxy()
         proxy.setSourceModel(m)
         proxy.sort(0, QtCore.Qt.AscendingOrder)
-        
+
         self.setItemDelegate(AddListDelegate())
         self.setFlow(QListView.LeftToRight)
         self.setWrapping(True)
@@ -331,21 +331,21 @@ class AddCardView(QListView):
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setModel(proxy)
-        
+
         self.selectionModel().currentRowChanged.connect(self.s_show_selected)
-    
+
     def s_show_selected(self, new, old=None):
         if not new:
             return
 
         index = self.model().mapToSource(new).row()
         selected_show = self.getModel().results[index]
-        
+
         self.changed.emit(selected_show)
-        
+
     def setResults(self, results):
         self.getModel().setResults(results)
-        
+
     def getModel(self):
         return self.model().sourceModel()
 
@@ -353,32 +353,32 @@ class AddCardView(QListView):
 class AddTableDetailsView(QSplitter):
     """ This is a splitter widget that contains a table and
     a details widget. Used in the Add Show dialog. """
-    
+
     changed = QtCore.pyqtSignal(dict)
-    
+
     def __init__(self, parent=None, worker=None):
         super().__init__(parent)
-        
+
         self.table = QTableView()
         m = AddTableModel()
         proxy = QtCore.QSortFilterProxyModel()
         proxy.setSourceModel(m)
-        
+
         self.table.setGridStyle(QtCore.Qt.NoPen)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setModel(proxy)
         self.table.setSortingEnabled(True)
-        
+
         if pyqt_version is 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
-        
+
         self.table.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.addWidget(self.table)
-        
+
         self.details = DetailsWidget(parent, worker)
         self.addWidget(self.details)
 
@@ -389,14 +389,14 @@ class AddTableDetailsView(QSplitter):
         index = self.table.model().mapToSource(new).row()
         selected_show = self.getModel().results[index]
         self.details.load(selected_show)
-        
+
         self.changed.emit(selected_show)
-        
+
     def setResults(self, results):
         self.getModel().setResults(results)
 
     def getModel(self):
         return self.table.model().sourceModel()
-        
+
     def clearSelection(self):
         return self.table.clearSelection()

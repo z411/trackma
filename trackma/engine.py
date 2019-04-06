@@ -78,12 +78,12 @@ class Engine:
         self.account = account
 
         # Create home directory
-        utils.make_dir('')
-        self.configfile = utils.get_root_filename('config.json')
+        utils.make_dir(utils.to_config_path())
+        self.configfile = utils.to_config_path('config.json')
 
         # Create user directory
         userfolder = "%s.%s" % (account['username'], account['api'])
-        utils.make_dir(userfolder)
+        utils.make_dir(utils.to_data_path(userfolder))
 
         self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
             utils.VERSION, account['username'], account['api']))
@@ -102,7 +102,7 @@ class Engine:
             self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
 
         # Load hook files
-        hooks_dir = utils.get_root_filename('hooks')
+        hooks_dir = utils.to_config_path('hooks')
         if os.path.isdir(hooks_dir):
             import sys
             import pkgutil
@@ -760,7 +760,7 @@ class Engine:
 
         for searchdir in self.searchdirs:
             self.msg.debug(self.name, "Directory: %s" % searchdir)
-            
+
             # Do a full listing of the media directory
             for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
                 if self.config['library_full_path']:

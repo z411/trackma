@@ -10,7 +10,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
              utils.TYPE_MOVIE: "Movie",
              utils.TYPE_OVA: "OVA",
              utils.TYPE_SP: "Special"}
-    
+
     def __init__(self, parent=None):
         self.results = None
 
@@ -26,7 +26,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
             return len(self.results)
         else:
             return 0
-    
+
     def columnCount(self, parent):
         return 3
 
@@ -39,7 +39,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.DisplayRole:
             item = self.results[row]
-            
+
             if column == 0:
                 return item.get('title')
             elif column == 1:
@@ -54,16 +54,16 @@ class AddTableModel(QtCore.QAbstractTableModel):
 class AddListModel(QtCore.QAbstractListModel):
     """
     List model meant to be used with the Add show list view.
-    
+
     It manages thumbnails and queues their downloads with the
     ThumbManager as necessary.
     """
-    
+
     def __init__(self, parent=None, api_info=None):
         self.results = None
         self.thumbs = {}
         self.api_info = api_info
-        
+
         self.pool = ThumbManager()
         self.pool.itemFinished.connect(self.gotThumb)
 
@@ -72,29 +72,29 @@ class AddListModel(QtCore.QAbstractListModel):
     def gotThumb(self, iid, thumb):
         iid = int(iid)
         self.thumbs[iid] = thumb.scaled(100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
-        
+
         self.dataChanged.emit(self.index(iid), self.index(iid))
-        
+
     def setResults(self, new_results):
         """ This method will process a new list of shows and get their
         thumbnails if necessary. """
-        
+
         self.beginResetModel()
-        
+
         self.results = new_results
-        
+
         self.thumbs.clear()
-        
+
         if self.results:
             for row, item in enumerate(self.results):
                 if item.get('image'):
-                    filename = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], item['id']))
-            
+                    filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], item['id']))
+
                     if self.pool.exists(filename):
                         self.thumbs[row] = self.pool.getThumb(filename).scaled(100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
                     else:
                         self.pool.queueDownload(row, item['image'], filename)
-        
+
         self.endResetModel()
 
     def rowCount(self, parent):
@@ -102,7 +102,7 @@ class AddListModel(QtCore.QAbstractListModel):
             return len(self.results)
         else:
             return 0
-    
+
     def data(self, index, role):
         row = index.row()
         if role == QtCore.Qt.DisplayRole:
@@ -128,5 +128,5 @@ class AddListProxy(QtCore.QSortFilterProxyModel):
     def lessThan(self, left, right):
         leftData = self.sourceModel().data(left, QtCore.Qt.DisplayRole)
         rightData = self.sourceModel().data(right, QtCore.Qt.DisplayRole)
-        
+
         return leftData['type'] < rightData['type']

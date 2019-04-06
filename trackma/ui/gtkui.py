@@ -75,7 +75,7 @@ class Trackma_gtk(object):
 
     def main(self):
         """Start the Account Selector"""
-        self.configfile = utils.get_root_filename('ui-Gtk.json')
+        self.configfile = utils.to_config_path('ui-Gtk.json')
         self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
 
         manager = AccountManager()
@@ -957,8 +957,8 @@ class Trackma_gtk(object):
 
         # Image
         if show.get('image_thumb') or show.get('image'):
-            utils.make_dir('cache')
-            filename = utils.get_filename('cache', "%s_%s_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
+            utils.make_dir(utils.to_cache_path())
+            filename = utils.to_cache_path("%s_%s_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.show_image.image_show(filename)
@@ -1804,8 +1804,7 @@ class InfoWidget(Gtk.VBox):
 
         # Load image
         if show.get('image'):
-            imagefile = utils.get_filename('cache', "f_%d.jpg" % show['id'])
-            imagefile = utils.get_filename('cache', "%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
+            imagefile = utils.to_cache_path("%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
 
             if os.path.isfile(imagefile):
                 self.w_image.image_show(imagefile)
@@ -1898,7 +1897,7 @@ class Settings(Gtk.Window):
         sw = Gtk.ScrolledWindow()
         sw.set_size_request(-1, 100)
         sw.add(self.lst_searchdirs)
-        
+
         # Buttons
         sd_alignment = Gtk.Alignment(yalign=0, yscale=0)
         buttonbar = Gtk.VBox(False, 5)
@@ -2270,9 +2269,9 @@ class Settings(Gtk.Window):
         self.chk_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
         self.chk_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
         self.chk_tracker_not_found_prompt.set_active(self.engine.get_config('tracker_not_found_prompt'))
-        
+
         self._add_dirs(self.engine.get_config('searchdir'))
-        
+
         if self.engine.get_config('tracker_type') == 'local':
             self.rbtn_tracker_local.set_active(True)
             self.txt_plex_host.set_sensitive(False)
@@ -2335,7 +2334,7 @@ class Settings(Gtk.Window):
         self.engine.set_config('tracker_not_found_prompt', self.chk_tracker_not_found_prompt.get_active())
 
         self.engine.set_config('searchdir', [row.data for row in self.lst_searchdirs])
-        
+
         # Tracker type
         if self.rbtn_tracker_local.get_active():
             self.engine.set_config('tracker_type', 'local')

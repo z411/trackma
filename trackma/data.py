@@ -62,7 +62,7 @@ class Data():
 
         # Get filenames
         userfolder = "%s.%s" % (account['username'], account['api'])
-        self.userconfig_file =  utils.get_filename(userfolder, 'user.json')
+        self.userconfig_file =  utils.to_data_path(userfolder, 'user.json')
 
         # Handle userconfig and media type to load
         self._load_userconfig()
@@ -92,11 +92,11 @@ class Data():
         self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
 
         # Get filenames
-        self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
-        self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
-        self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
-        self.meta_file = utils.get_filename(userfolder, '%s.meta' % mediatype)
-        self.lock_file = utils.get_filename(userfolder,  'lock')
+        self.queue_file = utils.to_data_path(userfolder, '%s.queue' % mediatype)
+        self.info_file  = utils.to_data_path(userfolder,  '%s.info' % mediatype)
+        self.cache_file = utils.to_data_path(userfolder, '%s.list' % mediatype)
+        self.meta_file  = utils.to_data_path(userfolder, '%s.meta' % mediatype)
+        self.lock_file  = utils.to_data_path(userfolder,  'lock')
 
         # Connect signals
         self.api.connect_signal('show_info_changed', self.info_update)

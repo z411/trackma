@@ -54,6 +54,8 @@ SEASON_FALL = 4
 SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
+HOME = os.path.expanduser("~")
+
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
@@ -65,7 +67,6 @@ available_libs = {
     'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
-
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -108,7 +109,7 @@ def save_data(data, filename):
         pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
-    with open(get_root_filename('error.log'), 'a') as logfile:
+    with open(to_data_path('error.log'), 'a') as logfile:
         logfile.write(msg)
 
 def expand_path(path):
@@ -144,10 +145,9 @@ def list_library(path):
         for filename in names:
             yield ( os.path.join(root, filename), filename )
 
-def make_dir(directory):
-    path = os.path.expanduser(os.path.join('~', '.trackma', directory))
+def make_dir(path):
     if not os.path.isdir(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 def dir_exists(dirname):
     return os.path.isdir(dirname)
@@ -158,14 +158,23 @@ def file_exists(filename):
 def copy_file(src, dest):
     shutil.copy(src, dest)
 
-def get_filename(subdir, filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', subdir, filename))
+def to_config_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
 
-def get_root_filename(filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', filename))
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.join(HOME, ".config")), "trackma", *paths)
 
-def get_root():
-    return os.path.expanduser(os.path.join('~', '.trackma'))
+def to_data_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
+
+    return os.path.join(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share")), "trackma", *paths)
+
+def to_cache_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", "cache", *paths)
+
+    return os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "trackma", *paths)
 
 def change_permissions(filename, mode):
     os.chmod(filename, mode)
