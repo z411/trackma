@@ -19,7 +19,8 @@ class Torrents(object):
 
     # Hardcoded for now
     #FEED_URL = "http://www.nyaa.se/?page=rss&cats=1_37"
-    FEED_URL = "http://tokyotosho.se/rss.php?filter=1&zwnj=0"
+    #FEED_URL = "http://tokyotosho.se/rss.php?filter=1&zwnj=0"
+    FEED_URL = "https://nyaa.si/?page=rss&c=1_2&f=0"
 
     def __init__(self, messenger, animelist, config):
         self.animelist = animelist
@@ -30,12 +31,15 @@ class Torrents(object):
 
     def _load(self):
         if utils.file_exists(self.filename):
-            with open(self.filename, 'rb') as f:
-                self.torrents = cpickle.load(f)
+            try:
+                with open(self.filename, 'rb') as f:
+                    self.torrents = pickle.load(f)
+            except:
+                pass
 
     def _save(self):
         with open(self.filename, 'wb') as f:
-            cpickle.dump(self.torrents, f)
+            pickle.dump(self.torrents, f)
 
     def _download_feed(self, url):
         req = urllib.request.Request(url)
@@ -43,7 +47,8 @@ class Torrents(object):
         response = urllib.request.urlopen(req)
 
         if response.info().get('content-encoding') == 'gzip':
-            stream = StringIO(response.read())
+            #stream = StringIO(response.read())
+            stream = response
             result = gzip.GzipFile(fileobj=stream)
         else:
             result = response
@@ -75,39 +80,34 @@ class Torrents(object):
         for item in items:
             if item['title'] in torrents_keys:
                 continue # Already cached
+            
+            aie = AnimeInfoExtractor(item['title'])
 
             torrent = {
                        'filename': item['title'],
                        'url': item['link'],
-                       'show_id': None,
-                       'show_title': None,
-                       'show_episode': None,
-                       'show_group': None,
+                       'show_title': aie.getName(),
+                       'episode': aie.getEpisode(),
+                       'group': aie.subberTag,
+                       'resolution': aie.resolution,
                        'status': STATUS_NOT_FOUND,
                       }
 
-            highest_ratio = (None, 0)
-            aie = extras.AnimeInfoExtractor.AnimeInfoExtractor(item['title'])
-            (item_title, item_episode, item_group) = (aie.getName(), aie.getEpisode(), aie.subberTag)
 
-            torrent['show_title'] = item_title
-            torrent['show_episode'] = item_episode
-            torrent['show_group'] = item_group
-
-            if not item_title:
+            if not torrent['show_title']:
                 torrent['status'] = STATUS_NOT_RECOGNIZED
                 continue
 
-            show = utils.guess_show(item_title, self.animelist)
+            show = utils.guess_show(torrent['show_title'], self.animelist)
 
             if show:
                 torrent['show_id'] = show['id']
-                #torrent['show_title'] = show['title']
+                torrent['show_title'] = show['title']
 
-                if item_episode == (show['my_progress'] + 1):
+                if torrent['episode'] == (show['my_progress'] + 1):
                     # Show found!
                     torrent['status'] = STATUS_NEXT_EPISODE
-                elif item_episode > (show['my_progress'] + 1):
+                elif torrent['episode'] > (show['my_progress'] + 1):
                     torrent['status'] = STATUS_NOT_NEXT_EPISODE
                 else:
                     # The show was found but this episode was already watched
