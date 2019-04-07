@@ -83,7 +83,10 @@ class DetailsWidget(QWidget):
         self.worker.start()
 
     def load(self, show):
-        self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], show['title']) )
+        metrics = QtGui.QFontMetrics(self.show_title.font())
+        title = metrics.elidedText(show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+
+        self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], title) )
         self.show_title.setTextFormat(QtCore.Qt.RichText)
         self.show_title.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         self.show_title.setOpenExternalLinks(True)
@@ -370,6 +373,7 @@ class AddTableDetailsView(QSplitter):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setModel(proxy)
         self.table.setSortingEnabled(True)
+        self.table.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         if pyqt_version is 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
@@ -381,6 +385,8 @@ class AddTableDetailsView(QSplitter):
 
         self.details = DetailsWidget(parent, worker)
         self.addWidget(self.details)
+
+        self.setSizes([1, 1])
 
     def s_show_selected(self, new, old=None):
         if not new:

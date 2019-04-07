@@ -56,7 +56,6 @@ class AddDialog(QDialog):
             self.search_rad.setChecked(True)
             self.search_txt = QLineEdit()
             self.search_txt.returnPressed.connect(self.s_search)
-            self.search_txt.setFocus()
             if default:
                 self.search_txt.setText(default)
             self.search_btn = QPushButton('Search')
@@ -122,6 +121,7 @@ class AddDialog(QDialog):
         bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
         self.add_btn = bottom_buttons.addButton("Add", QDialogButtonBox.AcceptRole)
+        self.add_btn.setEnabled(False)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
 
@@ -131,6 +131,9 @@ class AddDialog(QDialog):
         layout.addWidget(self.contents)
         layout.addWidget(bottom_buttons)
         self.setLayout(layout)
+
+        if utils.SEARCH_METHOD_SEASON in search_methods:
+            self.search_txt.setFocus()
 
     def worker_call(self, function, ret_function, *args, **kwargs):
         # Run worker in a thread

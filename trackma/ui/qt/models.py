@@ -48,7 +48,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
                 else:
                     return '?'
             elif column == 2:
-                return item.get('total')
+                return item.get('total', '?')
 
 
 class AddListModel(QtCore.QAbstractListModel):
