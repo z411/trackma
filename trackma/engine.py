@@ -28,6 +28,7 @@ from decimal import Decimal
 from trackma import messenger
 from trackma import data
 from trackma import utils
+from trackma import torrents
 from trackma.extras import AnimeInfoExtractor
 
 class Engine:

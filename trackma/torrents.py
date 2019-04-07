@@ -1,11 +1,11 @@
-import utils
-import extras.AnimeInfoExtractor
+from trackma import utils
+from trackma.extras import AnimeInfoExtractor
 
-import cPickle
-import urllib2
+import pickle
+import urllib.request
 import xml.etree.ElementTree as ET
 import gzip
-from cStringIO import StringIO
+from io import StringIO
 
 STATUS_NEXT_EPISODE = 1
 STATUS_NOT_NEXT_EPISODE = 2
@@ -24,23 +24,23 @@ class Torrents(object):
     def __init__(self, messenger, animelist, config):
         self.animelist = animelist
         self.msg = messenger
-        utils.make_dir('')
-        self.filename = utils.get_root_filename('torrents.dict')
+        utils.make_dir(utils.to_data_path())
+        self.filename = utils.to_data_path('torrents.dict')
         self._load()
 
     def _load(self):
         if utils.file_exists(self.filename):
             with open(self.filename, 'rb') as f:
-                self.torrents = cPickle.load(f)
+                self.torrents = cpickle.load(f)
 
     def _save(self):
         with open(self.filename, 'wb') as f:
-            cPickle.dump(self.torrents, f)
+            cpickle.dump(self.torrents, f)
 
     def _download_feed(self, url):
-        req = urllib2.Request(url)
+        req = urllib.request.Request(url)
         req.add_header('Accept-Encoding', 'gzip')
-        response = urllib2.urlopen(req)
+        response = urllib.request.urlopen(req)
 
         if response.info().get('content-encoding') == 'gzip':
             stream = StringIO(response.read())
