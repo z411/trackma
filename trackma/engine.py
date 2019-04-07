@@ -267,41 +267,27 @@ class Engine:
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            # Choose the tracker we want to tart
-            if self.config['tracker_type'] == 'plex':
-                from trackma.tracker.plex import PlexTracker
-                TrackerClass = PlexTracker
-            elif os.name == 'nt':
-                from trackma.tracker.win32 import Win32Tracker
-                TrackerClass = Win32Tracker
-            else:
-                # Try trackers in this order: pyinotify, inotify, polling
-                try:
-                    from trackma.tracker.pyinotify import pyinotifyTracker
-                    TrackerClass = pyinotifyTracker
-                except ImportError:
-                    try:
-                        from trackma.tracker.inotify import inotifyTracker
-                        TrackerClass = inotifyTracker
-                    except ImportError:
-                        from trackma.tracker.polling import PollingTracker
-                        TrackerClass = PollingTracker
-
-            self.tracker = TrackerClass(self.msg,
-                                   self._get_tracker_list(),
-                                   self.config['tracker_process'],
-                                   self.searchdirs,
-                                   int(self.config['tracker_interval']),
-                                   int(self.config['tracker_update_wait_s']),
-                                   self.config['tracker_update_close'],
-                                   self.config['tracker_not_found_prompt'],
-                                  )
-            self.tracker.connect_signal('detected', self._tracker_detected)
-            self.tracker.connect_signal('removed', self._tracker_removed)
-            self.tracker.connect_signal('playing', self._tracker_playing)
-            self.tracker.connect_signal('update', self._tracker_update)
-            self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
-            self.tracker.connect_signal('state', self._tracker_state)
+            self.msg.debug(self.name, "Initializing tracker...")
+            try:
+                TrackerClass = self._get_tracker_class(self.config['tracker_type'])
+                
+                self.tracker = TrackerClass(self.msg,
+                                       self._get_tracker_list(),
+                                       self.config['tracker_process'],
+                                       self.searchdirs,
+                                       int(self.config['tracker_interval']),
+                                       int(self.config['tracker_update_wait_s']),
+                                       self.config['tracker_update_close'],
+                                       self.config['tracker_not_found_prompt'],
+                                      )
+                self.tracker.connect_signal('detected', self._tracker_detected)
+                self.tracker.connect_signal('removed', self._tracker_removed)
+                self.tracker.connect_signal('playing', self._tracker_playing)
+                self.tracker.connect_signal('update', self._tracker_update)
+                self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
+                self.tracker.connect_signal('state', self._tracker_state)
+            except ImportError:
+                self.msg.warn(self.name, "Couldn't import specified tracker: {}".format(self.config['tracker_type']))
 
         self.loaded = True
         return True
@@ -991,3 +977,35 @@ class Engine:
             self.msg.warn(self.name, "The specified media directory {} doesn't exist!".format(path))
             return False
         return True
+
+    def _get_tracker_class(self, ttype):
+        # Choose the tracker we want to tart
+        if ttype == 'plex':
+            from trackma.tracker.plex import PlexTracker
+            return PlexTracker
+        elif ttype == 'pyinotify':
+            from trackma.tracker.pyinotify import pyinotifyTracker
+            return pyinotifyTracker
+        elif ttype == 'inotify':
+            from trackma.tracker.inotify import inotifyTracker
+            return inotifyTracker
+        elif ttype == 'win32':
+            from trackma.tracker.win32 import Win32Tracker
+            return Win32Tracker
+        elif ttype == 'polling':
+            from trackma.tracker.polling import PollingTracker
+            return PollingTracker
+        else:
+            # Guess the working tracker
+            if os.name == 'nt':
+                return self._get_tracker_class('win32')
+
+            # Try trackers in this order: pyinotify, inotify, polling
+            try:
+                return self._get_tracker_class('pyinotify')
+            except ImportError:
+                try:
+                    return self._get_tracker_class('inotify')
+                except ImportError:
+                    return self._get_tracker_class('polling')
+
