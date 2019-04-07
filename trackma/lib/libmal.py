@@ -42,7 +42,7 @@ class libmal(lib):
     logged_in = False
     opener = None
 
-    api_info =  { 'name': 'MyAnimeList', 'shortname': 'mal', 'version': 'v0.3', 'merge': False }
+    api_info =  { 'name': 'MyAnimeList', 'shortname': 'mal', 'version': '', 'merge': False }
 
     default_mediatype = 'anime'
     mediatypes = dict()
@@ -219,7 +219,7 @@ class libmal(lib):
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         """Searches MyAnimeList database for the queried show"""
         self.msg.info(self.name, "Searching for %s..." % criteria)
 
@@ -251,6 +251,10 @@ class libmal(lib):
             status_translate = {'Currently Airing': utils.STATUS_AIRING,
                     'Finished Airing': utils.STATUS_FINISHED,
                     'Not yet aired': utils.STATUS_NOTYET}
+            type_translate = {'TV': utils.TYPE_TV,
+                              'Movie': utils.TYPE_MOVIE,
+                              'OVA': utils.TYPE_OVA,
+                              'Special': utils.TYPE_SP}
         elif self.mediatype == 'manga':
             status_translate = {'Publishing': utils.STATUS_AIRING,
                     'Finished': utils.STATUS_AIRING}
@@ -262,8 +266,8 @@ class libmal(lib):
             show.update({
                 'id':           showid,
                 'title':        child.find('title').text,
-                'type':         child.find('type').text,
-                'status':       status_translate[child.find('status').text], # TODO : This should return an int!
+                'type':         type_translate.get(child.find('type').text, utils.TYPE_OTHER),
+                'status':       status_translate.get(child.find('status').text, utils.STATUS_OTHER),
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
                 'url':          "https://myanimelist.net/anime/%d" % showid,
@@ -399,22 +403,22 @@ class libmal(lib):
             progressname = 'chapter'
 
         # Update necessary keys
-        if 'my_progress' in item.keys():
+        if 'my_progress' in item:
             episode = ET.SubElement(root, progressname)
             episode.text = str(item['my_progress'])
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             status = ET.SubElement(root, "status")
             status.text = str(item['my_status'])
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             score = ET.SubElement(root, "score")
             score.text = str(item['my_score'])
-        if 'my_start_date' in item.keys():
+        if 'my_start_date' in item:
             start_date = ET.SubElement(root, "date_start")
             start_date.text = self._date2str(item['my_start_date'])
-        if 'my_finish_date' in item.keys():
+        if 'my_finish_date' in item:
             finish_date = ET.SubElement(root, "date_finish")
             finish_date.text = self._date2str(item['my_finish_date'])
-        if 'my_tags' in item.keys():
+        if 'my_tags' in item:
             tags = ET.SubElement(root, "tags")
             tags.text = str(item['my_tags'])
 

@@ -18,8 +18,7 @@ Features
 Currently supported websites
 ----------------------------
 - [Anilist](https://anilist.co/) (Anime, Manga)
-- [Hummingbird](https://hummingbird.me/) (Anime)
-- [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
+- [Kitsu](https://kitsu.io/) (Anime, Manga)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
@@ -48,17 +47,37 @@ Documentation
 
 The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
 
-Requirements
+Dependencies
 ------------
 
+The only required dependency to run Trackma is:
+
 - Python 3.4/3.5
-- lsof - for the media player detection tracker.
-- (Optional) inotifyx - for instant media recognition (Linux only)
-- (Optional) PyQt - for the Qt Interface
-- (Optional) PyGI (python3-gi and python3-cairo) - for the GTK interface.
-- (Optional) Urwid (python3-urwid) - for the curses/urwid interface.
-- (Optional/Recommended) PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 - python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
+
+But only basic features will work (only CLI interface and no tracker). Everything else is optional.
+
+The following user interfaces are available and their requirements are as follows:
+
+| UI | Dependencies |
+| --- | --- |
+| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
+| GTK 3 | PyGI (python3-gi and python3-cairo) |
+| curses | Urwid (python3-urwid) |
+| CLI | None |
+
+The following media recognition trackers are available and their requirements are as follows:
+
+| Tracker | Description | Dependencies |
+| --- | --- | --- |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
+| Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
+| Plex | Connects to Plex server. Enabled manually. | None |
+| Win32 | Recognition for Windows platforms. | None |
+
+Additional optional dependencies:
+
+- PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
@@ -84,12 +103,17 @@ $ trackma-gtk
 $ trackma-qt
 </pre>
 
-Trackma also has user-provided packages for Arch Linux, Gentoo Linux and OpenSUSE.
+Trackma also has user-provided packages for several distributions.
 
 - **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
+- **Void Linux:** https://github.com/voidlinux/void-packages/blob/master/srcpkgs/trackma/template
+
+A user from the community also is providing a Docker image:
+
+- **Docker:** https://hub.docker.com/r/frosty5689/trackma/
 
 Configuration
 -------------

@@ -20,8 +20,9 @@ import datetime
 import json
 import difflib
 import pickle
+import uuid
 
-VERSION = '0.6.2'
+VERSION = '0.7.6'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -31,20 +32,41 @@ STATUS_AIRING = 1
 STATUS_FINISHED = 2
 STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
+STATUS_OTHER = 100
+
+TYPE_TV = 1
+TYPE_MOVIE = 2
+TYPE_OVA = 3
+TYPE_SP = 4
+TYPE_OTHER = 100
+
+TRACKER_NOVIDEO = 0
+TRACKER_PLAYING = 1
+TRACKER_UNRECOGNIZED = 2
+TRACKER_NOT_FOUND = 3
+TRACKER_IGNORED = 4
+
+SEASON_WINTER = 1
+SEASON_SPRING = 2
+SEASON_SUMMER = 3
+SEASON_FALL = 4
+
+SEARCH_METHOD_KW = 1
+SEARCH_METHOD_SEASON = 2
+
+HOME = os.path.expanduser("~")
 
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "http://omaera.org/trackma/anilist.html",
-            "https://anilist.co/api/auth/authorize?grant_type=authorization_pin&client_id=z411-gdjc3&response_type=pin"
+            "https://omaera.org/trackma/anilistv2",
+            "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
-    'hb':       ('Hummingbird',  datadir + '/data/hb.jpg',          LOGIN_PASSWD),
+    'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
-    'melative': ('Melative',     datadir + '/data/melative.jpg',    LOGIN_PASSWD),
     'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
-
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -87,8 +109,11 @@ def save_data(data, filename):
         pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
-    with open(get_root_filename('error.log'), 'a') as logfile:
+    with open(to_data_path('error.log'), 'a') as logfile:
         logfile.write(msg)
+
+def expand_path(path):
+    return os.path.expanduser(path)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -120,10 +145,9 @@ def list_library(path):
         for filename in names:
             yield ( os.path.join(root, filename), filename )
 
-def make_dir(directory):
-    path = os.path.expanduser(os.path.join('~', '.trackma', directory))
+def make_dir(path):
     if not os.path.isdir(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 def dir_exists(dirname):
     return os.path.isdir(dirname)
@@ -134,14 +158,23 @@ def file_exists(filename):
 def copy_file(src, dest):
     shutil.copy(src, dest)
 
-def get_filename(subdir, filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', subdir, filename))
+def to_config_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
 
-def get_root_filename(filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', filename))
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.join(HOME, ".config")), "trackma", *paths)
 
-def get_root():
-    return os.path.expanduser(os.path.join('~', '.trackma'))
+def to_data_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
+
+    return os.path.join(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share")), "trackma", *paths)
+
+def to_cache_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", "cache", *paths)
+
+    return os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "trackma", *paths)
 
 def change_permissions(filename, mode):
     os.chmod(filename, mode)
@@ -260,7 +293,7 @@ class APIFatal(TrackmaFatal):
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',
-    'searchdir': '/home/user/Videos',
+    'searchdir': ['/home/user/Videos'],
     'tracker_enabled': True,
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
@@ -270,11 +303,13 @@ config_defaults = {
     'tracker_process': 'mplayer|mplayer2|mpv',
     'autoretrieve': 'days',
     'autoretrieve_days': 3,
-    'autosend': 'hours',
-    'autosend_hours': 5,
+    'autosend': 'minutes',
+    'autosend_minutes': 60,
     'autosend_size': 5,
     'autosend_at_exit': True,
     'library_autoscan': True,
+    'library_full_path': False,
+    'scan_whole_list': False,
     'debug_disable_lock': True,
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
@@ -282,6 +317,10 @@ config_defaults = {
     'tracker_type': "local",
     'plex_host': "localhost",
     'plex_port': "32400",
+    'plex_obey_update_wait_s': False,
+    'plex_user': '',
+    'plex_passwd': '',
+    'plex_uuid': str(uuid.uuid1()),
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -291,22 +330,24 @@ userconfig_defaults = {
 curses_defaults = {
     'show_help': True,
     'keymap': {
-        'help': 'f1',
+        'help': '?',
         'prev_filter': 'left',
         'next_filter': 'right',
         'sort': 'f3',
         'sort_order': 'r',
-        'update': 'f4',
-        'play': 'f5',
+        'update': 'u',
+        'play': 'p',
+        'openfolder': 'o',
+        'play_random': '&',
         'status': 'f6',
-        'score': 'f7',
+        'score': 'k',
         'send': 's',
         'retrieve': 'R',
         'addsearch': 'a',
         'reload': 'c',
         'switch_account': 'f9',
         'delete': 'd',
-        'quit': 'f12',
+        'quit': 'q',
         'altname': 'A',
         'search': '/',
         'neweps': 'N',
@@ -389,6 +430,8 @@ qt_defaults = {
         'progress_sub_fg': '#5187B1',
         'progress_complete': '#00D200',
     },
+    'sort_index': 1,
+    'sort_order': 0,
 }
 
 qt_per_api_defaults = {

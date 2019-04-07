@@ -136,7 +136,7 @@ class lib():
         """
         raise NotImplementedError
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         """
         Called when the data handler needs a detailed list of shows from the remote server.
         It should return a list of show dictionaries with the additional 'extra' key (which is a list of tuples)

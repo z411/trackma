@@ -36,7 +36,7 @@ class Data():
 
     """
     name = 'Data'
-    version = 5
+    version = 6
 
     msg = None
     api = None
@@ -44,7 +44,7 @@ class Data():
     infocache = dict()
     queue = list()
     config = dict()
-    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'altnames': {}, 'library': {}, 'library_cache': {}, }
+    meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'apiversion': '', 'altnames': {}, 'library': {}, 'library_cache': {}, }
 
     autosend_timer = None
 
@@ -62,7 +62,7 @@ class Data():
 
         # Get filenames
         userfolder = "%s.%s" % (account['username'], account['api'])
-        self.userconfig_file =  utils.get_filename(userfolder, 'user.json')
+        self.userconfig_file =  utils.to_data_path(userfolder, 'user.json')
 
         # Handle userconfig and media type to load
         self._load_userconfig()
@@ -84,16 +84,19 @@ class Data():
         libclass = getattr(apimodule, libname)
         self.api = libclass(self.msg, account, self.userconfig)
 
+        # Get API version
+        self.api_version = self.api.api_info['version']
+
         # Set mediatype
         mediatype = self.userconfig.get('mediatype')
         self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
 
         # Get filenames
-        self.queue_file = utils.get_filename(userfolder, '%s.queue' % mediatype)
-        self.info_file = utils.get_filename(userfolder,  '%s.info' % mediatype)
-        self.cache_file = utils.get_filename(userfolder, '%s.list' % mediatype)
-        self.meta_file = utils.get_filename(userfolder, '%s.meta' % mediatype)
-        self.lock_file = utils.get_filename(userfolder,  'lock')
+        self.queue_file = utils.to_data_path(userfolder, '%s.queue' % mediatype)
+        self.info_file  = utils.to_data_path(userfolder,  '%s.info' % mediatype)
+        self.cache_file = utils.to_data_path(userfolder, '%s.list' % mediatype)
+        self.meta_file  = utils.to_data_path(userfolder, '%s.meta' % mediatype)
+        self.lock_file  = utils.to_data_path(userfolder,  'lock')
 
         # Connect signals
         self.api.connect_signal('show_info_changed', self.info_update)
@@ -102,6 +105,14 @@ class Data():
     def _emit_signal(self, signal, *args):
         if self.signals[signal]:
             self.signals[signal](*args)
+
+    def _is_queue_ready(self):
+        # Checks if queue should be sent ASAP
+        # Note: Hours setting is DEPRECATED!
+        return (self.config['autosend'] == 'always' or
+           (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
+           (self.config['autosend'] == 'minutes' and time.time() - self.meta['lastsend'] >= self.config['autosend_minutes']*60) or
+           (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size']))
 
     def connect_signal(self, signal, callback):
         try:
@@ -129,23 +140,25 @@ class Data():
         if self._meta_exists():
             self._load_meta()
 
-        if self._queue_exists() and self.meta.get('version') == self.version:
+        if self._queue_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             self._load_queue()
+            self._emit_signal('queue_changed', self.queue)
 
-        if self._info_exists() and self.meta.get('version') == self.version:
+        if self._info_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             # Load info cache only if we're on the same database version
             self._load_info()
 
         # If there is a list cache, load from it
         # otherwise query the API for a remote list
-        if self._cache_exists() and self.meta.get('version') == self.version:
+        if self._cache_exists() and self.meta.get('version') == self.version and self.meta.get('apiversion') == self.api_version:
             # Auto-send: Process the queue if we're beyond the auto-send time limit for some reason
-            if self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] > self.config['autosend_hours'] * 3600:
+            if self._is_queue_ready():
                 self.process_queue()
 
             # Auto-retrieve: Redownload list if any autoretrieve condition is met
             if (self.config['autoretrieve'] == 'always' or
-               (self.config['autoretrieve'] == 'days' and time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
+               (self.config['autoretrieve'] == 'days' and
+                time.time() - self.meta['lastget'] > self.config['autoretrieve_days'] * 84600) or
                 self.meta.get('version') != self.version):
                 try:
                     # Make sure we process the queue first before overwriting the list
@@ -165,7 +178,8 @@ class Data():
                 raise utils.APIFatal(str(e))
 
         # Create autosend thread if needed
-        if self.config['autosend'] == 'hours':
+        # Note: Hours setting is DEPRECATED!
+        if self.config['autosend'] in ('minutes', 'hours'):
             self.autosend()
 
         return (self.api.api_info, self.api.media_info())
@@ -197,9 +211,9 @@ class Data():
         """Get list from memory"""
         return self.showlist
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         # Tell API to search
-        results = self.api.search(criteria)
+        results = self.api.search(criteria, method)
         self.api.logout()
         if results:
             return results
@@ -241,7 +255,7 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued add for %s" % show['title'])
 
     def queue_update(self, show, key, value):
@@ -255,7 +269,7 @@ class Data():
         key: The key that will be modified (it must exist beforehand)
         value: The value that it should be changed to
         """
-        if key not in show.keys():
+        if key not in show:
             raise utils.DataError('Invalid key for queue update.')
 
         # Do update on memory
@@ -284,13 +298,11 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued update for %s" % show['title'])
 
         # Immediately process the action if necessary
-        if (self.config['autosend'] == 'always' or
-           (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
-           (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size'])):
+        if self._is_queue_ready():
             self.process_queue()
 
     def queue_delete(self, show):
@@ -327,7 +339,7 @@ class Data():
 
         self._save_queue()
         self._save_cache()
-        self._emit_signal('queue_changed', len(self.queue))
+        self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued delete for %s" % item['title'])
 
     def queue_clear(self):
@@ -335,7 +347,7 @@ class Data():
         if self.queue:
             self.queue = []
             self._save_queue()
-            self._emit_signal('queue_changed', len(self.queue))
+            self._emit_signal('queue_changed', self.queue)
             self.msg.info(self.name, "Cleared queue.")
 
     def process_queue(self):
@@ -362,8 +374,13 @@ class Data():
 
             # Run through queue
             items_processed = []
-            for i in range(len(self.queue)):
-                item = self.queue.pop(0)
+            items_failed = []
+            while True:
+                try:
+                    item = self.queue.pop(0)
+                except IndexError:
+                    break
+
                 showid = item['id']
 
                 try:
@@ -391,16 +408,19 @@ class Data():
                         self._emit_signal('show_synced', show, item)
 
                     items_processed.append((show, item))
-                    self._emit_signal('queue_changed', len(self.queue))
+                    self._emit_signal('queue_changed', self.queue)
                 except utils.APIError as e:
                     self.msg.warn(self.name, "Can't process %s, will leave unsynced." % item['title'])
                     self.msg.debug(self.name, "Info: %s" % e)
-                    self.queue.append(item)
+                    items_failed.append(item)
                 except NotImplementedError:
                     self.msg.warn(self.name, "Operation not implemented in API. Skipping...")
-                    self.queue.append(item)
+                    items_failed.append(item)
                 #except TypeError:
                 #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
+
+            if items_failed:
+                self.queue += items_failed
 
             self.api.logout()
             self._save_cache()
@@ -467,12 +487,13 @@ class Data():
 
     def autosend(self):
         # Check if we should autosend now
-        if time.time() - self.meta['lastsend'] >= self.config['autosend_hours'] * 3600:
+        if self._is_queue_ready():
             self.process_queue()
 
-        # Repeat check only if the settings are still on 'hours'
-        if self.config['autosend'] == 'hours':
-            self.autosend_timer = threading.Timer(3600, self.autosend)
+        # Repeat check only if the settings are still on autosend
+        # Note: Hours setting is DEPRECATED!
+        if self.config['autosend'] in ('minutes', 'hours'):
+            self.autosend_timer = threading.Timer(3600 if self.config['autosend'] == 'hours' else 60, self.autosend)
             self.autosend_timer.daemon = True
             self.autosend_timer.start()
 
@@ -559,6 +580,7 @@ class Data():
         # Update last retrieved time
         self.meta['lastget'] = time.time()
         self.meta['version'] = self.version
+        self.meta['apiversion'] = self.api_version
         self._save_meta()
 
     def _cache_exists(self):

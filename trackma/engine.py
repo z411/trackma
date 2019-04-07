@@ -1,4 +1,4 @@
-# This file is part of wMAL.
+# This file is part of Trackma.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ from decimal import Decimal
 
 from trackma import messenger
 from trackma import data
-from trackma import tracker
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 
@@ -68,25 +67,23 @@ class Engine:
                 'queue_changed':     None,
                 'playing':           None,
                 'prompt_for_update': None,
-                'prompt_for_add':    None, }
+                'prompt_for_add':    None,
+                'tracker_state':     None,
+        }
 
-    def __init__(self, account, message_handler=None):
-        """Reads configuration file and asks the data handler for the API info."""
+    def __init__(self, message_handler=None):
         self.msg = messenger.Messenger(message_handler)
-
-        self._load(account)
-        self._init_data_handler()
 
     def _load(self, account):
         self.account = account
 
         # Create home directory
-        utils.make_dir('')
-        self.configfile = utils.get_root_filename('config.json')
+        utils.make_dir(utils.to_config_path())
+        self.configfile = utils.to_config_path('config.json')
 
         # Create user directory
         userfolder = "%s.%s" % (account['username'], account['api'])
-        utils.make_dir(userfolder)
+        utils.make_dir(utils.to_data_path(userfolder))
 
         self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
             utils.VERSION, account['username'], account['api']))
@@ -96,8 +93,16 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
 
+        # Expand media directories and ignore those that don't exist
+        if isinstance(self.config['searchdir'], str):
+            # Compatibility: Turn a string of a single directory into a list
+            self.msg.debug(self.name, "Fixing string searchdir to list.")
+            self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
+        else:
+            self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
+
         # Load hook files
-        hooks_dir = utils.get_root_filename('hooks')
+        hooks_dir = utils.to_config_path('hooks')
         if os.path.isdir(hooks_dir):
             import sys
             import pkgutil
@@ -151,11 +156,17 @@ class Engine:
         if self.config['tracker_update_prompt']:
             self._emit_signal('prompt_for_update', show, episode)
         else:
-            self.set_episode(show['id'], episode)
+            try:
+                self.set_episode(show['id'], episode)
+            except utils.TrackmaError as e:
+                self.msg.warn(self.name, "Can't update episode: {}".format(e))
 
     def _tracker_unrecognised(self, show_title, episode):
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show_title, episode)
+
+    def _tracker_state(self, state, timer):
+        self._emit_signal('tracker_state', state, timer)
 
     def _emit_signal(self, signal, *args):
         try:
@@ -177,15 +188,23 @@ class Engine:
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
-        if filter_num:
-            source_list = self.filter_list(filter_num)
-        else:
+        if isinstance(filter_num, type(None)):
             source_list = self.get_list()
+        elif isinstance(filter_num, list):
+            source_list = []
+            for status in filter_num:
+                if status is not self.mediainfo['status_finish']:
+                    self.msg.debug(self.name, "scanning for \
+                            {}".format(self.mediainfo['statuses_dict'][status]))
+                    source_list = source_list + self.filter_list(status)
+        else:
+            source_list = self.filter_list(filter_num)
 
         for show in source_list:
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
+                                 'total': show['total'],
                                  'type': None,
                                  'titles': self.data_handler.get_show_titles(show),
                                  })  # TODO types
@@ -201,6 +220,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Forcing exit...")
             self.data_handler.unload(True)
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def connect_signal(self, signal, callback):
@@ -214,7 +235,7 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
 
-    def start(self):
+    def start(self, account, mediatype=None):
         """
         Starts the engine.
         This function should be called before doing anything with the engine,
@@ -222,6 +243,12 @@ class Engine:
         """
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
+
+        # Initialize
+        if account:
+            self._load(account)
+
+        self._init_data_handler(mediatype)
 
         # Start the data handler
         try:
@@ -240,20 +267,27 @@ class Engine:
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
-            self.tracker = tracker.Tracker(self.msg,
-                                   self._get_tracker_list(),
-                                   self.config['tracker_process'],
-                                   self.config['searchdir'],
-                                   int(self.config['tracker_interval']),
-                                   int(self.config['tracker_update_wait_s']),
-                                   self.config['tracker_update_close'],
-                                   self.config['tracker_not_found_prompt'],
-                                  )
-            self.tracker.connect_signal('detected', self._tracker_detected)
-            self.tracker.connect_signal('removed', self._tracker_removed)
-            self.tracker.connect_signal('playing', self._tracker_playing)
-            self.tracker.connect_signal('update', self._tracker_update)
-            self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
+            self.msg.debug(self.name, "Initializing tracker...")
+            try:
+                TrackerClass = self._get_tracker_class(self.config['tracker_type'])
+                
+                self.tracker = TrackerClass(self.msg,
+                                       self._get_tracker_list(),
+                                       self.config['tracker_process'],
+                                       self.searchdirs,
+                                       int(self.config['tracker_interval']),
+                                       int(self.config['tracker_update_wait_s']),
+                                       self.config['tracker_update_close'],
+                                       self.config['tracker_not_found_prompt'],
+                                      )
+                self.tracker.connect_signal('detected', self._tracker_detected)
+                self.tracker.connect_signal('removed', self._tracker_removed)
+                self.tracker.connect_signal('playing', self._tracker_playing)
+                self.tracker.connect_signal('update', self._tracker_update)
+                self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
+                self.tracker.connect_signal('state', self._tracker_state)
+            except ImportError:
+                self.msg.warn(self.name, "Couldn't import specified tracker: {}".format(self.config['tracker_type']))
 
         self.loaded = True
         return True
@@ -269,7 +303,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Unloading...")
             self.data_handler.unload()
-
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def reload(self, account=None, mediatype=None):
@@ -277,11 +312,7 @@ class Engine:
         if self.loaded:
             self.unload()
 
-        if account:
-            self._load(account)
-
-        self._init_data_handler(mediatype)
-        self.start()
+        self.start(account, mediatype)
 
     def get_config(self, key):
         """Returns the specified key from the configuration."""
@@ -357,13 +388,26 @@ class Engine:
 
         return newlist
 
-    def search(self, criteria):
+    def tracker_status(self):
+        """
+        Asks the tracker for its current status.
+        """
+
+        if self.tracker:
+            return self.tracker.get_status()
+        else:
+            return None
+
+    def search(self, criteria, method=utils.SEARCH_METHOD_KW):
         """
         Request a remote list of shows matching the criteria
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        return self.data_handler.search(str(criteria).strip())
+        if method not in self.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW]):
+            raise utils.EngineError('Search method not supported by API or mediatype.')
+
+        return self.data_handler.search(criteria, method)
 
     def add_show(self, show, status=None):
         """
@@ -553,7 +597,7 @@ class Engine:
 
         # Check if the status is valid
         _statuses = self.mediainfo['statuses_dict']
-        if newstatus not in _statuses.keys():
+        if newstatus not in _statuses:
             raise utils.EngineError('Invalid status.')
 
         # Get the show and update it
@@ -657,6 +701,9 @@ class Engine:
         return best_candidate[0], best_candidate[2]
 
     def get_new_episodes(self, showlist):
+        # DEPRECATED !
+        self.msg.debug(self.name, "DEPRECATED: get_new_episodes")
+
         results = list()
         total = len(showlist)
         t = time.time()
@@ -682,28 +729,33 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
-            raise utils.EngineError('Media directory is not set.')
-        if not utils.dir_exists(self.config['searchdir']):
-            raise utils.EngineError('The set media directory doesn\'t exist.')
+            raise utils.EngineError('Media directories not set.')
 
         t = time.time()
         library = {}
         library_cache = self.data_handler.library_cache_get()
 
         if not my_status:
-            my_status = self.mediainfo['status_start']
+            if self.config['scan_whole_list']:
+                my_status = self.mediainfo['statuses']
+            else:
+                my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
-        self.msg.debug(self.name, "Directory: %s" % self.config['searchdir'])
         tracker_list = self._get_tracker_list(my_status)
 
-        # Do a full listing of the media directory
-        for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
+        for searchdir in self.searchdirs:
+            self.msg.debug(self.name, "Directory: %s" % searchdir)
 
-        self.msg.debug(self.name, "Time: %s" % (time.time() - t))
-        self.data_handler.library_save(library)
-        self.data_handler.library_cache_save(library_cache)
+            # Do a full listing of the media directory
+            for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
+                if self.config['library_full_path']:
+                    filename = self._get_show_name_from_full_path(searchdir, fullpath).strip()
+                (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
+
+            self.msg.debug(self.name, "Time: %s" % (time.time() - t))
+            self.data_handler.library_save(library)
+            self.data_handler.library_cache_save(library_cache)
         return library
 
     def remove_from_library(self, path, filename):
@@ -712,9 +764,9 @@ class Engine:
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
         # Only remove if the filename matches library entry
-        if filename in library_cache.keys() and library_cache[filename]:
+        if filename in library_cache and library_cache[filename]:
             (show_id, show_ep) = library_cache[filename]
-            if show_id and show_id in library.keys() \
+            if show_id and show_id in library \
                     and show_ep and show_ep in library[show_id].keys():
                 if library[show_id][show_ep] == fullpath:
                     self.msg.debug(self.name, "File removed from local library: %s" % fullpath)
@@ -732,7 +784,7 @@ class Engine:
 
     def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
         show_id = None
-        if not rescan and filename in library_cache.keys():
+        if not rescan and filename in library_cache:
             # If the filename was already seen before
             # use the cached information, if there's no information (None)
             # then it means it doesn't correspond to any show in the list
@@ -743,9 +795,9 @@ class Engine:
                     (show_ep_start, show_ep_end) = show_ep
                 else:
                     show_ep_start = show_ep_end = show_ep
-                self.msg.debug(self.name, "File already in library: {}".format(fullpath))
+                self.msg.debug(self.name, "File in cache: {}".format(fullpath))
             else:
-                self.msg.debug(self.name, "File not in library cache: {}".format(fullpath))
+                self.msg.debug(self.name, "File in cache but skipped: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
@@ -758,21 +810,23 @@ class Engine:
             if show_title:
                 show = utils.guess_show(show_title, tracker_list)
                 if show:
+                    self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
+
                     show_id = show['id']
                     if show_ep_start == show_ep_end:
                         library_cache[filename] = (show['id'], show_ep_start)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
-
-                    self.msg.debug(self.name, "New file added to local library: {}".format(fullpath))
                 else:
+                    self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
                     library_cache[filename] = None
             else:
+                self.msg.debug(self.name, "Not recognized, skipping: {}".format(fullpath))
                 library_cache[filename] = None
 
         # After we got our information, add it to our library
         if show_id:
-            if show_id not in library.keys():
+            if show_id not in library:
                 library[show_id] = {}
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
@@ -805,7 +859,7 @@ class Engine:
 
         for showid, eps in library.items():
             show = self.get_show_info(showid)
-            if show['my_progress'] + 1 in eps.keys():
+            if show['my_progress'] + 1 in eps:
                 newep.append(show)
 
         if not newep:
@@ -825,10 +879,6 @@ class Engine:
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
-        if not self.config['searchdir']:
-            raise utils.EngineError('Media directory is not set.')
-        if not utils.dir_exists(self.config['searchdir']):
-            raise utils.EngineError('The set media directory doesn\'t exist.')
 
         try:
             playep = int(playep)
@@ -929,3 +979,47 @@ class Engine:
                 not_next_episode.append(item)
 
         return (next_episode, not_next_episode)
+
+    def _get_show_name_from_full_path(self, searchdir, fullpath):
+        """Joins the directory name with the file name to return the show name."""
+        relative = fullpath[len(searchdir):]
+        return relative.replace(os.path.sep, " ")
+
+    def _searchdir_exists(self, path):
+        """Variation of dir_exists that warns the user if the path doesn't exist."""
+        if not utils.dir_exists(path):
+            self.msg.warn(self.name, "The specified media directory {} doesn't exist!".format(path))
+            return False
+        return True
+
+    def _get_tracker_class(self, ttype):
+        # Choose the tracker we want to tart
+        if ttype == 'plex':
+            from trackma.tracker.plex import PlexTracker
+            return PlexTracker
+        elif ttype == 'pyinotify':
+            from trackma.tracker.pyinotify import pyinotifyTracker
+            return pyinotifyTracker
+        elif ttype == 'inotify':
+            from trackma.tracker.inotify import inotifyTracker
+            return inotifyTracker
+        elif ttype == 'win32':
+            from trackma.tracker.win32 import Win32Tracker
+            return Win32Tracker
+        elif ttype == 'polling':
+            from trackma.tracker.polling import PollingTracker
+            return PollingTracker
+        else:
+            # Guess the working tracker
+            if os.name == 'nt':
+                return self._get_tracker_class('win32')
+
+            # Try trackers in this order: pyinotify, inotify, polling
+            try:
+                return self._get_tracker_class('pyinotify')
+            except ImportError:
+                try:
+                    return self._get_tracker_class('inotify')
+                except ImportError:
+                    return self._get_tracker_class('polling')
+

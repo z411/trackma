@@ -14,8 +14,8 @@ class AccountManager():
     accounts = {'default': None, 'next': 1, 'accounts': dict()}
 
     def __init__(self):
-        utils.make_dir('')
-        self.filename = utils.get_root_filename('accounts.dict')
+        utils.make_dir(utils.to_config_path())
+        self.filename = utils.to_config_path('accounts.dict')
         self._load()
 
     def _load(self):
@@ -99,7 +99,7 @@ class AccountManager():
         Renames stale cache files for account number **num**.
         """
         account = self.accounts['accounts'][num]
-        userfolder = "%s.%s" % (account['username'], account['api'])
+        userfolder = utils.to_data_path("%s.%s" % (account['username'], account['api']))
         utils.make_dir(userfolder + '.old')
         utils.regex_rename_files('(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
 

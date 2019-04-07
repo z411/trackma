@@ -37,11 +37,14 @@ class libvndb(lib):
     api_info =  {
                   'name': 'VNDB',
                   'shortname': 'vndb',
-                  'version': 'v0.3',
+                  'version': 2,
                   'merge': True,
                 }
 
     default_mediatype = 'vnlist'
+    pagesize_list = 100
+    pagesize_details = 25
+
     mediatypes = dict()
     mediatypes['vnlist'] = {
         'has_progress': False,
@@ -177,7 +180,7 @@ class libvndb(lib):
 
             (name, data) = self._sendcmd('get %s basic (uid = 0)' % self.mediatype,
                 {'page': page,
-                'results': 25
+                'results': self.pagesize_list
                 })
 
             # Something is wrong if we don't get a results response.
@@ -204,7 +207,7 @@ class libvndb(lib):
 
             (name, data) = self._sendcmd('get votelist basic (uid = 0)',
                 {'page': page,
-                'results': 25
+                'results': self.pagesize_list
                 })
 
             # Something is wrong if we don't get a results response.
@@ -234,11 +237,11 @@ class libvndb(lib):
         remaining = [ show['id'] for show in itemlist ]
         while True:
             self.msg.info(self.name, 'Requesting details...(%d)' % start)
-            end = start + 25
+            end = start + self.pagesize_details
 
             (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(remaining[start:end]),
                 {'page': 1,
-                 'results': 25,
+                 'results': self.pagesize_details,
                 })
 
             # Something is wrong if we don't get a results response.
@@ -249,7 +252,7 @@ class libvndb(lib):
             for item in data['items']:
                 infos.append(self._parse_info(item))
 
-            start += 25
+            start += self.pagesize_details
             if start >= len(itemlist):
                 # We're going beyond the list, finish
                 break
@@ -267,7 +270,7 @@ class libvndb(lib):
         self.check_credentials()
 
         # Update status with set vnlist
-        if 'my_status' in item.keys():
+        if 'my_status' in item:
             self.msg.info(self.name, 'Updating VN %s (status)...' % item['title'])
 
             if self.mediatype == 'wishlist':
@@ -281,7 +284,7 @@ class libvndb(lib):
                 raise utils.APIError("Invalid response (%s)" % name)
 
         # Update vote with set votelist
-        if 'my_score' in item.keys():
+        if 'my_score' in item:
             self.msg.info(self.name, 'Updating VN %s (vote)...' % item['title'])
 
             if item['my_score'] > 0:
@@ -306,7 +309,7 @@ class libvndb(lib):
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
         results = list()
@@ -314,7 +317,7 @@ class libvndb(lib):
 
         (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
             {'page': 1,
-             'results': 25,
+             'results': self.pagesize_details,
             })
 
         # Something is wrong if we don't get a results response.

@@ -15,6 +15,8 @@
 #
 
 import sys
+import os
+import subprocess
 
 try:
     import urwid
@@ -58,8 +60,9 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-        self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
-        keymap = self.config['keymap']
+        self.config = utils.parse_config(utils.to_config_path('ui-curses.json'), utils.curses_defaults)
+        keymap = utils.curses_defaults['keymap']
+        keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
         self.keymapping = self.map_key_to_func(keymap)
 
@@ -67,6 +70,7 @@ class Trackma_urwid():
         for k, color in self.config['palette'].items():
             palette.append( (k, color[0], color[1]) )
 
+        # Prepare header
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
         self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
@@ -75,7 +79,7 @@ class Trackma_urwid():
         self.header_order = urwid.Text('Order:d')
         self.header = urwid.AttrMap(urwid.Columns([
             self.header_title,
-            ('fixed', 23, self.header_filter),
+            ('fixed', 30, self.header_filter),
             ('fixed', 17, self.header_sort),
             ('fixed', 16, self.header_api)]), 'status')
 
@@ -90,7 +94,16 @@ class Trackma_urwid():
             top_pile.append(urwid.AttrMap(urwid.Text(top_text), 'status'))
 
         self.top_pile = urwid.Pile(top_pile)
-        self.statusbar = urwid.AttrMap(urwid.Text('Trackma-curses '+utils.VERSION), 'status')
+
+        # Prepare status bar
+        self.status_text = urwid.Text('Trackma-curses '+utils.VERSION)
+        self.status_queue = urwid.Text('Q:N/A')
+        self.status_tracker = urwid.Text('T:N/A')
+        self.statusbar = urwid.AttrMap(urwid.Columns([
+            self.status_text,
+            ('fixed', 10, self.status_tracker),
+            ('fixed', 6, self.status_queue),
+            ]), 'status')
 
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -108,6 +121,7 @@ class Trackma_urwid():
         self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
 
+    def run(self):
         self.mainloop.set_alarm_in(0, self.do_switch_account)
         self.mainloop.run()
 
@@ -120,6 +134,8 @@ class Trackma_urwid():
                     'sort_order': self.change_sort_order,
                     'update': self.do_update,
                     'play': self.do_play,
+                    'openfolder': self.do_openfolder,
+                    'play_random': self.do_play_random,
                     'status': self.do_status,
                     'score': self.do_score,
                     'send': self.do_send,
@@ -163,13 +179,22 @@ class Trackma_urwid():
         self.lists = dict()
         self.filters = self.engine.mediainfo['statuses_dict']
         self.filters_nums = self.engine.mediainfo['statuses']
+        self.filters_sizes = []
+
+        track_info = self.engine.tracker_status()
+        if track_info:
+            self.tracker_state(track_info['state'], None)
 
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
         self._rebuild_lists()
-        self.set_filter(0)
 
+        # Put the number of shows in every status in a list
+        for status in self.filters_nums:
+            self.filters_sizes.append(len(self.lists[status].body))
+
+        self.set_filter(0)
         self.status('Ready.')
         self.started = True
 
@@ -199,7 +224,7 @@ class Trackma_urwid():
         self.started = False
 
         self.status("Starting engine...")
-        self.engine = Engine(account, self.message_handler)
+        self.engine = Engine(self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -207,17 +232,19 @@ class Trackma_urwid():
         self.engine.connect_signal('show_added', self.changed_list)
         self.engine.connect_signal('show_deleted', self.changed_list)
         self.engine.connect_signal('show_synced', self.changed_show)
+        self.engine.connect_signal('queue_changed', self.changed_queue)
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
+        self.engine.connect_signal('tracker_state', self.tracker_state)
 
         # Engine start and list rebuildi
         self.status("Building lists...")
-        self.engine.start()
+        self.engine.start(account)
         self._rebuild()
 
     def set_filter(self, filter_num):
         self.cur_filter = filter_num
         _filter = self.filters_nums[self.cur_filter]
-        self.header_filter.set_text("Filter:%s" % self.filters[_filter])
+        self.header_filter.set_text("Filter:%s (%d)" % (self.filters[_filter], self.filters_sizes[self.cur_filter]))
 
         self.listframe.body = self.lists[_filter]
 
@@ -229,10 +256,10 @@ class Trackma_urwid():
         return self._get_cur_list().get_focus()[0]
 
     def status(self, msg):
-        self.statusbar.base_widget.set_text(msg)
+        self.status_text.set_text(msg)
 
     def error(self, msg):
-        self.statusbar.base_widget.set_text([('error', "Error: %s" % msg)])
+        self.status_text.set_text([('error', "Error: %s" % msg)])
 
     def message_handler(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
@@ -248,6 +275,10 @@ class Trackma_urwid():
         except KeyError:
             # Unbinded key pressed; do nothing
             pass
+
+    def forget_account(self):
+        manager = AccountManager()
+        manager.set_default(None)
 
     def do_switch_account(self, loop=None, data=None):
         manager = AccountManager()
@@ -266,7 +297,8 @@ class Trackma_urwid():
         self.ask('Search on remote: ', self.addsearch_request)
 
     def do_delete(self):
-        self.question('Delete selected show? [y/n] ', self.delete_request)
+        if self._get_selected_item():
+            self.question('Delete selected show? [y/n] ', self.delete_request)
 
     def do_prev_filter(self):
         if self.cur_filter > 0:
@@ -292,14 +324,41 @@ class Trackma_urwid():
         self.status("Ready.")
 
     def do_update(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress'])
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress']+1)
 
     def do_play(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
+
+    def do_openfolder(self):
+        item = self._get_selected_item()
+
+        try:
+            show = self.engine.get_show_info(item.showid)
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                subprocess.Popen(["/usr/bin/xdg-open",
+                os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            raise utils.EngineError("Could not open folder.")
+
+        except utils.EngineError:
+            # Show not in library.
+             self.error("No folder found.")
+
+
+    def do_play_random(self):
+        try:
+            self.engine.play_random()
+        except utils.TrackmaError as e:
+            self.error(e)
+            return
 
     def do_send(self):
         self.engine.list_upload()
@@ -314,12 +373,12 @@ class Trackma_urwid():
             self.error(e)
 
     def do_help(self):
-        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (electrik.persona@gmail.com)\n\n"
+        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
-        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {switch_account}: Change account"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
         helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
@@ -331,19 +390,24 @@ class Trackma_urwid():
         self.dialog.close()
 
     def do_altname(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.status(show['title'])
-        self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(showid))
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.status(show['title'])
+            self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(item.showid))
 
     def do_score(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
 
     def do_status(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
+        item = self._get_selected_item()
+        if not item:
+            return
+
+        show = self.engine.get_show_info(item.showid)
 
         buttons = list()
         num = 1
@@ -387,17 +451,21 @@ class Trackma_urwid():
         self._rebuild()
 
     def do_open_web(self):
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
-        if show['url']:
-            webbrowser.open(show['url'], 2, True)
+        item = self._get_selected_item()
+        if item:
+            show = self.engine.get_show_info(item.showid)
+            if show['url']:
+                webbrowser.open(show['url'], 2, True)
 
     def do_info(self):
         if self.viewing_info:
             return
 
-        showid = self._get_selected_item().showid
-        show = self.engine.get_show_info(showid)
+        item = self._get_selected_item()
+        if not item:
+            return
+
+        show = self.engine.get_show_info(item.showid)
 
         self.status("Getting show details...")
 
@@ -543,8 +611,6 @@ class Trackma_urwid():
                 self.error(e)
                 return
 
-            self.status('Ready.')
-
     def prompt_update_request(self, data):
         (show, episode) = self.last_update_prompt
         self.ask_finish(self.prompt_update_request)
@@ -580,6 +646,31 @@ class Trackma_urwid():
 
         self.set_filter(go_filter)
         self._get_cur_list().select_show(show)
+
+    def changed_queue(self, queue):
+        self.status_queue.set_text("Q:{}".format(len(queue)))
+
+    def tracker_state(self, state, timer):
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'LISTEN'
+        elif state == utils.TRACKER_PLAYING:
+            st = '+{}'.format(timer)
+        elif state == utils.TRACKER_UNRECOGNIZED:
+            st = 'UNRECOG'
+        elif state == utils.TRACKER_NOT_FOUND:
+            st = 'NOTFOUN'
+        elif state == utils.TRACKER_IGNORED:
+            st = 'IGNORE'
+        else:
+            st = '???'
+
+        self.status_tracker.set_text("T:{}".format(st))
+        self.mainloop.draw_screen()
+
+    def tracker_timer(self, timer):
+        if timer is not None:
+            self.status_tracker.set_text("T:+{}".format(timer))
+            self.mainloop.draw_screen()
 
     def playing_show(self, show, is_playing, episode=None):
         status = show['my_status']
@@ -945,7 +1036,7 @@ class ShowWalker(urwid.SimpleListWalker):
 class ShowItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True, altname=None, eps=None):
         if has_progress:
-            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total']))
+            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total'] or '?'))
         else:
             self.episodes_str = urwid.Text("-")
 
@@ -1054,9 +1145,11 @@ class QuestionAsker(Asker):
             urwid.emit_signal(self, 'done', key.lower())
 
 def main():
+    ui = Trackma_urwid()
     try:
-        Trackma_urwid()
+        ui.run()
     except utils.TrackmaFatal as e:
+        ui.forget_account()
         print("Fatal error: %s" % e)
 
 if __name__ == '__main__':
