@@ -345,24 +345,41 @@ class Engine:
         """
         return self.data_handler.get().values()
 
-    def get_show_info(self, showid):
+    def get_show_info(self, showid=None, title=None, filename=None):
         """
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
-
-        try:
-            return showdict[showid]
-        except KeyError:
+        
+        if showid:
+            # Get show by ID
+            try:
+                return showdict[showid]
+            except KeyError:
+                raise utils.EngineError("Show not found.")
+        elif title:
+            showdict = self.data_handler.get()
+            # Get show by title, slower
+            for k, show in showdict.items():
+                if show['title'] == title:
+                    return show
             raise utils.EngineError("Show not found.")
+        elif filename:
+            # Guess show by filename
+            self.msg.debug(self.name, "Guessing by filename.")
 
-    def get_show_info_title(self, pattern):
-        showdict = self.data_handler.get()
-        # Do title lookup, slower
-        for k, show in showdict.items():
-            if show['title'] == pattern:
-                return show
-        raise utils.EngineError("Show not found.")
+            aie = AnimeInfoExtractor(filename)
+            (show_title, ep) = aie.getName(), aie.getEpisode()
+            self.msg.debug(self.name, "Guessed {}".format(show_title))
+
+            if show_title:
+                show = utils.guess_show(show_title, self._get_tracker_list())
+                if show:
+                    return (show, ep)
+                else:
+                    raise utils.EngineError("Show not found.")
+            else:
+                raise utils.EngineError("File name not recognized.")
 
     def get_show_details(self, show):
         """

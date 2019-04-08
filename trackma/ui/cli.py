@@ -138,7 +138,7 @@ class Trackma_cmd(cmd.Cmd):
             index = int(title)-1
             return self.sortedlist[index][1]
         except (ValueError, AttributeError, IndexError):
-            return self.engine.get_show_info_title(title)
+            return self.engine.get_show_info(title=title)
 
     def _ask_update(self, show, episode):
         do = input("Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
@@ -212,7 +212,7 @@ class Trackma_cmd(cmd.Cmd):
             try:
                 doc = getattr(self, 'do_' + arg).__doc__
                 if doc:
-                    (name, args, expl, usage) = self._parse_doc(arg, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(arg, doc)
 
                     print()
                     print(name)
@@ -227,6 +227,8 @@ class Trackma_cmd(cmd.Cmd):
                                 print("    {} (optional): {}".format(arg[0], arg[1]))
                     if usage:
                         print("\n  Usage: " + usage)
+                    for example in examples:
+                        print("  Example: " + example)
                     print()
                     return
             except AttributeError:
@@ -262,7 +264,7 @@ class Trackma_cmd(cmd.Cmd):
                         continue
 
                     cmd = name[3:]
-                    (name, args, expl, usage) = self._parse_doc(cmd, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(cmd, doc)
 
                     line = " {0:>{1}} {2:{3}} {4}".format(
                            name, CMD_LENGTH,
@@ -541,17 +543,23 @@ class Trackma_cmd(cmd.Cmd):
         """
         Updates the progress of a show to the specified episode (next if unspecified).
 
-        :param show Show index or name.
+        :param show Show index, title or filename (prepend with file:).
         :optparam ep Episode number (numeric).
         :usage update <show index or name> [episode number]
+        :example update Toradora! 5
+        :example update 6
+        :example update file:filename.mkv
         """
         try:
-            show = self._get_show(args[0])
+            if args[0][:5] == "file:":
+                (show, ep) = self.engine.get_show_info(filename=args[0][5:])
+            else:
+                (show, ep) = (self._get_show(args[0]), None)
 
             if len(args) > 1:
                 self.engine.set_episode(show['id'], args[1])
             else:
-                self.engine.set_episode(show['id'], show['my_progress']+1)
+                self.engine.set_episode(show['id'], ep or show['my_progress']+1)
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -827,6 +835,7 @@ class Trackma_cmd(cmd.Cmd):
         args = []
         expl = []
         usage = None
+        examples = []
 
         for line in lines:
             line = line.strip()
@@ -838,10 +847,12 @@ class Trackma_cmd(cmd.Cmd):
                 usage = line[7:]
             elif line[:5] == ':name':
                 name = line[6:]
+            elif line[:8] == ':example':
+                examples.append(line[9:])
             elif line:
                 expl.append(line)
 
-        return (name, args, expl, usage)
+        return (name, args, expl, usage, examples)
 
     def _make_list(self, showlist):
         """
@@ -1009,7 +1020,7 @@ def main():
     parser.add_argument('-a', '--account', type=int, help='Use specific account number.')
     parser.add_argument('-d', '--debug', action='store_true', help='Show debugging messages.')
     parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified.')
-    parser.add_argument('args', nargs='*', help='Arguments for the aforementioned command, if any.')
+    parser.add_argument('args', nargs=argparse.REMAINDER, help='Arguments for the aforementioned command, if any.')
     args = parser.parse_args()
 
     # Boot Trackma CLI
