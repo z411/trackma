@@ -71,8 +71,12 @@ class Engine:
                 'tracker_state':     None,
         }
 
-    def __init__(self, message_handler=None):
+    def __init__(self, account, message_handler=None):
         self.msg = messenger.Messenger(message_handler)
+
+        # Initialize
+        self._load(account)
+        self._init_data_handler()
 
     def _load(self, account):
         self.account = account
@@ -100,27 +104,6 @@ class Engine:
             self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
         else:
             self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
-
-        # Load hook files
-        hooks_dir = utils.to_config_path('hooks')
-        if os.path.isdir(hooks_dir):
-            import sys
-            import pkgutil
-
-            self.msg.info(self.name, "Importing user hooks...")
-            for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
-                # List all the hook files in the hooks folder, import them
-                # and call the init() function if they have them
-                # We build the list "hooks available" with the loaded modules
-                # for later calls.
-                try:
-                    self.msg.debug(self.name, "Importing hook {}...".format(name))
-                    module = loader.find_module(name).load_module(name)
-                    if hasattr(module, 'init'):
-                        module.init(self)
-                    self.hooks_available.append(module)
-                except ImportError:
-                    self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -235,7 +218,7 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
 
-    def start(self, account, mediatype=None):
+    def start(self):
         """
         Starts the engine.
         This function should be called before doing anything with the engine,
@@ -243,12 +226,6 @@ class Engine:
         """
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
-
-        # Initialize
-        if account:
-            self._load(account)
-
-        self._init_data_handler(mediatype)
 
         # Start the data handler
         try:
@@ -264,6 +241,28 @@ class Engine:
                 self.scan_library()
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
+
+        # Load hook files
+        if self.config['use_hooks']:
+            hooks_dir = utils.to_config_path('hooks')
+            if os.path.isdir(hooks_dir):
+                import sys
+                import pkgutil
+
+                self.msg.info(self.name, "Importing user hooks...")
+                for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                    # List all the hook files in the hooks folder, import them
+                    # and call the init() function if they have them
+                    # We build the list "hooks available" with the loaded modules
+                    # for later calls.
+                    try:
+                        self.msg.debug(self.name, "Importing hook {}...".format(name))
+                        module = loader.find_module(name).load_module(name)
+                        if hasattr(module, 'init'):
+                            module.init(self)
+                        self.hooks_available.append(module)
+                    except ImportError:
+                        self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -312,7 +311,11 @@ class Engine:
         if self.loaded:
             self.unload()
 
-        self.start(account, mediatype)
+        if account:
+            self._load(account)
+
+        self._init_data_handler(mediatype)
+        self.start()
 
     def get_config(self, key):
         """Returns the specified key from the configuration."""

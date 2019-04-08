@@ -321,6 +321,7 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'use_hooks': True,
 }
 userconfig_defaults = {
     'mediatype': '',
