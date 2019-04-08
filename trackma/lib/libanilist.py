@@ -50,11 +50,12 @@ class libanilist(lib):
         'date_next_ep': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
-        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
-            'PAUSED': 'On Hold',
+            'REPEATING': 'Rewatching',
+            'PAUSED': 'Paused',
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Watch'
         },
@@ -73,11 +74,12 @@ class libanilist(lib):
         'can_date': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
-        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
-            'PAUSED': 'On Hold',
+            'REPEATING': 'Rewatching',
+            'PAUSED': 'Paused',
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Read'
         },
