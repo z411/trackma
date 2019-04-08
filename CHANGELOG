@@ -1,3 +1,22 @@
+v0.7.6
+- Bugfix: (Anilist+Qt/GTK) Fixed crash when the token was old
+- Bugfix: (Qt) Undefined dates now sort properly
+- Bugfix: (GTK) List information now shows properly in details dialog
+
+v0.7.5
+- New: Switched to Anilist V2 API. You will need to re-authorize your account by editing it or re-creating it.
+- Improvement: Optional whole list scanning (Settings -> Scan through whole list)
+- Improvement: Added Open containing folder functionality
+- Improvement: Added optional full path scanning (ie. directory names are show names)
+- Improvement: (Qt) Interface now shows episode numbers on progress bar
+- Improvement: (Qt) Sorting is now remembered
+- Improvement: (curses/CLI) Default account is forgotten whenever a fatal crash occurs
+- Bugfix: Fixed crash when show had no image with Kitsu
+- Bugfix: (Tracker) Fixed crash with unrecognised shows
+- Bugfix: (Tracker) Fixed Plex crashes
+- Bugfix: (Qt) Fixed Add Dialog results sorting in
+- Bugfix: (GTK) Fixed crashes when syncing
+
 v0.7.4
 - Improvement: (Flex) Added optional login functionality
 - Improvement: (curses) Added Play Random function
