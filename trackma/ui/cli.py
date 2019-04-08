@@ -1019,7 +1019,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--account', type=int, help='Use specific account number.')
     parser.add_argument('-d', '--debug', action='store_true', help='Show debugging messages.')
-    parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified.')
+    parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified. - will take in commands from stdin.')
     parser.add_argument('args', nargs=argparse.REMAINDER, help='Arguments for the aforementioned command, if any.')
     args = parser.parse_args()
 
@@ -1028,7 +1028,13 @@ def main():
     try:
         main_cmd.start()
         if args.cmd:
-            main_cmd.execute(args.cmd, args.args, args.cmd)
+            if args.cmd == '-':
+                # Run commands from stdin
+                for cmd in sys.stdin:
+                    main_cmd.onecmd(cmd)
+            else:
+                # Run the specified command in the arguments
+                main_cmd.execute(args.cmd, args.args, args.cmd)
         else:
             main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
