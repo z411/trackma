@@ -151,6 +151,12 @@ class Trackma_urwid():
                     'details': self.do_info,
                     'details_exit': self.do_info_exit,
                     'open_web': self.do_open_web,
+                    'left': self.key_left,
+                    'down': self.key_down,
+                    'up': self.key_up,
+                    'right': self.key_right,
+                    'page_down': self.key_page_down,
+                    'page_up': self.key_page_up,
                     }
 
         for func, keybind in keymap.items():
@@ -275,6 +281,24 @@ class Trackma_urwid():
         except KeyError:
             # Unbinded key pressed; do nothing
             pass
+
+    def key_left(self):
+        self.mainloop.process_input(['left'])
+
+    def key_down(self):
+        self.mainloop.process_input(['down'])
+
+    def key_up(self):
+        self.mainloop.process_input(['up'])
+
+    def key_right(self):
+        self.mainloop.process_input(['right'])
+
+    def key_page_down(self):
+        self.mainloop.process_input(['page down'])
+
+    def key_page_up(self):
+        self.mainloop.process_input(['page up'])
 
     def forget_account(self):
         manager = AccountManager()
