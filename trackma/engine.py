@@ -71,8 +71,13 @@ class Engine:
                 'tracker_state':     None,
         }
 
-    def __init__(self, account, message_handler=None):
+    def __init__(self, account=None, message_handler=None, accountnum=None):
         self.msg = messenger.Messenger(message_handler)
+
+        # Utility parameter to get the account from the account manager
+        if accountnum:
+            from trackma import accounts
+            account = accounts.AccountManager().get_account(accountnum)
 
         # Initialize
         self._load(account)
