@@ -23,8 +23,8 @@ from PyQt5.QtWidgets import (
     QScrollArea, QProgressBar, QTableWidget, QTableWidgetItem,
     QTableView, QAbstractItemView, QSplitter, QHeaderView, QListView)
 
-from trackma.ui.qt.delegates import AddListDelegate
-from trackma.ui.qt.models import AddTableModel, AddListModel, AddListProxy
+from trackma.ui.qt.delegates import AddListDelegate, ShowsTableDelegate
+from trackma.ui.qt.models import AddTableModel, AddListModel, AddListProxy, ShowListModel, ShowListProxy
 from trackma.ui.qt.workers import ImageWorker
 from trackma.ui.qt.util import getColor
 
@@ -141,134 +141,33 @@ class DetailsWidget(QWidget):
         else:
             self.show_info.setText( 'There was an error while getting details.' )
 
-class EpisodeBar(QProgressBar):
-    """
-  Custom progress bar to show detailed information
-  about episodes
-    """
-    # Enum BarStyle
-    BarStyleBasic = 0   # Basic native ProgressBar appearance
-    BarStyle04 = 1      # Rectangular dual bar of Trackma v0.4
-    BarStyleHybrid = 2  # Native ProgressBar with v0.4 library subbar overlaid
-
-    _subvalue = -1
-    _episodes = []
-    _subheight = 5
-    _bar_style = BarStyle04
-    _show_text = False
-
-    def __init__(self, parent, colors):
-        QProgressBar.__init__(self, parent)
-        self.colors = colors
-
-    def paintEvent(self, event):
-        rect = QtCore.QRect(0,0,self.width(), self.height())
-
-        if self._bar_style is self.BarStyleBasic:
-            painter = QtGui.QPainter(self)
-            prog_options = QStyleOptionProgressBar()
-            prog_options.maximum = self.maximum()
-            prog_options.progress = self.value()
-            prog_options.rect = rect
-            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
-            prog_options.textVisible = self._show_text
-            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
-
-        elif self._bar_style is self.BarStyle04:
-            painter = QtGui.QPainter(self)
-            painter.setBrush(getColor(self.colors['progress_bg']))
-            painter.setPen(QtCore.Qt.transparent)
-            painter.drawRect(rect)
-            self.paintSubValue(painter)
-            if self.value() > 0:
-                if self.value() >= self.maximum():
-                    painter.setBrush(getColor(self.colors['progress_complete']))
-                    mid = self.width()
-                else:
-                    painter.setBrush(getColor(self.colors['progress_fg']))
-                    mid = int(self.width() / float(self.maximum()) * self.value())
-                progressRect = QtCore.QRect(0, 0, mid, self.height())
-                painter.drawRect(progressRect)
-            self.paintEpisodes(painter)
-
-        elif self._bar_style is self.BarStyleHybrid:
-            buffer = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
-            painter = QtGui.QPainter(buffer)
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
-            painter.fillRect(rect, QtCore.Qt.transparent)
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-            prog_options = QStyleOptionProgressBar()
-            prog_options.maximum = self.maximum()
-            prog_options.progress = self.value()
-            prog_options.rect = rect
-            prog_options.text = '%d%%' % (self.value()*100/self.maximum())
-            self.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
-            painter.setPen(QtCore.Qt.transparent)
-            self.paintSubValue(painter)
-            self.paintEpisodes(painter)
-            painter = QtGui.QPainter(self)
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-            painter.drawImage(rect, buffer)
-            if self._show_text:
-                self.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
-
-    def paintSubValue(self, painter):
-        if self.subValue() > 0:
-            painter.setBrush(getColor(self.colors['progress_sub_bg']))
-            mid = int(self.width() / float(self.maximum()) * self.subValue())
-            progressRect = QtCore.QRect(
-                0,
-                self.height()-self._subheight,
-                mid,
-                self.height()-(self.height()-self._subheight)
-            )
-            painter.drawRect(progressRect)
-
-    def paintEpisodes(self, painter):
-        if self.episodes():
-            for episode in self.episodes():
-                painter.setBrush(getColor(self.colors['progress_sub_fg']))
-                if episode <= self.maximum():
-                    start = int(self.width() / float(self.maximum()) * (episode - 1))
-                    finish = int(self.width() / float(self.maximum()) * episode)
-                    progressRect = QtCore.QRect(
-                        start,
-                        self.height()-self._subheight,
-                        finish-start,
-                        self.height()-(self.height()-self._subheight)
-                    )
-                    painter.drawRect(progressRect)
-
-    def setSubValue(self, subvalue):
-        if subvalue > self.maximum():
-            self._subvalue = self.maximum()
-        else:
-            self._subvalue = subvalue
-
-        self.update()
-
-    def subValue(self):
-        return self._subvalue
-
-    def setEpisodes(self, episodes):
-        self._episodes = episodes
-        self.update()
-
-    def episodes(self):
-        return self._episodes
-
-    def setBarStyle(self, style, show_text):
-        self._bar_style = style
-        self._show_text = show_text
-
-class ShowsTableWidget(QTableWidget):
+class ShowsTableView(QTableView):
     """
     Regular table widget with context menu for show actions.
 
     """
-    def __init__(self, parent=None):
-        QTableWidget.__init__(self, parent)
+    def __init__(self, parent=None, palette=None):
+        QTableView.__init__(self, parent)
+
+        model = ShowListModel(palette=palette)
+        proxymodel = ShowListProxy()
+        proxymodel.setSourceModel(model)
+        proxymodel.setFilterKeyColumn(-1)
+        self.setModel(proxymodel)
+
+        self.setItemDelegate(ShowsTableDelegate(self, palette=palette))
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        #self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setEditTriggers(QAbstractItemView.AllEditTriggers)
+        self.horizontalHeader().setHighlightSections(False)
+        if pyqt_version is 5:
+            self.horizontalHeader().setSectionsMovable(True)
+        else:
+            self.horizontalHeader().setMovable(True)
+        self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.verticalHeader().hide()
+        self.setGridStyle(QtCore.Qt.NoPen)
 
     def contextMenuEvent(self, event):
         action = self.context_menu.exec_(event.globalPos())
