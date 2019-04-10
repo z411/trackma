@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget, QSplitter,
     QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog)
 
-from trackma.ui.qt.widgets import EpisodeBar
+from trackma.ui.qt.delegates import ShowsTableDelegate
 from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
 from trackma.ui.qt.util import getIcon, getColor, FilterBar
 
@@ -293,9 +293,9 @@ class SettingsDialog(QDialog):
         g_ep_bar = QGroupBox('Episode Bar')
         g_ep_bar.setFlat(True)
         self.ep_bar_style = QComboBox()
-        ep_bar_styles = [(EpisodeBar.BarStyleBasic,  'Basic'),
-                         (EpisodeBar.BarStyle04,     'Trackma v0.4 Dual'),
-                         (EpisodeBar.BarStyleHybrid, 'Hybrid Dual')]
+        ep_bar_styles = [(ShowsTableDelegate.BarStyleBasic,  'Basic'),
+                         (ShowsTableDelegate.BarStyle04,     'Trackma v0.4 Dual'),
+                         (ShowsTableDelegate.BarStyleHybrid, 'Hybrid Dual')]
         for (n, label) in ep_bar_styles:
             self.ep_bar_style.addItem(label, n)
         self.ep_bar_style.currentIndexChanged.connect(self.s_ep_bar_style)
@@ -591,7 +591,7 @@ class SettingsDialog(QDialog):
         self.notifications.setEnabled(checked)
 
     def s_ep_bar_style(self, index):
-        if self.ep_bar_style.itemData(index) == EpisodeBar.BarStyle04:
+        if self.ep_bar_style.itemData(index) == ShowsTableDelegate.BarStyle04:
             self.ep_bar_text.setEnabled(False)
         else:
             self.ep_bar_text.setEnabled(True)
