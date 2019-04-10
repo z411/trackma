@@ -21,6 +21,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
         QtCore.Qt.ItemIsEnabled | \
         QtCore.Qt.ItemNeverHasChildren
 
+    date_format = "%Y-%m-%d"
+
     progressChanged = QtCore.pyqtSignal(QtCore.QVariant, int)
     scoreChanged = QtCore.pyqtSignal(QtCore.QVariant, float)
 
@@ -34,6 +36,15 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
     def setShowNextEp(self, b):
         self.show_next_ep = b
+
+    def setDateFormat(self, date_format):
+        self.date_format = date_format
+
+    def _date(self, obj):
+        if obj:
+            return obj.strftime(self.date_format)
+        else:
+            return '-'
 
     def _calculate_color(self, row, show):
         color = None
@@ -166,13 +177,13 @@ class ShowListModel(QtCore.QAbstractTableModel):
             elif column == 5:
                 return self.next_ep.get(row, '-')
             elif column == 6:
-                return show['start_date']
+                return self._date(show['start_date'])
             elif column == 7:
-                return show['end_date']
+                return self._date(show['end_date'])
             elif column == 8:
-                return show['my_start_date']
+                return self._date(show['my_start_date'])
             elif column == 9:
-                return show['my_finish_date']
+                return self._date(show['my_finish_date'])
             elif column == 10:
                 return show.get('my_tags', '-')
         elif role == QtCore.Qt.BackgroundRole:
