@@ -1,8 +1,211 @@
 from PyQt5 import QtCore, QtGui
 
 from trackma.ui.qt.thumbs import ThumbManager
+from trackma.ui.qt.util import getColor, getIcon
 
 from trackma import utils
+
+import datetime
+
+class ShowListModel(QtCore.QAbstractTableModel):
+    """
+    Main model used in the main window to show
+    a list of shows in the user's list.
+    """
+    columns = ['ID', 'Title', 'Progress', 'Score',
+                'Percent', 'Next Episode', 'Start date', 'End date',
+                'My start', 'My finish', 'Tags', 'Status']
+
+    common_flags = \
+        QtCore.Qt.ItemIsSelectable | \
+        QtCore.Qt.ItemIsEnabled | \
+        QtCore.Qt.ItemNeverHasChildren
+
+    progressChanged = QtCore.pyqtSignal(QtCore.QVariant, int)
+    scoreChanged = QtCore.pyqtSignal(QtCore.QVariant, float)
+
+    def __init__(self, parent=None, palette=None):
+        self.showlist = None
+        self.palette = palette
+        self.playing = set()
+        self.show_next_ep = False
+
+        super().__init__(parent)
+
+    def setShowNextEp(self, b):
+        self.show_next_ep = b
+
+    def _calculate_color(self, row, show):
+        color = None
+
+        if show['id'] in self.playing:
+            color = 'is_playing'
+        elif show.get('queued'):
+            color = 'is_queued'
+        elif self.library.get(show['id']) and max(self.library.get(show['id'])) > show['my_progress']:
+            color = 'new_episode'
+        elif show['status'] == utils.STATUS_AIRING:
+            color = 'is_airing'
+        elif show['status'] == utils.STATUS_NOTYET:
+            color = 'not_aired'
+        else:
+            color = None
+
+        if color:
+            self.colors[row] = QtGui.QBrush(getColor(self.palette[color]))
+        elif row in self.colors:
+            del self.colors[row]
+
+    def _calculate_next_ep(self, row, show):
+        if self.show_next_ep:
+            if 'next_ep_time' in show:
+                delta = show['next_ep_time'] - datetime.datetime.utcnow()
+                self.next_ep[row] = "%i days, %02d hrs." % (delta.days, delta.seconds/3600)
+            elif row in self.next_ep:
+                del self.next_ep[row]
+
+    def _calculate_eps(self, row, show):
+        aired_eps = utils.estimate_aired_episodes(show)
+        library_eps = self.library.get(show['id'])
+
+        if library_eps:
+            library_eps = library_eps.keys()
+
+        if aired_eps or library_eps:
+            self.eps[row] = (aired_eps, library_eps)
+        elif row in self.eps:
+            del eps[row]
+
+    def setShowList(self, showlist, altnames, library):
+        self.beginResetModel()
+
+        self.showlist = list(showlist)
+        self.altnames = altnames
+        self.library = library
+
+        self.id_map = {}
+        self.colors = {}
+        self.next_ep = {}
+        self.eps = {}
+
+        for row, show in enumerate(self.showlist):
+            self.id_map[show['id']] = row
+            self._calculate_color(row, show)
+            self._calculate_next_ep(row, show)
+            self._calculate_eps(row, show)
+
+        self.endResetModel()
+
+    def update(self, showid, is_playing=None):
+        # Recalculate color and emit the changed signal
+        row = self.id_map[showid]
+        show = self.showlist[row]
+
+        if is_playing is not None:
+            if is_playing:
+                self.playing.add(showid)
+            else:
+                self.playing.discard(showid)
+
+        self._calculate_color(row, show)
+        self.dataChanged.emit(self.index(row, 0), self.index(row, len(self.columns)-1))
+
+    def rowCount(self, parent):
+        if self.showlist:
+            return len(self.showlist)
+        else:
+            return 0
+
+    def columnCount(self, parent):
+        return len(self.columns)
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            return self.columns[section]
+
+    def setData(self, index, value, role):
+        row, column = index.row(), index.column()
+        show = self.showlist[row]
+
+        if column == 2:
+            print("New progress: {}".format(value))
+            self.progressChanged.emit(show['id'], value)
+        elif column == 3:
+            print("New score: {}".format(value))
+            self.scoreChanged.emit(show['id'], value)
+
+        return True
+
+    def data(self, index, role):
+        row, column = index.row(), index.column()
+        show = self.showlist[row]
+
+        if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                return show['id']
+            elif column == 1:
+                title_str = show['title']
+                if show['id'] in self.altnames:
+                    title_str += " [%s]" % self.altnames[show['id']]
+                return title_str
+            elif column == 2:
+                return "{} / {}".format(show['my_progress'], show['total'] or '?')
+            elif column == 3:
+                return show['my_score']
+            elif column == 4:
+                #return "{:.0%}".format(show['my_progress'] / 100)
+                if show['my_progress'] == 0:
+                    return None
+
+                if show['total'] > 0:
+                    total = show['total']
+                else:
+                    total = (int(show['my_progress']/12)+1)*12 # Round up to the next cour
+
+                return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
+            elif column == 5:
+                return self.next_ep.get(row, '-')
+            elif column == 6:
+                return show['start_date']
+            elif column == 7:
+                return show['end_date']
+            elif column == 8:
+                return show['my_start_date']
+            elif column == 9:
+                return show['my_finish_date']
+            elif column == 10:
+                return show.get('my_tags', '-')
+        elif role == QtCore.Qt.BackgroundRole:
+            return self.colors.get(row)
+        elif role == QtCore.Qt.DecorationRole:
+            if column == 1 and show['id'] in self.playing:
+                return getIcon('media-playback-start')
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column in [2, 3]:
+                return QtCore.Qt.AlignHCenter
+        elif role == QtCore.Qt.ToolTipRole:
+            if column == 4:
+                tooltip = "Watched: %d<br>" % show['my_progress']
+                if self.eps.get(row):
+                    (aired_eps, library_eps) = self.eps.get(row)
+                    if aired_eps:
+                        tooltip += "Aired (estimated): %d<br>" % aired_eps
+                    if library_eps:
+                        tooltip += "Latest available: %d<br>" % max(library_eps)
+                tooltip += "Total: %d" % show['total']
+
+                return tooltip
+        elif role == QtCore.Qt.EditRole:
+            if column == 2:
+                return show['my_progress']
+            elif column == 3:
+                return show['my_score']
+
+    def flags(self, index):
+        if index.column() in [2, 3]:
+            return self.common_flags | QtCore.Qt.ItemIsEditable
+        else:
+            return self.common_flags
 
 class AddTableModel(QtCore.QAbstractTableModel):
     columns = ["Name", "Type", "Total"]
@@ -130,3 +333,31 @@ class AddListProxy(QtCore.QSortFilterProxyModel):
         rightData = self.sourceModel().data(right, QtCore.Qt.DisplayRole)
 
         return leftData['type'] < rightData['type']
+
+class ShowListProxy(QtCore.QSortFilterProxyModel):
+    filter_columns = None
+    filter_status = None
+
+    def setFilterStatus(self, status):
+        self.filter_status = status
+        self.invalidateFilter()
+
+    def clearColumnFilters(self):
+        self.filters = {}
+
+    def setFilterColumns(self, columns):
+        self.filter_columns = columns
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        if self.filter_status and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
+            return False
+
+        if self.filter_columns:
+            for col in range(self.sourceModel().columnCount(source_parent)):
+                index = self.sourceModel().index(source_row, col)
+                if (col in self.filter_columns and
+                    self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.DisplayRole))):
+                    return False
+
+        return super(ShowListProxy, self).filterAcceptsRow( source_row, source_parent)
