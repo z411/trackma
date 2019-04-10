@@ -419,6 +419,7 @@ qt_defaults = {
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'inline_edit': True,
     'columns_state': {},
     'columns_per_api': False,
     'episodebar_style': 1,

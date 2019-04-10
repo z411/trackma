@@ -283,6 +283,7 @@ class MainWindow(QMainWindow):
         self.view.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.view.itemDelegate().setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
         self.view.doubleClicked.connect(self.s_show_details)
+        self._apply_view()
 
         self.view.model().sourceModel().progressChanged.connect(self.s_set_episode)
         self.view.model().sourceModel().scoreChanged.connect(self.s_set_score)
@@ -447,7 +448,7 @@ class MainWindow(QMainWindow):
         self.tray = QSystemTrayIcon(self.windowIcon())
         self.tray.setContextMenu(tray_menu)
         self.tray.activated.connect(self.s_tray_clicked)
-        self._tray()
+        self._apply_tray()
 
         # Connect worker signals
         self.worker.changed_status.connect(self.ws_changed_status)
@@ -597,11 +598,18 @@ class MainWindow(QMainWindow):
         self.tracker_text.setText("Tracker: {}".format(st))
 
     def _update_config(self):
-        self._tray()
-        self._filter_bar()
+        self._apply_view()
+        self._apply_tray()
+        self._apply_filter_bar()
         # TODO: Reload listviews?
 
-    def _tray(self):
+    def _apply_view(self):
+        if self.config['inline_edit']:
+            self.view.setEditTriggers(QAbstractItemView.AllEditTriggers)
+        else:
+            self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    def _apply_tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
             self.tray.hide()
         elif not self.tray.isVisible() and self.config['show_tray']:
@@ -612,7 +620,7 @@ class MainWindow(QMainWindow):
             else:
                 self.tray.setIcon( self.windowIcon() )
 
-    def _filter_bar(self):
+    def _apply_filter_bar(self):
         self.list_box.removeWidget(self.filter_bar_box)
         self.list_box.removeWidget(self.notebook)
         self.list_box.removeWidget(self.view)

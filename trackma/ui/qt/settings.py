@@ -272,10 +272,10 @@ class SettingsDialog(QDialog):
                                 (FilterBar.PositionBelowLists, 'Below lists')]
         for (n, label) in filter_bar_positions:
             self.filter_bar_position.addItem(label, n)
-        self.filter_global = QCheckBox('Update filter for all lists (slow)')
+        self.inline_edit = QCheckBox('Enable in-line editing')
         g_lists_layout = QFormLayout()
         g_lists_layout.addRow('Filter bar position:', self.filter_bar_position)
-        g_lists_layout.addRow(self.filter_global)
+        g_lists_layout.addRow(self.inline_edit)
         g_lists.setLayout(g_lists_layout)
 
         # UI layout
@@ -455,7 +455,7 @@ class SettingsDialog(QDialog):
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
         self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
-        self.filter_global.setChecked(self.config['filter_global'])
+        self.inline_edit.setChecked(self.config['inline_edit'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
@@ -534,7 +534,7 @@ class SettingsDialog(QDialog):
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
         self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex())
-        self.config['filter_global'] = self.filter_global.isChecked()
+        self.config['inline_edit'] = self.inline_edit.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex())
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()

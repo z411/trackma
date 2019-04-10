@@ -158,8 +158,6 @@ class ShowsTableView(QTableView):
         self.setItemDelegate(ShowsTableDelegate(self, palette=palette))
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        #self.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.setEditTriggers(QAbstractItemView.AllEditTriggers)
         self.horizontalHeader().setHighlightSections(False)
         if pyqt_version is 5:
             self.horizontalHeader().setSectionsMovable(True)
