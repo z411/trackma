@@ -139,10 +139,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
         show = self.showlist[row]
 
         if column == 2:
-            print("New progress: {}".format(value))
             self.progressChanged.emit(show['id'], value)
         elif column == 3:
-            print("New score: {}".format(value))
             self.scoreChanged.emit(show['id'], value)
 
         return True
@@ -361,7 +359,7 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row, source_parent):
-        if self.filter_status and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
+        if self.filter_status is not None and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
             return False
 
         if self.filter_columns:
