@@ -30,15 +30,15 @@ class ShowListModel(QtCore.QAbstractTableModel):
         self.showlist = None
         self.palette = palette
         self.playing = set()
-        self.show_next_ep = False
+        self.mediainfo = {}
 
         super().__init__(parent)
 
-    def setShowNextEp(self, b):
-        self.show_next_ep = b
-
     def setDateFormat(self, date_format):
         self.date_format = date_format
+
+    def setMediaInfo(self, mediainfo):
+        self.mediainfo = mediainfo
 
     def _date(self, obj):
         if obj:
@@ -68,7 +68,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             del self.colors[row]
 
     def _calculate_next_ep(self, row, show):
-        if self.show_next_ep:
+        if self.mediainfo.get('date_next_ep'):
             if 'next_ep_time' in show:
                 delta = show['next_ep_time'] - datetime.datetime.utcnow()
                 self.next_ep[row] = "%i days, %02d hrs." % (delta.days, delta.seconds/3600)
@@ -165,7 +165,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return show['my_score']
             elif column == 4:
                 #return "{:.0%}".format(show['my_progress'] / 100)
-                if show['my_progress'] == 0:
+                if not self.mediainfo.get('can_play'):
                     return None
 
                 if show['total'] > 0:

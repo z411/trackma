@@ -177,8 +177,6 @@ class ShowsTableDelegate(QStyledItemDelegate):
                 self.paintEpisodes(painter, rect, episodes, maximum)
 
             elif self._bar_style is self.BarStyleHybrid:
-                buffer = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
-                painter = QtGui.QPainter(buffer)
                 painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
                 painter.fillRect(rect, QtCore.Qt.transparent)
                 painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
