@@ -282,7 +282,8 @@ class MainWindow(QMainWindow):
         self.view.horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
         self.view.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.view.itemDelegate().setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
-        self.view.doubleClicked.connect(self.s_show_details)
+        self.view.middleClicked.connect(lambda: self.s_play(True))
+        self.view.activated.connect(self.s_show_details)
         self._apply_view()
 
         self.view.model().sourceModel().progressChanged.connect(self.s_set_episode)

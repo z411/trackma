@@ -146,6 +146,8 @@ class ShowsTableView(QTableView):
     Regular table widget with context menu for show actions.
 
     """
+    middleClicked = QtCore.pyqtSignal()
+
     def __init__(self, parent=None, palette=None):
         QTableView.__init__(self, parent)
 
@@ -169,6 +171,12 @@ class ShowsTableView(QTableView):
 
     def contextMenuEvent(self, event):
         action = self.context_menu.exec_(event.globalPos())
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+
+        if event.button() == QtCore.Qt.MidButton:
+            self.middleClicked.emit()
 
 
 class ShowItem(QTableWidgetItem):
