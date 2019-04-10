@@ -12,9 +12,24 @@ class ShowListModel(QtCore.QAbstractTableModel):
     Main model used in the main window to show
     a list of shows in the user's list.
     """
+    COL_ID = 0
+    COL_TITLE = 1
+    COL_MY_PROGRESS = 2
+    COL_MY_SCORE = 3
+    COL_PERCENT = 4
+    COL_NEXT_EP = 5
+    COL_START_DATE = 6
+    COL_END_DATE = 7
+    COL_MY_START = 8
+    COL_MY_FINISH = 9
+    COL_MY_TAGS = 10
+    COL_MY_STATUS = 11
+
     columns = ['ID', 'Title', 'Progress', 'Score',
                 'Percent', 'Next Episode', 'Start date', 'End date',
                 'My start', 'My finish', 'Tags', 'Status']
+
+    editable_columns = [COL_MY_PROGRESS, COL_MY_SCORE]
 
     common_flags = \
         QtCore.Qt.ItemIsSelectable | \
@@ -138,9 +153,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
         row, column = index.row(), index.column()
         show = self.showlist[row]
 
-        if column == 2:
+        if column == ShowListModel.COL_MY_PROGRESS:
             self.progressChanged.emit(show['id'], value)
-        elif column == 3:
+        elif column == ShowListModel.COL_MY_SCORE:
             self.scoreChanged.emit(show['id'], value)
 
         return True
@@ -150,18 +165,18 @@ class ShowListModel(QtCore.QAbstractTableModel):
         show = self.showlist[row]
 
         if role == QtCore.Qt.DisplayRole:
-            if column == 0:
+            if column == ShowListModel.COL_ID:
                 return show['id']
-            elif column == 1:
+            elif column == ShowListModel.COL_TITLE:
                 title_str = show['title']
                 if show['id'] in self.altnames:
                     title_str += " [%s]" % self.altnames[show['id']]
                 return title_str
-            elif column == 2:
+            elif column == ShowListModel.COL_MY_PROGRESS:
                 return "{} / {}".format(show['my_progress'], show['total'] or '?')
-            elif column == 3:
+            elif column == ShowListModel.COL_MY_SCORE:
                 return show['my_score']
-            elif column == 4:
+            elif column == ShowListModel.COL_PERCENT:
                 #return "{:.0%}".format(show['my_progress'] / 100)
                 if not self.mediainfo.get('can_play'):
                     return None
@@ -172,28 +187,28 @@ class ShowListModel(QtCore.QAbstractTableModel):
                     total = (int(show['my_progress']/12)+1)*12 # Round up to the next cour
 
                 return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
-            elif column == 5:
+            elif column == ShowListModel.COL_NEXT_EP:
                 return self.next_ep.get(row, '-')
-            elif column == 6:
+            elif column == ShowListModel.COL_START_DATE:
                 return self._date(show['start_date'])
-            elif column == 7:
+            elif column == ShowListModel.COL_END_DATE:
                 return self._date(show['end_date'])
-            elif column == 8:
+            elif column == ShowListModel.COL_MY_START:
                 return self._date(show['my_start_date'])
-            elif column == 9:
+            elif column == ShowListModel.COL_MY_FINISH:
                 return self._date(show['my_finish_date'])
-            elif column == 10:
+            elif column == ShowListModel.COL_MY_TAGS:
                 return show.get('my_tags', '-')
         elif role == QtCore.Qt.BackgroundRole:
             return self.colors.get(row)
         elif role == QtCore.Qt.DecorationRole:
-            if column == 1 and show['id'] in self.playing:
+            if column == ShowListModel.COL_TITLE and show['id'] in self.playing:
                 return getIcon('media-playback-start')
         elif role == QtCore.Qt.TextAlignmentRole:
-            if column in [2, 3]:
+            if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE]:
                 return QtCore.Qt.AlignHCenter
         elif role == QtCore.Qt.ToolTipRole:
-            if column == 4:
+            if column == ShowListModel.COL_PERCENT:
                 tooltip = "Watched: %d<br>" % show['my_progress']
                 if self.eps.get(row):
                     (aired_eps, library_eps) = self.eps.get(row)
@@ -205,13 +220,18 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
                 return tooltip
         elif role == QtCore.Qt.EditRole:
-            if column == 2:
-                return show['my_progress']
-            elif column == 3:
-                return show['my_score']
+            if column == ShowListModel.COL_MY_PROGRESS:
+                return (show['my_progress'], show['total'], 0, 1)
+            elif column == ShowListModel.COL_MY_SCORE:
+                if isinstance(self.mediainfo['score_step'], float):
+                    decimals = len(str(self.mediainfo['score_step']).split('.')[1])
+                else:
+                    decimals = 0
+
+                return (show['my_score'], self.mediainfo['score_max'], decimals, self.mediainfo['score_step'])
 
     def flags(self, index):
-        if index.column() in [2, 3]:
+        if index.column() in self.editable_columns:
             return self.common_flags | QtCore.Qt.ItemIsEditable
         else:
             return self.common_flags

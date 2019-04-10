@@ -687,8 +687,8 @@ class MainWindow(QMainWindow):
 
         # Get the new list and pass it to our model
         self.view.setSortingEnabled(False)
-        self.view.setMediaInfo(self.mediainfo)
         self.view.model().setFilterStatus(self.notebook.tabData(self.notebook.currentIndex()))
+        self.view.model().sourceModel().setMediaInfo(self.mediainfo)
         self.view.model().sourceModel().setShowList(showlist, altnames, library)
         self.view.resizeRowsToContents()
 

@@ -172,10 +172,6 @@ class ShowsTableView(QTableView):
     def contextMenuEvent(self, event):
         action = self.context_menu.exec_(event.globalPos())
 
-    def setMediaInfo(self, mediainfo):
-        self.model().sourceModel().setMediaInfo(mediainfo)
-        self.itemDelegate().setMediaInfo(mediainfo)
-
 
 class ShowItem(QTableWidgetItem):
     """

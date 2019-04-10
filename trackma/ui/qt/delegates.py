@@ -135,7 +135,6 @@ class ShowsTableDelegate(QStyledItemDelegate):
 
     def __init__(self, parent, palette=None):
         self.colors = palette
-        self.mediainfo = {}
 
         super().__init__(parent)
 
@@ -226,9 +225,6 @@ class ShowsTableDelegate(QStyledItemDelegate):
                     )
                     painter.drawRect(progressRect)
 
-    def setMediaInfo(self, mediainfo):
-        self.mediainfo = mediainfo
-
     def setBarStyle(self, style, show_text):
         self._bar_style = style
         self._show_text = show_text
@@ -240,24 +236,21 @@ class ShowsTableDelegate(QStyledItemDelegate):
         editor = QDoubleSpinBox(parent)
         editor.setFrame(False)
 
-        decimal_places = 0
-        if isinstance(self.mediainfo['score_step'], float):
-            decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
-
-        editor.setRange(0, self.mediainfo['score_max'])
-        editor.setDecimals(decimal_places)
-        editor.setSingleStep(self.mediainfo['score_step'])
-
         return editor
 
     def setEditorData(self, editor, index):
-        value = index.model().data(index, QtCore.Qt.EditRole)
+        (value, maximum, decimals,step) = index.model().data(index, QtCore.Qt.EditRole)
+
+        editor.setMaximum(maximum or 999)
+        editor.setDecimals(decimals or 0)
+        editor.setSingleStep(step or 1)
+
         if value:
             editor.setValue(value)
 
     def setModelData(self, editor, model, index):
         editor.interpretText()
-        old_value = index.model().data(index, QtCore.Qt.EditRole)
+        old_value = index.model().data(index, QtCore.Qt.EditRole)[0]
         new_value = editor.value()
 
         if new_value != old_value:
