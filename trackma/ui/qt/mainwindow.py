@@ -1325,7 +1325,7 @@ class MainWindow(QMainWindow):
         if result['success']:
             status = self.worker.engine.mediainfo['status_start']
 
-            self._rebuild_list()
+            self._rebuild_view()
 
             self.status('Ready.')
 
