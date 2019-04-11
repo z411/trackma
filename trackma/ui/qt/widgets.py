@@ -120,14 +120,13 @@ class DetailsWidget(QWidget):
             info_strings = []
             description_strings = []
             description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'} # This might come down to personal preference
-            list_keys = {'Genres'} # Anilist gives genres as a list, need a special case to fix formatting
 
             for line in details['extra']:
                 if line[0] and line[1]:
                     if line[0] in description_keys:
                         description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
                     else:
-                        if line[0] in list_keys:
+                        if isinstance(line[1], list):
                             description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
                         elif len("%s" % line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
                             info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )

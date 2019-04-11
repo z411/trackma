@@ -388,6 +388,7 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+      studios(sort: NAME, isMain: true) { nodes { name } }
     }
   }
 }'''
@@ -421,6 +422,7 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+      studios(sort: NAME, isMain: true) { nodes { name } }
   }
 }'''
 
@@ -458,14 +460,12 @@ fragment mediaListEntry on MediaList {
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
                 ('Synonyms',        item['title'].get('synonyms')),
-                #('Classification',  item.get('classification')),
                 ('Genres',          item.get('genres')),
+                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
                 ('Status',          self.status_translate[item['status']]),
-                #('Start Date',      item.get('start_date')),
-                #('End Date',        item.get('end_date')),
             ]
         })
         return info
