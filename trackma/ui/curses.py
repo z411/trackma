@@ -533,8 +533,11 @@ class Trackma_urwid():
             self.error(e)
 
     def do_quit(self):
-        self.engine.unload()
-        raise urwid.ExitMainLoop()
+        if self.viewing_info:
+            self.do_info_exit()
+        else:
+            self.engine.unload()
+            raise urwid.ExitMainLoop()
 
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)
