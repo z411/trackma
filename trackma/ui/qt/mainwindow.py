@@ -476,8 +476,8 @@ class MainWindow(QMainWindow):
         if account:
             self.account = account
 
-        # Get API specific configuration
-        self.api_config = self._get_api_config(account['api'])
+            # Get API specific configuration
+            self.api_config = self._get_api_config(account['api'])
 
         self.menu_columns_group.setEnabled(False)
         for action in self.menu_columns_group.actions():
