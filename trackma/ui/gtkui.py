@@ -121,7 +121,9 @@ class Trackma_gtk(object):
         """Create the main window"""
         # Create engine
         self.account = account
-        self.engine = Engine(account, self.message_handler)
+
+        self.engine = Engine(self.message_handler)
+        self.engine.set_account(account)
 
         self.main = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.main.set_position(Gtk.WindowPosition.CENTER)
@@ -896,7 +898,13 @@ class Trackma_gtk(object):
 
     def task_reload(self, account, mediatype):
         try:
-            self.engine.reload(account, mediatype)
+            if account:
+                self.account = account
+                self.engine.set_account(account)
+            if mediatype:
+                self.engine.set_mediatype(mediatype)
+
+            self.engine.reload()
         except utils.TrackmaError as e:
             self.error(e)
         except utils.TrackmaFatal as e:
@@ -904,9 +912,6 @@ class Trackma_gtk(object):
             self.idle_restart()
             self.error("Fatal engine error: %s" % e)
             return
-
-        if account:
-            self.account = account
 
         # Refresh the GUI
         self.task_start_engine()

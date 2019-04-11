@@ -58,14 +58,17 @@ HOME = os.path.expanduser("~")
 
 # Put the available APIs here
 available_libs = {
-    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "https://omaera.org/trackma/anilistv2",
-            "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
-                ),
-    'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
-    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
-    'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
-    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
+    'anilist':  {
+            'name': 'Anilist',
+            'icon': datadir + '/data/anilist.jpg',
+            'login': LOGIN_OAUTH,
+            'oauth_url_short': "https://omaera.org/trackma/anilistv2",
+            'oauth_url': "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token",
+    },
+    'kitsu':    {'name': 'Kitsu',       'icon': datadir + '/data/kitsu.png',     'login': LOGIN_PASSWD},
+    'mal':      {'name': 'MyAnimeList', 'icon': datadir + '/data/mal.jpg',       'login': LOGIN_PASSWD},
+    'shikimori':{'name': 'Shikimori',   'icon': datadir + '/data/shikimori.jpg', 'login': LOGIN_PASSWD},
+    'vndb':     {'name': 'VNDB',        'icon': datadir + '/data/vndb.jpg',      'login': LOGIN_PASSWD},
 }
 
 def parse_config(filename, default):
@@ -321,7 +324,8 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
-    'use_hooks': True,
+    'plugins_use': True,
+    'plugins_disabled': [],
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -446,3 +450,66 @@ qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'columns_state': {},
 }
+
+class PluginStore(object):
+    DISABLED = 0
+    ENABLED = 1
+    STARTED = 3
+    FORCED = 10
+    ERROR = 40
+
+    PLUGIN_TYPES = ['api', 'hooks', 'gtk']
+
+    def __init__(self):
+        self.available = {}
+        self.enabled = {t: {} for t in PluginStore.PLUGIN_TYPES}
+        self.allowed_plugins = [t.capitalize() + "Plugin" for t in PluginStore.PLUGIN_TYPES if t != 'api']
+
+    def discover(self):
+        import importlib
+        import pkgutil
+        from trackma import plugins
+
+        # Discover plugin entry points
+        self.available = {
+            name: [importlib.import_module(name), PluginStore.DISABLED]
+            for finder, name, ispkg
+            in pkgutil.iter_modules(plugins.__path__, plugins.__name__ + '.')
+        }
+
+        # Enable API plugins immediately since we need them beforehand
+        for name, v in self.available.items():
+            (module, enabled) = v
+            if 'ApiPlugin' in dir(module):
+                self.enabled['api'][name] = module.ApiPlugin
+                self.set_state(name, PluginStore.FORCED)
+
+    def enable(self, name):
+        module = self.available[name][0]
+
+        for attr in dir(module):
+            if attr in self.allowed_plugins:
+                _class = getattr(module, attr)
+                _type = attr[:-6].lower()
+
+                self.enabled[_type][name] = _class
+                self.set_state(name, PluginStore.ENABLED)
+
+    def set_state(self, name, state):
+        self.available[name][1] = PluginStore.FORCED
+
+plugins = PluginStore()
+
+def get_available_libs():
+    libs = {}
+    for plugin in plugins.enabled['api'].values():
+        lib = {
+                'name':plugin.NAME,
+                'icon': plugin.ICON,
+                'login': plugin.LOGIN,
+                'module': plugin.init,
+        }
+        libs[plugin.SHORTNAME] = lib
+
+    libs.update(available_libs)
+    return libs

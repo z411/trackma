@@ -230,7 +230,7 @@ class Trackma_urwid():
         self.started = False
 
         self.status("Starting engine...")
-        self.engine = Engine(account, self.message_handler)
+        self.engine = Engine(self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -242,9 +242,12 @@ class Trackma_urwid():
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
         self.engine.connect_signal('tracker_state', self.tracker_state)
 
-        # Engine start and list rebuildi
-        self.status("Building lists...")
+        # Engine start and list rebuild
+        self.status("Starting engine...")
+        self.engine.set_account(account)
         self.engine.start()
+
+        self.status("Building lists...")
         self._rebuild()
 
     def set_filter(self, filter_num):
@@ -471,7 +474,13 @@ class Trackma_urwid():
 
     def do_reload_engine(self, account=None, mediatype=None):
         self.started = False
-        self.engine.reload(account, mediatype)
+
+        if account:
+            self.engine.set_account(account)
+        if mediatype:
+            self.engine.set_mediatype(mediatype)
+
+        self.engine.reload()
         self._rebuild()
 
     def do_open_web(self):

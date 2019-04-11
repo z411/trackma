@@ -157,8 +157,8 @@ class EngineWorker(QtCore.QThread):
     # Callable functions
     def _start(self, account):
         try:
-            self.engine = Engine(account, self._messagehandler)
-            
+            self.engine = Engine(self._messagehandler)
+
             self.engine.connect_signal('episode_changed', self._changed_show)
             self.engine.connect_signal('score_changed', self._changed_show)
             self.engine.connect_signal('tags_changed', self._changed_show)
@@ -172,6 +172,7 @@ class EngineWorker(QtCore.QThread):
             self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
             self.engine.connect_signal('tracker_state', self._tracker_state)
 
+            self.engine.set_account(account)
             self.engine.start()
         except utils.TrackmaError as e:
             self._error(e)
@@ -181,7 +182,12 @@ class EngineWorker(QtCore.QThread):
 
     def _reload(self, account, mediatype):
         try:
-            self.engine.reload(account, mediatype)
+            if account:
+                self.engine.set_account(account)
+            if mediatype:
+                self.engine.set_mediatype(mediatype)
+
+            self.engine.reload()
         except utils.TrackmaError as e:
             self._error(e)
             return {'success': False}

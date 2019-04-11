@@ -53,7 +53,7 @@ class Engine:
     msg = None
     loaded = False
     playing = False
-    hooks_available = []
+    available_hooks = []
 
     name = 'Engine'
 
@@ -71,44 +71,31 @@ class Engine:
                 'tracker_state':     None,
         }
 
-    def __init__(self, account=None, message_handler=None, accountnum=None):
+    def __init__(self, message_handler=None, accountnum=None):
+        self.mediatype = None
         self.msg = messenger.Messenger(message_handler)
 
         # Utility parameter to get the account from the account manager
         if accountnum:
             from trackma import accounts
-            account = accounts.AccountManager().get_account(accountnum)
+            self.account = accounts.AccountManager().get_account(accountnum)
 
         # Initialize
-        self._load(account)
-        self._init_data_handler()
+        self._load()
 
-    def _load(self, account):
-        self.account = account
+    def _load(self):
+        self.msg.info(self.name, "Trackma v{}".format(utils.VERSION))
 
         # Create home directory
         utils.make_dir(utils.to_config_path())
         self.configfile = utils.to_config_path('config.json')
 
-        # Create user directory
-        userfolder = "%s.%s" % (account['username'], account['api'])
-        utils.make_dir(utils.to_data_path(userfolder))
-
-        self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
-            utils.VERSION, account['username'], account['api']))
+        # Parse configuration
         self.msg.info(self.name, 'Reading config files...')
         try:
             self.config = utils.parse_config(self.configfile, utils.config_defaults)
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
-
-        # Expand media directories and ignore those that don't exist
-        if isinstance(self.config['searchdir'], str):
-            # Compatibility: Turn a string of a single directory into a list
-            self.msg.debug(self.name, "Fixing string searchdir to list.")
-            self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
-        else:
-            self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -165,14 +152,14 @@ class Engine:
             pass
 
         # If there are loaded hooks, call the functions in all of them
-        for module in self.hooks_available:
+        for module in self.available_hooks:
             method = getattr(module, signal, None)
             if method is not None:
-                self.msg.info(self.name, "Calling hook {}:{}...".format(module.__name__, signal))
+                self.msg.info(self.name, "Calling hook {}:{}...".format(module.__class__.__module__, signal))
                 try:
-                    method(self, *args)
+                    method(*args)
                 except Exception as err:
-                    self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__name__, signal, err))
+                    self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__class__.__module__, signal, err))
 
     def _get_tracker_list(self, filter_num=None):
         tracker_list = []
@@ -218,10 +205,48 @@ class Engine:
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
 
+    def set_account(self, account):
+        self.account = account
+        self.mediatype = None
+
+    def set_mediatype(self, mediatype):
+        self.mediatype = mediatype
+
     def set_message_handler(self, message_handler):
         """Changes the message handler function on the fly."""
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
+
+    def start_plugins(self, t, *args):
+        """
+        Starts enabled plugins from specified type and
+        return the list of the instantiated classes.
+        """
+        started = []
+        to_disable = []
+
+        if utils.plugins.enabled[t]:
+            self.msg.info(self.name, "Starting plugins ({})...".format(t))
+
+            for name, module in utils.plugins.enabled[t].items():
+                self.msg.debug(self.name, "Activating {} plugin {}".format(t,module.__module__))
+                try:
+                    started.append(module.init(*args))
+                    utils.plugins.set_state(name, utils.PluginStore.STARTED)
+                except:
+                    self.msg.warn(self.name, "Couldn't enable plugin {}.".format(module.__module__))
+                    raise
+
+            # Disable and blacklist plugins we couldn't start
+            if to_disable:
+                for name in to_disable:
+                    utils.plugins.set_state(name, utils.PluginStore.ERROR)
+                    self.config['plugins_disabled'].append(name)
+                self.save_config()
+        else:
+            utils.msg.debug(self.name, "No plugins of type {} found".format(t))
+
+        return started
 
     def start(self):
         """
@@ -231,14 +256,37 @@ class Engine:
         """
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
+        if not self.account:
+            raise utils.TrackmaError("Account not set.")
+
+        # Enable plugins
+        if utils.plugins.available:
+            self.msg.info(self.name, "Enabling plugins...")
+            for name, v in utils.plugins.available.items():
+                (module, enabled) = v
+
+                self.msg.debug(self.name, "Enabling plugin: {}".format(module.NAME))
+                utils.plugins.enable(name)
+
+        # Load hooks
+        self.available_hooks = self.start_plugins('hooks', self)
 
         # Start the data handler
         try:
+            self._init_data_handler(self.mediatype)
             (self.api_info, self.mediainfo) = self.data_handler.start()
         except utils.DataError as e:
             raise utils.DataFatal(str(e))
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
+
+        # Expand media directories and ignore those that don't exist
+        if isinstance(self.config['searchdir'], str):
+            # Compatibility: Turn a string of a single directory into a list
+            self.msg.debug(self.name, "Fixing string searchdir to list.")
+            self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
+        else:
+            self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
 
         # Rescan library if necessary
         if self.config['library_autoscan']:
@@ -247,34 +295,12 @@ class Engine:
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
 
-        # Load hook files
-        if self.config['use_hooks']:
-            hooks_dir = utils.to_config_path('hooks')
-            if os.path.isdir(hooks_dir):
-                import sys
-                import pkgutil
-
-                self.msg.info(self.name, "Importing user hooks...")
-                for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
-                    # List all the hook files in the hooks folder, import them
-                    # and call the init() function if they have them
-                    # We build the list "hooks available" with the loaded modules
-                    # for later calls.
-                    try:
-                        self.msg.debug(self.name, "Importing hook {}...".format(name))
-                        module = loader.find_module(name).load_module(name)
-                        if hasattr(module, 'init'):
-                            module.init(self)
-                        self.hooks_available.append(module)
-                    except ImportError:
-                        self.msg.warn(self.name, "Error importing hook {}.".format(name))
-
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
             self.msg.debug(self.name, "Initializing tracker...")
             try:
                 TrackerClass = self._get_tracker_class(self.config['tracker_type'])
-                
+
                 self.tracker = TrackerClass(self.msg,
                                        self._get_tracker_list(),
                                        self.config['tracker_process'],
@@ -311,15 +337,11 @@ class Engine:
                 self.tracker.disable()
             self.loaded = False
 
-    def reload(self, account=None, mediatype=None):
+    def reload(self):
         """Changes the API and/or mediatype and reloads itself."""
         if self.loaded:
             self.unload()
 
-        if account:
-            self._load(account)
-
-        self._init_data_handler(mediatype)
         self.start()
 
     def get_config(self, key):
@@ -355,7 +377,7 @@ class Engine:
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
-        
+
         if showid:
             # Get show by ID
             try:

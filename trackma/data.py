@@ -62,7 +62,9 @@ class Data():
 
         # Get filenames
         userfolder = "%s.%s" % (account['username'], account['api'])
-        self.userconfig_file =  utils.to_data_path(userfolder, 'user.json')
+
+        utils.make_dir(utils.to_data_path(userfolder))
+        self.userconfig_file = utils.to_data_path(userfolder, 'user.json')
 
         # Handle userconfig and media type to load
         self._load_userconfig()
@@ -70,9 +72,14 @@ class Data():
             self.userconfig['mediatype'] = mediatype
             self._save_userconfig()
 
+        # Set mediatype
+        mediatype = self.userconfig.get('mediatype')
+
+        self.msg.info(self.name, "Using account {}({}:{})".format(
+            account['username'], account['api'], mediatype))
+
         # Import the API
-        libbase = account['api']
-        libname = "lib{0}".format(libbase)
+        libname = "lib{0}".format(account['api'])
         try:
             modulename = "trackma.lib.{0}".format(libname)
             __import__(modulename)
@@ -86,10 +93,6 @@ class Data():
 
         # Get API version
         self.api_version = self.api.api_info['version']
-
-        # Set mediatype
-        mediatype = self.userconfig.get('mediatype')
-        self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
 
         # Get filenames
         self.queue_file = utils.to_data_path(userfolder, '%s.queue' % mediatype)

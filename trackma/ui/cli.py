@@ -87,6 +87,9 @@ class Trackma_cmd(cmd.Cmd):
     }
 
     def __init__(self, account_num=None, debug=False, interactive=True):
+        self.interactive = interactive
+        self.debug = debug
+
         if interactive:
             print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
             print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
@@ -94,9 +97,10 @@ class Trackma_cmd(cmd.Cmd):
             print('under certain conditions; see the COPYING file for details.')
             print()
 
-        self.interactive = interactive
-        self.debug = debug
+        # Discover plugins
+        utils.plugins.discover()
 
+        # Start account manager
         self.accountman = Trackma_accounts()
         if account_num:
             try:
@@ -159,9 +163,9 @@ class Trackma_cmd(cmd.Cmd):
 
         if self.interactive:
             print('Initializing engine...')
-            self.engine = Engine(self.account, self.messagehandler)
+            self.engine = Engine(self.messagehandler)
         else:
-            self.engine = Engine(self.account)
+            self.engine = Engine()
             self.engine.set_config("tracker_enabled", False)
             self.engine.set_config("library_autoscan", False)
             self.engine.set_config("use_hooks", False)
@@ -172,6 +176,7 @@ class Trackma_cmd(cmd.Cmd):
         self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.connect_signal('prompt_for_update', self._ask_update)
         self.engine.connect_signal('prompt_for_add', self._ask_add)
+        self.engine.set_account(self.account)
         self.engine.start()
 
         # Start with default filter selected
@@ -283,7 +288,8 @@ class Trackma_cmd(cmd.Cmd):
         """
 
         self.account = self.accountman.select_account(True)
-        self.engine.reload(account=self.account)
+        self.engine.set_account(self.account)
+        self.engine.reload()
 
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
@@ -333,7 +339,8 @@ class Trackma_cmd(cmd.Cmd):
         """
         if args:
             if args[0] in self.engine.api_info['supported_mediatypes']:
-                self.engine.reload(mediatype=args[0])
+                self.engine.set_mediatype(args[0])
+                self.engine.reload()
 
                 # Start with default filter selected
                 self.filter_num = self.engine.mediainfo['statuses'][0]
