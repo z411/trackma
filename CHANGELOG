@@ -1,3 +1,42 @@
+v0.8
+- New: (Qt) Card view in search dialog
+- New: (Qt, Anilist) Search by season
+- New: (Anilist) Support for different score formats
+- New: Support for multiple media directories
+- New: (CLI) Non-interactive mode allowing to run single commands by command line or stdin
+- Improvement: Using XDG directory names
+- Improvement: (curses) vi-like keybindings
+- Improvement: monthly.moe hook updated for Anilist support
+- Improvement: Support for forcing the use of a specified tracker_type
+- Bugfix: (Anilist) Added Rewatching status
+- Bugfix: (Anilist) Fixed crash in Python 2.5
+- Bugfix: (Anilist) Fixed Completed list not loading when they are sent split by the server
+- Bugfix: (Qt) Fixed aesthetic bugs in add show dialog
+- Bugfix: (Qt) Fixed crash when using automatic add prompt
+- Bugfix: (Qt/GTK) Fixed crash when there's an alpha channel in thumbnails
+- Bugfix: (GTK) Fixed crash when PIL is unavailable
+- Bugfix: (Kitsu) Fixed start/end dates not being sent
+- Bugfix: Fixed tracking not getting cleaned up after account/mediatype change
+
+v0.7.6
+- Bugfix: (Anilist+Qt/GTK) Fixed crash when the token was old
+- Bugfix: (Qt) Undefined dates now sort properly
+- Bugfix: (GTK) List information now shows properly in details dialog
+
+v0.7.5
+- New: Switched to Anilist V2 API. You will need to re-authorize your account by editing it or re-creating it.
+- Improvement: Optional whole list scanning (Settings -> Scan through whole list)
+- Improvement: Added Open containing folder functionality
+- Improvement: Added optional full path scanning (ie. directory names are show names)
+- Improvement: (Qt) Interface now shows episode numbers on progress bar
+- Improvement: (Qt) Sorting is now remembered
+- Improvement: (curses/CLI) Default account is forgotten whenever a fatal crash occurs
+- Bugfix: Fixed crash when show had no image with Kitsu
+- Bugfix: (Tracker) Fixed crash with unrecognised shows
+- Bugfix: (Tracker) Fixed Plex crashes
+- Bugfix: (Qt) Fixed Add Dialog results sorting in
+- Bugfix: (GTK) Fixed crashes when syncing
+
 v0.7.4
 - Improvement: (Flex) Added optional login functionality
 - Improvement: (curses) Added Play Random function

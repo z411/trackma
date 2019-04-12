@@ -22,7 +22,7 @@ import difflib
 import pickle
 import uuid
 
-VERSION = '0.7.6'
+VERSION = '0.8'
 
 datadir = os.path.dirname(__file__)
 LOGIN_PASSWD = 1
@@ -321,6 +321,7 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'use_hooks': True,
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -340,7 +341,7 @@ curses_defaults = {
         'openfolder': 'o',
         'play_random': '&',
         'status': 'f6',
-        'score': 'k',
+        'score': 'z',
         'send': 's',
         'retrieve': 'R',
         'addsearch': 'a',
@@ -354,6 +355,12 @@ curses_defaults = {
         'details': 'enter',
         'details_exit': 'esc',
         'open_web': 'O',
+        'left': 'h',
+        'up': 'k',
+        'down': 'j',
+        'right': 'l',
+        'page_up': 'K',
+        'page_down': 'J',
     },
     'palette': {
         'body':             ('', ''),
@@ -412,6 +419,7 @@ qt_defaults = {
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'inline_edit': True,
     'columns_state': {},
     'columns_per_api': False,
     'episodebar_style': 1,

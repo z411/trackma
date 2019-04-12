@@ -42,11 +42,6 @@ CLI
 
 ![CLI](http://z411.github.com/trackma/images/screen_cli.png)
 
-Documentation
--------------
-
-The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
-
 Dependencies
 ------------
 

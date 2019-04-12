@@ -103,19 +103,6 @@ class EngineWorker(QtCore.QThread):
 
     def __init__(self):
         super(EngineWorker, self).__init__()
-        self.engine = Engine(self._messagehandler)
-        self.engine.connect_signal('episode_changed', self._changed_show)
-        self.engine.connect_signal('score_changed', self._changed_show)
-        self.engine.connect_signal('tags_changed', self._changed_show)
-        self.engine.connect_signal('status_changed', self._changed_list)
-        self.engine.connect_signal('playing', self._playing_show)
-        self.engine.connect_signal('show_added', self._changed_list)
-        self.engine.connect_signal('show_deleted', self._changed_list)
-        self.engine.connect_signal('show_synced', self._changed_show)
-        self.engine.connect_signal('queue_changed', self._changed_queue)
-        self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
-        self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
-        self.engine.connect_signal('tracker_state', self._tracker_state)
 
         self.function_list = {
             'start': self._start,
@@ -170,7 +157,22 @@ class EngineWorker(QtCore.QThread):
     # Callable functions
     def _start(self, account):
         try:
-            self.engine.start(account)
+            self.engine = Engine(account, self._messagehandler)
+            
+            self.engine.connect_signal('episode_changed', self._changed_show)
+            self.engine.connect_signal('score_changed', self._changed_show)
+            self.engine.connect_signal('tags_changed', self._changed_show)
+            self.engine.connect_signal('status_changed', self._changed_list)
+            self.engine.connect_signal('playing', self._playing_show)
+            self.engine.connect_signal('show_added', self._changed_list)
+            self.engine.connect_signal('show_deleted', self._changed_list)
+            self.engine.connect_signal('show_synced', self._changed_show)
+            self.engine.connect_signal('queue_changed', self._changed_queue)
+            self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+            self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
+            self.engine.connect_signal('tracker_state', self._tracker_state)
+
+            self.engine.start()
         except utils.TrackmaError as e:
             self._error(e)
             return {'success': False}

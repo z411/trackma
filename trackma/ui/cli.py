@@ -29,7 +29,7 @@ import cmd
 import shlex
 import textwrap
 import re
-import getopt
+import argparse
 from operator import itemgetter # Used for sorting list
 
 from trackma.engine import Engine
@@ -86,19 +86,21 @@ class Trackma_cmd(cmd.Cmd):
         'status':       2,
     }
 
-    def __init__(self, account_num=None, debug=False):
-        print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
-        print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
-        print('This is free software, and you are welcome to redistribute it')
-        print('under certain conditions; see the COPYING file for details.')
-        print()
+    def __init__(self, account_num=None, debug=False, interactive=True):
+        if interactive:
+            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
+            print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
+            print('This is free software, and you are welcome to redistribute it')
+            print('under certain conditions; see the COPYING file for details.')
+            print()
 
+        self.interactive = interactive
         self.debug = debug
 
         self.accountman = Trackma_accounts()
         if account_num:
             try:
-                self.account = self.accountman.get_account(int(account_num))
+                self.account = self.accountman.get_account(account_num)
             except KeyError:
                 print("Account {} doesn't exist.".format(account_num))
                 self.account = self.accountman.select_account(True)
@@ -136,7 +138,7 @@ class Trackma_cmd(cmd.Cmd):
             index = int(title)-1
             return self.sortedlist[index][1]
         except (ValueError, AttributeError, IndexError):
-            return self.engine.get_show_info_title(title)
+            return self.engine.get_show_info(title=title)
 
     def _ask_update(self, show, episode):
         do = input("Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
@@ -154,26 +156,41 @@ class Trackma_cmd(cmd.Cmd):
 
         Creates an Engine object and starts it.
         """
-        print('Initializing engine...')
-        self.engine = Engine(self.messagehandler)
+
+        if self.interactive:
+            print('Initializing engine...')
+            self.engine = Engine(self.account, self.messagehandler)
+        else:
+            self.engine = Engine(self.account)
+            self.engine.set_config("tracker_enabled", False)
+            self.engine.set_config("library_autoscan", False)
+            self.engine.set_config("use_hooks", False)
+
         self.engine.connect_signal('show_added', self._load_list)
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
         self.engine.connect_signal('episode_changed', self._load_list)
         self.engine.connect_signal('prompt_for_update', self._ask_update)
         self.engine.connect_signal('prompt_for_add', self._ask_add)
-        self.engine.start(self.account)
+        self.engine.start()
 
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
         self._load_list()
-        self._update_prompt()
 
-        print()
-        print("Ready. Type 'help' for a list of commands.")
-        print("Press tab for autocompletion and up/down for command history.")
-        self.do_filter(None) # Show available filters
-        print()
+        if self.interactive:
+            self._update_prompt()
+
+            print()
+            print("Ready. Type 'help' for a list of commands.")
+            print("Press tab for autocompletion and up/down for command history.")
+            self.do_filter(None) # Show available filters
+            print()
+        else:
+            # We set the message handler only after initializing
+            # so we still receive the important messages but avoid
+            # the initial spam.
+            self.engine.set_message_handler(self.messagehandler)
 
     def do_about(self, args):
         print("Trackma {}  by z411 (z411@omaera.org)".format(utils.VERSION))
@@ -195,7 +212,7 @@ class Trackma_cmd(cmd.Cmd):
             try:
                 doc = getattr(self, 'do_' + arg).__doc__
                 if doc:
-                    (name, args, expl, usage) = self._parse_doc(arg, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(arg, doc)
 
                     print()
                     print(name)
@@ -210,6 +227,8 @@ class Trackma_cmd(cmd.Cmd):
                                 print("    {} (optional): {}".format(arg[0], arg[1]))
                     if usage:
                         print("\n  Usage: " + usage)
+                    for example in examples:
+                        print("  Example: " + example)
                     print()
                     return
             except AttributeError:
@@ -245,7 +264,7 @@ class Trackma_cmd(cmd.Cmd):
                         continue
 
                     cmd = name[3:]
-                    (name, args, expl, usage) = self._parse_doc(cmd, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(cmd, doc)
 
                     line = " {0:>{1}} {2:{3}} {4}".format(
                            name, CMD_LENGTH,
@@ -541,17 +560,23 @@ class Trackma_cmd(cmd.Cmd):
         """
         Updates the progress of a show to the specified episode (next if unspecified).
 
-        :param show Show index or name.
+        :param show Show index, title or filename (prepend with file:).
         :optparam ep Episode number (numeric).
         :usage update <show index or name> [episode number]
+        :example update Toradora! 5
+        :example update 6
+        :example update file:filename.mkv
         """
         try:
-            show = self._get_show(args[0])
+            if args[0][:5] == "file:":
+                (show, ep) = self.engine.get_show_info(filename=args[0][5:])
+            else:
+                (show, ep) = (self._get_show(args[0]), None)
 
             if len(args) > 1:
                 self.engine.set_episode(show['id'], args[1])
             else:
-                self.engine.set_episode(show['id'], show['my_progress']+1)
+                self.engine.set_episode(show['id'], ep or show['my_progress']+1)
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -749,15 +774,13 @@ class Trackma_cmd(cmd.Cmd):
         elif cmd == 'help':
             return self.do_help(arg)
         else:
-            return self.execute(cmd, arg, line)
+            return self.execute(cmd, self.parse_args(arg), line)
 
-    def execute(self, cmd, arg, line):
+    def execute(self, cmd, args, line):
         try:
             func = getattr(self, 'do_' + cmd)
         except AttributeError:
             return self.default(line)
-
-        args = self.parse_args(arg)
 
         try:
             needed = self.needed_args[cmd]
@@ -829,6 +852,7 @@ class Trackma_cmd(cmd.Cmd):
         args = []
         expl = []
         usage = None
+        examples = []
 
         for line in lines:
             line = line.strip()
@@ -840,10 +864,12 @@ class Trackma_cmd(cmd.Cmd):
                 usage = line[7:]
             elif line[:5] == ':name':
                 name = line[6:]
+            elif line[:8] == ':example':
+                examples.append(line[9:])
             elif line:
                 expl.append(line)
 
-        return (name, args, expl, usage)
+        return (name, args, expl, usage, examples)
 
     def _make_list(self, showlist):
         """
@@ -914,7 +940,7 @@ class Trackma_accounts(AccountManager):
         if index < 1:
             raise IndexError
 
-        return self.indexes[index-1]
+        return index
 
     def select_account(self, bypass):
         if not bypass and self.get_default():
@@ -991,64 +1017,43 @@ class Trackma_accounts(AccountManager):
                     return self.get_account(account_id)
                 except ValueError:
                     print("Invalid value.")
-                except IndexError:
+                except (IndexError, KeyError):
                     print("Account doesn't exist.")
 
     def list_accounts(self):
         accounts = self.get_accounts()
-        self.indexes = []
 
         print("Available accounts:")
-        i = 0
         if accounts:
             for k, account in accounts:
-                print("%i: %s (%s)" % (i+1, account['username'], account['api']))
-                self.indexes.append(k)
-                i += 1
+                print("%i: %s (%s)" % (k, account['username'], account['api']))
         else:
             print("No accounts.")
 
 
-def usage():
-    print("Usage: trackma [options]")
-    print()
-    print("Options:")
-    print("  -a --account\tPre-selects account number")
-    print("  -d --debug\tShows debugging information")
-    print("  -h --help\tShows this help")
-    print()
-    print("Example:")
-    print("  trackma -a3")
-    print("or:")
-    print("  trackma --account=3")
-    sys.exit()
-
 def main():
     # Process args
-    debug = False
-    account_num = None
-
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:d", ["help", "account=", "debug"])
-    except getopt.GetoptError as err:
-        print(err)
-        usage()
-
-    for o, a in opts:
-        if o in ('-a', '--account'):
-            print("Using account {}.".format(a))
-            account_num = a
-        elif o in ('-d', '--debug'):
-            print("Enabling debug messages.")
-            debug = True
-        elif o in ('-h', '--help'):
-            usage()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--account', type=int, help='Use specific account number.')
+    parser.add_argument('-d', '--debug', action='store_true', help='Show debugging messages.')
+    parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified. - will take in commands from stdin.')
+    parser.add_argument('args', nargs=argparse.REMAINDER, help='Arguments for the aforementioned command, if any.')
+    args = parser.parse_args()
 
     # Boot Trackma CLI
-    main_cmd = Trackma_cmd(account_num, debug)
+    main_cmd = Trackma_cmd(args.account, args.debug, interactive=args.cmd is None)
     try:
         main_cmd.start()
-        main_cmd.cmdloop()
+        if args.cmd:
+            if args.cmd == '-':
+                # Run commands from stdin
+                for cmd in sys.stdin:
+                    main_cmd.onecmd(cmd)
+            else:
+                # Run the specified command in the arguments
+                main_cmd.execute(args.cmd, args.args, args.cmd)
+        else:
+            main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
         main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))

@@ -50,11 +50,12 @@ class libanilist(lib):
         'date_next_ep': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
-        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
-            'PAUSED': 'On Hold',
+            'REPEATING': 'Rewatching',
+            'PAUSED': 'Paused',
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Watch'
         },
@@ -73,11 +74,12 @@ class libanilist(lib):
         'can_date': True,
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
-        'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
-            'PAUSED': 'On Hold',
+            'REPEATING': 'Rewatching',
+            'PAUSED': 'Paused',
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Read'
         },
@@ -386,6 +388,7 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+      studios(sort: NAME, isMain: true) { nodes { name } }
     }
   }
 }'''
@@ -419,6 +422,7 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+      studios(sort: NAME, isMain: true) { nodes { name } }
   }
 }'''
 
@@ -456,14 +460,12 @@ fragment mediaListEntry on MediaList {
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
                 ('Synonyms',        item['title'].get('synonyms')),
-                #('Classification',  item.get('classification')),
                 ('Genres',          item.get('genres')),
+                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
                 ('Status',          self.status_translate[item['status']]),
-                #('Start Date',      item.get('start_date')),
-                #('End Date',        item.get('end_date')),
             ]
         })
         return info

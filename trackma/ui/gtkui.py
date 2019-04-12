@@ -121,7 +121,7 @@ class Trackma_gtk(object):
         """Create the main window"""
         # Create engine
         self.account = account
-        self.engine = Engine(self.message_handler)
+        self.engine = Engine(account, self.message_handler)
 
         self.main = Gtk.Window(Gtk.WindowType.TOPLEVEL)
         self.main.set_position(Gtk.WindowPosition.CENTER)
@@ -863,7 +863,7 @@ class Trackma_gtk(object):
     def task_start_engine(self):
         if not self.engine.loaded:
             try:
-                self.engine.start(self.account)
+                self.engine.start()
             except utils.TrackmaFatal as e:
                 self.idle_restart()
                 self.error("Fatal engine error: %s" % e)

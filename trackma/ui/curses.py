@@ -151,6 +151,12 @@ class Trackma_urwid():
                     'details': self.do_info,
                     'details_exit': self.do_info_exit,
                     'open_web': self.do_open_web,
+                    'left': self.key_left,
+                    'down': self.key_down,
+                    'up': self.key_up,
+                    'right': self.key_right,
+                    'page_down': self.key_page_down,
+                    'page_up': self.key_page_up,
                     }
 
         for func, keybind in keymap.items():
@@ -224,7 +230,7 @@ class Trackma_urwid():
         self.started = False
 
         self.status("Starting engine...")
-        self.engine = Engine(self.message_handler)
+        self.engine = Engine(account, self.message_handler)
         self.engine.connect_signal('episode_changed', self.changed_show)
         self.engine.connect_signal('score_changed', self.changed_show)
         self.engine.connect_signal('status_changed', self.changed_show_status)
@@ -238,7 +244,7 @@ class Trackma_urwid():
 
         # Engine start and list rebuildi
         self.status("Building lists...")
-        self.engine.start(account)
+        self.engine.start()
         self._rebuild()
 
     def set_filter(self, filter_num):
@@ -275,6 +281,24 @@ class Trackma_urwid():
         except KeyError:
             # Unbinded key pressed; do nothing
             pass
+
+    def key_left(self):
+        self.mainloop.process_input(['left'])
+
+    def key_down(self):
+        self.mainloop.process_input(['down'])
+
+    def key_up(self):
+        self.mainloop.process_input(['up'])
+
+    def key_right(self):
+        self.mainloop.process_input(['right'])
+
+    def key_page_down(self):
+        self.mainloop.process_input(['page down'])
+
+    def key_page_up(self):
+        self.mainloop.process_input(['page up'])
 
     def forget_account(self):
         manager = AccountManager()
@@ -509,8 +533,11 @@ class Trackma_urwid():
             self.error(e)
 
     def do_quit(self):
-        self.engine.unload()
-        raise urwid.ExitMainLoop()
+        if self.viewing_info:
+            self.do_info_exit()
+        else:
+            self.engine.unload()
+            raise urwid.ExitMainLoop()
 
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)

@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
             QApplication, QMainWindow, QFormLayout,
             QGridLayout, QHBoxLayout, QVBoxLayout,
             QAbstractItemView, QHeaderView, QListWidget,
-            QListWidgetItem, QTabWidget, QTableWidget,
+            QListWidgetItem, QTabBar, QTableWidget,
             QTableWidgetItem, QFrame, QScrollArea,
             QStackedWidget, QWidget, QCheckBox, QComboBox,
             QDoubleSpinBox, QGroupBox, QLineEdit,
@@ -41,9 +41,9 @@ from trackma.ui.qt.add import AddDialog
 from trackma.ui.qt.accounts import AccountDialog
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.settings import SettingsDialog
-from trackma.ui.qt.widgets import ShowsTableWidget, ShowItem, ShowItemNum, ShowItemDate, EpisodeBar
+from trackma.ui.qt.widgets import ShowsTableView, ShowItem, ShowItemNum, ShowItemDate
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
-from trackma.ui.qt.util import getIcon, getColor, FilterBar
+from trackma.ui.qt.util import getIcon, FilterBar
 
 from trackma.accounts import AccountManager
 from trackma import messenger
@@ -215,34 +215,6 @@ class MainWindow(QMainWindow):
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(action_delete)
 
-        # Context menu for right click on list header
-        self.menu_columns = QMenu()
-        self.available_columns = ['ID', 'Title', 'Progress', 'Score',
-                'Percent', 'Next Episode', 'Start date', 'End date',
-                'My start', 'My finish', 'Tags']
-        self.column_keys = {'id': 0,
-                            'title': 1,
-                            'progress': 2,
-                            'score': 3,
-                            'percent': 4,
-                            'next_ep': 5,
-                            'date_start': 6,
-                            'date_end': 7,
-                            'my_start': 8,
-                            'my_end': 9,
-                            'tag': 10}
-
-        self.menu_columns_group = QActionGroup(self, exclusive=False)
-        self.menu_columns_group.triggered.connect(self.s_toggle_column)
-
-        for column_name in self.available_columns:
-            action = QAction(column_name, self, checkable=True)
-            if column_name in self.api_config['visible_columns']:
-                action.setChecked(True)
-
-            self.menu_columns_group.addAction(action)
-            self.menu_columns.addAction(action)
-
         # Make icons for viewed episodes
         rect = QtCore.QSize(16,16)
         buffer = QtGui.QPixmap(rect)
@@ -300,8 +272,54 @@ class MainWindow(QMainWindow):
         top_hbox.addWidget(self.api_icon)
         top_hbox.addWidget(self.api_user)
 
-        self.notebook = QTabWidget()
+        # Create main models and view
+        self.notebook = QTabBar()
         self.notebook.currentChanged.connect(self.s_tab_changed)
+
+        self.view = ShowsTableView(palette=self.config['colors'])
+        self.view.context_menu = self.menu_show_context
+        self.view.horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
+        self.view.horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
+        self.view.selectionModel().currentRowChanged.connect(self.s_show_selected)
+        self.view.itemDelegate().setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
+        self.view.middleClicked.connect(lambda: self.s_play(True))
+        self.view.activated.connect(self.s_show_details)
+        self._apply_view()
+
+        self.view.model().sourceModel().progressChanged.connect(self.s_set_episode)
+        self.view.model().sourceModel().scoreChanged.connect(self.s_set_score)
+
+        # Context menu for right click on list header
+        self.menu_columns = QMenu()
+        self.column_keys = {'id': 0,
+                            'title': 1,
+                            'progress': 2,
+                            'score': 3,
+                            'percent': 4,
+                            'next_ep': 5,
+                            'date_start': 6,
+                            'date_end': 7,
+                            'my_start': 8,
+                            'my_end': 9,
+                            'tag': 10}
+
+        self.menu_columns_group = QActionGroup(self, exclusive=False)
+        self.menu_columns_group.triggered.connect(self.s_toggle_column)
+
+        for i, column_name in enumerate(self.view.model().sourceModel().columns):
+            action = QAction(column_name, self, checkable=True)
+            action.setData(i)
+            if column_name in self.api_config['visible_columns']:
+                action.setChecked(True)
+
+            self.menu_columns_group.addAction(action)
+            self.menu_columns.addAction(action)
+
+        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
+            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
+            self.view.horizontalHeader().restoreState(state)
+
+        # Create filter list
         self.show_filter = QLineEdit()
         self.show_filter.textChanged.connect(self.s_filter_changed)
         filter_tooltip = (
@@ -391,12 +409,15 @@ class MainWindow(QMainWindow):
 
         if self.config['filter_bar_position'] is FilterBar.PositionHidden:
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
             self.filter_bar_box.hide()
         elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
             self.list_box.addWidget(self.filter_bar_box)
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
         elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
             self.list_box.addWidget(self.filter_bar_box)
 
         main_hbox.addLayout(left_box)
@@ -428,7 +449,7 @@ class MainWindow(QMainWindow):
         self.tray = QSystemTrayIcon(self.windowIcon())
         self.tray.setContextMenu(tray_menu)
         self.tray.activated.connect(self.s_tray_clicked)
-        self._tray()
+        self._apply_tray()
 
         # Connect worker signals
         self.worker.changed_status.connect(self.ws_changed_status)
@@ -455,8 +476,8 @@ class MainWindow(QMainWindow):
         if account:
             self.account = account
 
-        # Get API specific configuration
-        self.api_config = self._get_api_config(account['api'])
+            # Get API specific configuration
+            self.api_config = self._get_api_config(account['api'])
 
         self.menu_columns_group.setEnabled(False)
         for action in self.menu_columns_group.actions():
@@ -542,6 +563,7 @@ class MainWindow(QMainWindow):
 
     def _enable_widgets(self, enable):
         self.notebook.setEnabled(enable)
+        self.view.setEnabled(enable)
         self.menuBar().setEnabled(enable)
 
         if self.selected_show_id:
@@ -577,11 +599,18 @@ class MainWindow(QMainWindow):
         self.tracker_text.setText("Tracker: {}".format(st))
 
     def _update_config(self):
-        self._tray()
-        self._filter_bar()
+        self._apply_view()
+        self._apply_tray()
+        self._apply_filter_bar()
         # TODO: Reload listviews?
 
-    def _tray(self):
+    def _apply_view(self):
+        if self.config['inline_edit']:
+            self.view.setEditTriggers(QAbstractItemView.AllEditTriggers)
+        else:
+            self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    def _apply_tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
             self.tray.hide()
         elif not self.tray.isVisible() and self.config['show_tray']:
@@ -592,18 +621,22 @@ class MainWindow(QMainWindow):
             else:
                 self.tray.setIcon( self.windowIcon() )
 
-    def _filter_bar(self):
+    def _apply_filter_bar(self):
         self.list_box.removeWidget(self.filter_bar_box)
         self.list_box.removeWidget(self.notebook)
+        self.list_box.removeWidget(self.view)
         self.filter_bar_box.show()
         if self.config['filter_bar_position'] is FilterBar.PositionHidden:
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
             self.filter_bar_box.hide()
         elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
             self.list_box.addWidget(self.filter_bar_box)
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
         elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
             self.list_box.addWidget(self.notebook)
+            self.list_box.addWidget(self.view)
             self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
@@ -618,11 +651,39 @@ class MainWindow(QMainWindow):
         else:
             self._enable_widgets(True)
 
-    def _rebuild_lists(self, showlist, altnames, library):
+    def _rebuild_statuses(self):
+        # Rebuild statuses
+        self.show_status.blockSignals(True)
+        self.notebook.blockSignals(True)
+
+        self.show_status.clear()
+
+        # Clear notebook
+        while self.notebook.count() > 0:
+            self.notebook.removeTab(0)
+
+        # Add one page per status
+        for i, status in enumerate(self.mediainfo['statuses']):
+            name = self.mediainfo['statuses_dict'][status]
+
+            self.notebook.addTab(name)
+            self.notebook.setTabData(i, status)
+
+            self.show_status.addItem(name)
+
+        self.notebook.addTab("All")
+
+        self.show_status.blockSignals(False)
+        self.notebook.blockSignals(False)
+
+    def _rebuild_view(self):
         """
-        Using a full showlist, rebuilds every QTreeView
+        Using a full showlist, rebuilds main view
 
         """
+        showlist = self.worker.engine.get_list()
+        altnames = self.worker.engine.altnames()
+        library = self.worker.engine.library()
 
         # Set allowed ranges (this will be reported by the engine later)
         decimal_places = 0
@@ -633,151 +694,36 @@ class MainWindow(QMainWindow):
         self.show_score.setDecimals(decimal_places)
         self.show_score.setSingleStep(self.mediainfo['score_step'])
 
-        # Rebuild each available list
-        statuses_nums = self.worker.engine.mediainfo['statuses']
-        filtered_list = dict()
-        for status in statuses_nums:
-            filtered_list[status] = list()
+        # Get the new list and pass it to our model
+        self.view.setSortingEnabled(False)
+        self.view.model().setFilterStatus(self.notebook.tabData(self.notebook.currentIndex()))
+        self.view.model().sourceModel().setMediaInfo(self.mediainfo)
+        self.view.model().sourceModel().setShowList(showlist, altnames, library)
+        self.view.resizeRowsToContents()
 
-        for show in showlist:
-            filtered_list[show['my_status']].append(show)
-
-        for status in statuses_nums:
-            self._rebuild_list(status, filtered_list[status], altnames, library)
-
-        self.s_filter_changed()
-
-    def _rebuild_list(self, status, showlist=None, altnames=None, library=None):
-        if not showlist:
-            showlist = self.worker.engine.filter_list(status)
-        if not altnames:
-            altnames = self.worker.engine.altnames()
-        if not library:
-            library = self.worker.engine.library()
-
-        widget = self.show_lists[status]
-
-        widget.clear()
-        widget.setSortingEnabled(False)
-        widget.setRowCount(len(showlist))
-        widget.setColumnCount(len(self.available_columns))
-        widget.setHorizontalHeaderLabels(self.available_columns)
+        # Set view options
+        self.view.setSortingEnabled(True)
+        self.view.sortByColumn(self.config['sort_index'], self.config['sort_order'])
 
         # Hide invisible columns
-        for i, column in enumerate(self.available_columns):
+        for i, column in enumerate(self.view.model().sourceModel().columns):
             if column not in self.api_config['visible_columns']:
-                widget.setColumnHidden(i, True)
+                self.view.setColumnHidden(i, True)
 
         if pyqt_version is 5:
-            widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-            widget.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
-            widget.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+            self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
+            self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
         else:
-            widget.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
-            widget.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
-            widget.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
+            self.view.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
+            self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
+            self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
-        widget.horizontalHeader().resizeSection(2, 70)
-        widget.horizontalHeader().resizeSection(3, 55)
-        widget.horizontalHeader().resizeSection(4, 100)
+        self.view.horizontalHeader().resizeSection(2, 70)
+        self.view.horizontalHeader().resizeSection(3, 55)
+        self.view.horizontalHeader().resizeSection(4, 100)
 
-        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
-            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
-            widget.horizontalHeader().restoreState(state)
-
-        i = 0
-
-        for show in showlist:
-            self._update_row( widget, i, show, altnames.get(show['id']), library.get(show['id']) )
-            i += 1
-
-        widget.setSortingEnabled(True)
-        widget.sortByColumn(self.config['sort_index'], self.config['sort_order'])
-
-        # Update tab name with total
-        tab_index = self.statuses_nums.index(status)
-        tab_name = "%s (%d)" % (self.statuses_names[status], i)
-        self.notebook.setTabText(tab_index, tab_name)
-
-    def _update_row(self, widget, row, show, altname, library_episodes=None, is_playing=False):
-        color = self._get_color(is_playing, show, library_episodes)
-
-        title_str = show['title']
-        if altname:
-            title_str += " [%s]" % altname
-        progress_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
-        percent_widget = EpisodeBar(self, self.config['colors'])
-        percent_widget.setRange(0, 100)
-        percent_widget.setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
-        tooltip = "Watched: %d<br>" % show['my_progress']
-
-        if show['total'] > 0:
-            percent_widget.setMaximum(show['total'])
-        else:
-            percent_widget.setMaximum((int(show['my_progress']/12)+1)*12) # Round up to the next cour
-        percent_widget.setValue(show['my_progress'])
-
-        aired_eps = utils.estimate_aired_episodes(show)
-        if aired_eps:
-            percent_widget.setSubValue(aired_eps)
-            tooltip += "Aired (estimated): %d<br>" % aired_eps
-
-        if library_episodes:
-            eps = library_episodes.keys()
-            tooltip += "Latest available: %d<br>" % max(eps)
-            percent_widget.setEpisodes(eps)
-
-        tooltip += "Total: %d" % show['total']
-        percent_widget.setToolTip(tooltip)
-        percent = percent_widget.value() / percent_widget.maximum()
-
-        widget.setRowHeight(row, QtGui.QFontMetrics(widget.font()).height() + 2);
-        widget.setItem(row, 0, ShowItem( str(show['id']), color ))
-        widget.setItem(row, 1, ShowItem( title_str, color ))
-        widget.setItem(row, 2, ShowItemNum( show['my_progress'], progress_str, color ))
-        widget.setItem(row, 3, ShowItemNum( show['my_score'], str(show['my_score']), color ))
-        widget.setItem(row, 4, ShowItemNum( percent, "{:.0%}".format(percent), color ))
-        widget.setCellWidget(row, 4, percent_widget )
-        if 'date_next_ep' in self.mediainfo \
-        and self.mediainfo['date_next_ep'] \
-        and 'next_ep_time' in show:
-            delta = show['next_ep_time'] - datetime.datetime.utcnow()
-            widget.setItem(row, 5, ShowItem( "%i days, %02d hrs." % (delta.days, delta.seconds/3600), color, QtCore.Qt.AlignHCenter ))
-        else:
-            widget.setItem(row, 5, ShowItem( "-", color, QtCore.Qt.AlignHCenter ))
-        widget.setItem(row, 6, ShowItemDate( show['start_date'], color ))
-        widget.setItem(row, 7, ShowItemDate( show['end_date'], color ))
-        widget.setItem(row, 8, ShowItemDate( show['my_start_date'], color ))
-        widget.setItem(row, 9, ShowItemDate( show['my_finish_date'], color ))
-        try:
-            tag_str = show['my_tags']
-            if not tag_str:
-                tag_str = '-'
-        except:
-            tag_str = '-'
-        widget.setItem(row, 10, ShowItem( tag_str, color ))
-
-    def _get_color(self, is_playing, show, eps):
-        if is_playing:
-            return getColor(self.config['colors']['is_playing'])
-        elif show.get('queued'):
-            return getColor(self.config['colors']['is_queued'])
-        elif eps and max(eps) > show['my_progress']:
-            return getColor(self.config['colors']['new_episode'])
-        elif show['status'] == utils.STATUS_AIRING:
-            return getColor(self.config['colors']['is_airing'])
-        elif show['status'] == utils.STATUS_NOTYET:
-            return getColor(self.config['colors']['not_aired'])
-        else:
-            return None
-
-    def _get_row_from_showid(self, widget, showid):
-        # identify the row this show is in the table
-        for row in range(0, widget.rowCount()):
-            if widget.item(row, 0).text() == str(showid):
-                return row
-
-        return None
+        self.s_filter_changed()
 
     def _select_show(self, show):
         if not show:
@@ -819,7 +765,7 @@ class MainWindow(QMainWindow):
         # Update information
         self.show_title.setText(show['title'])
         self.show_progress.setValue(show['my_progress'])
-        self.show_status.setCurrentIndex(self.statuses_nums.index(show['my_status']))
+        self.show_status.setCurrentIndex(self.mediainfo['statuses'].index(show['my_status']))
         self.show_score.setValue(show['my_score'])
 
         # Enable relevant buttons
@@ -863,43 +809,6 @@ class MainWindow(QMainWindow):
 
         # Unblock signals
         self.show_status.blockSignals(False)
-
-    def _filter_check_row(self, table, row, expression, case_sensitive=False):
-        # Determine if a show matches a filter. True -> match -> do not hide
-        # Advanced search: Separate the expression into specific field terms, fail if any are not met
-        if ':' in expression:
-            exprs = expression.split(' ')
-            expr_list = []
-            for expr in exprs:
-                if ':' in expr:
-                    expr_terms = expr.split(':',1)
-                    if expr_terms[0] in self.column_keys:
-                        col = self.column_keys[expr_terms[0]]
-                        sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
-                        item = table.item(row, col)
-                        if case_sensitive:
-                            if not sub_expr in item.text():
-                                return False
-                        else:
-                            if not sub_expr.lower() in item.text().lower():
-                                return False
-                    else: # If it's not a field key, let it be a regular search term
-                        expr_list.append(expr)
-                else:
-                    expr_list.append(expr)
-            expression = ' '.join(expr_list)
-
-        # General case: if any fields match the remaining expression, success.
-        for col in range(table.columnCount()):
-            item = table.item(row, col)
-            itemtext = item.text()
-            if case_sensitive:
-                if expression in itemtext:
-                    return True
-            else:
-                if expression.lower() in itemtext.lower():
-                    return True
-        return False
 
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
         bp_top = 5  # No more than this many submenus/episodes in the root menu
@@ -1026,17 +935,12 @@ class MainWindow(QMainWindow):
 
     def s_show_selected(self, new, old=None):
         if new:
-            index = new.row()
-            selected_id = self.notebook.currentWidget().item( index, 0 ).text()
+            index = self.view.model().index(new.row(), 0)
+            selected_id = self.view.model().data(index)
 
-            # Attempt to convert to int if possible
-            try:
-                selected_id = int(selected_id)
-            except ValueError:
-                selected_id = str(selected_id)
-
-            show = self.worker.engine.get_show_info(selected_id)
-            self._select_show(show)
+            if selected_id:
+                show = self.worker.engine.get_show_info(selected_id)
+                self._select_show(show)
         else:
             self._select_show(None)
 
@@ -1053,41 +957,42 @@ class MainWindow(QMainWindow):
         self.image_worker.finished.connect(self.s_show_image)
         self.image_worker.start()
 
-    def s_tab_changed(self):
-        item = self.notebook.currentWidget().currentItem()
-        if item:
-            self.s_show_selected(item)
+    def s_tab_changed(self, index):
+        # Change the filter of the main view to the specified status
+        status = self.notebook.tabData(index)
+        self.view.model().setFilterStatus(status)
+        self.view.resizeRowsToContents() # TODOMVC : Find a faster way
+
+        self.s_show_selected(None)
         self.s_filter_changed() # Refresh filter
 
     def s_filter_changed(self):
-        tabs = []
-        if self.config['filter_global']:
-            tabs = range(len(self.notebook))
-        else:
-            tabs = [self.notebook.currentIndex()]
-        expr = self.show_filter.text()
+        # TODOMVC DEPRECATED
+        expression = self.show_filter.text()
         casesens = self.show_filter_casesens.isChecked()
-        for tab_index in tabs:
-            table = self.notebook.widget(tab_index)
-            shown = 0
-            total = 0
-            for row in range(table.rowCount()):
-                if not expr:
-                    table.setRowHidden(row, False)
-                elif self.show_filter_invert.isChecked():
-                    table.setRowHidden(row, self._filter_check_row(table, row, expr, casesens))
+
+        # Determine if a show matches a filter. True -> match -> do not hide
+        # Advanced search: Separate the expression into specific field terms, fail if any are not met
+        if ':' in expression:
+            exprs = expression.split(' ')
+            expr_dict = {}
+            expr_list = []
+            for expr in exprs:
+                if ':' in expr:
+                    expr_terms = expr.split(':',1)
+                    if expr_terms[0] in self.column_keys:
+                        col = self.column_keys[expr_terms[0]]
+                        sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
+                        expr_dict[col] = sub_expr
+                    else: # If it's not a field key, let it be a regular search term
+                        expr_list.append(expr)
                 else:
-                    table.setRowHidden(row, not self._filter_check_row(table, row, expr, casesens))
-                if not table.isRowHidden(row):
-                    shown += 1
-                total += 1
-            # Update tab name with matches out of total
-            status = self.statuses_nums[tab_index]
-            if expr:
-                tab_name = "%s (%d/%d)" % (self.statuses_names[status], shown, total)
-            else:
-                tab_name = "%s (%d)" % (self.statuses_names[status], total) # Filter disabled
-            self.notebook.setTabText(tab_index, tab_name)
+                    expr_list.append(expr)
+            expression = ' '.join(expr_list)
+            self.view.model().setFilterColumns(expr_dict)
+
+        self.view.model().setFilterCaseSensitivity(casesens)
+        self.view.model().setFilterFixedString(expression)
 
     def s_plus_episode(self):
         self._busy(True)
@@ -1098,18 +1003,22 @@ class MainWindow(QMainWindow):
             self._busy(True)
             self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()-1)
 
-    def s_set_episode(self):
+    def s_set_episode(self, showid=None, ep=None):
         self._busy(True)
-        self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value())
+        self.worker_call('set_episode', self.r_generic, showid or self.selected_show_id, ep or self.show_progress.value())
 
-    def s_set_score(self):
+    def s_set_score(self, showid=None, score=None):
         self._busy(True)
-        self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
+
+        if showid == None and score == None:
+            self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
+        else:
+            self.worker_call('set_score', self.r_generic, showid, score)
 
     def s_set_status(self, index):
         if self.selected_show_id:
             self._busy(True)
-            self.worker_call('set_status', self.r_generic, self.selected_show_id, self.statuses_nums[index])
+            self.worker_call('set_status', self.r_generic, self.selected_show_id, self.mediainfo['statuses'][index])
 
     def s_set_tags(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -1247,8 +1156,7 @@ class MainWindow(QMainWindow):
         self.detailswindow.show()
 
     def s_add(self):
-        page = self.notebook.currentIndex()
-        current_status = self.statuses_nums[page]
+        current_status = self.notebook.tabData(self.notebook.currentIndex())
 
         self.addwindow = AddDialog(None, self.worker, current_status)
         self.addwindow.setModal(True)
@@ -1281,8 +1189,7 @@ class MainWindow(QMainWindow):
         self.menu_columns.exec_(globalPos)
 
     def s_toggle_column(self, w):
-        (column_name, visible) = (w.text(), w.isChecked())
-        index = self.available_columns.index(column_name)
+        (index, column_name, visible) = (w.data(), w.text(), w.isChecked())
         MIN_WIDTH = 30  # Width to restore columns to if too small to see
 
         if visible:
@@ -1294,10 +1201,9 @@ class MainWindow(QMainWindow):
 
         self._save_config()
 
-        for showlist in self.show_lists.values():
-            showlist.setColumnHidden(index, not visible)
-            if visible and showlist.columnWidth(index) < MIN_WIDTH:
-                showlist.setColumnWidth(index, MIN_WIDTH)
+        self.view.setColumnHidden(index, not visible)
+        if visible and self.view.columnWidth(index) < MIN_WIDTH:
+            self.view.setColumnWidth(index, MIN_WIDTH)
 
     ### Worker slots
     def ws_changed_status(self, classname, msgtype, msg):
@@ -1308,20 +1214,10 @@ class MainWindow(QMainWindow):
 
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
-            if not self.show_lists:
-                return # Lists not built yet; can be safely avoided
+            if not self.view:
+                return # List not built yet; can be safely avoided
 
-            widget = self.show_lists[show['my_status']]
-            row = self._get_row_from_showid(widget, show['id'])
-
-            if row is None:
-                return # Row not in list yet; can be safely avoided
-
-            library = self.worker.engine.library()
-
-            widget.setSortingEnabled(False)
-            self._update_row(widget, row, show, altname, library.get(show['id']), is_playing)
-            widget.setSortingEnabled(True)
+            self.view.model().sourceModel().update(show['id'], is_playing)
 
             if show['id'] == self.selected_show_id:
                 self._select_show(show)
@@ -1333,12 +1229,10 @@ class MainWindow(QMainWindow):
 
     def ws_changed_list(self, show, old_status=None):
         # Rebuild both new and old (if any) lists
-        self._rebuild_list(show['my_status'])
-        if old_status:
-            self._rebuild_list(old_status)
+        self._rebuild_view()
 
         # Set notebook to the new page
-        self.notebook.setCurrentIndex( self.statuses_nums.index(show['my_status']) )
+        self.notebook.setCurrentIndex( self.mediainfo['statuses'].index(show['my_status']) )
         # Refresh filter
         self.s_filter_changed()
 
@@ -1379,48 +1273,12 @@ class MainWindow(QMainWindow):
             altnames = self.worker.engine.altnames()
             library = self.worker.engine.library()
 
-            self.notebook.blockSignals(True)
-            self.show_status.blockSignals(True)
-
             # Set globals
-            self.notebook.clear()
-            self.show_status.clear()
-            self.show_lists = dict()
-
             self.api_info = self.worker.engine.api_info
             self.mediainfo = self.worker.engine.mediainfo
 
-            self.statuses_nums = self.mediainfo['statuses']
-            self.statuses_names = self.mediainfo['statuses_dict']
-
-            # Build notebook
-            for status in self.statuses_nums:
-                name = self.statuses_names[status]
-
-                self.show_lists[status] = ShowsTableWidget()
-                self.show_lists[status].context_menu = self.menu_show_context
-                self.show_lists[status].setSelectionMode(QAbstractItemView.SingleSelection)
-                #self.show_lists[status].setFocusPolicy(QtCore.Qt.NoFocus)
-                self.show_lists[status].setSelectionBehavior(QAbstractItemView.SelectRows)
-                self.show_lists[status].setEditTriggers(QAbstractItemView.NoEditTriggers)
-                self.show_lists[status].horizontalHeader().setHighlightSections(False)
-                if pyqt_version is 5:
-                    self.show_lists[status].horizontalHeader().setSectionsMovable(True)
-                else:
-                    self.show_lists[status].horizontalHeader().setMovable(True)
-                self.show_lists[status].horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-                self.show_lists[status].horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
-                self.show_lists[status].horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
-                self.show_lists[status].verticalHeader().hide()
-                self.show_lists[status].setGridStyle(QtCore.Qt.NoPen)
-                self.show_lists[status].currentItemChanged.connect(self.s_show_selected)
-                self.show_lists[status].doubleClicked.connect(self.s_show_details)
-
-                self.notebook.addTab(self.show_lists[status], name)
-                self.show_status.addItem(name)
-
-            self.show_status.blockSignals(False)
-            self.notebook.blockSignals(False)
+            # Rebuild statuses
+            self._rebuild_statuses()
 
             # Build mediatype menu
             for action in self.mediatype_actiongroup.actions():
@@ -1447,8 +1305,7 @@ class MainWindow(QMainWindow):
             if tracker_info:
                 self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
 
-            # Rebuild lists
-            self._rebuild_lists(showlist, altnames, library)
+            self._rebuild_view()
 
             self.s_show_selected(None)
 
@@ -1458,10 +1315,7 @@ class MainWindow(QMainWindow):
 
     def r_list_retrieved(self, result):
         if result['success']:
-            showlist = self.worker.engine.get_list()
-            altnames = self.worker.engine.altnames()
-            library = self.worker.engine.library()
-            self._rebuild_lists(showlist, altnames, library)
+            self._rebuild_view()
 
             self.status('Ready.')
 
@@ -1471,10 +1325,7 @@ class MainWindow(QMainWindow):
         if result['success']:
             status = self.worker.engine.mediainfo['status_start']
 
-            showlist = self.worker.engine.filter_list(status)
-            altnames = self.worker.engine.altnames()
-            library = self.worker.engine.library()
-            self._rebuild_list(status, showlist, altnames, library)
+            self._rebuild_view()
 
             self.status('Ready.')
 

@@ -72,8 +72,17 @@ class Engine:
                 'tracker_state':     None,
         }
 
-    def __init__(self, message_handler=None):
+    def __init__(self, account=None, message_handler=None, accountnum=None):
         self.msg = messenger.Messenger(message_handler)
+
+        # Utility parameter to get the account from the account manager
+        if accountnum:
+            from trackma import accounts
+            account = accounts.AccountManager().get_account(accountnum)
+
+        # Initialize
+        self._load(account)
+        self._init_data_handler()
 
     def _load(self, account):
         self.account = account
@@ -101,27 +110,6 @@ class Engine:
             self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
         else:
             self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
-
-        # Load hook files
-        hooks_dir = utils.to_config_path('hooks')
-        if os.path.isdir(hooks_dir):
-            import sys
-            import pkgutil
-
-            self.msg.info(self.name, "Importing user hooks...")
-            for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
-                # List all the hook files in the hooks folder, import them
-                # and call the init() function if they have them
-                # We build the list "hooks available" with the loaded modules
-                # for later calls.
-                try:
-                    self.msg.debug(self.name, "Importing hook {}...".format(name))
-                    module = loader.find_module(name).load_module(name)
-                    if hasattr(module, 'init'):
-                        module.init(self)
-                    self.hooks_available.append(module)
-                except ImportError:
-                    self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -236,7 +224,7 @@ class Engine:
         self.msg = messenger.Messenger(message_handler)
         self.data_handler.set_message_handler(self.msg)
 
-    def start(self, account, mediatype=None):
+    def start(self):
         """
         Starts the engine.
         This function should be called before doing anything with the engine,
@@ -244,12 +232,6 @@ class Engine:
         """
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
-
-        # Initialize
-        if account:
-            self._load(account)
-
-        self._init_data_handler(mediatype)
 
         # Start the data handler
         try:
@@ -265,6 +247,28 @@ class Engine:
                 self.scan_library()
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
+
+        # Load hook files
+        if self.config['use_hooks']:
+            hooks_dir = utils.to_config_path('hooks')
+            if os.path.isdir(hooks_dir):
+                import sys
+                import pkgutil
+
+                self.msg.info(self.name, "Importing user hooks...")
+                for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                    # List all the hook files in the hooks folder, import them
+                    # and call the init() function if they have them
+                    # We build the list "hooks available" with the loaded modules
+                    # for later calls.
+                    try:
+                        self.msg.debug(self.name, "Importing hook {}...".format(name))
+                        module = loader.find_module(name).load_module(name)
+                        if hasattr(module, 'init'):
+                            module.init(self)
+                        self.hooks_available.append(module)
+                    except ImportError:
+                        self.msg.warn(self.name, "Error importing hook {}.".format(name))
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -313,7 +317,11 @@ class Engine:
         if self.loaded:
             self.unload()
 
-        self.start(account, mediatype)
+        if account:
+            self._load(account)
+
+        self._init_data_handler(mediatype)
+        self.start()
 
     def get_config(self, key):
         """Returns the specified key from the configuration."""
@@ -343,24 +351,41 @@ class Engine:
         """
         return self.data_handler.get().values()
 
-    def get_show_info(self, showid):
+    def get_show_info(self, showid=None, title=None, filename=None):
         """
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
-
-        try:
-            return showdict[showid]
-        except KeyError:
+        
+        if showid:
+            # Get show by ID
+            try:
+                return showdict[showid]
+            except KeyError:
+                raise utils.EngineError("Show not found.")
+        elif title:
+            showdict = self.data_handler.get()
+            # Get show by title, slower
+            for k, show in showdict.items():
+                if show['title'] == title:
+                    return show
             raise utils.EngineError("Show not found.")
+        elif filename:
+            # Guess show by filename
+            self.msg.debug(self.name, "Guessing by filename.")
 
-    def get_show_info_title(self, pattern):
-        showdict = self.data_handler.get()
-        # Do title lookup, slower
-        for k, show in showdict.items():
-            if show['title'] == pattern:
-                return show
-        raise utils.EngineError("Show not found.")
+            aie = AnimeInfoExtractor(filename)
+            (show_title, ep) = aie.getName(), aie.getEpisode()
+            self.msg.debug(self.name, "Guessed {}".format(show_title))
+
+            if show_title:
+                show = utils.guess_show(show_title, self._get_tracker_list())
+                if show:
+                    return (show, ep)
+                else:
+                    raise utils.EngineError("Show not found.")
+            else:
+                raise utils.EngineError("File name not recognized.")
 
     def get_show_details(self, show):
         """

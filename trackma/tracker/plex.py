@@ -112,7 +112,7 @@ class PlexTracker(tracker.TrackerBase):
             return ''
 
         body = bytes('user[login]=%s&user[password]=%s' % (username, password), "utf-8")
-        headers={'X-Plex-Client-Identifier': uuid,
+        headers = {'X-Plex-Client-Identifier': uuid,
                 'X-Plex-Product': "Trackma",
                 'X-Plex-Version': utils.VERSION}
 

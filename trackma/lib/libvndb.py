@@ -216,11 +216,15 @@ class libvndb(lib):
 
             for item in data['items']:
                 vnid = item['vn']
-                try:
-                    vns[vnid]['my_score'] = (item['vote'] / 10.0)
-                except KeyError:
-                    # Ghost vote; ignore it
-                    pass
+                if vnid not in vns:
+                    # Ghost vote; create entry for it.
+                    vns[vnid] = utils.show()
+                    vns[vnid]['id'] = vnid
+                    vns[vnid]['url'] = self._get_url(vnid)
+                    vns[vnid]['my_status'] = 0
+
+                vns[vnid]['my_score'] = (item['vote'] / 10.0)
+                vns[vnid]['my_finish_date'] = datetime.datetime.fromtimestamp(item['added'])
 
             if not data['more']:
                 # No more VNs, finish
