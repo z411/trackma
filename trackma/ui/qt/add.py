@@ -42,7 +42,7 @@ class AddDialog(QDialog):
         self.default = default
         if default:
             self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
-        
+
         # Get available search methods and default to keyword search if not reported by the API
         search_methods = self.worker.engine.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW])
 
@@ -66,10 +66,10 @@ class AddDialog(QDialog):
             filters_layout.setAlignment(QtCore.Qt.AlignRight)
 
         top_layout.addWidget(self.search_btn)
-        
+
         # Create filter line
         filters_layout = QHBoxLayout()
-        
+
         if utils.SEARCH_METHOD_SEASON in search_methods:
             self.season_rad = QRadioButton('By season:')
             self.season_combo = QComboBox()
@@ -77,7 +77,7 @@ class AddDialog(QDialog):
             self.season_combo.addItem('Spring', utils.SEASON_SPRING)
             self.season_combo.addItem('Summer', utils.SEASON_SUMMER)
             self.season_combo.addItem('Fall', utils.SEASON_FALL)
-        
+
             self.season_year = QSpinBox()
 
             today = date.today()
@@ -90,31 +90,31 @@ class AddDialog(QDialog):
             filters_layout.addWidget(self.season_rad)
             filters_layout.addWidget(self.season_combo)
             filters_layout.addWidget(self.season_year)
-        
+
             filters_layout.setAlignment(QtCore.Qt.AlignLeft)
             filters_layout.addWidget(QSplitter())
         else:
             filters_layout.setAlignment(QtCore.Qt.AlignRight)
-        
+
         view_combo = QComboBox()
         view_combo.addItem('Table view')
         view_combo.addItem('Card view')
         view_combo.currentIndexChanged.connect(self.s_change_view)
-        
+
         filters_layout.addWidget(view_combo)
 
         # Create central content
         self.contents = QStackedWidget()
-        
+
         # Set up views
         tableview = AddTableDetailsView(None, self.worker)
         tableview.changed.connect(self.s_selected)
         self.contents.addWidget(tableview)
-        
+
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
         self.contents.addWidget(cardview)
-        
+
         # Use for testing
         #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
@@ -153,7 +153,7 @@ class AddDialog(QDialog):
         self.contents.currentWidget().getModel().setResults(None)
         self.contents.setCurrentIndex(item)
         self.contents.currentWidget().getModel().setResults(self.results)
-        
+
     def s_search(self):
         if self.search_rad.isChecked():
             criteria = self.search_txt.text().strip()
@@ -163,19 +163,19 @@ class AddDialog(QDialog):
         elif self.season_rad.isChecked():
             criteria = (self.season_combo.itemData(self.season_combo.currentIndex()), self.season_year.value())
             method = utils.SEARCH_METHOD_SEASON
-        
+
         self.contents.currentWidget().clearSelection()
         self.selected_show = None
-        
+
         self._enable_widgets(False)
         self.add_btn.setEnabled(False)
-        
+
         self.worker_call('search', self.r_searched, criteria, method)
-    
+
     def s_selected(self, show):
         self.selected_show = show
         self.add_btn.setEnabled(True)
-        
+
     def s_add(self):
         if self.selected_show:
             self.worker_call('add_show', self.r_added, self.selected_show, self.current_status)
@@ -183,10 +183,10 @@ class AddDialog(QDialog):
     # Worker responses
     def r_searched(self, result):
         self._enable_widgets(True)
-        
+
         if result['success']:
-            self.set_results(result['results'])
-            
+            self.set_results(result['result'])
+
             """
             if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!
                 self.s_show_selected(self.table.item(0, 0))

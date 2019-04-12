@@ -41,6 +41,7 @@ from trackma.ui.qt.add import AddDialog
 from trackma.ui.qt.accounts import AccountDialog
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.settings import SettingsDialog
+from trackma.ui.qt.rss import RSSDialog
 from trackma.ui.qt.widgets import ShowsTableView, ShowItem, ShowItemNum, ShowItemDate
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
 from trackma.ui.qt.util import getIcon, FilterBar
@@ -155,6 +156,9 @@ class MainWindow(QMainWindow):
         action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
         action_delete.setStatusTip('Remove this show from your list.')
         action_delete.triggered.connect(self.s_delete)
+        action_rss = QAction(getIcon('edit-find'), 'RSS Feed', self)
+        #action_rss.setShortcut('Ctrl+R')
+        action_rss.triggered.connect(self.s_rss)
         action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit Trackma.')
@@ -199,6 +203,8 @@ class MainWindow(QMainWindow):
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_add)
         self.menu_show.addAction(action_delete)
+        self.menu_show.addSeparator()
+        self.menu_show.addAction(action_rss)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
 
@@ -321,6 +327,7 @@ class MainWindow(QMainWindow):
 
         # Create filter list
         self.show_filter = QLineEdit()
+        self.show_filter.setClearButtonEnabled(True)
         self.show_filter.textChanged.connect(self.s_filter_changed)
         filter_tooltip = (
             "General Search: All fields (columns) of each show will be matched against the search term."
@@ -1161,6 +1168,11 @@ class MainWindow(QMainWindow):
         self.addwindow = AddDialog(None, self.worker, current_status)
         self.addwindow.setModal(True)
         self.addwindow.show()
+
+    def s_rss(self):
+        self.rsswindow = RSSDialog(self, self.worker)
+        self.rsswindow.setModal(True)
+        self.rsswindow.show()
 
     def s_mediatype(self, action):
         index = action.data()

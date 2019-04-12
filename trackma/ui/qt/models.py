@@ -231,10 +231,10 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return (show['my_score'], self.mediainfo['score_max'], decimals, self.mediainfo['score_step'])
 
     def flags(self, index):
-        if index.column() in self.editable_columns:
-            return self.common_flags | QtCore.Qt.ItemIsEditable
-        else:
-            return self.common_flags
+        if index.isValid() and index.column() in self.editable_columns:
+            return super().flags(index) | QtCore.Qt.ItemIsEditable
+
+        return super().flags(index)
 
 class AddTableModel(QtCore.QAbstractTableModel):
     columns = ["Name", "Type", "Total"]
@@ -355,6 +355,108 @@ class AddListModel(QtCore.QAbstractListModel):
                 return QtGui.QColor(250, 250, 250)
 
         return None
+
+class RSSTableModel(QtCore.QAbstractTableModel):
+    columns = ["Title", "Episode", "Group",
+            "Resolution", "Date", "Description"]
+
+    COL_TITLE = 0
+    COL_EPISODE = 1
+    COL_GROUP = 2
+    COL_RESOLUTION = 3
+    COL_DATE = 4
+    COL_DESCRIPTION = 5
+
+    types = {utils.RSS_NEXT_EPISODE: "In list, next episode",
+             utils.RSS_NOT_NEXT_EPISODE: "In list, not next episode",
+             utils.RSS_WATCHED: "In list, watched",
+             utils.RSS_UNMARKED: "In list, unmarked",
+             utils.RSS_NOT_FOUND: "Not in list",
+             utils.RSS_NOT_RECOGNIZED: "Unrecognized",
+            }
+
+    colors = {utils.RSS_NEXT_EPISODE: QtGui.QBrush(QtGui.QColor(40, 180, 40)),
+             utils.RSS_NOT_NEXT_EPISODE: QtGui.QBrush(QtGui.QColor(90, 90, 255)),
+             utils.RSS_WATCHED: None,
+             utils.RSS_UNMARKED: QtGui.QBrush(QtGui.QColor(60, 60, 60)),
+             utils.RSS_NOT_FOUND: QtGui.QBrush(QtGui.QColor(150, 150, 150)),
+             utils.RSS_NOT_RECOGNIZED: QtGui.QBrush(QtGui.QColor(255, 0, 0)),
+            }
+
+    def __init__(self, parent=None):
+        self.results = None
+
+        super().__init__(parent)
+
+    def result(self, row):
+        return self.results[row]
+
+    def setResults(self, new_results):
+        self.beginResetModel()
+        self.results = new_results
+        self.endResetModel()
+
+    def rowCount(self, parent):
+        if self.results:
+            return len(self.results)
+        else:
+            return 0
+
+    def columnCount(self, parent):
+        return len(self.columns)
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            return self.columns[section]
+
+    def data(self, index, role):
+        row, column = index.row(), index.column()
+        item = self.results[row]
+
+        if role == QtCore.Qt.DisplayRole:
+            if column == RSSTableModel.COL_TITLE:
+                return item.get('show_title', '?')
+            elif column == RSSTableModel.COL_EPISODE:
+                return item.get('episode', '?')
+            elif column == RSSTableModel.COL_GROUP:
+                return item.get('group', '?')
+            elif column == RSSTableModel.COL_RESOLUTION:
+                return item.get('resolution', '?')
+            elif column == RSSTableModel.COL_DESCRIPTION:
+                return item.get('description', '?')
+            elif column == RSSTableModel.COL_DATE:
+                return item.get('date', '?')
+            #elif column == RSSTableModel.COL_STATUS:
+            #    if 'status' in item:
+            #        return self.types.get(item['status'], '?')
+            #    else:
+            #        return '?'
+        elif role == QtCore.Qt.ForegroundRole:
+            return RSSTableModel.colors.get(item['status'])
+        elif role == QtCore.Qt.CheckStateRole:
+            if column == RSSTableModel.COL_TITLE:
+                if item['marked']:
+                    return QtCore.Qt.Checked
+                else:
+                    return QtCore.Qt.Unchecked
+
+    def setData(self, index, value, role):
+        if not index.isValid() or role != QtCore.Qt.CheckStateRole:
+            return False
+
+        if value == QtCore.Qt.Checked:
+            self.results[index.row()]['marked'] = True
+        else:
+            self.results[index.row()]['marked'] = False
+
+        self.dataChanged.emit(index, index)
+        return True
+
+    def flags(self, index):
+        if index.isValid():
+            return super().flags(index) | QtCore.Qt.ItemIsUserCheckable;
+
+        return super().flags(index)
 
 class AddListProxy(QtCore.QSortFilterProxyModel):
     def lessThan(self, left, right):

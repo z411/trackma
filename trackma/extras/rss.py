@@ -80,7 +80,10 @@ class RSS(object):
                        'episode': aie.getEpisode(),
                        'group': aie.subberTag,
                        'resolution': aie.resolution,
+                       'description': item['description'],
+                       'date': item.get('pubDate'),
                        'status': utils.RSS_NOT_FOUND,
+                       'marked': False,
                       }
 
             if not result['show_title']:
@@ -105,6 +108,9 @@ class RSS(object):
                 # This show isn't in the list
                 pass
 
+            if result['status'] < utils.RSS_WATCHED:
+                result['marked'] = True
+
             # Add to the list
             self.results[item['title']] = result
 
@@ -115,4 +121,8 @@ class RSS(object):
         from operator import itemgetter
         d = self.get_results(refresh).values()
         return sorted(d, key=itemgetter('status'))
+
+    def download(method, items):
+        for item in items:
+            print("Getting {}".format(item['url']))
 

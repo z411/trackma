@@ -997,8 +997,10 @@ class Engine:
         manager = rss.RSS(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
         return manager.get_sorted_results(refresh)
 
-    def rss_download(self, item):
-        return rss.download(tem)
+    def rss_download(self, items):
+        # TODO
+        for item in items:
+            rss.RSS.download(self.config['rss_method'], items)
 
     def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""
