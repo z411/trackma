@@ -29,6 +29,8 @@ except ImportError:
 from trackma.engine import Engine
 from trackma import utils
 
+from trackma.ui.qt.util import overrides
+
 class ImageWorker(QtCore.QThread):
     """
     Image thread
@@ -104,25 +106,7 @@ class EngineWorker(QtCore.QThread):
     def __init__(self):
         super(EngineWorker, self).__init__()
 
-        self.function_list = {
-            'start': self._start,
-            'reload': self._reload,
-            'get_list': self._get_list,
-            'set_episode': self._set_episode,
-            'set_score': self._set_score,
-            'set_status': self._set_status,
-            'set_tags': self._set_tags,
-            'play_episode': self._play_episode,
-            'play_random': self._play_random,
-            'list_download': self._list_download,
-            'list_upload': self._list_upload,
-            'get_show_details': self._get_show_details,
-            'search': self._search,
-            'add_show': self._add_show,
-            'delete_show': self._delete_show,
-            'unload': self._unload,
-            'scan_library': self._scan_library,
-        }
+        self.overrides = {'start': self._start}
 
     def _messagehandler(self, classname, msgtype, msg):
         self.changed_status.emit(classname, msgtype, msg)
@@ -156,176 +140,28 @@ class EngineWorker(QtCore.QThread):
 
     # Callable functions
     def _start(self, account):
-        try:
-            self.engine = Engine(account, self._messagehandler)
-            
-            self.engine.connect_signal('episode_changed', self._changed_show)
-            self.engine.connect_signal('score_changed', self._changed_show)
-            self.engine.connect_signal('tags_changed', self._changed_show)
-            self.engine.connect_signal('status_changed', self._changed_list)
-            self.engine.connect_signal('playing', self._playing_show)
-            self.engine.connect_signal('show_added', self._changed_list)
-            self.engine.connect_signal('show_deleted', self._changed_list)
-            self.engine.connect_signal('show_synced', self._changed_show)
-            self.engine.connect_signal('queue_changed', self._changed_queue)
-            self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
-            self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
-            self.engine.connect_signal('tracker_state', self._tracker_state)
+        self.engine = Engine(account, self._messagehandler)
 
-            self.engine.start()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
+        self.engine.connect_signal('episode_changed', self._changed_show)
+        self.engine.connect_signal('score_changed', self._changed_show)
+        self.engine.connect_signal('tags_changed', self._changed_show)
+        self.engine.connect_signal('status_changed', self._changed_list)
+        self.engine.connect_signal('playing', self._playing_show)
+        self.engine.connect_signal('show_added', self._changed_list)
+        self.engine.connect_signal('show_deleted', self._changed_list)
+        self.engine.connect_signal('show_synced', self._changed_show)
+        self.engine.connect_signal('queue_changed', self._changed_queue)
+        self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+        self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
+        self.engine.connect_signal('tracker_state', self._tracker_state)
 
-        return {'success': True}
-
-    def _reload(self, account, mediatype):
-        try:
-            self.engine.reload(account, mediatype)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _unload(self):
-        try:
-            self.engine.unload()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _scan_library(self):
-        try:
-            self.engine.scan_library(rescan=True)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _get_list(self):
-        try:
-            showlist = self.engine.get_list()
-            altnames = self.engine.altnames()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True, 'showlist': showlist, 'altnames': altnames}
-
-    def _set_episode(self, showid, episode):
-        try:
-            self.engine.set_episode(showid, episode)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _set_score(self, showid, score):
-        try:
-            self.engine.set_score(showid, score)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _set_status(self, showid, status):
-        try:
-            self.engine.set_status(showid, status)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _set_tags(self, showid, tags):
-        try:
-            self.engine.set_tags(showid, tags)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _play_episode(self, show, episode):
-        try:
-            played_ep = self.engine.play_episode(show, episode)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True, 'show': show, 'played_ep': played_ep}
-
-    def _play_random(self):
-        try:
-            (show, ep) = self.engine.play_random()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True, 'played_show': show, 'played_ep': ep}
-
-    def _list_download(self):
-        try:
-            self.engine.list_download()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _list_upload(self):
-        try:
-            self.engine.list_upload()
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _get_show_details(self, show):
-        try:
-            details = self.engine.get_show_details(show)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True, 'details': details}
-
-    def _search(self, criteria, method):
-        try:
-            results = self.engine.search(criteria, method)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True, 'results': results}
-
-    def _add_show(self, show, status):
-        try:
-            results = self.engine.add_show(show, status)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
-
-    def _delete_show(self, show):
-        try:
-            results = self.engine.delete_show(show)
-        except utils.TrackmaError as e:
-            self._error(e)
-            return {'success': False}
-
-        return {'success': True}
+        self.engine.start()
 
     def set_function(self, function, ret_function, *args, **kwargs):
-        self.function = self.function_list[function]
+        if function in self.overrides:
+            self.function = self.overrides[function]
+        else:
+            self.function = getattr(self.engine, function)
 
         try:
             self.finished.disconnect()
@@ -343,7 +179,10 @@ class EngineWorker(QtCore.QThread):
 
     def run(self):
         try:
-            ret = self.function(*self.args,**self.kwargs)
-            self.finished.emit(ret)
+            ret = self.function(*self.args, **self.kwargs)
+            self.finished.emit({'success': True, 'result': ret})
+        except utils.TrackmaError as e:
+            self._error(e)
+            self.finished.emit({'success': False})
         except utils.TrackmaFatal as e:
             self._fatal(e)
