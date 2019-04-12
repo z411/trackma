@@ -43,3 +43,15 @@ def getColor(colorString):
             # Failsafe - return black
             return QtGui.QColor()
 
+def worker_call(func):
+    def wrapper(self, *args, **kwargs):
+        try:
+            result = func(self, *args, **kwargs)
+        except utils.TrackmaError as e:
+            self._error(e)
+            return {'success': False}
+
+        return {'success': True, 'result': result}
+
+    return wrapper
+
