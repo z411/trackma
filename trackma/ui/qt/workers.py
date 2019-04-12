@@ -26,10 +26,10 @@ try:
 except ImportError:
     import Image
 
-from trackma.ui.qt.util import worker_call
-
 from trackma.engine import Engine
 from trackma import utils
+
+from trackma.ui.qt.util import overrides
 
 class ImageWorker(QtCore.QThread):
     """
@@ -106,25 +106,7 @@ class EngineWorker(QtCore.QThread):
     def __init__(self):
         super(EngineWorker, self).__init__()
 
-        self.function_list = {
-            'start': self._start,
-            'reload': self._reload,
-            'set_episode': self._set_episode,
-            'set_score': self._set_score,
-            'set_status': self._set_status,
-            'set_tags': self._set_tags,
-            'play_episode': self._play_episode,
-            'play_random': self._play_random,
-            'list_download': self._list_download,
-            'list_upload': self._list_upload,
-            'get_show_details': self._get_show_details,
-            'search': self._search,
-            'add_show': self._add_show,
-            'delete_show': self._delete_show,
-            'unload': self._unload,
-            'scan_library': self._scan_library,
-            'rss_list': self._rss_list,
-        }
+        self.overrides = {'start': self._start}
 
     def _messagehandler(self, classname, msgtype, msg):
         self.changed_status.emit(classname, msgtype, msg)
@@ -157,7 +139,6 @@ class EngineWorker(QtCore.QThread):
         self.prompt_for_add.emit(show_title, episode)
 
     # Callable functions
-    @worker_call
     def _start(self, account):
         self.engine = Engine(account, self._messagehandler)
 
@@ -176,72 +157,11 @@ class EngineWorker(QtCore.QThread):
 
         self.engine.start()
 
-    @worker_call
-    def _reload(self, account, mediatype):
-        return self.engine.reload(account, mediatype)
-
-    @worker_call
-    def _unload(self):
-        return self.engine.unload()
-
-    @worker_call
-    def _scan_library(self):
-        return self.engine.scan_library(rescan=True)
-
-    @worker_call
-    def _set_episode(self, showid, episode):
-        return self.engine.set_episode(showid, episode)
-
-    @worker_call
-    def _set_score(self, showid, score):
-        return self.engine.set_score(showid, score)
-
-    @worker_call
-    def _set_status(self, showid, status):
-        return self.engine.set_status(showid, status)
-
-    @worker_call
-    def _set_tags(self, showid, tags):
-        return self.engine.set_tags(showid, tags)
-
-    @worker_call
-    def _play_episode(self, show, episode):
-        return self.engine.play_episode(show, episode)
-
-    @worker_call
-    def _play_random(self):
-        return self.engine.play_random()
-
-    @worker_call
-    def _list_download(self):
-        self.engine.list_download()
-
-    @worker_call
-    def _list_upload(self):
-        self.engine.list_upload()
-
-    @worker_call
-    def _get_show_details(self, show):
-        return self.engine.get_show_details(show)
-
-    @worker_call
-    def _rss_list(self, refresh):
-        return self.engine.rss_list(refresh)
-
-    @worker_call
-    def _search(self, criteria, method):
-        return self.engine.search(criteria, method)
-
-    @worker_call
-    def _add_show(self, show, status):
-        self.engine.add_show(show, status)
-
-    @worker_call
-    def _delete_show(self, show):
-        self.engine.delete_show(show)
-
     def set_function(self, function, ret_function, *args, **kwargs):
-        self.function = self.function_list[function]
+        if function in self.overrides:
+            self.function = self.overrides[function]
+        else:
+            self.function = getattr(self.engine, function)
 
         try:
             self.finished.disconnect()
@@ -259,7 +179,10 @@ class EngineWorker(QtCore.QThread):
 
     def run(self):
         try:
-            ret = self.function(*self.args,**self.kwargs)
-            self.finished.emit(ret)
+            ret = self.function(*self.args, **self.kwargs)
+            self.finished.emit({'success': True, 'result': ret})
+        except utils.TrackmaError as e:
+            self._error(e)
+            self.finished.emit({'success': False})
         except utils.TrackmaFatal as e:
             self._fatal(e)
