@@ -7,39 +7,30 @@ import xml.etree.ElementTree as ET
 import gzip
 from io import StringIO
 
-STATUS_NEXT_EPISODE = 1
-STATUS_NOT_NEXT_EPISODE = 2
-STATUS_WATCHED = 3
-STATUS_NOT_FOUND = 4
-STATUS_NOT_RECOGNIZED = 5
+class RSS(object):
+    results = {}
+    name = 'RSS'
 
-class Torrents(object):
-    torrents = {}
-    name = 'Torrents'
-
-    # Hardcoded for now
-    #FEED_URL = "http://www.nyaa.se/?page=rss&cats=1_37"
-    #FEED_URL = "http://tokyotosho.se/rss.php?filter=1&zwnj=0"
-    FEED_URL = "https://nyaa.si/?page=rss&c=1_2&f=0"
-
-    def __init__(self, messenger, animelist, config):
-        self.animelist = animelist
+    def __init__(self, messenger, showlist, config):
         self.msg = messenger
-        utils.make_dir(utils.to_data_path())
-        self.filename = utils.to_data_path('torrents.dict')
+        self.showlist = showlist
+        self.config = config
+
+        utils.make_dir(utils.to_cache_path())
+        self.filename = utils.to_cache_path('rss.cache')
         self._load()
 
     def _load(self):
         if utils.file_exists(self.filename):
             try:
                 with open(self.filename, 'rb') as f:
-                    self.torrents = pickle.load(f)
+                    self.results = pickle.load(f)
             except:
                 pass
 
     def _save(self):
         with open(self.filename, 'wb') as f:
-            pickle.dump(self.torrents, f)
+            pickle.dump(self.results, f)
 
     def _download_feed(self, url):
         req = urllib.request.Request(url)
@@ -70,60 +61,58 @@ class Torrents(object):
 
             yield item
 
-    def get_torrents(self):
-        torrents_keys = self.torrents.keys()
+    def get_results(self, refresh):
+        if not refresh and self.results:
+            return self.results
 
-        self.msg.info(self.name, "Downloading torrent feed...")
-        dom = self._download_feed(self.FEED_URL)
-        self.msg.info(self.name, "Parsing torrents...")
+        self.msg.info(self.name, "Downloading RSS feed...")
+        dom = self._download_feed(self.config['rss_url'])
+        self.msg.info(self.name, "Parsing results...")
         items = self._parse_feed(dom)
+
         for item in items:
-            if item['title'] in torrents_keys:
-                continue # Already cached
-            
             aie = AnimeInfoExtractor(item['title'])
 
-            torrent = {
+            result = {
                        'filename': item['title'],
                        'url': item['link'],
                        'show_title': aie.getName(),
                        'episode': aie.getEpisode(),
                        'group': aie.subberTag,
                        'resolution': aie.resolution,
-                       'status': STATUS_NOT_FOUND,
+                       'status': utils.RSS_NOT_FOUND,
                       }
 
-
-            if not torrent['show_title']:
-                torrent['status'] = STATUS_NOT_RECOGNIZED
+            if not result['show_title']:
+                result['status'] = utils.RSS_NOT_RECOGNIZED
                 continue
 
-            show = utils.guess_show(torrent['show_title'], self.animelist)
+            show = utils.guess_show(result['show_title'], self.showlist)
 
             if show:
-                torrent['show_id'] = show['id']
-                torrent['show_title'] = show['title']
+                result['show_id'] = show['id']
+                result['show_title'] = show['title']
 
-                if torrent['episode'] == (show['my_progress'] + 1):
+                if result['episode'] == (show['my_progress'] + 1):
                     # Show found!
-                    torrent['status'] = STATUS_NEXT_EPISODE
-                elif torrent['episode'] > (show['my_progress'] + 1):
-                    torrent['status'] = STATUS_NOT_NEXT_EPISODE
+                    result['status'] = utils.RSS_NEXT_EPISODE
+                elif result['episode'] > (show['my_progress'] + 1):
+                    result['status'] = utils.RSS_NOT_NEXT_EPISODE
                 else:
                     # The show was found but this episode was already watched
-                    torrent['status'] = STATUS_WATCHED
+                    result['status'] = utils.RSS_WATCHED
             else:
                 # This show isn't in the list
                 pass
 
             # Add to the list
-            self.torrents[item['title']] = torrent
+            self.results[item['title']] = result
 
         self._save()
-        return self.torrents
+        return self.results
 
-    def get_sorted_torrents(self):
+    def get_sorted_results(self, refresh):
         from operator import itemgetter
-        d = self.get_torrents().values()
+        d = self.get_results(refresh).values()
         return sorted(d, key=itemgetter('status'))
 

@@ -455,20 +455,16 @@ class Trackma_cmd(cmd.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
-    def do_torrents(self, args):
+    def do_rss(self, args):
+        """
+        Query the RSS feed and display items that might be of interest.
+        """
         try:
-            next_episode, not_next_episode = self.engine.torrents()
+            items = self.engine.rss_list(True)
 
-            print("New episodes:")
-            for item in next_episode:
-                print("- {} ({})".format(
-                        item['filename'].encode('utf-8'),
-                        item['url'].encode('utf-8')))
-            print("Further episodes:")
-            for item in not_next_episode:
-                print("- {} ({})".format(
-                        item['filename'].encode('utf-8'),
-                        item['url'].encode('utf-8')))
+            for item in items:
+                if item['status'] <= 3:
+                    print("- ({}) {} ({})".format(item['status'], item['filename'], item['url']))
         except utils.TrackmaError as e:
             self.display_error(e)
 
@@ -476,7 +472,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         Shows information about the tracker, if it's running.
 
-        :usage trackmer
+        :usage tracker
         """
         try:
             info = self.engine.tracker_status()

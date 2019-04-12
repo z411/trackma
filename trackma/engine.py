@@ -28,7 +28,8 @@ from decimal import Decimal
 from trackma import messenger
 from trackma import data
 from trackma import utils
-from trackma import torrents
+
+from trackma.extras import rss
 from trackma.extras import AnimeInfoExtractor
 
 class Engine:
@@ -275,7 +276,7 @@ class Engine:
             self.msg.debug(self.name, "Initializing tracker...")
             try:
                 TrackerClass = self._get_tracker_class(self.config['tracker_type'])
-                
+
                 self.tracker = TrackerClass(self.msg,
                                        self._get_tracker_list(),
                                        self.config['tracker_process'],
@@ -356,7 +357,7 @@ class Engine:
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
-        
+
         if showid:
             # Get show by ID
             try:
@@ -992,19 +993,12 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
-    def torrents(self):
-        man = torrents.Torrents(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
-        d = man.get_sorted_torrents()
+    def rss_list(self, refresh=False):
+        manager = rss.RSS(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
+        return manager.get_sorted_results(refresh)
 
-        next_episode = []
-        not_next_episode = []
-        for item in d:
-            if item['status'] == torrents.STATUS_NEXT_EPISODE:
-                next_episode.append(item)
-            elif item['status'] == torrents.STATUS_NOT_NEXT_EPISODE:
-                not_next_episode.append(item)
-
-        return (next_episode, not_next_episode)
+    def rss_download(self, item):
+        return rss.download(tem)
 
     def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""

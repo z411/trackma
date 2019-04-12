@@ -54,6 +54,12 @@ SEASON_FALL = 4
 SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
+RSS_NEXT_EPISODE = 1
+RSS_NOT_NEXT_EPISODE = 2
+RSS_WATCHED = 3
+RSS_NOT_FOUND = 4
+RSS_NOT_RECOGNIZED = 5
+
 HOME = os.path.expanduser("~")
 
 # Put the available APIs here
@@ -321,6 +327,9 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'rss_url': "https://nyaa.si/?page=rss&c=1_2&f=0",
+    'rss_rules': "",
+    'rss_method': "xdg-open",
     'use_hooks': True,
 }
 userconfig_defaults = {
