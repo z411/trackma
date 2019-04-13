@@ -799,7 +799,7 @@ class MainWindow(QMainWindow):
         else:
             self.show_image.setText('No image')
 
-        if show['total'] > 0:
+        if show['total']:
             self.show_progress_bar.setValue( show['my_progress'] )
         else:
             self.show_progress_bar.setValue( 0 )

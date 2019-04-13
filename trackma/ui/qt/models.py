@@ -181,7 +181,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 if not self.mediainfo.get('can_play'):
                     return None
 
-                if show['total'] > 0:
+                if show['total']:
                     total = show['total']
                 else:
                     total = (int(show['my_progress']/12)+1)*12 # Round up to the next cour
