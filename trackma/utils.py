@@ -195,7 +195,7 @@ def estimate_aired_episodes(show):
                 return 0
 
             eps = days // 7 + 1
-            if eps > show['total'] and show['total'] > 0:
+            if show['total'] and eps > show['total']:
                 return show['total']
             return eps
     return 0

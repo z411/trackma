@@ -446,7 +446,7 @@ fragment mediaListEntry on MediaList {
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
-            'total': item[self.total_str],
+            'total': self._c(item[self.total_str]),
             'aliases': aliases,
             'type': self.type_translate[item['format']],
             'status': self.status_translate[item['status']],
