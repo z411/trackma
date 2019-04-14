@@ -41,7 +41,7 @@ from trackma.ui.qt.add import AddDialog
 from trackma.ui.qt.accounts import AccountDialog
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.settings import SettingsDialog
-from trackma.ui.qt.widgets import ShowsTableView, ShowItem, ShowItemNum, ShowItemDate
+from trackma.ui.qt.widgets import ShowsTableView
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
 from trackma.ui.qt.util import getIcon, FilterBar
 

@@ -178,48 +178,6 @@ class ShowsTableView(QTableView):
             self.middleClicked.emit()
 
 
-class ShowItem(QTableWidgetItem):
-    """
-    Regular item able to show colors and alignment
-
-    """
-
-    def __init__(self, text, color=None, alignment=None):
-        QTableWidgetItem.__init__(self, text)
-        if alignment:
-            self.setTextAlignment(alignment)
-        if color:
-            self.setBackground(color)
-
-
-class ShowItemNum(ShowItem):
-    def __init__(self, num, text, color=None):
-        ShowItem.__init__(self, text, color)
-        self.setTextAlignment(QtCore.Qt.AlignHCenter)
-        self.num = num
-
-    def __lt__(self, other):
-        return self.num < other.num
-
-
-class ShowItemDate(ShowItem):
-    def __init__(self, date, color=None):
-        self.date = datetime.datetime(1, 1, 1)
-
-        if date:
-            try:
-                datestr = date.strftime("%Y-%m-%d")
-                self.date = date
-            except ValueError:
-                datestr = '?'
-        else:
-            datestr = '-'
-
-        ShowItem.__init__(self, datestr, color, QtCore.Qt.AlignHCenter)
-
-    def __lt__(self, other):
-        return self.date < other.date
-
 class AddCardView(QListView):
     changed = QtCore.pyqtSignal(dict)
 
