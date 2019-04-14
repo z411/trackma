@@ -472,6 +472,9 @@ class MainWindow(QMainWindow):
         self.worker_call('start', self.r_engine_loaded, account)
 
     def reload(self, account=None, mediatype=None):
+        if self.config['remember_columns']:
+            self._store_columnstate()
+
         if account:
             self.account = account
 
@@ -741,13 +744,9 @@ class MainWindow(QMainWindow):
             self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
-        if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
-            state = QtCore.QByteArray(base64.b64decode(self.api_config['columns_state']))
-            self.view.horizontalHeader().restoreState(state)
-        else:
-            self.view.horizontalHeader().resizeSection(2, 70)
-            self.view.horizontalHeader().resizeSection(3, 55)
-            self.view.horizontalHeader().resizeSection(4, 100)
+        self.view.horizontalHeader().resizeSection(2, 70)
+        self.view.horizontalHeader().resizeSection(3, 55)
+        self.view.horizontalHeader().resizeSection(4, 100)
 
         self.s_filter_changed()
 
@@ -1354,6 +1353,11 @@ class MainWindow(QMainWindow):
             # Build our main view and show total counts
             self._rebuild_view()
             self._recalculate_counts()
+
+            # Recover column state
+            if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
+                state = QtCore.QByteArray(base64.b64decode(self.api_config['columns_state']))
+                self.view.horizontalHeader().restoreState(state)
 
             self.s_show_selected(None)
 
