@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
     QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter)
 
+from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
 
 from trackma import utils
@@ -113,6 +114,7 @@ class AddDialog(QDialog):
         
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
+        cardview.activated.connect(self.s_show_details)
         self.contents.addWidget(cardview)
         
         # Use for testing
@@ -149,6 +151,11 @@ class AddDialog(QDialog):
         self.contents.currentWidget().setResults(self.results)
 
     # Slots
+    def s_show_details(self):
+        detailswindow = DetailsDialog(self, self.worker, self.selected_show)
+        detailswindow.setModal(True)
+        detailswindow.show()
+
     def s_change_view(self, item):
         self.contents.currentWidget().getModel().setResults(None)
         self.contents.setCurrentIndex(item)

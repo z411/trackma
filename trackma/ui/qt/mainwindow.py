@@ -154,6 +154,7 @@ class MainWindow(QMainWindow):
         action_add.triggered.connect(self.s_add)
         action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
         action_delete.setStatusTip('Remove this show from your list.')
+        action_delete.setShortcut(QtCore.Qt.Key_Delete)
         action_delete.triggered.connect(self.s_delete)
         action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
@@ -1101,13 +1102,14 @@ class MainWindow(QMainWindow):
         return lambda: [action.setIcon(self.ep_icons['part']), self.s_play(False, number)]
 
     def s_delete(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        reply = QMessageBox.question(self, 'Confirmation',
-            'Are you sure you want to delete %s?' % show['title'],
-            QMessageBox.Yes, QMessageBox.No)
+        if self.selected_show_id:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+            reply = QMessageBox.question(self, 'Confirmation',
+                'Are you sure you want to delete %s?' % show['title'],
+                QMessageBox.Yes, QMessageBox.No)
 
-        if reply == QMessageBox.Yes:
-            self.worker_call('delete_show', self.r_generic, show)
+            if reply == QMessageBox.Yes:
+                self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
         self.worker_call('scan_library', self.r_library_scanned)
