@@ -794,7 +794,10 @@ class MainWindow(QMainWindow):
             self.show_progress_bar.setFormat('{}/?'.format(show['my_progress']))
 
         # Update information
-        self.show_title.setText(show['title'])
+        metrics = QtGui.QFontMetrics(self.show_title.font())
+        title = metrics.elidedText(show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+        self.show_title.setText(title)
+
         self.show_progress.setValue(show['my_progress'])
         self.show_status.setCurrentIndex(self.mediainfo['statuses'].index(show['my_status']))
         self.show_score.setValue(show['my_score'])
