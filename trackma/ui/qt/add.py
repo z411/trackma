@@ -185,7 +185,7 @@ class AddDialog(QDialog):
         self._enable_widgets(True)
         
         if result['success']:
-            self.set_results(result['results'])
+            self.set_results(result['result'])
             
             """
             if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!

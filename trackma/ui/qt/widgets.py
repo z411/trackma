@@ -115,7 +115,7 @@ class DetailsWidget(QWidget):
 
     def r_details_loaded(self, result):
         if result['success']:
-            details = result['details']
+            details = result['result']
 
             info_strings = []
             description_strings = []

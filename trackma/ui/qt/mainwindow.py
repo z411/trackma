@@ -456,6 +456,7 @@ class MainWindow(QMainWindow):
         self.worker.raised_error.connect(self.error)
         self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
+        self.worker.changed_show_status.connect(self.ws_changed_show_status)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.tracker_state.connect(self.ws_tracker_state)
@@ -676,6 +677,30 @@ class MainWindow(QMainWindow):
         self.show_status.blockSignals(False)
         self.notebook.blockSignals(False)
 
+    def _recalculate_counts(self):
+        showlist = self.worker.engine.get_list()
+
+        self.counts = {status: 0 for status in self.mediainfo['statuses']}
+        self.counts['!ALL'] = 0
+
+        for show in showlist:
+            self.counts[show['my_status']] += 1
+            self.counts['!ALL'] += 1
+
+        self._update_counts()
+
+    def _update_counts(self):
+        for page in range(self.notebook.count()):
+            status = self.notebook.tabData(page)
+            if status:
+                status_name = self.mediainfo['statuses_dict'][status]
+            else:
+                status_name = "All"
+                status = "!ALL"
+
+            self.notebook.setTabText(page, "{} ({})".format(
+                status_name, self.counts[status]))
+        
     def _rebuild_view(self):
         """
         Using a full showlist, rebuilds main view
@@ -749,6 +774,7 @@ class MainWindow(QMainWindow):
             self.show_play_btn.setEnabled(False)
             self.show_inc_btn.setEnabled(False)
             self.show_dec_btn.setEnabled(False)
+
             return
 
         # Block signals
@@ -1221,6 +1247,7 @@ class MainWindow(QMainWindow):
             if not self.view:
                 return # List not built yet; can be safely avoided
 
+            # Update the view of the updated show
             self.view.model().sourceModel().update(show['id'], is_playing)
 
             if show['id'] == self.selected_show_id:
@@ -1231,13 +1258,23 @@ class MainWindow(QMainWindow):
                     delay = self.worker.engine.get_config('tracker_update_wait_s')
                     self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d seconds." % (show['title'], episode, delay))
 
-    def ws_changed_list(self, show, old_status=None):
-        # Rebuild both new and old (if any) lists
-        self._rebuild_view()
+    def ws_changed_show_status(self, show, old_status=None):
+        # Update the view of the new show
+        self.view.model().sourceModel().update(show['id'])
+
+        # Update counts
+        self.counts[show['my_status']] += 1
+        self.counts[old_status] -= 1
+        self._update_counts()
 
         # Set notebook to the new page
         self.notebook.setCurrentIndex( self.mediainfo['statuses'].index(show['my_status']) )
         # Refresh filter
+        self.s_filter_changed()
+
+    def ws_changed_list(self, show):
+        self._rebuild_view()
+        self._recalculate_counts()
         self.s_filter_changed()
 
     def ws_changed_queue(self, queue):
@@ -1309,7 +1346,9 @@ class MainWindow(QMainWindow):
             if tracker_info:
                 self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
 
+            # Build our main view and show total counts
             self._rebuild_view()
+            self._recalculate_counts()
 
             self.s_show_selected(None)
 
@@ -1320,6 +1359,7 @@ class MainWindow(QMainWindow):
     def r_list_retrieved(self, result):
         if result['success']:
             self._rebuild_view()
+            self._recalculate_counts()
 
             self.status('Ready.')
 
