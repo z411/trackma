@@ -199,7 +199,7 @@ class ShowsTableDelegate(QStyledItemDelegate):
             super().paint(painter, option, index)
 
     def paintSubValue(self, painter, rect, subvalue, maximum):
-        if subvalue > 0 and maximum > 0 and subvalue <= maximum:
+        if subvalue and maximum and subvalue <= maximum:
             painter.setBrush(getColor(self.colors['progress_sub_bg']))
             mid = int(rect.width() / float(maximum) * subvalue)
             progressRect = QtCore.QRect(

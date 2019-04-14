@@ -186,7 +186,10 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 else:
                     total = (int(show['my_progress']/12)+1)*12 # Round up to the next cour
 
-                return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
+                if row in self.eps:
+                    return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
+                else:
+                    return (show['my_progress'], total, None, None)
             elif column == ShowListModel.COL_NEXT_EP:
                 return self.next_ep.get(row, '-')
             elif column == ShowListModel.COL_START_DATE:
