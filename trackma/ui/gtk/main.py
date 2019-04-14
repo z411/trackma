@@ -16,7 +16,6 @@
 
 import sys
 import gi
-
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from trackma.ui.gtk.window import TrackmaWindow
@@ -45,9 +44,9 @@ def main():
         app.main()
     except utils.TrackmaFatal as e:
         md = Gtk.MessageDialog(None,
-                  Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                  Gtk.MessageType.ERROR,
-                  Gtk.ButtonsType.CLOSE, str(e))
+                               Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                               Gtk.MessageType.ERROR,
+                               Gtk.ButtonsType.CLOSE, str(e))
         md.run()
         md.destroy()
     finally:

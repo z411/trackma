@@ -19,9 +19,8 @@ import os
 import time
 import threading
 import urllib.request
-import gi
-from gi.repository import Gdk
 from io import BytesIO
+from gi.repository import Gdk
 from trackma import utils
 
 try:

@@ -15,12 +15,12 @@
 #
 
 
-import cgi
+import html
 import os
 import threading
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Pango, GObject
+from gi.repository import Gtk, Pango, GObject
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.imagetask import ImageTask
 from trackma import utils
@@ -31,6 +31,10 @@ class ShowInfoBox(Gtk.VBox):
         Gtk.VBox.__init__(self)
 
         self.engine = engine
+        self._show = None
+        self.image_thread = None
+        self.details = None
+        self.details_e = None
 
         # Title line
         self.w_title = Gtk.Label('')
@@ -95,7 +99,7 @@ class ShowInfoBox(Gtk.VBox):
     def _done(self):
         if self.details:
             # Put the returned details into the lines VBox
-            self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(self.details['title'])))
+            self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(html.escape(self.details['title'])))
             self.w_title.set_use_markup(True)
 
             detail = list()
@@ -104,7 +108,7 @@ class ShowInfoBox(Gtk.VBox):
                     title, content, *_ = line
                     if isinstance(content, list):
                         content = ", ".join(filter(None, content))
-                    detail.append("<b>%s</b>\n%s" % (cgi.escape(str(title)), cgi.escape(str(content))))
+                    detail.append("<b>%s</b>\n%s" % (html.escape(str(title)), html.escape(str(content))))
 
             self.w_content.set_text("\n\n".join(detail))
             self.w_content.set_use_markup(True)

@@ -18,7 +18,7 @@
 import threading
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Pango, GObject
+from gi.repository import Gtk, Gdk, GObject
 from trackma.ui.gtk.showinfobox import ShowInfoBox
 from trackma import utils
 
@@ -28,6 +28,8 @@ class SearchWindow(Gtk.Window):
         Gtk.Window.__init__(self, Gtk.WindowType.TOPLEVEL)
 
         self.entries = []
+        self.selected_show = None
+        self.showdict = None
 
         self.engine = engine
         self.current_status = current_status

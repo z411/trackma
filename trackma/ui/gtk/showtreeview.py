@@ -39,14 +39,14 @@ class ShowTreeView(Gtk.TreeView):
 
         self.cols = dict()
         self.available_columns = (
-                ('Title', 1),
-                ('Progress', 2),
-                ('Score', 3),
-                ('Percent', 10),
-                ('Start', 11),
-                ('End', 12),
-                ('My start', 13),
-                ('My end', 14),
+            ('Title', 1),
+            ('Progress', 2),
+            ('Score', 3),
+            ('Percent', 10),
+            ('Start', 11),
+            ('End', 12),
+            ('My start', 13),
+            ('My end', 14),
         )
 
         for (name, sort) in self.available_columns:
@@ -151,6 +151,8 @@ class ShowTreeView(Gtk.TreeView):
 
             menu.popup(None, None, None, None, event.button, event.time)
             return True
+
+        return False
 
     def _header_menu_item(self, w, column_name, visible):
         self.emit('column-toggled', column_name, visible)
@@ -282,19 +284,20 @@ class ProgressCellRenderer(Gtk.CellRenderer):
 
     __gproperties__ = {
         "value": (GObject.TYPE_INT, "Value",
-        "Progress percentage", 0, 1000, 0,
-        GObject.PARAM_READWRITE),
+                  "Progress percentage", 0, 1000, 0,
+                  GObject.PARAM_READWRITE),
 
         "subvalue": (GObject.TYPE_INT, "Subvalue",
-        "Sub percentage", 0, 1000, 0,
-        GObject.PARAM_READWRITE),
+                     "Sub percentage", 0, 1000, 0,
+                     GObject.PARAM_READWRITE),
 
         "total": (GObject.TYPE_INT, "Total",
-        "Total percentage", 0, 1000, 0,
-        GObject.PARAM_READWRITE),
+                  "Total percentage", 0, 1000, 0,
+                  GObject.PARAM_READWRITE),
 
         "eps": (GObject.TYPE_PYOBJECT, "Episodes",
-        "Available episodes", GObject.PARAM_READWRITE),
+                "Available episodes",
+                GObject.PARAM_READWRITE),
     }
 
     def __init__(self, colors):

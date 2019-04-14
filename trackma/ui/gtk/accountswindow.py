@@ -35,6 +35,13 @@ class AccountsWindow(Gtk.Window):
         self.manager = manager
         self.switch = switch
 
+        self.pixbufs = None
+        self.accountlist = None
+        self.store = None
+        self.remember = None
+        self.delete_button = None
+        self.add_win = None
+
     def create(self):
         self.pixbufs = {}
         for (libname, lib) in utils.available_libs.items():
@@ -126,8 +133,8 @@ class AccountsWindow(Gtk.Window):
         # Return the state of the checkbutton if there's no default account
         if self.default is None:
             return self.remember.get_active()
-        else:
-            return True
+
+        return True
 
     def get_selected(self):
         selection = self.accountlist.get_selection()
@@ -137,9 +144,9 @@ class AccountsWindow(Gtk.Window):
     def get_selected_id(self):
         if self.default is not None:
             return self.default
-        else:
-            tree_model, tree_iter = self.get_selected()
-            return tree_model.get_value(tree_iter, 0)
+
+        tree_model, tree_iter = self.get_selected()
+        return tree_model.get_value(tree_iter, 0)
 
     def on_account_changed(self, widget):
         tree_model, tree_iter = self.get_selected()
@@ -151,7 +158,7 @@ class AccountsWindow(Gtk.Window):
         self.use_button.set_sensitive(is_selectable)
         self.delete_button.set_sensitive(True)
 
-    def on_row_activated(self, treeview, iter, path):
+    def on_row_activated(self, treeview, tree_iter, path):
         self.use_button.emit("clicked")
 
     def _do_add(self, widget):
@@ -184,14 +191,15 @@ class AccountsWindow(Gtk.Window):
 
     def __do_delete(self, widget):
         selectedid = self.get_selected_id()
-        dele = self.manager.delete_account(selectedid)
+        self.manager.delete_account(selectedid)
 
         self._refresh_list()
 
     def error(self, msg):
         md = Gtk.MessageDialog(None,
-            Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.ERROR,
-            Gtk.ButtonsType.CLOSE, str(msg))
+                               Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                               Gtk.MessageType.ERROR,
+                               Gtk.ButtonsType.CLOSE, str(msg))
         md.run()
         md.destroy()
 

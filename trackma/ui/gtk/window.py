@@ -15,11 +15,10 @@
 #
 
 
+import html
 import os
-import sys
 import subprocess
 import threading
-import cgi
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Pango, GObject
@@ -38,7 +37,7 @@ from trackma import utils
 from trackma import messenger
 
 
-class TrackmaWindow(object):
+class TrackmaWindow:
     engine = None
     config = None
     show_lists = dict()
@@ -51,6 +50,48 @@ class TrackmaWindow(object):
 
     def __init__(self, debug=False):
         self.debug = debug
+
+        self.configfile = None
+        self.accountsel = None
+        self.account = None
+
+        self.main_window = None
+        self.mb_play = None
+        self.mb_play_random = None
+        self.mb_folder = None
+        self.mb_info = None
+        self.mb_web = None
+        self.mb_copy = None
+        self.mb_alt_title = None
+        self.mb_delete = None
+        self.mb_exit = None
+        self.mb_addsearch = None
+        self.mb_sync = None
+        self.mb_retrieve = None
+        self.mb_send = None
+        self.mb_switch_account = None
+        self.mb_settings = None
+        self.mb_mediatype_menu = None
+        self.top_hbox = None
+        self.show_image = None
+        self.show_title = None
+        self.api_icon = None
+        self.api_user = None
+        self.rem_epp_button = None
+        self.show_ep_button = None
+        self.show_ep_num = None
+        self.add_epp_button = None
+        self.play_next_button = None
+        self.show_score = None
+        self.scoreset_button = None
+        self.statusmodel = None
+        self.statusbox = None
+        self.statusbox_handler = None
+        self.notebook = None
+        self.statusbar = None
+
+        self.selected_show = None
+        self.score_decimal_places = None
 
     def main(self):
         """Start the Account Selector"""
@@ -254,8 +295,6 @@ class TrackmaWindow(object):
         line2.pack_start(line2_t, False, False, 0)
 
         # Buttons
-        top_buttons = Gtk.HBox(False, 5)
-
         rem_icon = Gtk.Image()
         rem_icon.set_from_stock(Gtk.STOCK_REMOVE, Gtk.IconSize.BUTTON)
         self.rem_epp_button = Gtk.Button()
@@ -489,10 +528,10 @@ class TrackmaWindow(object):
             sw.set_border_width(5)
 
             self.show_lists[status] = ShowTreeView(
-                    status,
-                    self.config['colors'],
-                    self.config['visible_columns'],
-                    self.config['episodebar_style'])
+                status,
+                self.config['colors'],
+                self.config['visible_columns'],
+                self.config['episodebar_style'])
             self.show_lists[status].get_selection().connect("changed", self.select_show)
             self.show_lists[status].connect("row-activated", self.__do_info)
             self.show_lists[status].connect("button-press-event", self.showview_context_menu)
@@ -580,7 +619,8 @@ class TrackmaWindow(object):
         menu.show_all()
 
         def pos(menu, icon):
-                return (Gtk.StatusIcon.position_menu(menu, icon))
+            return Gtk.StatusIcon.position_menu(menu, icon)
+
         menu.popup(None, None, None, pos, button, time)
 
     def delete_event(self, widget, event, data=None):
@@ -638,19 +678,19 @@ class TrackmaWindow(object):
 
     def __do_info(self, widget, d1=None, d2=None):
         show = self.engine.get_show_info(self.selected_show)
-        win = ShowInfoWindow(self.engine, show)
+        ShowInfoWindow(self.engine, show)
 
     def _do_add_epp(self, widget):
         show = self.engine.get_show_info(self.selected_show)
         try:
-            show = self.engine.set_episode(self.selected_show, show['my_progress'] + 1)
+            self.engine.set_episode(self.selected_show, show['my_progress'] + 1)
         except utils.TrackmaError as e:
             self.error(e)
 
     def __do_rem_epp(self, widget):
         show = self.engine.get_show_info(self.selected_show)
         try:
-            show = self.engine.set_episode(self.selected_show, show['my_progress'] - 1)
+            self.engine.set_episode(self.selected_show, show['my_progress'] - 1)
         except utils.TrackmaError as e:
             self.error(e)
 
@@ -658,14 +698,14 @@ class TrackmaWindow(object):
         self._hide_episode_entry()
         ep = self.show_ep_num.get_text()
         try:
-            show = self.engine.set_episode(self.selected_show, ep)
+            self.engine.set_episode(self.selected_show, ep)
         except utils.TrackmaError as e:
             self.error(e)
 
     def __do_score(self, widget):
         score = self.show_score.get_value()
         try:
-            show = self.engine.set_score(self.selected_show, score)
+            self.engine.set_score(self.selected_show, score)
         except utils.TrackmaError as e:
             self.error(e)
 
@@ -674,7 +714,7 @@ class TrackmaWindow(object):
         status = self.statusmodel.get(statusiter, 0)[0]
 
         try:
-            show = self.engine.set_status(self.selected_show, status)
+            self.engine.set_status(self.selected_show, status)
         except utils.TrackmaError as e:
             self.error(e)
 
@@ -723,10 +763,10 @@ class TrackmaWindow(object):
 
     def task_update_next(self, show, played_ep):
         dialog = Gtk.MessageDialog(self.main_window,
-                    Gtk.DialogFlags.MODAL,
-                    Gtk.MessageType.QUESTION,
-                    Gtk.ButtonsType.YES_NO,
-                    "Update %s to episode %d?" % (show['title'], played_ep))
+                                   Gtk.DialogFlags.MODAL,
+                                   Gtk.MessageType.QUESTION,
+                                   Gtk.ButtonsType.YES_NO,
+                                   "Update %s to episode %d?" % (show['title'], played_ep))
         dialog.show_all()
         dialog.connect("response", self.task_update_next_response, show, played_ep)
 
@@ -772,7 +812,7 @@ class TrackmaWindow(object):
 
     def task_scanlibrary(self):
         try:
-            result = self.engine.scan_library(rescan=True)
+            self.engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
             self.error(e)
 
@@ -790,12 +830,12 @@ class TrackmaWindow(object):
     def __do_retrieve_ask(self, widget):
         queue = self.engine.get_queue()
 
-        if len(queue) > 0:
+        if not queue:
             dialog = Gtk.MessageDialog(self.main_window,
-                Gtk.DialogFlags.MODAL,
-                Gtk.MessageType.QUESTION,
-                Gtk.ButtonsType.YES_NO,
-                "There are %d queued changes in your list. If you retrieve the remote list now you will lose your queued changes. Are you sure you want to continue?" % len(queue))
+                                       Gtk.DialogFlags.MODAL,
+                                       Gtk.MessageType.QUESTION,
+                                       Gtk.ButtonsType.YES_NO,
+                                       "There are %d queued changes in your list. If you retrieve the remote list now you will lose your queued changes. Are you sure you want to continue?" % len(queue))
             dialog.show_all()
             dialog.connect("response", self.__do_retrieve)
         else:
@@ -919,7 +959,7 @@ class TrackmaWindow(object):
         if self.image_thread is not None:
             self.image_thread.cancel()
 
-        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(cgi.escape(show['title'])))
+        self.show_title.set_text('<span size="14000"><b>{0}</b></span>'.format(html.escape(show['title'])))
         self.show_title.set_use_markup(True)
 
         # Episode selector
@@ -1103,8 +1143,9 @@ class TrackmaWindow(object):
         try:
             filename = self.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                subprocess.Popen(["/usr/bin/xdg-open", os.path.dirname(filename)],
+                                 stdout=DEVNULL,
+                                 stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")

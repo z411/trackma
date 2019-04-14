@@ -33,17 +33,13 @@ def reprColor(gdkColor):
 
 
 def getColor(colorString):
-    # Takes a color string in either #RRGGBB format TODO: or group,role format (using GTK int values)
+    # Takes a color string in either #RRGGBB format
+    # TODO: Take a group, role format (using GTK int values)
     # Returns gdk color
     if colorString[0] == "#":
         return Gdk.color_parse(colorString)
-    #else:
-        #(group, role) = [int(i) for i in colorString.split(',')]
-        #if (0 <= group <= 2) and (0 <= role <= 19):
-            #return QtGui.QColor( QPalette().color(group, role) )
-        #else:
-            ## Failsafe - return black
-            #return QtGui.QColor()
+
+    return Gdk.color_parse("#000000")
 
 
 class SettingsWindow(Gtk.Window):
@@ -504,11 +500,11 @@ class SettingsWindow(Gtk.Window):
         self.engine.set_config('player', self.txt_player.get_text())
         self.engine.set_config('tracker_process', self.txt_process.get_text())
         self.engine.set_config('library_autoscan',
-                self.chk_library_autoscan.get_active())
+                               self.chk_library_autoscan.get_active())
         self.engine.set_config('scan_whole_list',
-                self.chk_scan_whole_list.get_active())
+                               self.chk_scan_whole_list.get_active())
         self.engine.set_config('library_full_path',
-                self.chk_library_full_path.get_active())
+                               self.chk_library_full_path.get_active())
         self.engine.set_config('plex_host', self.txt_plex_host.get_text())
         self.engine.set_config('plex_port', self.txt_plex_port.get_text())
         self.engine.set_config('plex_obey_update_wait_s', self.chk_tracker_plex_obey_wait.get_active())
@@ -619,7 +615,7 @@ class SettingsWindow(Gtk.Window):
                                         None,
                                         Gtk.FileChooserAction.OPEN,
                                         (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+                                         Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
         browsew.set_default_response(Gtk.ResponseType.OK)
 
         if dironly:
