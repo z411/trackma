@@ -18,7 +18,7 @@ Features
 Currently supported websites
 ----------------------------
 - [Anilist](https://anilist.co/) (Anime, Manga)
-- [Kitsu](https://kitsu.io/) (Anime, Manga)
+- [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
@@ -113,7 +113,7 @@ A user from the community also is providing a Docker image:
 Configuration
 -------------
 
-A configuration file will be created in `~/.trackma/config.json`, make sure to fill in the directory
+A configuration file will be created in `~/.config/trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
 https://github.com/z411/trackma/wiki/Configuration-File
@@ -143,6 +143,4 @@ Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-Trackma was originally written by z411 <z411@krutt.org>
-For other authors see AUTHORS file
-GTK icon designed by shuuichi
+Trackma was originally written by z411 <z411@omaera.org>. For other contributors see AUTHORS file. GTK icon designed by shuuichi.
