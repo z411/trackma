@@ -23,8 +23,8 @@ from trackma.tracker import tracker
 class Win32Tracker(tracker.TrackerBase):
     name = 'Tracker (win32)'
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
-        super().__init__(messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt)
+    def __init__(self, messenger, tracker_list, watch_dirs, config, redirections=None):
+        super().__init__(messenger, tracker_list, watch_dirs, config, redirections)
 
         self.winregex = re.compile("(\.mkv|\.mp4|\.avi)")
 

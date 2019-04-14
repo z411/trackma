@@ -49,6 +49,7 @@ class Engine:
     """
     data_handler = None
     tracker = None
+    redirections = None
     config = {}
     msg = None
     loaded = False
@@ -240,6 +241,15 @@ class Engine:
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
 
+        # Load redirection file if any
+        relations_file = utils.to_config_path('anime-relations.txt')
+        if utils.file_exists(relations_file):
+            api = self.api_info['shortname']
+            mediatype = self.data_handler.userconfig['mediatype']
+
+            self.msg.info(self.name, "Parsing redirections file...")
+            self.redirections = utils.parse_relations(relations_file, api, mediatype)
+
         # Rescan library if necessary
         if self.config['library_autoscan']:
             try:
@@ -277,12 +287,9 @@ class Engine:
                 
                 self.tracker = TrackerClass(self.msg,
                                        self._get_tracker_list(),
-                                       self.config['tracker_process'],
                                        self.searchdirs,
-                                       int(self.config['tracker_interval']),
-                                       int(self.config['tracker_update_wait_s']),
-                                       self.config['tracker_update_close'],
-                                       self.config['tracker_not_found_prompt'],
+                                       self.config,
+                                       self.redirections,
                                       )
                 self.tracker.connect_signal('detected', self._tracker_detected)
                 self.tracker.connect_signal('removed', self._tracker_removed)
@@ -378,7 +385,7 @@ class Engine:
             self.msg.debug(self.name, "Guessed {}".format(show_title))
 
             if show_title:
-                show = utils.guess_show(show_title, self._get_tracker_list())
+                show = utils.guess_show(show_title, self._get_tracker_list(), self.redirections)
                 if show:
                     return (show, ep)
                 else:
@@ -833,7 +840,7 @@ class Engine:
             show_title = aie.getName()
             (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
             if show_title:
-                show = utils.guess_show(show_title, tracker_list)
+                show = utils.guess_show(show_title, tracker_list, self.redirections)
                 if show:
                     self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
 

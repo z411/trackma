@@ -24,10 +24,10 @@ from trackma import utils
 class inotifyBase(tracker.TrackerBase):
     open_file = (None, None, None)
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
-        super().__init__(messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt)
+    def __init__(self, messenger, tracker_list, watch_dirs, config, redirections=None):
+        super().__init__(messenger, tracker_list, watch_dirs, config, redirections)
 
-        self.re_players = re.compile(self.process_name.encode('utf-8'))
+        self.re_players = re.compile(config['tracker_process'].encode('utf-8'))
 
     def _is_being_played(self, filename):
         """

@@ -48,17 +48,19 @@ class TrackerBase(object):
                'unrecognised': None,
               }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
+    def __init__(self, messenger, tracker_list, watch_dirs, config, redirections=None):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
         self.list = tracker_list
-        self.process_name = process_name
+        self.process_name = config['tracker_process']
+        self.redirections = redirections
 
-        tracker_args = (watch_dirs, interval)
-        self.wait_s = update_wait
-        self.wait_close = update_close
-        self.not_found_prompt = not_found_prompt
+        tracker_args = (watch_dirs, config['tracker_interval'])
+        self.wait_s = int(config['tracker_update_wait_s'])
+        self.wait_close = config['tracker_update_close']
+        self.not_found_prompt = config['tracker_not_found_prompt']
+
         tracker_t = threading.Thread(target=self.observe, args=tracker_args)
         tracker_t.daemon = True
         self.msg.debug(self.name, 'Enabling tracker...')
@@ -208,7 +210,7 @@ class TrackerBase(object):
             if not show_title:
                 return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized
 
-            playing_show = utils.guess_show(show_title, self.list)
+            playing_show = utils.guess_show(show_title, self.list, self.redirections)
             if playing_show:
                 return (utils.TRACKER_PLAYING, (playing_show, show_ep))
             else:
