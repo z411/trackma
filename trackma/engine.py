@@ -197,7 +197,8 @@ class Engine:
                                  'titles': self.data_handler.get_show_titles(show),
                                  })  # TODO types
 
-        return tracker_list
+        altnames_map = self.data_handler.get_altnames_map()
+        return (tracker_list, altnames_map)
 
     def _update_tracker(self):
         if self.tracker:

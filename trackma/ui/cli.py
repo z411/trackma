@@ -898,7 +898,7 @@ class Trackma_cmd(cmd.Cmd):
             #Get title (and alt. title) and if need be, truncate it
             title_str = show['title']
             if altnames.get(show['id']):
-                title_str += "[{}]".format(altnames.get(show['id']))
+                title_str += " [{}]".format(altnames.get(show['id']))
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status

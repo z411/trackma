@@ -201,6 +201,17 @@ def estimate_aired_episodes(show):
     return 0
 
 def guess_show(show_title, tracker_list):
+    (showlist, altnames_map) = tracker_list
+
+    # Return the show immediately if we find an altname for it
+    # TODO: We should use a dictionary here for O(1)
+    if altnames_map and show_title.lower() in altnames_map:
+        showid = altnames_map[show_title.lower()]
+
+        for item in showlist:
+            if item['id'] == showid:
+                return item
+
     # Use difflib to see if the show title is similar to
     # one we have in the list
     highest_ratio = (None, 0)
@@ -209,7 +220,7 @@ def guess_show(show_title, tracker_list):
 
     # Compare to every show in our list to see which one
     # has the most similar name
-    for item in tracker_list:
+    for item in showlist:
         # Make sure to search through all the aliases
         for title in item['titles']:
             matcher.set_seq2(title.lower())

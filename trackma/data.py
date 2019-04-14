@@ -480,10 +480,10 @@ class Data():
         show[key] = value
 
     def get_show_titles(self, show):
-        if self.altname_get(show['id']):
-            return [ self.altname_get(show['id']) ]
-        else:
             return [show['title']] + show['aliases']
+
+    def get_altnames_map(self):
+        return {name.lower(): showid for showid, name in self.altnames_get().items()}
 
     def autosend(self):
         # Check if we should autosend now
