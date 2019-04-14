@@ -692,7 +692,7 @@ class MainWindow(QMainWindow):
     def _update_counts(self):
         for page in range(self.notebook.count()):
             status = self.notebook.tabData(page)
-            if status:
+            if status is not None:
                 status_name = self.mediainfo['statuses_dict'][status]
             else:
                 status_name = "All"
