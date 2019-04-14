@@ -6,7 +6,7 @@ v0.8.1
 - Enhancement: (curses) Quit key now gets you out of detail view instead of closing the application
 - Bugfix: (Anilist/Qt/GTK) Fixed crash when adding a show with undefined total episodes
 - Bugfix: (VNDB) Votes without a corresponding status get added to the Unknown list
-
+- Bugfix: (Qt) Fixed a few crashes when adding new shows
 
 v0.8
 - New: (Qt) Card view in search dialog
