@@ -100,7 +100,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
         if aired_eps or library_eps:
             self.eps[row] = (aired_eps, library_eps)
         elif row in self.eps:
-            del eps[row]
+            del self.eps[row]
 
     def setShowList(self, showlist, altnames, library):
         self.beginResetModel()

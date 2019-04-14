@@ -316,9 +316,10 @@ class MainWindow(QMainWindow):
             self.menu_columns_group.addAction(action)
             self.menu_columns.addAction(action)
 
-        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
-            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
-            self.view.horizontalHeader().restoreState(state)
+        # TODO: "status" is not defined
+        #if self.config['remember_columns'] and str(status) in self.config['columns_state']:
+        #    state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
+        #    self.view.horizontalHeader().restoreState(state)
 
         # Create filter list
         self.show_filter = QLineEdit()
@@ -556,9 +557,10 @@ class MainWindow(QMainWindow):
     def _store_columnstate(self):
         columns_state = {}
 
-        for status in self.statuses_nums:
-            state = self.show_lists[status].horizontalHeader().saveState()
-            columns_state[status] = base64.b64encode(state).decode('ascii')
+        # TODO: show_lists is always None
+        #for status in self.statuses_nums:
+        #    state = self.show_lists[status].horizontalHeader().saveState()
+        #    columns_state[status] = base64.b64encode(state).decode('ascii')
 
         self.api_config['columns_state'] = columns_state
         self._save_config()
@@ -619,9 +621,9 @@ class MainWindow(QMainWindow):
             self.tray.show()
         if self.tray.isVisible():
             if self.config['tray_api_icon']:
-                self.tray.setIcon( QIcon( utils.available_libs[self.account['api']][1] ) )
+                self.tray.setIcon(QtGui.QIcon(utils.available_libs[self.account['api']][1]))
             else:
-                self.tray.setIcon( self.windowIcon() )
+                self.tray.setIcon(self.windowIcon())
 
     def _apply_filter_bar(self):
         self.list_box.removeWidget(self.filter_bar_box)
@@ -1339,7 +1341,7 @@ class MainWindow(QMainWindow):
             # Show API info
             self.api_icon.setPixmap(QtGui.QPixmap(utils.available_libs[self.account['api']][1]))
             if self.config['tray_api_icon']:
-                self.tray.setIcon(QIcon(utils.available_libs[self.account['api']][1]))
+                self.tray.setIcon(QtGui.QIcon(utils.available_libs[self.account['api']][1]))
             self.api_user.setText(self.worker.engine.get_userconfig('username'))
             self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
 

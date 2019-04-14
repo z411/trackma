@@ -64,7 +64,7 @@ class AddDialog(QDialog):
             top_layout.addWidget(self.search_rad)
             top_layout.addWidget(self.search_txt)
         else:
-            filters_layout.setAlignment(QtCore.Qt.AlignRight)
+            top_layout.setAlignment(QtCore.Qt.AlignRight)
 
         top_layout.addWidget(self.search_btn)
         

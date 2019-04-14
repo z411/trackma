@@ -983,7 +983,7 @@ class Engine:
 
     def list_upload(self):
         """Asks the data handler to upload the unsynced changes in the queue."""
-        result = self.data_handler.process_queue()
+        self.data_handler.process_queue()
         #for show in result:
         #    self._emit_signal('episode_changed', show)
 

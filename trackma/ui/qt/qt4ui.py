@@ -16,10 +16,7 @@
 
 import os
 os.environ['PYQT4'] = 'True'
-from trackma.ui import qtui
-
-def main():
-    qtui.main()
+import trackma.ui.qt
 
 if __name__ == '__main__':
-    main()
+    trackma.ui.qt.main()
