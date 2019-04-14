@@ -1,3 +1,13 @@
+v0.8.1
+- New: (Qt) In-line score and episode editing (Can be disabled)
+- Enhancement: (Qt) Using proper MVC, helps performance and usability of lists and filters.
+- Enhancement: (Qt) A few shortcuts (Middle-click on list to play next episode, Del key as shortcut for delete show, Double click on card view to view details)
+- Enhancement: (Anilist) Retrieving and showing studio information
+- Enhancement: (curses) Quit key now gets you out of detail view instead of closing the application
+- Bugfix: (Anilist/Qt/GTK) Fixed crash when adding a show with undefined total episodes
+- Bugfix: (VNDB) Votes without a corresponding status get added to the Unknown list
+
+
 v0.8
 - New: (Qt) Card view in search dialog
 - New: (Qt, Anilist) Search by season
