@@ -726,8 +726,12 @@ class MainWindow(QMainWindow):
         self.s_filter_changed()
 
     def _select_show(self, show):
+        # Stop any running image timer
+        if self.image_timer is not None:
+            self.image_timer.stop()
+        
+        # Unselect show
         if not show:
-            # Unselect any show
             self.selected_show_id = None
 
             self.show_title.setText('Trackma-qt')
