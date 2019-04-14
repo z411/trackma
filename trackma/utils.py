@@ -420,7 +420,7 @@ qt_defaults = {
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'inline_edit': True,
-    'columns_state': {},
+    'columns_state': None,
     'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
@@ -444,5 +444,5 @@ qt_defaults = {
 
 qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
-    'columns_state': {},
+    'columns_state': None,
 }

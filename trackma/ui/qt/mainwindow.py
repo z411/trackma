@@ -19,6 +19,7 @@ pyqt_version = 5
 import os
 import datetime
 import subprocess
+import base64
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
@@ -316,11 +317,6 @@ class MainWindow(QMainWindow):
             self.menu_columns_group.addAction(action)
             self.menu_columns.addAction(action)
 
-        # TODO: "status" is not defined
-        #if self.config['remember_columns'] and str(status) in self.config['columns_state']:
-        #    state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
-        #    self.view.horizontalHeader().restoreState(state)
-
         # Create filter list
         self.show_filter = QLineEdit()
         self.show_filter.textChanged.connect(self.s_filter_changed)
@@ -557,10 +553,8 @@ class MainWindow(QMainWindow):
     def _store_columnstate(self):
         columns_state = {}
 
-        # TODO: show_lists is always None
-        #for status in self.statuses_nums:
-        #    state = self.show_lists[status].horizontalHeader().saveState()
-        #    columns_state[status] = base64.b64encode(state).decode('ascii')
+        state = self.view.horizontalHeader().saveState()
+        columns_state = base64.b64encode(state).decode('ascii')
 
         self.api_config['columns_state'] = columns_state
         self._save_config()
@@ -747,9 +741,13 @@ class MainWindow(QMainWindow):
             self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
-        self.view.horizontalHeader().resizeSection(2, 70)
-        self.view.horizontalHeader().resizeSection(3, 55)
-        self.view.horizontalHeader().resizeSection(4, 100)
+        if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
+            state = QtCore.QByteArray(base64.b64decode(self.api_config['columns_state']))
+            self.view.horizontalHeader().restoreState(state)
+        else:
+            self.view.horizontalHeader().resizeSection(2, 70)
+            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(4, 100)
 
         self.s_filter_changed()
 
