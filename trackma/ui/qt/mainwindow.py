@@ -1043,7 +1043,7 @@ class MainWindow(QMainWindow):
     def s_set_score(self, showid=None, score=None):
         self._busy(True)
 
-        if showid == None and score == None:
+        if score is None:
             self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
         else:
             self.worker_call('set_score', self.r_generic, showid, score)
