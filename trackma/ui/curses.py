@@ -572,7 +572,7 @@ class Trackma_urwid():
             show = self.engine.get_show_info(showid)
 
             try:
-                show = self.engine.delete_show(show)
+                self.engine.delete_show(show)
             except utils.TrackmaError as e:
                 self.error(e)
 
@@ -750,7 +750,7 @@ class Dialog(urwid.Overlay):
         self.widget = urwid.AttrMap(urwid.LineBox(widget, title=title), 'window')
         self.oldwidget = loop.widget
         self.loop = loop
-        self.__super.__init__(self.widget, loop.widget,
+        super().__init__(self.widget, loop.widget,
                 align="center",
                 width=width,
                 valign="middle",
@@ -792,7 +792,7 @@ class AddDialog(Dialog):
 
         self.info_txt = urwid.Text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
         self.frame = urwid.Frame(self.listbox, header=self.listheader, footer=self.info_txt)
-        self.__super.__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
+        super().__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
 
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
@@ -867,7 +867,7 @@ class AccountDialog(Dialog):
 
         self.foot = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
         self.frame = urwid.Frame(listbox, header=listheader, footer=self.foot)
-        self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
+        super().__init__(self.frame, loop, width=width, height=15, title='Select Account')
 
         self.adding = False
 
@@ -992,7 +992,7 @@ class AccountItem(urwid.WidgetWrap):
             ('fixed', 15, urwid.Text(account['api'])),
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
-        self.__super.__init__(w)
+        super().__init__(w)
 
     def selectable(self):
         return True
@@ -1009,7 +1009,7 @@ class SearchItem(urwid.WidgetWrap):
             ('fixed', 7, urwid.Text("%d" % show['total'])),
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
-        self.__super.__init__(w)
+        super().__init__(w)
 
     def selectable(self):
         return True
@@ -1107,7 +1107,7 @@ class ShowItem(urwid.WidgetWrap):
 
         self.m = urwid.AttrMap(urwid.Columns(self.item), self.color, 'focus')
 
-        self.__super.__init__(self.m)
+        super().__init__(self.m)
 
     def get_showid(self):
         return self.showid

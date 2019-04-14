@@ -123,14 +123,14 @@ class Trackma_gtk(object):
         self.account = account
         self.engine = Engine(account, self.message_handler)
 
-        self.main = Gtk.Window(Gtk.WindowType.TOPLEVEL)
-        self.main.set_position(Gtk.WindowPosition.CENTER)
-        self.main.connect('delete_event', self.delete_event)
-        self.main.connect('destroy', self.on_destroy)
-        self.main.set_title('Trackma-gtk ' + utils.VERSION)
+        self.main_window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        self.main_window.set_position(Gtk.WindowPosition.CENTER)
+        self.main_window.connect('delete_event', self.delete_event)
+        self.main_window.connect('destroy', self.on_destroy)
+        self.main_window.set_title('Trackma-gtk ' + utils.VERSION)
         Gtk.Window.set_default_icon_from_file(utils.datadir + '/data/icon.png')
         if self.config['remember_geometry']:
-            self.main.resize(self.config['last_width'], self.config['last_height'])
+            self.main_window.resize(self.config['last_width'], self.config['last_height'])
 
         # Menus
         mb_show = Gtk.Menu()
@@ -225,7 +225,7 @@ class Trackma_gtk(object):
 
         # Create vertical box
         vbox = Gtk.VBox(False, 0)
-        self.main.add(vbox)
+        self.main_window.add(vbox)
 
         vbox.pack_start(mb, False, False, 0)
 
@@ -417,7 +417,7 @@ class Trackma_gtk(object):
         key, mod = Gtk.accelerator_parse("<Shift>C")
         self.mb_switch_account.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
 
-        self.main.add_accel_group(accelgrp)
+        self.main_window.add_accel_group(accelgrp)
 
         # Status icon
         if tray_available:
@@ -451,7 +451,7 @@ class Trackma_gtk(object):
         if self.statusicon and self.config['show_tray'] and self.config['start_in_tray']:
             self.hidden = True
         else:
-            self.main.show()
+            self.main_window.show()
 
         self.show_ep_num.hide()
 
@@ -465,7 +465,7 @@ class Trackma_gtk(object):
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
 
-        self.main.set_title('Trackma-gtk %s [%s (%s)]' % (
+        self.main_window.set_title('Trackma-gtk %s [%s (%s)]' % (
             utils.VERSION,
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
@@ -560,14 +560,14 @@ class Trackma_gtk(object):
 
     def idle_destroy_push(self):
         self.quit = True
-        self.main.destroy()
+        self.main_window.destroy()
 
     def idle_restart(self):
         GObject.idle_add(self.idle_restart_push)
 
     def idle_restart_push(self):
         self.quit = False
-        self.main.destroy()
+        self.main_window.destroy()
         self.__do_switch_account(None, False, forget=True)
 
     def on_destroy(self, widget):
@@ -577,10 +577,10 @@ class Trackma_gtk(object):
     def status_event(self, widget):
         # Called when the tray icon is left-clicked
         if self.hidden:
-            self.main.show()
+            self.main_window.show()
             self.hidden = False
         else:
-            self.main.hide()
+            self.main_window.hide()
             self.hidden = True
 
     def status_menu_event(self, icon, button, time):
@@ -607,7 +607,7 @@ class Trackma_gtk(object):
     def delete_event(self, widget, event, data=None):
         if self.statusicon and self.statusicon.get_visible() and self.config['close_to_tray']:
             self.hidden = True
-            self.main.hide()
+            self.main_window.hide()
         else:
             self.__do_quit()
         return True
@@ -616,10 +616,11 @@ class Trackma_gtk(object):
         if self.config['remember_geometry']:
             self.__do_store_geometry()
         if self.close_thread is None:
-            self.close_thread = threading.Thread(target=self.task_unload).start()
+            self.close_thread = threading.Thread(target=self.task_unload)
+            self.close_thread.start()
 
     def __do_store_geometry(self):
-        (width, height) = self.main.get_size()
+        (width, height) = self.main_window.get_size()
         self.config['last_width'] = width
         self.config['last_height'] = height
         utils.save_config(self.config, self.configfile)
@@ -742,7 +743,7 @@ class Trackma_gtk(object):
         self.show_lists[status].playing(show, is_playing)
 
     def task_update_next(self, show, played_ep):
-        dialog = Gtk.MessageDialog(self.main,
+        dialog = Gtk.MessageDialog(self.main_window,
                     Gtk.DialogFlags.MODAL,
                     Gtk.MessageType.QUESTION,
                     Gtk.ButtonsType.YES_NO,
@@ -811,7 +812,7 @@ class Trackma_gtk(object):
         queue = self.engine.get_queue()
 
         if len(queue) > 0:
-            dialog = Gtk.MessageDialog(self.main,
+            dialog = Gtk.MessageDialog(self.main_window,
                 Gtk.DialogFlags.MODAL,
                 Gtk.MessageType.QUESTION,
                 Gtk.ButtonsType.YES_NO,
@@ -1032,7 +1033,7 @@ class Trackma_gtk(object):
         GObject.idle_add(self.error_push, msg, icon)
 
     def error_push(self, msg, icon=Gtk.MessageType.ERROR):
-        dialog = Gtk.MessageDialog(self.main, Gtk.DialogFlags.MODAL, icon, Gtk.ButtonsType.OK, str(msg))
+        dialog = Gtk.MessageDialog(self.main_window, Gtk.DialogFlags.MODAL, icon, Gtk.ButtonsType.OK, str(msg))
         dialog.show_all()
         dialog.connect("response", self.modal_close)
         print('Error: {}'.format(msg))

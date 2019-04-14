@@ -42,7 +42,7 @@ if '-4' in sys.argv:
 
 if not force_qt4:
     try:
-        from PyQt5.QtWidgets import QApplication
+        from PyQt5.QtWidgets import QApplication, QMessageBox
         os.environ['PYQT5'] = "1"
     except ImportError:
         print("Couldn't import Qt5 dependencies. "
@@ -52,7 +52,7 @@ if 'PYQT5' not in os.environ:
     try:
         import sip
         sip.setapi('QVariant', 2)
-        from PyQt4.QtGui import QApplication
+        from PyQt4.QtGui import QApplication, QMessageBox
     except ImportError:
         print("Couldn't import Qt4 dependencies. "
               "Make sure you installed the PyQt4 package.")
