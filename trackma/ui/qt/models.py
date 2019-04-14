@@ -199,6 +199,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return self._date(show['my_finish_date'])
             elif column == ShowListModel.COL_MY_TAGS:
                 return show.get('my_tags', '-')
+            elif column == ShowListModel.COL_MY_STATUS:
+                return self.mediainfo['statuses_dict'][show['my_status']]
         elif role == QtCore.Qt.BackgroundRole:
             return self.colors.get(row)
         elif role == QtCore.Qt.DecorationRole:
