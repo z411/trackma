@@ -29,8 +29,6 @@ except ImportError:
 from trackma.engine import Engine
 from trackma import utils
 
-from trackma.ui.qt.util import overrides
-
 class ImageWorker(QtCore.QThread):
     """
     Image thread
