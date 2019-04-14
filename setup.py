@@ -38,7 +38,7 @@ setup(
             'trackma-curses = trackma.ui.curses:main [curses]',
         ],
         'gui_scripts': [
-            'trackma-gtk = trackma.ui.gtkui:main [GTK]',
+            'trackma-gtk = trackma.ui.gtk.main:main [GTK]',
             'trackma-qt = trackma.ui.qt:main [Qt]',
             'trackma-qt4 = trackma.ui.qt.qt4ui:main [Qt]',
         ]
