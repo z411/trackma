@@ -164,9 +164,9 @@ class TrackerBase(object):
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.TRACKER_PLAYING:
-                self.msg.info(self.name, 'Will update %s %d in %d seconds' % (show['title'], episode, self.wait_s))
+                self.msg.info(self.name, 'Will update %s %d' % (show['title'], episode))
             elif state == utils.TRACKER_NOT_FOUND:
-                self.msg.info(self.name, 'Will add %s %d in %d seconds' % (show['title'], episode, self.wait_s))
+                self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
             self._update_show(state, show_tuple)
 
         elif self.last_state != state:
