@@ -22,7 +22,7 @@ from trackma import utils
 class pyinotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (pyinotify)'
 
-    def observe(self, watch_dirs, interval):
+    def observe(self, config, watch_dirs):
         self.msg.info(self.name, 'Using pyinotify.')
         wm = pyinotify.WatchManager()  # Watch Manager
         mask = (pyinotify.IN_OPEN #pylint: disable=no-member

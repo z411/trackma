@@ -48,19 +48,18 @@ class TrackerBase(object):
                'unrecognised': None,
               }
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
+    def __init__(self, messenger, tracker_list, config, watch_dirs):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
         self.list = tracker_list
-        self.process_name = process_name
+        self.config = config
+        self.wait_s = None
 
-        tracker_args = (watch_dirs, interval)
-        self.wait_s = update_wait
-        self.wait_close = update_close
-        self.not_found_prompt = not_found_prompt
+        tracker_args = (config, watch_dirs)
         tracker_t = threading.Thread(target=self.observe, args=tracker_args)
         tracker_t.daemon = True
+
         self.msg.debug(self.name, 'Enabling tracker...')
         tracker_t.start()
 
@@ -81,7 +80,7 @@ class TrackerBase(object):
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
 
-    def observe(self, watch_dirs, interval):
+    def observe(self, config, watch_dirs):
         raise NotImplementedError
 
     def get_status(self):
@@ -101,7 +100,7 @@ class TrackerBase(object):
 
     def _update_show(self, state, show_tuple):
         (show, episode) = show_tuple
-        self.timer = int(1 + self.wait_s - (time.time() - self.last_time))
+        self.timer = int(1 + (self.wait_s or self.config['tracker_update_wait_s']) - (time.time() - self.last_time))
         self._emit_signal('state', state, self.timer)
 
         if self.timer <= 0:
@@ -113,7 +112,7 @@ class TrackerBase(object):
             elif state == utils.TRACKER_NOT_FOUND:
                 action = lambda: self._emit_signal('unrecognised', show['title'], episode)
 
-            if self.wait_close:
+            if self.config['tracker_update_close']:
                 self.msg.info(self.name, 'Waiting for the player to close.')
                 self.last_close_queue = action
             elif action:
@@ -213,7 +212,7 @@ class TrackerBase(object):
                 return (utils.TRACKER_PLAYING, (playing_show, show_ep))
             else:
                 # Show not in list
-                if self.not_found_prompt:
+                if self.config['tracker_not_found_prompt']:
                     # Dummy show to search for
                     show = {'id': 0, 'title': show_title}
                     return (utils.TRACKER_NOT_FOUND, (show, show_ep))

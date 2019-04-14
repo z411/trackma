@@ -44,14 +44,14 @@ class PollingTracker(tracker.TrackerBase):
 
         return None
 
-    def observe(self, watch_dirs, interval):
+    def observe(self, config, watch_dirs):
         self.msg.info(self.name, "pyinotify not available; using polling (slow).")
         while self.active:
             # This runs the tracker and update the playing show if necessary
-            filename = self.get_playing_file(watch_dirs, self.process_name)
+            filename = self.get_playing_file(watch_dirs, config['tracker_process'])
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
             # Wait for the interval before running check again
-            time.sleep(interval)
+            time.sleep(config['tracker_interval'])
 

@@ -24,7 +24,7 @@ from trackma import utils
 class inotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (inotify)'
 
-    def observe(self, watch_dirs, interval):
+    def observe(self, config, watch_dirs):
         # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
         self.msg.debug(self.name, 'Watching the following paths: ' + ','.join(watch_dirs))

@@ -278,12 +278,8 @@ class Engine:
                 
                 self.tracker = TrackerClass(self.msg,
                                        self._get_tracker_list(),
-                                       self.config['tracker_process'],
+                                       self.config,
                                        self.searchdirs,
-                                       int(self.config['tracker_interval']),
-                                       int(self.config['tracker_update_wait_s']),
-                                       self.config['tracker_update_close'],
-                                       self.config['tracker_not_found_prompt'],
                                       )
                 self.tracker.connect_signal('detected', self._tracker_detected)
                 self.tracker.connect_signal('removed', self._tracker_removed)
