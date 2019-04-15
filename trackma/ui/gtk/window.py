@@ -105,18 +105,31 @@ class TrackmaWindow:
             self.start(manager.get_default())
         else:
             self.accountsel = AccountsWindow(manager)
-            self.accountsel.use_button.connect("clicked", self.use_account)
-            self.accountsel.create()
+            self.accountsel.connect('account-open', self._on_account_open)
+            # self.accountsel.use_button.connect("clicked", self.use_account)
+            # self.accountsel.create()
 
         Gtk.main()
+
+    def _on_account_open(self, accounts_window, account_num):
+        manager = AccountManager()
+        account = manager.get_account(account_num)
+
+        # Reload the engine if already started,
+        # start it otherwise
+        if self.engine and self.engine.loaded:
+            self.__do_reload(None, account, None)
+        else:
+            self.start(account)
 
     def __do_switch_account(self, widget, switch=True, forget=False):
         manager = AccountManager()
         if forget:
             manager.set_default(None)
         self.accountsel = AccountsWindow(manager = AccountManager(), switch=switch)
-        self.accountsel.use_button.connect("clicked", self.use_account)
-        self.accountsel.create()
+        self.accountsel.connect('account-open', self._on_account_open)
+        # self.accountsel.use_button.connect("clicked", self.use_account)
+        # self.accountsel.create()
 
     def use_account(self, widget):
         """Start the main application with the following account"""

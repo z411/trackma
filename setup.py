@@ -23,7 +23,7 @@ setup(
 
     install_requires=REQUIREMENTS,
     extras_require=EXTRA_REQUIREMENTS,
-    package_data={'trackma': ['data/*']},
+    package_data={'trackma': ['data/*', 'ui/gtk/data/*']},
 
     author='z411',
     author_email='z411@krutt.org',
