@@ -21,7 +21,9 @@ import subprocess
 import threading
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Pango, GObject
+from gi.repository import GLib, Gio, Gtk, Gdk, Pango, GObject
+from trackma.ui.gtk import gtk_dir
+from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.accountswindow import AccountsWindow
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.imagetask import ImageTask
@@ -37,7 +39,29 @@ from trackma import utils
 from trackma import messenger
 
 
-class TrackmaWindow:
+@GtkTemplate(ui=os.path.join(gtk_dir, 'data/window.ui'))
+class TrackmaWindow(Gtk.ApplicationWindow):
+    __gtype_name__ = 'TrackmaWindow'
+
+    btn_appmenu = GtkTemplate.Child()
+    btn_mediatype = GtkTemplate.Child()
+
+    main_box = GtkTemplate.Child()
+    image_container_box = GtkTemplate.Child()
+    top_box = GtkTemplate.Child()
+    show_title = GtkTemplate.Child()
+    api_icon = GtkTemplate.Child()
+    api_user = GtkTemplate.Child()
+    rem_epp_button = GtkTemplate.Child()
+    show_ep_button = GtkTemplate.Child()
+    show_ep_num = GtkTemplate.Child()
+    add_epp_button = GtkTemplate.Child()
+    play_next_button = GtkTemplate.Child()
+    show_score = GtkTemplate.Child()
+    scoreset_button = GtkTemplate.Child()
+    statusbox = GtkTemplate.Child()
+    statusmodel = GtkTemplate.Child()
+
     engine = None
     config = None
     show_lists = dict()
@@ -49,6 +73,9 @@ class TrackmaWindow:
     statusicon = None
 
     def __init__(self, debug=False):
+        Gtk.Window.__init__(self)
+        self.init_template()
+
         self.debug = debug
 
         self.configfile = None
@@ -56,38 +83,9 @@ class TrackmaWindow:
         self.account = None
 
         self.main_window = None
-        self.mb_play = None
-        self.mb_play_random = None
-        self.mb_folder = None
-        self.mb_info = None
-        self.mb_web = None
-        self.mb_copy = None
-        self.mb_alt_title = None
-        self.mb_delete = None
-        self.mb_exit = None
-        self.mb_addsearch = None
-        self.mb_sync = None
-        self.mb_retrieve = None
-        self.mb_send = None
-        self.mb_switch_account = None
-        self.mb_settings = None
-        self.mb_mediatype_menu = None
-        self.top_hbox = None
-        self.show_image = None
-        self.show_title = None
-        self.api_icon = None
-        self.api_user = None
-        self.rem_epp_button = None
-        self.show_ep_button = None
-        self.show_ep_num = None
-        self.add_epp_button = None
-        self.play_next_button = None
-        self.show_score = None
-        self.scoreset_button = None
-        self.statusmodel = None
-        self.statusbox = None
-        self.statusbox_handler = None
+
         self.notebook = None
+        self.statusbox_handler = None
         self.statusbar = None
 
         self.selected_show = None
@@ -106,10 +104,60 @@ class TrackmaWindow:
         else:
             self.accountsel = AccountsWindow(manager)
             self.accountsel.connect('account-open', self._on_account_open)
-            # self.accountsel.use_button.connect("clicked", self.use_account)
-            # self.accountsel.create()
 
         Gtk.main()
+
+    def _set_actions(self):
+        builder = Gtk.Builder.new_from_file(os.path.join(gtk_dir, 'data/app-menu.ui'))
+        self.btn_appmenu.set_menu_model(builder.get_object('app-menu'))
+
+        def add_action(name, callback):
+            action = Gio.SimpleAction.new(name, None)
+            action.connect('activate', callback)
+            self.add_action(action)
+
+        add_action('search', self._on_search)
+        add_action('syncronize', self._on_synchronize)
+        add_action('upload', self._on_upload)
+        add_action('download', self._on_download)
+        add_action('scanfiles', self._on_scanfiles)
+        add_action('accounts', self._on_accounts)
+        add_action('preferences', self._on_preferences)
+        add_action('about', self._on_about)
+        add_action('quit', self._on_quit)
+
+    def _set_mediatypes_action(self):
+        action_name = 'change-mediatype'
+        if self.has_action(action_name):
+            self.remove_action(action_name)
+
+        state = GLib.Variant.new_string(self.engine.api_info['mediatype'])
+        action = Gio.SimpleAction.new_stateful(action_name,
+                                               state.get_type(),
+                                               state)
+        action.connect('change-state', self._on_change_mediatype)
+        self.add_action(action)
+
+    def _set_mediatypes_menu(self):
+        self._set_mediatypes_action()
+        menu = Gio.Menu()
+
+        for mediatype in self.engine.api_info['supported_mediatypes']:
+            variant = GLib.Variant.new_string(mediatype)
+            menu_item = Gio.MenuItem()
+            menu_item.set_label(mediatype)
+            menu_item.set_action_and_target_value('win.change-mediatype', variant)
+            menu.append_item(menu_item)
+
+        self.btn_mediatype.set_menu_model(menu)
+
+        if len(self.engine.api_info['supported_mediatypes']) <= 1:
+            self.btn_mediatype.hide()
+
+    def _on_change_mediatype(self, action, value):
+        action.set_state(value)
+        mediatype = value.get_string()
+        self.__do_reload(None, None, mediatype)
 
     def _on_account_open(self, accounts_window, account_num):
         manager = AccountManager()
@@ -122,14 +170,116 @@ class TrackmaWindow:
         else:
             self.start(account)
 
-    def __do_switch_account(self, widget, switch=True, forget=False):
+    def _on_search(self, action, param):
+        page = self.notebook.get_current_page()
+        current_status = self.engine.mediainfo['statuses'][page]
+
+        win = SearchWindow(self.engine, self.config['colors'], current_status)
+        win.show_all()
+
+    def _on_synchronize(self, action, param):
+        threading.Thread(target=self.task_sync, args=(True,True)).start()
+
+    def _on_upload(self, action, param):
+        threading.Thread(target=self.task_sync, args=(True,False)).start()
+
+    def _on_download(self, action, param):
+        queue = self.engine.get_queue()
+
+        if not queue:
+            dialog = Gtk.MessageDialog(self.main_window,
+                                       Gtk.DialogFlags.MODAL,
+                                       Gtk.MessageType.QUESTION,
+                                       Gtk.ButtonsType.YES_NO,
+                                       "There are %d queued changes in your list. If you retrieve the remote list now you will lose your queued changes. Are you sure you want to continue?" % len(queue))
+            dialog.show_all()
+            dialog.connect("response", self._do_retrieve)
+        else:
+            # If the user doesn't have any queued changes
+            # just go ahead
+            self._do_retrieve()
+
+    def _do_retrieve(self, widget=None, response=Gtk.ResponseType.YES):
+        if widget:
+            widget.destroy()
+
+        if response == Gtk.ResponseType.YES:
+            threading.Thread(target=self.task_sync, args=(False,True)).start()
+
+    def task_sync(self, send, retrieve):
+        self.allow_buttons(False)
+
+        try:
+            if send:
+                self.engine.list_upload()
+            if retrieve:
+                self.engine.list_download()
+
+            GObject.idle_add(self._set_score_ranges)
+            GObject.idle_add(self.build_all_lists)
+        except utils.TrackmaError as e:
+            self.error(e)
+        except utils.TrackmaFatal as e:
+            self.idle_restart()
+            self.error("Fatal engine error: %s" % e)
+            return
+
+        self.status("Ready.")
+        self.allow_buttons(True)
+
+    def _on_scanfiles(self, action, param):
+        def task_scanlibrary():
+            try:
+                self.engine.scan_library(rescan=True)
+            except utils.TrackmaError as e:
+                self.error(e)
+
+            GObject.idle_add(self.build_list, self.engine.mediainfo['status_start'])
+
+            self.status("Ready.")
+            self.allow_buttons(True)
+
+        threading.Thread(target=task_scanlibrary).start()
+
+    def _on_accounts(self, action, param):
+        self._show_accounts()
+
+    def _show_accounts(self, switch=True, forget=False):
         manager = AccountManager()
         if forget:
             manager.set_default(None)
         self.accountsel = AccountsWindow(manager = AccountManager(), switch=switch)
         self.accountsel.connect('account-open', self._on_account_open)
-        # self.accountsel.use_button.connect("clicked", self.use_account)
-        # self.accountsel.create()
+
+    def _on_preferences(self, action, param):
+        win = SettingsWindow(self.engine, self.config, self.configfile)
+        win.show_all()
+
+    def _on_about(self, action, param):
+        about = Gtk.AboutDialog()
+        about.set_program_name("Trackma-gtk")
+        about.set_version(utils.VERSION)
+        about.set_comments("Trackma is an open source client for media tracking websites.")
+        about.set_website("http://github.com/z411/trackma")
+        about.set_copyright("Thanks to all contributors. See AUTHORS file.\n(c) z411 - Icon by shuuichi")
+        about.run()
+        about.destroy()
+
+    def _on_quit(self, action, param):
+        self._quit()
+
+    def _quit(self, widget=None, event=None, data=None):
+        if self.config['remember_geometry']:
+            self.__do_store_geometry()
+        if self.close_thread is None:
+            self.close_thread = threading.Thread(target=self.task_unload)
+            self.close_thread.start()
+
+    def __do_store_geometry(self):
+        (width, height) = self.main_window.get_size()
+        self.config['last_width'] = width
+        self.config['last_height'] = height
+        utils.save_config(self.config, self.configfile)
 
     def use_account(self, widget):
         """Start the main application with the following account"""
@@ -155,8 +305,9 @@ class TrackmaWindow:
         # Create engine
         self.account = account
         self.engine = Engine(account, self.message_handler)
+        self._set_actions()
 
-        self.main_window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
+        self.main_window = self
         self.main_window.set_position(Gtk.WindowPosition.CENTER)
         self.main_window.connect('delete_event', self.delete_event)
         self.main_window.connect('destroy', self.on_destroy)
@@ -165,288 +316,59 @@ class TrackmaWindow:
         if self.config['remember_geometry']:
             self.main_window.resize(self.config['last_width'], self.config['last_height'])
 
-        # Menus
-        mb_show = Gtk.Menu()
-        self.mb_play = Gtk.ImageMenuItem('Play Next', Gtk.Image.new_from_icon_name(Gtk.STOCK_MEDIA_PLAY, 0))
-        self.mb_play.connect("activate", self.__do_play, True)
-        self.mb_play_random = Gtk.MenuItem('Play random')
-        self.mb_play_random.connect("activate", self.__do_play_random)
-        mb_scanlibrary = Gtk.MenuItem('Re-scan library')
-        self.mb_folder = Gtk.MenuItem("Open containing folder")
-        self.mb_folder.connect("activate", self.do_containingFolder)
-        mb_scanlibrary.connect("activate", self.__do_scanlibrary)
-        self.mb_info = Gtk.MenuItem('Show details...')
-        self.mb_info.connect("activate", self.__do_info)
-        self.mb_web = Gtk.MenuItem("Open web site")
-        self.mb_web.connect("activate", self.__do_web)
-        self.mb_copy = Gtk.MenuItem("Copy title to clipboard")
-        self.mb_copy.connect("activate", self.__do_copytoclip)
-        self.mb_alt_title = Gtk.MenuItem("Set alternate title...")
-        self.mb_alt_title.connect("activate", self.__do_altname)
-        self.mb_delete = Gtk.ImageMenuItem('Delete', Gtk.Image.new_from_icon_name(Gtk.STOCK_DELETE, 0))
-        self.mb_delete.connect("activate", self.__do_delete)
-        self.mb_exit = Gtk.ImageMenuItem('Quit', Gtk.Image.new_from_icon_name(Gtk.STOCK_QUIT, 0))
-        self.mb_exit.connect("activate", self.__do_quit, None)
-        self.mb_addsearch = Gtk.ImageMenuItem("Add/Search Shows", Gtk.Image.new_from_icon_name(Gtk.STOCK_ADD, 0))
-        self.mb_addsearch.connect("activate", self._do_addsearch)
-
-        mb_show.append(self.mb_addsearch)
-        mb_show.append(self.mb_play_random)
-        mb_show.append(Gtk.SeparatorMenuItem())
-        mb_show.append(self.mb_play)
-        mb_show.append(self.mb_info)
-        mb_show.append(self.mb_web)
-        mb_show.append(self.mb_folder)
-        mb_show.append(Gtk.SeparatorMenuItem())
-        mb_show.append(self.mb_copy)
-        mb_show.append(self.mb_alt_title)
-        mb_show.append(Gtk.SeparatorMenuItem())
-        mb_show.append(self.mb_delete)
-        mb_show.append(Gtk.SeparatorMenuItem())
-        mb_show.append(self.mb_exit)
-
-        mb_list = Gtk.Menu()
-        self.mb_sync = Gtk.ImageMenuItem('Sync', Gtk.Image.new_from_icon_name(Gtk.STOCK_REFRESH, 0))
-        self.mb_sync.connect("activate", self.__do_sync)
-        self.mb_retrieve = Gtk.ImageMenuItem("Retrieve list")
-        self.mb_retrieve.connect("activate", self.__do_retrieve_ask)
-        self.mb_send = Gtk.MenuItem('Send changes')
-        self.mb_send.connect("activate", self.__do_send)
-
-        mb_list.append(self.mb_sync)
-        mb_list.append(Gtk.SeparatorMenuItem())
-        mb_list.append(self.mb_retrieve)
-        mb_list.append(self.mb_send)
-        mb_list.append(Gtk.SeparatorMenuItem())
-        mb_list.append(mb_scanlibrary)
-
-        mb_options = Gtk.Menu()
-        self.mb_switch_account = Gtk.MenuItem('Switch Account...')
-        self.mb_switch_account.connect("activate", self.__do_switch_account)
-        self.mb_settings = Gtk.MenuItem('Global Settings...')
-        self.mb_settings.connect("activate", self.__do_settings)
-
-        mb_options.append(self.mb_switch_account)
-        mb_options.append(Gtk.SeparatorMenuItem())
-        mb_options.append(self.mb_settings)
-
-        self.mb_mediatype_menu = Gtk.Menu()
-
-        mb_help = Gtk.Menu()
-        mb_about = Gtk.ImageMenuItem('About', Gtk.Image.new_from_icon_name(Gtk.STOCK_ABOUT, 0))
-        mb_about.connect("activate", self.on_about)
-        mb_help.append(mb_about)
-
-        # Root menubar
-        root_menu1 = Gtk.MenuItem("Show")
-        root_menu1.set_submenu(mb_show)
-        root_list = Gtk.MenuItem("List")
-        root_list.set_submenu(mb_list)
-        root_options = Gtk.MenuItem("Options")
-        root_options.set_submenu(mb_options)
-        mb_mediatype = Gtk.MenuItem("Mediatype")
-        mb_mediatype.set_submenu(self.mb_mediatype_menu)
-        root_menu2 = Gtk.MenuItem("Help")
-        root_menu2.set_submenu(mb_help)
-
-        mb = Gtk.MenuBar()
-        mb.append(root_menu1)
-        mb.append(root_list)
-        mb.append(mb_mediatype)
-        mb.append(root_options)
-        mb.append(root_menu2)
-
-        # Create vertical box
-        vbox = Gtk.VBox(False, 0)
-        self.main_window.add(vbox)
-
-        vbox.pack_start(mb, False, False, 0)
-
-        # Toolbar
-        #toolbar = Gtk.Toolbar()
-        #toolbar.insert_stock(Gtk.STOCK_REFRESH, "Sync", "Sync", None, None, 0)
-        #toolbar.insert_stock(Gtk.STOCK_ADD, "Sync", "Sync", None, None, 1)
-        #toolbar.insert_stock(Gtk.STOCK_MEDIA_PLAY, "Sync", "Sync", None, None, 2)
-        #vbox.pack_start(toolbar, False, False, 0)
-
-        self.top_hbox = Gtk.HBox(False, 10)
-        self.top_hbox.set_border_width(5)
-
         self.show_image = ImageBox(100, 149)
-        self.top_hbox.pack_start(self.show_image, False, False, 0)
+        self.image_container_box.pack_start(self.show_image, False, False, 0)
 
-        # Right box
-        top_right_box = Gtk.VBox(False, 0)
-
-        # Line 1: Title
-        line1 = Gtk.HBox(False, 5)
-        self.show_title = Gtk.Label()
-        self.show_title.set_use_markup(True)
-        self.show_title.set_alignment(0, 0.5)
-        self.show_title.set_ellipsize(Pango.EllipsizeMode.END)
-
-        line1.pack_start(self.show_title, True, True, 0)
-
-        # API info
-        api_hbox = Gtk.HBox(False, 5)
-        self.api_icon = Gtk.Image()
-        self.api_user = Gtk.Label()
-        api_hbox.pack_start(self.api_icon, True, True, 0)
-        api_hbox.pack_start(self.api_user, True, True, 0)
-
-        alignment1 = Gtk.Alignment(xalign=1, yalign=0, xscale=0)
-        alignment1.add(api_hbox)
-        line1.pack_start(alignment1, False, False, 0)
-
-        top_right_box.pack_start(line1, True, True, 0)
-
-        # Line 2: Episode
-        line2 = Gtk.HBox(False, 5)
-        line2_t = Gtk.Label('  Progress')
-        line2_t.set_size_request(70, -1)
-        line2_t.set_alignment(0, 0.5)
-        line2.pack_start(line2_t, False, False, 0)
-
-        # Buttons
-        rem_icon = Gtk.Image()
-        rem_icon.set_from_stock(Gtk.STOCK_REMOVE, Gtk.IconSize.BUTTON)
-        self.rem_epp_button = Gtk.Button()
-        self.rem_epp_button.set_image(rem_icon)
         self.rem_epp_button.connect("clicked", self.__do_rem_epp)
-        self.rem_epp_button.set_sensitive(False)
-        line2.pack_start(self.rem_epp_button, False, False, 0)
-
-        self.show_ep_button = Gtk.Button()
-        self.show_ep_button.set_relief(Gtk.ReliefStyle.NONE)
         self.show_ep_button.connect("clicked", self._show_episode_entry)
-        self.show_ep_button.set_label("-")
-        self.show_ep_button.set_size_request(40, -1)
-        line2.pack_start(self.show_ep_button, False, False, 0)
-
-        self.show_ep_num = Gtk.Entry()
-        self.show_ep_num.set_sensitive(False)
         self.show_ep_num.connect("activate", self.__do_update)
         self.show_ep_num.connect("focus-out-event", self._hide_episode_entry)
-        self.show_ep_num.set_size_request(40, -1)
-        line2.pack_start(self.show_ep_num, False, False, 0)
-
-        add_icon = Gtk.Image()
-        add_icon.set_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON)
-        self.add_epp_button = Gtk.Button()
-        self.add_epp_button.set_image(add_icon)
         self.add_epp_button.connect("clicked", self._do_add_epp)
-        self.add_epp_button.set_sensitive(False)
-        line2.pack_start(self.add_epp_button, False, False, 0)
-
-        self.play_next_button = Gtk.Button('Play Next')
         self.play_next_button.connect("clicked", self.__do_play, True)
-        self.play_next_button.set_sensitive(False)
-        line2.pack_start(self.play_next_button, False, False, 0)
-
-        top_right_box.pack_start(line2, True, False, 0)
-
-        # Line 3: Score
-        line3 = Gtk.HBox(False, 5)
-        line3_t = Gtk.Label('  Score')
-        line3_t.set_size_request(70, -1)
-        line3_t.set_alignment(0, 0.5)
-        line3.pack_start(line3_t, False, False, 0)
-        self.show_score = Gtk.SpinButton()
-        self.show_score.set_adjustment(Gtk.Adjustment(upper=10, step_incr=1))
-        self.show_score.set_sensitive(False)
         self.show_score.connect("activate", self.__do_score)
-        line3.pack_start(self.show_score, False, False, 0)
-
-        self.scoreset_button = Gtk.Button('Set')
         self.scoreset_button.connect("clicked", self.__do_score)
-        self.scoreset_button.set_sensitive(False)
-        line3.pack_start(self.scoreset_button, False, False, 0)
-
-        top_right_box.pack_start(line3, True, False, 0)
-
-        # Line 4: Status
-        line4 = Gtk.HBox(False, 5)
-        line4_t = Gtk.Label('  Status')
-        line4_t.set_size_request(70, -1)
-        line4_t.set_alignment(0, 0.5)
-        line4.pack_start(line4_t, False, False, 0)
-
-        self.statusmodel = Gtk.ListStore(str, str)
-
-        self.statusbox = Gtk.ComboBox.new_with_model(self.statusmodel)
-        cell = Gtk.CellRendererText()
-        self.statusbox.pack_start(cell, True)
-        self.statusbox.add_attribute(cell, 'text', 1)
         self.statusbox_handler = self.statusbox.connect("changed", self.__do_status)
-        self.statusbox.set_sensitive(False)
-
-        alignment = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0)
-        alignment.add(self.statusbox)
-
-        line4.pack_start(alignment, False, False, 0)
-
-        top_right_box.pack_start(line4, True, False, 0)
-
-        self.top_hbox.pack_start(top_right_box, True, True, 0)
-        vbox.pack_start(self.top_hbox, False, False, 0)
 
         # Notebook for lists
         self.notebook = Gtk.Notebook()
         self.notebook.set_tab_pos(Gtk.PositionType.TOP)
         self.notebook.set_scrollable(True)
-        self.notebook.set_border_width(3)
+        self.notebook.set_border_width(0)
 
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sw.set_size_request(550, 300)
-        sw.set_border_width(5)
+        sw.set_border_width(0)
         self.notebook.append_page(sw, Gtk.Label("Status"))
-
-        vbox.pack_start(self.notebook, True, True, 0)
+        self.main_box.pack_start(self.notebook, True, True, 0)
 
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
-        vbox.pack_start(self.statusbar, False, False, 0)
+        self.main_box.pack_start(self.statusbar, False, False, 0)
 
-        vbox.show_all()
+        self.main_box.show_all()
 
         # Accelerators
         accelgrp = Gtk.AccelGroup()
 
-        key, mod = Gtk.accelerator_parse("<Control>N")
-        self.mb_play.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>R")
-        self.mb_play_random.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>A")
-        self.mb_addsearch.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>S")
-        self.mb_sync.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>E")
-        self.mb_send.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>D")
-        self.mb_retrieve.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Control>N")
+        # self.mb_play.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Control>R")
+        # self.mb_play_random.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         key, mod = Gtk.accelerator_parse("<Control>Right")
         self.add_epp_button.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         self.add_epp_button.set_tooltip_text("Ctrl+Right")
         key, mod = Gtk.accelerator_parse("<Control>Left")
         self.rem_epp_button.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
         self.rem_epp_button.set_tooltip_text("Ctrl+Left")
-        key, mod = Gtk.accelerator_parse("<Control>L")
-        mb_scanlibrary.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>W")
-        self.mb_web.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>Delete")
-        self.mb_delete.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>Q")
-        self.mb_exit.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>O")
-        self.mb_settings.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Control>Y")
-        self.mb_copy.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Shift>A")
-        self.mb_alt_title.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
-        key, mod = Gtk.accelerator_parse("<Shift>C")
-        self.mb_switch_account.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Control>W")
+        # self.mb_web.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Control>Delete")
+        # self.mb_delete.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Control>Y")
+        # self.mb_copy.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
+        # key, mod = Gtk.accelerator_parse("<Shift>A")
+        # self.mb_alt_title.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
 
         self.main_window.add_accel_group(accelgrp)
 
@@ -599,7 +521,7 @@ class TrackmaWindow:
     def idle_restart_push(self):
         self.quit = False
         self.main_window.destroy()
-        self.__do_switch_account(None, False, forget=True)
+        self._show_accounts(switch=False, forget=True)
 
     def on_destroy(self, widget):
         if self.quit:
@@ -621,9 +543,12 @@ class TrackmaWindow:
         mb_about = Gtk.ImageMenuItem('About', Gtk.Image.new_from_icon_name(Gtk.STOCK_ABOUT, 0))
         mb_quit = Gtk.ImageMenuItem('Quit', Gtk.Image.new_from_icon_name(Gtk.STOCK_QUIT, 0))
 
+        def on_mb_quit():
+            self._quit()
+
         mb_show.connect("activate", self.status_event)
-        mb_about.connect("activate", self.on_about)
-        mb_quit.connect("activate", self.__do_quit)
+        mb_about.connect("activate", self._on_about)
+        mb_quit.connect("activate", on_mb_quit)
 
         menu.append(mb_show)
         menu.append(mb_about)
@@ -641,32 +566,8 @@ class TrackmaWindow:
             self.hidden = True
             self.main_window.hide()
         else:
-            self.__do_quit()
+            self._quit()
         return True
-
-    def __do_quit(self, widget=None, event=None, data=None):
-        if self.config['remember_geometry']:
-            self.__do_store_geometry()
-        if self.close_thread is None:
-            self.close_thread = threading.Thread(target=self.task_unload)
-            self.close_thread.start()
-
-    def __do_store_geometry(self):
-        (width, height) = self.main_window.get_size()
-        self.config['last_width'] = width
-        self.config['last_height'] = height
-        utils.save_config(self.config, self.configfile)
-
-    def _do_addsearch(self, widget):
-        page = self.notebook.get_current_page()
-        current_status = self.engine.mediainfo['statuses'][page]
-
-        win = SearchWindow(self.engine, self.config['colors'], current_status)
-        win.show_all()
-
-    def __do_settings(self, widget):
-        win = SettingsWindow(self.engine, self.config, self.configfile)
-        win.show_all()
 
     def __do_reload(self, widget, account, mediatype):
         self.selected_show = 0
@@ -678,9 +579,6 @@ class TrackmaWindow:
 
     def __do_play_random(self, widget):
         threading.Thread(target=self.task_play_random).start()
-
-    def __do_scanlibrary(self, widget):
-        threading.Thread(target=self.task_scanlibrary).start()
 
     def __do_delete(self, widget):
         try:
@@ -823,72 +721,13 @@ class TrackmaWindow:
         self.status("Ready.")
         self.allow_buttons(True)
 
-    def task_scanlibrary(self):
-        try:
-            self.engine.scan_library(rescan=True)
-        except utils.TrackmaError as e:
-            self.error(e)
-
-        GObject.idle_add(self.build_list, self.engine.mediainfo['status_start'])
-
-        self.status("Ready.")
-        self.allow_buttons(True)
-
     def task_unload(self):
         self.allow_buttons(False)
         self.engine.unload()
 
         self.idle_destroy()
 
-    def __do_retrieve_ask(self, widget):
-        queue = self.engine.get_queue()
 
-        if not queue:
-            dialog = Gtk.MessageDialog(self.main_window,
-                                       Gtk.DialogFlags.MODAL,
-                                       Gtk.MessageType.QUESTION,
-                                       Gtk.ButtonsType.YES_NO,
-                                       "There are %d queued changes in your list. If you retrieve the remote list now you will lose your queued changes. Are you sure you want to continue?" % len(queue))
-            dialog.show_all()
-            dialog.connect("response", self.__do_retrieve)
-        else:
-            # If the user doesn't have any queued changes
-            # just go ahead
-            self.__do_retrieve()
-
-    def __do_retrieve(self, widget=None, response=Gtk.ResponseType.YES):
-        if widget:
-            widget.destroy()
-
-        if response == Gtk.ResponseType.YES:
-            threading.Thread(target=self.task_sync, args=(False,True)).start()
-
-    def __do_send(self, widget):
-        threading.Thread(target=self.task_sync, args=(True,False)).start()
-
-    def __do_sync(self, widget):
-        threading.Thread(target=self.task_sync, args=(True,True)).start()
-
-    def task_sync(self, send, retrieve):
-        self.allow_buttons(False)
-
-        try:
-            if send:
-                self.engine.list_upload()
-            if retrieve:
-                self.engine.list_download()
-
-            GObject.idle_add(self._set_score_ranges)
-            GObject.idle_add(self.build_all_lists)
-        except utils.TrackmaError as e:
-            self.error(e)
-        except utils.TrackmaFatal as e:
-            self.idle_restart()
-            self.error("Fatal engine error: %s" % e)
-            return
-
-        self.status("Ready.")
-        self.allow_buttons(True)
 
     def start_engine(self):
         threading.Thread(target=self.task_start_engine).start()
@@ -908,19 +747,7 @@ class TrackmaWindow:
         self._set_score_ranges()
         self._create_lists()
         self.build_all_lists()
-
-        # Clear and build API and mediatypes menus
-        for i in self.mb_mediatype_menu.get_children():
-            self.mb_mediatype_menu.remove(i)
-
-        for mediatype in self.engine.api_info['supported_mediatypes']:
-            item = Gtk.RadioMenuItem(label=mediatype)
-            if mediatype == self.engine.api_info['mediatype']:
-                item.set_active(True)
-            item.connect("activate", self.__do_reload, None, mediatype)
-            self.mb_mediatype_menu.append(item)
-            item.show()
-
+        self._set_mediatypes_menu()
         self.statusbox.handler_unblock(self.statusbox_handler)
         Gdk.threads_leave()
 
@@ -1040,16 +867,6 @@ class TrackmaWindow:
 
         widget.append_finish()
 
-    def on_about(self, widget):
-        about = Gtk.AboutDialog()
-        about.set_program_name("Trackma-gtk")
-        about.set_version(utils.VERSION)
-        about.set_comments("Trackma is an open source client for media tracking websites.")
-        about.set_website("http://github.com/z411/trackma")
-        about.set_copyright("Thanks to all contributors. See AUTHORS file.\n(c) z411 - Icon by shuuichi")
-        about.run()
-        about.destroy()
-
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
         #print("%s: %s" % (classname, msg))
@@ -1093,7 +910,6 @@ class TrackmaWindow:
         if self.selected_show or not boolean:
             if self.engine.mediainfo['can_play']:
                 self.play_next_button.set_sensitive(boolean)
-                self.mb_play.set_sensitive(boolean)
 
             if self.engine.mediainfo['can_update']:
                 self.show_ep_button.set_sensitive(boolean)
@@ -1104,12 +920,6 @@ class TrackmaWindow:
             self.scoreset_button.set_sensitive(boolean)
             self.show_score.set_sensitive(boolean)
             self.statusbox.set_sensitive(boolean)
-            self.mb_copy.set_sensitive(boolean)
-            self.mb_delete.set_sensitive(boolean)
-            self.mb_alt_title.set_sensitive(boolean)
-            self.mb_info.set_sensitive(boolean)
-            self.mb_web.set_sensitive(boolean)
-            self.mb_folder.set_sensitive(boolean)
 
     def __do_copytoclip(self, widget):
         # Copy selected show title to clipboard
