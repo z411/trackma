@@ -39,7 +39,7 @@ class AccountsWindow(Gtk.Window):
 
     __gsignals__ = {
         'account-open': (GObject.SIGNAL_RUN_FIRST, None,
-                         (int,))
+                         (int, bool))
     }
 
     header_bar = GtkTemplate.Child()
@@ -50,6 +50,7 @@ class AccountsWindow(Gtk.Window):
     btn_new_confirm = GtkTemplate.Child()
     btn_new_cancel = GtkTemplate.Child()
     btn_edit_confirm = GtkTemplate.Child()
+    remember_switch = GtkTemplate.Child()
     accounts_stack = GtkTemplate.Child()
     accounts_combo = GtkTemplate.Child()
     password_label = GtkTemplate.Child()
@@ -69,11 +70,16 @@ class AccountsWindow(Gtk.Window):
         self.manager = manager
         self.switch = switch
 
+        self._refresh_remember()
         self._refresh_pixbufs()
         self._refresh_list()
         self._populate_combobox()
 
         self.show()
+
+    def _refresh_remember(self):
+        remember = self.manager.get_default() is not None
+        self.remember_switch.set_active(remember)
 
     def _refresh_pixbufs(self):
         self.pixbufs = {}
@@ -127,7 +133,9 @@ class AccountsWindow(Gtk.Window):
 
     @GtkTemplate.Callback
     def _on_row_activated(self, list_box, row):
-        self.emit('account-open', row.get_account_id())
+        acc_num = row.get_account_id()
+        remember = self.remember_switch.get_active()
+        self.emit('account-open', acc_num, remember)
         self.destroy()
 
     @GtkTemplate.Callback
@@ -137,7 +145,8 @@ class AccountsWindow(Gtk.Window):
     @GtkTemplate.Callback
     def _on_btn_open_clicked(self, btn):
         acc_num = self.accounts_listbox.get_selected_row().get_account_id()
-        self.emit('account-open', acc_num)
+        remember = self.remember_switch.get_active()
+        self.emit('account-open', acc_num, remember)
         self.destroy()
 
     @GtkTemplate.Callback

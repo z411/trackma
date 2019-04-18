@@ -159,9 +159,14 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         mediatype = value.get_string()
         self.__do_reload(None, None, mediatype)
 
-    def _on_account_open(self, accounts_window, account_num):
+    def _on_account_open(self, accounts_window, account_num, remember):
         manager = AccountManager()
         account = manager.get_account(account_num)
+
+        if remember:
+            self.accountsel.manager.set_default(account_num)
+        else:
+            self.accountsel.manager.set_default(None)
 
         # Reload the engine if already started,
         # start it otherwise
