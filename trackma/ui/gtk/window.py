@@ -77,33 +77,27 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self.init_template()
 
         self.debug = debug
-
-        self.configfile = None
-        self.accountsel = None
-        self.account = None
-
-        self.main_window = None
+        self.configfile = utils.to_config_path('ui-Gtk.json')
+        self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
 
         self.notebook = None
         self.statusbox_handler = None
         self.statusbar = None
 
+        self.account = None
         self.selected_show = None
         self.score_decimal_places = None
 
     def main(self):
         """Start the Account Selector"""
-        self.configfile = utils.to_config_path('ui-Gtk.json')
-        self.config = utils.parse_config(self.configfile, utils.gtk_defaults)
-
         manager = AccountManager()
 
         # Use the remembered account if there's one
         if manager.get_default():
             self.start(manager.get_default())
         else:
-            self.accountsel = AccountsWindow(manager)
-            self.accountsel.connect('account-open', self._on_account_open)
+            accountsel = AccountsWindow(manager)
+            accountsel.connect('account-open', self._on_account_open)
 
         Gtk.main()
 
@@ -164,9 +158,9 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         account = manager.get_account(account_num)
 
         if remember:
-            self.accountsel.manager.set_default(account_num)
+            manager.set_default(account_num)
         else:
-            self.accountsel.manager.set_default(None)
+            manager.set_default(None)
 
         # Reload the engine if already started,
         # start it otherwise
@@ -192,7 +186,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         queue = self.engine.get_queue()
 
         if not queue:
-            dialog = Gtk.MessageDialog(self.main_window,
+            dialog = Gtk.MessageDialog(self,
                                        Gtk.DialogFlags.MODAL,
                                        Gtk.MessageType.QUESTION,
                                        Gtk.ButtonsType.YES_NO,
@@ -251,10 +245,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _show_accounts(self, switch=True, forget=False):
         manager = AccountManager()
+
         if forget:
             manager.set_default(None)
-        self.accountsel = AccountsWindow(manager = AccountManager(), switch=switch)
-        self.accountsel.connect('account-open', self._on_account_open)
+
+        accountsel = AccountsWindow(manager=manager, switch=switch)
+        accountsel.connect('account-open', self._on_account_open)
 
     def _on_preferences(self, action, param):
         win = SettingsWindow(self.engine, self.config, self.configfile)
@@ -281,29 +277,10 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self.close_thread.start()
 
     def __do_store_geometry(self):
-        (width, height) = self.main_window.get_size()
+        (width, height) = self.get_size()
         self.config['last_width'] = width
         self.config['last_height'] = height
         utils.save_config(self.config, self.configfile)
-
-    def use_account(self, widget):
-        """Start the main application with the following account"""
-        accountid = self.accountsel.get_selected_id()
-        account = self.accountsel.manager.get_account(accountid)
-        # If remember box is checked, set as default account
-        if self.accountsel.is_remember():
-            self.accountsel.manager.set_default(accountid)
-        else:
-            self.accountsel.manager.set_default(None)
-
-        self.accountsel.destroy()
-
-        # Reload the engine if already started,
-        # start it otherwise
-        if self.engine and self.engine.loaded:
-            self.__do_reload(None, account, None)
-        else:
-            self.start(account)
 
     def start(self, account):
         """Create the main window"""
@@ -312,14 +289,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self.engine = Engine(account, self.message_handler)
         self._set_actions()
 
-        self.main_window = self
-        self.main_window.set_position(Gtk.WindowPosition.CENTER)
-        self.main_window.connect('delete_event', self.delete_event)
-        self.main_window.connect('destroy', self.on_destroy)
-        self.main_window.set_title('Trackma-gtk ' + utils.VERSION)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect('delete_event', self.delete_event)
+        self.connect('destroy', self.on_destroy)
+        self.set_title('Trackma-gtk ' + utils.VERSION)
         Gtk.Window.set_default_icon_from_file(utils.datadir + '/data/icon.png')
         if self.config['remember_geometry']:
-            self.main_window.resize(self.config['last_width'], self.config['last_height'])
+            self.resize(self.config['last_width'], self.config['last_height'])
 
         self.show_image = ImageBox(100, 149)
         self.image_container_box.pack_start(self.show_image, False, False, 0)
@@ -375,7 +351,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         # key, mod = Gtk.accelerator_parse("<Shift>A")
         # self.mb_alt_title.add_accelerator("activate", accelgrp, key, mod, Gtk.AccelFlags.VISIBLE)
 
-        self.main_window.add_accel_group(accelgrp)
+        self.add_accel_group(accelgrp)
 
         # Status icon
         if tray_available:
@@ -409,7 +385,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         if self.statusicon and self.config['show_tray'] and self.config['start_in_tray']:
             self.hidden = True
         else:
-            self.main_window.show()
+            self.show()
 
         self.show_ep_num.hide()
 
@@ -423,7 +399,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         current_api = utils.available_libs[self.account['api']]
         api_iconfile = current_api[1]
 
-        self.main_window.set_title('Trackma-gtk %s [%s (%s)]' % (
+        self.set_title('Trackma-gtk %s [%s (%s)]' % (
             utils.VERSION,
             self.engine.api_info['name'],
             self.engine.api_info['mediatype']))
@@ -518,14 +494,14 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def idle_destroy_push(self):
         self.quit = True
-        self.main_window.destroy()
+        self.destroy()
 
     def idle_restart(self):
         GObject.idle_add(self.idle_restart_push)
 
     def idle_restart_push(self):
         self.quit = False
-        self.main_window.destroy()
+        self.destroy()
         self._show_accounts(switch=False, forget=True)
 
     def on_destroy(self, widget):
@@ -535,10 +511,10 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def status_event(self, widget):
         # Called when the tray icon is left-clicked
         if self.hidden:
-            self.main_window.show()
+            self.show()
             self.hidden = False
         else:
-            self.main_window.hide()
+            self.hide()
             self.hidden = True
 
     def status_menu_event(self, icon, button, time):
@@ -569,7 +545,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def delete_event(self, widget, event, data=None):
         if self.statusicon and self.statusicon.get_visible() and self.config['close_to_tray']:
             self.hidden = True
-            self.main_window.hide()
+            self.hide()
         else:
             self._quit()
         return True
@@ -678,7 +654,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self.show_lists[status].playing(show, is_playing)
 
     def task_update_next(self, show, played_ep):
-        dialog = Gtk.MessageDialog(self.main_window,
+        dialog = Gtk.MessageDialog(self,
                                    Gtk.DialogFlags.MODAL,
                                    Gtk.MessageType.QUESTION,
                                    Gtk.ButtonsType.YES_NO,
@@ -887,7 +863,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         GObject.idle_add(self.error_push, msg, icon)
 
     def error_push(self, msg, icon=Gtk.MessageType.ERROR):
-        dialog = Gtk.MessageDialog(self.main_window, Gtk.DialogFlags.MODAL, icon, Gtk.ButtonsType.OK, str(msg))
+        dialog = Gtk.MessageDialog(self, Gtk.DialogFlags.MODAL, icon, Gtk.ButtonsType.OK, str(msg))
         dialog.show_all()
         dialog.connect("response", self.modal_close)
         print('Error: {}'.format(msg))
