@@ -257,12 +257,15 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         win.show_all()
 
     def _on_about(self, action, param):
-        about = Gtk.AboutDialog()
+        about = Gtk.AboutDialog(parent=self)
         about.set_program_name("Trackma-gtk")
         about.set_version(utils.VERSION)
-        about.set_comments("Trackma is an open source client for media tracking websites.")
+        about.set_license_type(Gtk.License.GPL_3_0_ONLY)
+        about.set_comments("Trackma is an open source client for media tracking websites.\nThanks to all contributors.")
         about.set_website("http://github.com/z411/trackma")
-        about.set_copyright("Thanks to all contributors. See AUTHORS file.\n(c) z411 - Icon by shuuichi")
+        about.set_copyright("© z411, et al.")
+        about.set_authors(["See AUTHORS file"])
+        about.set_artists(["shuuichi"])
         about.run()
         about.destroy()
 
