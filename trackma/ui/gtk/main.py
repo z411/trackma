@@ -17,7 +17,7 @@
 import sys
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GObject
 from trackma.ui.gtk.window import TrackmaWindow
 from trackma import utils
 
@@ -37,11 +37,13 @@ def main():
     if '-d' in sys.argv:
         debug = True
 
-    Gdk.threads_init() # We'll use threads
     app = TrackmaWindow(debug)
     try:
+        GObject.threads_init()
+        Gdk.threads_init()
         Gdk.threads_enter()
         app.main()
+        Gtk.main()
     except utils.TrackmaFatal as e:
         md = Gtk.MessageDialog(None,
                                Gtk.DialogFlags.DESTROY_WITH_PARENT,

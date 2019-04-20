@@ -267,12 +267,14 @@ class ShowTreeView(Gtk.TreeView):
                 return
 
     def select(self, show):
-        """Select specified row"""
+        """Select specified row or first if not found"""
         for row in self.store:
             if int(row[0]) == show['id']:
                 selection = self.get_selection()
                 selection.select_iter(row.iter)
-                break
+                return
+
+        self.get_selection().select_path(Gtk.TreePath.new_first())
 
 
 class ProgressCellRenderer(Gtk.CellRenderer):

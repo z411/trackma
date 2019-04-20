@@ -33,11 +33,13 @@ class AccountsView(Enum):
 
 
 @GtkTemplate(ui=os.path.join(gtk_dir, 'data/accountswindow.ui'))
-class AccountsWindow(Gtk.Window):
+class AccountsWindow(Gtk.Dialog):
 
     __gtype_name__ = 'AccountsWindow'
 
     __gsignals__ = {
+        'account-cancel': (GObject.SIGNAL_RUN_FIRST, None,
+                           ()),
         'account-open': (GObject.SIGNAL_RUN_FIRST, None,
                          (int, bool))
     }
@@ -59,8 +61,8 @@ class AccountsWindow(Gtk.Window):
     username_entry = GtkTemplate.Child()
     btn_pin_request = GtkTemplate.Child()
 
-    def __init__(self, manager, switch=False):
-        Gtk.Window.__init__(self)
+    def __init__(self, manager, **kwargs):
+        Gtk.Window.__init__(self, **kwargs)
         self.init_template()
 
         self.accounts = []
@@ -68,7 +70,6 @@ class AccountsWindow(Gtk.Window):
         self.treeiters = {}
         self.current = AccountsView.LIST
         self.manager = manager
-        self.switch = switch
 
         self._refresh_remember()
         self._refresh_pixbufs()
@@ -120,11 +121,14 @@ class AccountsWindow(Gtk.Window):
             self.accounts.append(account)
 
     @GtkTemplate.Callback
-    def _on_btn_cancel_clicked(self, btn):
+    def _on_dialog_close(self, dialog):
+        self.emit('account-cancel')
         self.destroy()
 
-        if not self.switch:
-            Gtk.main_quit()
+    @GtkTemplate.Callback
+    def _on_btn_cancel_clicked(self, btn):
+        self.emit('account-cancel')
+        self.destroy()
 
     @GtkTemplate.Callback
     def _on_row_selected(self, list_box, row):
