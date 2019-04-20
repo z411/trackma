@@ -1297,7 +1297,7 @@ class MainWindow(QMainWindow):
 
     def ws_prompt_add(self, show_title, episode):
         page = self.notebook.currentIndex()
-        current_status = self.statuses_nums[page]
+        current_status = self.mediainfo['statuses'][page]
 
         addwindow = AddDialog(None, self.worker, current_status, default=show_title)
         addwindow.setModal(True)
