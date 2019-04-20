@@ -79,7 +79,10 @@ class inotifyBase(tracker.TrackerBase):
             self._emit_signal('detected', path, name)
             self.open_file = (pathname, pid, fd)
 
-            (state, show_tuple) = self._get_playing_show(name)
+            if self.config['library_full_path']:
+                (state, show_tuple) = self._get_playing_show(pathname)
+            else:
+                (state, show_tuple) = self._get_playing_show(name)
             self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
         else:

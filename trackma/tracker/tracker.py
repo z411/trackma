@@ -55,6 +55,8 @@ class TrackerBase(object):
         self.list = tracker_list
         self.config = config
         self.redirections = redirections
+        # Reverse sorting for prefix matching
+        self.watch_dirs = tuple(sorted(watch_dirs, reverse=True))
         self.wait_s = None
 
         tracker_args = (config, watch_dirs)
@@ -195,6 +197,15 @@ class TrackerBase(object):
             return (utils.TRACKER_NOVIDEO, None)
 
         if filename:
+            # Trim out watch dir
+            if os.path.isabs(filename):
+                for watch_prefix in self.watch_dirs:
+                    if filename.startswith(watch_prefix):
+                        filename = filename[len(watch_prefix):]
+                        if filename.startswith(os.path.sep):
+                            filename = filename[len(os.path.sep):]
+                        break
+
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
                 return (self.last_state, self.last_show_tuple)
