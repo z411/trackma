@@ -312,7 +312,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._create_engine(account)
 
     def _on_preferences(self, action, param):
-        win = SettingsWindow(self._engine, self._config, self._configfile)
+        win = SettingsWindow(self._engine, self._config, self._configfile, transient_for=self)
         win.show_all()
 
     def _on_about(self, action, param):
