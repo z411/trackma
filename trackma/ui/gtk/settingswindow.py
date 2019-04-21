@@ -80,9 +80,9 @@ class SettingsWindow(Gtk.Window):
 
     radiobutton_upload_minutes = GtkTemplate.Child()
     radiobutton_upload_size = GtkTemplate.Child()
-    radiobutton_upload_exit = GtkTemplate.Child()
     radiobutton_upload_always = GtkTemplate.Child()
     radiobutton_upload_off = GtkTemplate.Child()
+    checkbox_upload_exit = GtkTemplate.Child()
 
     spinbutton_download_days = GtkTemplate.Child()
     spinbutton_upload_minutes = GtkTemplate.Child()
@@ -176,7 +176,6 @@ class SettingsWindow(Gtk.Window):
         else:
             self.radiobutton_download_off.set_active(True)
 
-        self.radiobutton_upload_exit.set_active(self.engine.get_config('autosend_at_exit'))
         if self.engine.get_config('autosend') == 'always':
             self.radiobutton_upload_always.set_active(True)
         elif self.engine.get_config('autosend') in ('minutes', 'hours'):
@@ -184,7 +183,9 @@ class SettingsWindow(Gtk.Window):
         elif self.engine.get_config('autosend') == 'size':
             self.radiobutton_upload_size.set_active(True)
         else:
-            self.spinbutton_upload_off.set_active(True)
+            self.radiobutton_upload_off.set_active(True)
+
+        self.checkbox_upload_exit.set_active(self.engine.get_config('autosend_at_exit'))
 
         self.spinbutton_download_days.set_value(self.engine.get_config('autoretrieve_days'))
         self.spinbutton_upload_minutes.set_value(self.engine.get_config('autosend_minutes'))
@@ -318,7 +319,7 @@ class SettingsWindow(Gtk.Window):
         self.engine.set_config('plex_user', self.entry_plex_username.get_text())
         self.engine.set_config('plex_passwd', self.entry_plex_password.get_text())
         self.engine.set_config('tracker_enabled', self.switch_tracker.get_active())
-        self.engine.set_config('autosend_at_exit', self.radiobutton_upload_exit.get_active())
+        self.engine.set_config('autosend_at_exit', self.checkbox_upload_exit.get_active())
         self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
         self.engine.set_config('tracker_update_close', self.checkbox_tracker_update_close.get_active())
         self.engine.set_config('tracker_update_prompt', self.checkbox_tracker_update_prompt.get_active())
