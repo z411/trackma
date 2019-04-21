@@ -90,9 +90,17 @@ class PlexTracker(tracker.TrackerBase):
                     self.wait_s = self.timer_from_file()
 
                 try:
+                    user = self.config['plex_user']
+                    xuser = self._get_sessions_info("User", "title")
+                    
                     filename = self.playing_file()
                     (state, show_tuple) = self._get_playing_show(filename)
-                    self.update_show_if_needed(state, show_tuple)
+                    
+                    if self.token:
+                        if user == xuser:        
+                            self.update_show_if_needed(state, show_tuple)
+                    else:
+                        self.update_show_if_needed(state, show_tuple)
                 except IndexError:
                     pass
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
