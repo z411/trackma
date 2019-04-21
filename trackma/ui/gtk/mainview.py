@@ -72,6 +72,8 @@ class MainView(Gtk.Box):
 
         self._image_thread = None
         self._current_page = None
+        self.statusbox_handler = None
+        self.notebook_switch_handler = None
         self._pages = {}
         self._page_handler_ids = {}
 
@@ -114,7 +116,7 @@ class MainView(Gtk.Box):
         self.spinbtn_score.connect("activate", self._on_spinbtn_score_activate)
         self.btn_score_set.connect("clicked", self._on_spinbtn_score_activate)
         self.statusbox_handler = self.statusbox.connect("changed", self._on_statusbox_changed)
-        self.notebook.connect("switch-page", self._on_switch_notebook_page)
+        self.notebook_switch_handler = self.notebook.connect("switch-page", self._on_switch_notebook_page)
 
     def _init_signals_engine(self):
         self._engine.connect_signal('episode_changed', self._on_changed_show_idle)
@@ -193,6 +195,7 @@ class MainView(Gtk.Box):
         statuses_nums = self._engine.mediainfo['statuses']
         statuses_names = self._engine.mediainfo['statuses_dict']
 
+        self.notebook.handler_block(self.notebook_switch_handler)
         # Clear notebook
         for i in range(self.notebook.get_n_pages()):
             self.notebook.remove_page(-1)
@@ -213,6 +216,7 @@ class MainView(Gtk.Box):
             self.notebook.append_page(self._pages[status],
                                       Gtk.Label(statuses_names[status]))
 
+        self.notebook.handler_unblock(self.notebook_switch_handler)
         self.notebook.show_all()
 
     def populate_all_pages(self):
