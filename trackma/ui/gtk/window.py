@@ -201,8 +201,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _on_search(self, action, param):
         current_status = self._main_view.get_current_status()
-        win = SearchWindow(self._engine, self._config['colors'], current_status)
+        win = SearchWindow(self._engine, self._config['colors'], current_status, transient_for=self)
+        win.connect('search-error', self._on_search_error)
         win.show_all()
+
+    def _on_search_error(self, search_window, error_msg):
+        print(error_msg)
 
     def _on_synchronize(self, action, param):
         threading.Thread(target=self._synchronization_task, args=(True, True)).start()
@@ -499,7 +503,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _open_details(self, show_id):
         show = self._engine.get_show_info(show_id)
-        ShowInfoWindow(self._engine, show)
+        ShowInfoWindow(self._engine, show, transient_for=self)
 
     def _open_website(self, show_id):
         show = self._engine.get_show_info(show_id)

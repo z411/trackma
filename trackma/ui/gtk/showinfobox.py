@@ -21,46 +21,37 @@ import threading
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango, GObject
+from trackma.ui.gtk import gtk_dir
+from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.imagetask import ImageTask
 from trackma import utils
 
 
-class ShowInfoBox(Gtk.VBox):
-    def __init__(self, engine):
-        Gtk.VBox.__init__(self)
+@GtkTemplate(ui=os.path.join(gtk_dir, 'data/showinfobox.ui'))
+class ShowInfoBox(Gtk.Box):
+    __gtype_name__ = 'ShowInfoBox'
 
-        self.engine = engine
+    label_title = GtkTemplate.Child()
+    data_container = GtkTemplate.Child()
+    image_container = GtkTemplate.Child()
+
+    def __init__(self, engine):
+        Gtk.Box.__init__(self)
+        self.init_template()
+
+        self._engine = engine
         self._show = None
         self.image_thread = None
         self.details = None
         self.details_e = None
 
-        # Title line
-        self.w_title = Gtk.Label('')
-        self.w_title.set_ellipsize(Pango.EllipsizeMode.END)
+        self.image_box = ImageBox(225, 300)
+        self.image_container.pack_start(self.image_box, False, False, 0)
 
-        # Middle line (sidebox)
-        eventbox_sidebox = Gtk.EventBox()
-        self.scrolled_sidebox = Gtk.ScrolledWindow()
-        self.scrolled_sidebox.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        sidebox = Gtk.HBox()
-
-        alignment_image = Gtk.Alignment(yalign=0.0, xscale=0, yscale=0)
-        self.w_image = ImageBox(225, 350)
-        alignment_image.add(self.w_image)
-
-        self.w_content = Gtk.Label()
-
-        sidebox.pack_start(alignment_image, False, False, 5)
-        sidebox.pack_start(self.w_content, True, True, 5)
-
-        eventbox_sidebox.add(sidebox)
-
-        self.scrolled_sidebox.add_with_viewport(eventbox_sidebox)
-
-        self.pack_start(self.w_title, False, False, 0)
-        self.pack_start(self.scrolled_sidebox, True, True, 5)
+        self.data_label = Gtk.Label('')
+        self.data_label.set_line_wrap(True)
+        self.data_container.pack_start(self.data_label, True, True, 0)
 
     def set_size(self, w, h):
         self.scrolled_sidebox.set_size_request(w, h)
@@ -70,57 +61,51 @@ class ShowInfoBox(Gtk.VBox):
 
         # Load image
         if show.get('image'):
-            imagefile = utils.to_cache_path("%s_%s_f_%s.jpg" % (self.engine.api_info['shortname'], self.engine.api_info['mediatype'], show['id']))
+            imagefile = utils.to_cache_path("%s_%s_f_%s.jpg" % (self._engine.api_info['shortname'], self._engine.api_info['mediatype'], show['id']))
 
             if os.path.isfile(imagefile):
-                self.w_image.image_show(imagefile)
+                self.image_box.image_show(imagefile)
             else:
-                self.w_image.pholder_show('Loading...')
-                self.image_thread = ImageTask(self.w_image, show['image'], imagefile, (200, 298))
+                self.image_box.pholder_show('Loading...')
+                self.image_thread = ImageTask(self.image_box, show['image'], imagefile, (200, 298))
                 self.image_thread.start()
         else:
-            self.w_image.pholder_show('No Image')
-
+            self.image_box.pholder_show('No Image')
 
         # Start info loading thread
-        threading.Thread(target=self.task_load).start()
+        threading.Thread(target=self._show_load_start_task).start()
 
-    def task_load(self):
+    def _show_load_start_task(self):
         # Thread to ask the engine for show details
-
         try:
-            self.details = self.engine.get_show_details(self._show)
+            self.details = self._engine.get_show_details(self._show)
         except utils.TrackmaError as e:
             self.details = None
             self.details_e = e
 
-        GObject.idle_add(self._done)
+        GObject.idle_add(self._show_load_finish_idle)
 
-    def _done(self):
+    def _show_load_finish_idle(self):
         if self.details:
             # Put the returned details into the lines VBox
-            self.w_title.set_text('<span size="14000"><b>{0}</b></span>'.format(html.escape(self.details['title'])))
-            self.w_title.set_use_markup(True)
+            self.label_title.set_text(html.escape(self.details['title']))
 
             detail = list()
             for line in self.details['extra']:
                 if line[0] and line[1]:
                     title, content, *_ = line
+
                     if isinstance(content, list):
                         content = ", ".join(filter(None, content))
-                    detail.append("<b>%s</b>\n%s" % (html.escape(str(title)), html.escape(str(content))))
 
-            self.w_content.set_text("\n\n".join(detail))
-            self.w_content.set_use_markup(True)
-            self.w_content.set_size_request(340, -1)
+                    detail.append("<b>%s</b>\n%s" % (html.escape(str(title)),
+                                                     html.escape(str(content))))
 
+            self.data_label.set_text("\n\n".join(detail))
+            self.data_label.set_use_markup(True)
             self.show_all()
         else:
-            self.w_title.set_text('Error while getting details.')
+            self.label_title.set_text('Error while getting details.')
+
             if self.details_e:
-                self.w_content.set_text(str(self.details_e))
-
-        self.w_content.set_alignment(0, 0)
-        self.w_content.set_line_wrap(True)
-        self.w_content.set_size_request(340, -1)
-
+                self.data_label.set_text(str(self.details_e))
