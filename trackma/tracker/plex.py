@@ -26,6 +26,7 @@ from trackma.tracker import tracker
 NOT_RUNNING = 0
 ACTIVE = 1
 IDLE = 2
+CLAIMED = 3
 
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
@@ -47,8 +48,11 @@ class PlexTracker(tracker.TrackerBase):
                 return ACTIVE
             else:
                 return IDLE
-        except urllib.request.URLError:
-            return NOT_RUNNING
+        except urllib.request.URLError as e:
+            if e.code == 401:
+                return CLAIMED
+            else:
+                return NOT_RUNNING
 
     def playing_file(self):
         # returns the filename of the currently playing file
@@ -90,11 +94,21 @@ class PlexTracker(tracker.TrackerBase):
                     self.wait_s = self.timer_from_file()
 
                 try:
+                    user = self.config['plex_user']
+                    xuser = self._get_sessions_info("User", "title")
+                    
                     filename = self.playing_file()
                     (state, show_tuple) = self._get_playing_show(filename)
-                    self.update_show_if_needed(state, show_tuple)
+                    
+                    if self.token:
+                        if user == xuser:        
+                            self.update_show_if_needed(state, show_tuple)
+                    else:
+                        self.update_show_if_needed(state, show_tuple)
                 except IndexError:
                     pass
+            elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
+                self.msg.warn(self.name, "Claimed Plex Media Server, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
                 self.msg.warn(self.name, "Plex Media Server is not running.")
 
