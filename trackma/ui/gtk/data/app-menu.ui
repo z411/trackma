@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.22.1 -->
+<interface>
+  <menu id="app-menu">
+    <section>
+      <item>
+        <attribute name="action">win.search</attribute>
+        <attribute name="label" translatable="yes">Search</attribute>
+        <attribute name="accel">&lt;primary&gt;a</attribute>
+      </item>
+    </section>
+  
+    <section>
+      <item>
+        <attribute name="action">win.syncronize</attribute>
+        <attribute name="label" translatable="yes">Synchronize</attribute>
+        <attribute name="accel">&lt;primary&gt;s</attribute>
+      </item>
+      <item>
+        <attribute name="action">win.upload</attribute>
+        <attribute name="label" translatable="yes">Upload</attribute>
+        <attribute name="accel">&lt;primary&gt;e</attribute>
+      </item>
+      <item>
+        <attribute name="action">win.download</attribute>
+        <attribute name="label" translatable="yes">Download</attribute>
+        <attribute name="accel">&lt;primary&gt;d</attribute>
+      </item>
+    </section>
+
+    <section>
+      <item>
+        <attribute name="action">win.scanfiles</attribute>
+        <attribute name="label" translatable="yes">Scan files</attribute>
+        <attribute name="accel">&lt;primary&gt;l</attribute>
+      </item>
+    </section>
+
+    <section>
+      <item>
+        <attribute name="action">win.accounts</attribute>
+        <attribute name="label" translatable="yes">Accounts</attribute>
+        <attribute name="accel">&lt;shift&gt;c</attribute>
+      </item>
+      <item>
+        <attribute name="action">win.preferences</attribute>
+        <attribute name="label" translatable="yes">Preferences</attribute>
+        <attribute name="accel">&lt;primary&gt;o</attribute>
+      </item>
+    </section>
+
+    <section>
+      <item>
+        <attribute name="action">win.about</attribute>
+        <attribute name="label" translatable="yes">About</attribute>
+      </item>
+      <item>
+        <attribute name="action">win.quit</attribute>
+        <attribute name="label" translatable="yes">Quit</attribute>
+        <attribute name="accel">&lt;primary&gt;q</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>
