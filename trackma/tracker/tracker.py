@@ -48,12 +48,13 @@ class TrackerBase(object):
                'unrecognised': None,
               }
 
-    def __init__(self, messenger, tracker_list, config, watch_dirs):
+    def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         self.msg = messenger
         self.msg.info(self.name, 'Initializing...')
 
         self.list = tracker_list
         self.config = config
+        self.redirections = redirections
         self.wait_s = None
 
         tracker_args = (config, watch_dirs)
@@ -209,6 +210,8 @@ class TrackerBase(object):
 
             playing_show = utils.guess_show(show_title, self.list)
             if playing_show:
+                (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep), self.redirections, self.list)
+
                 return (utils.TRACKER_PLAYING, (playing_show, show_ep))
             else:
                 # Show not in list

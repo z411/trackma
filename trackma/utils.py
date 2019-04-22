@@ -180,7 +180,7 @@ def change_permissions(filename, mode):
     os.chmod(filename, mode)
 
 def estimate_aired_episodes(show):
-    # Estimate how many episodes have passed since airing
+    """ Estimate how many episodes have passed since airing """
 
     if show['status'] == STATUS_FINISHED:
         return show['total']
@@ -201,16 +201,15 @@ def estimate_aired_episodes(show):
     return 0
 
 def guess_show(show_title, tracker_list):
+    """ Take a title and search for it fuzzily in the tracker list """
     (showlist, altnames_map) = tracker_list
 
     # Return the show immediately if we find an altname for it
-    # TODO: We should use a dictionary here for O(1)
     if altnames_map and show_title.lower() in altnames_map:
         showid = altnames_map[show_title.lower()]
 
-        for item in showlist:
-            if item['id'] == showid:
-                return item
+        if showid in showlist:
+            return showlist[showid]
 
     # Use difflib to see if the show title is similar to
     # one we have in the list
@@ -220,7 +219,7 @@ def guess_show(show_title, tracker_list):
 
     # Compare to every show in our list to see which one
     # has the most similar name
-    for item in showlist:
+    for item in showlist.values():
         # Make sure to search through all the aliases
         for title in item['titles']:
             matcher.set_seq2(title.lower())
@@ -230,7 +229,29 @@ def guess_show(show_title, tracker_list):
 
     playing_show = highest_ratio[0]
     if highest_ratio[1] > 0.7:
-        return playing_show
+            return playing_show
+
+def redirect_show(show_tuple, redirections, tracker_list):
+    """ Use a redirection dictionary and return the new show ID and episode acordingly """
+    if not redirections:
+        return show_tuple
+
+    (show, ep) = show_tuple
+    showlist = tracker_list[0]
+
+    if show['id'] in redirections:
+        for redirection in redirections[show['id']]:
+            (src_eps, dst_id, dst_eps) = redirection
+
+            if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
+                new_show_id = dst_id
+                new_ep = ep + (dst_eps[0] - src_eps[0])
+                print("new ep {}".format(new_ep))
+    
+                if new_show_id in showlist:
+                    return (showlist[new_show_id], new_ep)
+        
+    return show_tuple
 
 def get_terminal_size(fd=1):
     """

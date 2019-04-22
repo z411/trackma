@@ -31,13 +31,13 @@ CLAIMED = 3
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
 
-    def __init__(self, messenger, tracker_list, config, watch_dirs):
+    def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         self.config = config
 
         self.host_port = self.config['plex_host']+":"+self.config['plex_port']
         self.status_log = [None, None]
         self.token = self._get_plex_token()
-        super().__init__(messenger, tracker_list, config, watch_dirs)
+        super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
     def get_plex_status(self):
         # returns the plex status of the first active session

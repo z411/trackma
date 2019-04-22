@@ -49,6 +49,7 @@ class Engine:
     """
     data_handler = None
     tracker = None
+    redirections = None
     config = {}
     msg = None
     loaded = False
@@ -175,7 +176,7 @@ class Engine:
                     self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__name__, signal, err))
 
     def _get_tracker_list(self, filter_num=None):
-        tracker_list = []
+        tracker_list = {}
         if isinstance(filter_num, type(None)):
             source_list = self.get_list()
         elif isinstance(filter_num, list):
@@ -189,13 +190,14 @@ class Engine:
             source_list = self.filter_list(filter_num)
 
         for show in source_list:
-            tracker_list.append({'id': show['id'],
+            tracker_list[show['id']] = {
+                                 'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
                                  'total': show['total'],
                                  'type': None,
                                  'titles': self.data_handler.get_show_titles(show),
-                                 })  # TODO types
+                                 }
 
         altnames_map = self.data_handler.get_altnames_map()
         return (tracker_list, altnames_map)
@@ -241,6 +243,21 @@ class Engine:
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
 
+        # Load redirection file if any
+        anime_relations_file = utils.to_config_path('anime-relations.txt')
+        if utils.file_exists(anime_relations_file):
+            from trackma.extras import redirections
+
+            api = self.api_info['shortname']
+            mediatype = self.data_handler.userconfig['mediatype']
+
+            self.msg.info(self.name, "Parsing redirection file (anime-relations.txt)...")
+            try:
+                self.redirections = redirections.parse_anime_relations(anime_relations_file, api, mediatype)
+            except Exception as e:
+                self.msg.warn(self.name, "Error parsing anime-relations.txt!")
+                self.msg.debug(self.name, "{}".format(e))
+
         # Rescan library if necessary
         if self.config['library_autoscan']:
             try:
@@ -280,6 +297,7 @@ class Engine:
                                        self._get_tracker_list(),
                                        self.config,
                                        self.searchdirs,
+                                       self.redirections,
                                       )
                 self.tracker.connect_signal('detected', self._tracker_detected)
                 self.tracker.connect_signal('removed', self._tracker_removed)
@@ -375,9 +393,11 @@ class Engine:
             self.msg.debug(self.name, "Guessed {}".format(show_title))
 
             if show_title:
-                show = utils.guess_show(show_title, self._get_tracker_list())
+                tracker_list = self._get_tracker_list()
+
+                show = utils.guess_show(show_title, tracker_list)
                 if show:
-                    return (show, ep)
+                    return utils.redirect_show((show, ep), self.redirections, tracker_list)
                 else:
                     raise utils.EngineError("Show not found.")
             else:
@@ -834,11 +854,17 @@ class Engine:
                 if show:
                     self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
 
-                    show_id = show['id']
                     if show_ep_start == show_ep_end:
-                        library_cache[filename] = (show['id'], show_ep_start)
+                        # TODO : Support redirections for episode ranges
+                        (show, show_ep) = utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
+                        show_ep_end = show_ep_start = show_ep
+
+                        self.msg.debug(self.name, "Redirected to {} {}".format(show['title'], show_ep))
+                        library_cache[filename] = (show['id'], show_ep)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+                    
+                    show_id = show['id']
                 else:
                     self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
                     library_cache[filename] = None
@@ -852,6 +878,7 @@ class Engine:
                 library[show_id] = {}
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
+
         return library, library_cache
 
     def get_episode_path(self, show, episode):

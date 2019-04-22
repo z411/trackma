@@ -24,8 +24,8 @@ from trackma import utils
 class inotifyBase(tracker.TrackerBase):
     open_file = (None, None, None)
 
-    def __init__(self, messenger, tracker_list, config, watch_dirs):
-        super().__init__(messenger, tracker_list, config, watch_dirs)
+    def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
+        super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
         self.re_players = re.compile(config['tracker_process'].encode('utf-8'))
 
