@@ -246,7 +246,6 @@ def redirect_show(show_tuple, redirections, tracker_list):
             if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
                 new_show_id = dst_id
                 new_ep = ep + (dst_eps[0] - src_eps[0])
-                print("new ep {}".format(new_ep))
     
                 if new_show_id in showlist:
                     return (showlist[new_show_id], new_ep)
