@@ -45,6 +45,8 @@ class AccountsWindow(Gtk.Dialog):
     }
 
     header_bar = GtkTemplate.Child()
+    internal_box = GtkTemplate.Child()
+    accounts_frame = GtkTemplate.Child()
     accounts_listbox = GtkTemplate.Child()
     revealer_action_bar = GtkTemplate.Child()
     btn_cancel = GtkTemplate.Child()
@@ -71,12 +73,31 @@ class AccountsWindow(Gtk.Dialog):
         self.current = AccountsView.LIST
         self.manager = manager
 
+        self._remove_border()
+        self._add_separators()
         self._refresh_remember()
         self._refresh_pixbufs()
         self._refresh_list()
         self._populate_combobox()
 
         self.show()
+
+    def _remove_border(self):
+        self.internal_box.set_border_width(0)
+
+    def _add_separators(self):
+        self.accounts_listbox.set_header_func(self._accounts_listbox_header_func, None)
+
+    def _accounts_listbox_header_func(self, row, before, user_data):
+        if before is None:
+            row.set_header(None)
+            return
+
+        current = row.get_header()
+        if current is None:
+            current = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+            current.show()
+            row.set_header(current)
 
     def _refresh_remember(self):
         remember = self.manager.get_default() is not None
@@ -119,6 +140,11 @@ class AccountsWindow(Gtk.Dialog):
 
             self.accounts_listbox.add(account)
             self.accounts.append(account)
+
+        if not self.accounts:
+            self.accounts_frame.hide()
+        else:
+            self.accounts_frame.show()
 
     @GtkTemplate.Callback
     def _on_dialog_close(self, dialog):

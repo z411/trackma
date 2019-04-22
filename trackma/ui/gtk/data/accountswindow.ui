@@ -81,7 +81,7 @@
       </object>
     </child>
     <child internal-child="vbox">
-      <object class="GtkBox">
+      <object class="GtkBox" id="internal_box">
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child internal-child="action_area">
@@ -114,33 +114,32 @@
                   <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="hscrollbar_policy">never</property>
                     <child>
                       <object class="GtkViewport">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="shadow_type">none</property>
                         <child>
-                          <object class="GtkBox">
+                          <object class="GtkFrame" id="accounts_frame">
+                            <property name="width_request">400</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_top">32</property>
-                            <property name="margin_bottom">32</property>
-                            <property name="orientation">vertical</property>
+                            <property name="halign">center</property>
+                            <property name="valign">center</property>
+                            <property name="margin_left">18</property>
+                            <property name="margin_right">18</property>
+                            <property name="margin_top">18</property>
+                            <property name="margin_bottom">18</property>
+                            <property name="label_xalign">0</property>
                             <child>
                               <object class="GtkListBox" id="accounts_listbox">
-                                <property name="width_request">400</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="halign">center</property>
                                 <property name="activate_on_single_click">False</property>
                                 <signal name="row-activated" handler="_on_row_activated" swapped="no"/>
                                 <signal name="row-selected" handler="_on_row_selected" swapped="no"/>
                               </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
                             </child>
                           </object>
                         </child>
