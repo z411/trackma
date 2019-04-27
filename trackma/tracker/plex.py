@@ -94,14 +94,13 @@ class PlexTracker(tracker.TrackerBase):
                     self.wait_s = self.timer_from_file()
 
                 try:
-                    user = self.config['plex_user']
                     xuser = self._get_sessions_info("User", "title")
                     
                     filename = self.playing_file()
                     (state, show_tuple) = self._get_playing_show(filename)
                     
                     if self.token:
-                        if user == xuser:        
+                        if self.config['plex_user'] == xuser:
                             self.update_show_if_needed(state, show_tuple)
                     else:
                         self.update_show_if_needed(state, show_tuple)
@@ -144,9 +143,20 @@ class PlexTracker(tracker.TrackerBase):
             uop = urllib.request.urlopen(url)
         except urllib.request.URLError:
             uop = urllib.request.urlopen(url+self.token)
-
+        
         doc = xdmd.parse(uop)
-        res = doc.getElementsByTagName(tag)[0].getAttribute(attr)
+        elem = doc.getElementsByTagName(tag)
+        res = elem[0].getAttribute(attr)
+        
+        # if there's more than one session and there's a token lookup the matching user
+        if len(elem) > 1 and self.token:
+            for e in elem:
+                etag = e.getElementsByTagName("User")
+                xuser = etag[0].getAttribute("title") if etag else e.getAttribute("title")
+
+                if xuser == self.config['plex_user']:
+                    res = e.getAttribute(attr)
+                    break
 
         return res
 
