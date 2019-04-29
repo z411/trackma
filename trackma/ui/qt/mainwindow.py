@@ -582,12 +582,16 @@ class MainWindow(QMainWindow):
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
 
-    def _update_tracker_info(self, state, timer):
+    def _update_tracker_info(self, status):
+        state = status['state']
+        timer = status['timer']
+        paused = status['paused']
+
         if state == utils.TRACKER_NOVIDEO:
             st = 'Listen'
         elif state == utils.TRACKER_PLAYING:
             (m, s) = divmod(timer, 60)
-            st = "+{0}:{1:02d}".format(m, s)
+            st = "+{0}:{1:02d}{2}".format(m, s, ' [P]' if paused else '')
         elif state == utils.TRACKER_UNRECOGNIZED:
             st = 'Unrecognized'
         elif state == utils.TRACKER_NOT_FOUND:
@@ -700,7 +704,7 @@ class MainWindow(QMainWindow):
 
             self.notebook.setTabText(page, "{} ({})".format(
                 status_name, self.counts[status]))
-        
+
     def _rebuild_view(self):
         """
         Using a full showlist, rebuilds main view
@@ -754,7 +758,7 @@ class MainWindow(QMainWindow):
         # Stop any running image timer
         if self.image_timer is not None:
             self.image_timer.stop()
-        
+
         # Unselect show
         if not show:
             self.selected_show_id = None
@@ -1284,8 +1288,8 @@ class MainWindow(QMainWindow):
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
 
-    def ws_tracker_state(self, state, timer):
-        self._update_tracker_info(state, timer)
+    def ws_tracker_state(self, status):
+        self._update_tracker_info(status)
 
     def ws_prompt_update(self, show, episode):
         reply = QMessageBox.question(self, 'Message',
@@ -1348,7 +1352,7 @@ class MainWindow(QMainWindow):
             # Show tracker info
             tracker_info = self.worker.engine.tracker_status()
             if tracker_info:
-                self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
+                self._update_tracker_info(tracker_info)
 
             # Build our main view and show total counts
             self._rebuild_view()

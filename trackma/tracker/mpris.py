@@ -49,8 +49,15 @@ class MPRISTracker(tracker.TrackerBase):
             if not self.timing and state == utils.TRACKER_PLAYING:
                 self._pass_timer()
                 GLib.timeout_add_seconds(1, self._pass_timer)
-        elif 'PlaybackStatus' in properties:
-            self.msg.debug(self.name, "New playback status: {}".format(properties['PlaybackStatus']))
+
+        if 'PlaybackStatus' in properties:
+            status = properties['PlaybackStatus']
+            self.msg.debug(self.name, "New playback status: {}".format(status))
+
+            if status == "Paused":
+                self.pause_timer()
+            elif status == "Playing":
+                self.resume_timer()
 
     def _new_name(self, name, old, new):
         if name.startswith(MPRISTracker.mpris_base):

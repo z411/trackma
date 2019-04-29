@@ -153,8 +153,8 @@ class Engine:
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show_title, episode)
 
-    def _tracker_state(self, state, timer):
-        self._emit_signal('tracker_state', state, timer)
+    def _tracker_state(self, status):
+        self._emit_signal('tracker_state', status)
 
     def _emit_signal(self, signal, *args):
         try:

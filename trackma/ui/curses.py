@@ -189,7 +189,7 @@ class Trackma_urwid():
 
         track_info = self.engine.tracker_status()
         if track_info:
-            self.tracker_state(track_info['state'], None)
+            self.tracker_state(track_info)
 
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
@@ -677,11 +677,15 @@ class Trackma_urwid():
     def changed_queue(self, queue):
         self.status_queue.set_text("Q:{}".format(len(queue)))
 
-    def tracker_state(self, state, timer):
+    def tracker_state(self, status):
+        state = status['state']
+        timer = status['timer']
+        paused = status['paused']
+
         if state == utils.TRACKER_NOVIDEO:
             st = 'LISTEN'
         elif state == utils.TRACKER_PLAYING:
-            st = '+{}'.format(timer)
+            st = '{}{}'.format('#' if paused else '+', timer)
         elif state == utils.TRACKER_UNRECOGNIZED:
             st = 'UNRECOG'
         elif state == utils.TRACKER_NOT_FOUND:
@@ -693,11 +697,6 @@ class Trackma_urwid():
 
         self.status_tracker.set_text("T:{}".format(st))
         self.mainloop.draw_screen()
-
-    def tracker_timer(self, timer):
-        if timer is not None:
-            self.status_tracker.set_text("T:+{}".format(timer))
-            self.mainloop.draw_screen()
 
     def playing_show(self, show, is_playing, episode=None):
         status = show['my_status']

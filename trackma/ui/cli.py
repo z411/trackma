@@ -481,7 +481,7 @@ class Trackma_cmd(cmd.Cmd):
 
                 print("State: {}".format(state))
                 print("Filename: {}".format(info['filename'] or 'N/A'))
-                print("Timer: {}".format(info['timer'] or 'N/A'))
+                print("Timer: {}{}".format(info['timer'] or 'N/A', ' [P]' if info['paused'] else ''))
                 if info['show']:
                     (show, ep) = info['show']
                     print("Show: {}\nEpisode: {}".format(show['title'], ep))
