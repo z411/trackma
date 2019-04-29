@@ -105,7 +105,6 @@ class PlexTracker(tracker.TrackerBase):
                     xuser = self._get_sessions_info("User", "title")
                     
                     player = self.playing_file()
-                    print(player)
                     (state, show_tuple) = self._get_playing_show(player[0])
                     
                     if self.token:
