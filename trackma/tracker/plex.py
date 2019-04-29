@@ -25,8 +25,10 @@ from trackma.tracker import tracker
 
 NOT_RUNNING = 0
 ACTIVE = 1
-IDLE = 2
-CLAIMED = 3
+CLAIMED = 2
+PLAYING = 3
+PAUSED = 4
+IDLE = 5
 
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
@@ -63,8 +65,14 @@ class PlexTracker(tracker.TrackerBase):
         meta_url = "http://"+self.host_port+meta
         mres = self._get_xml_info(meta_url, "Part", "file")
         name = urllib.parse.unquote(ntpath.basename(mres))
+        xstate = self._get_sessions_info("Player", "state")
+        
+        if xstate == "playing":
+            state = PLAYING
+        else:
+            state = PAUSED
 
-        return name
+        return (name, state)
 
     def timer_from_file(self):
         # returns 80% of video duration for the update timer,
@@ -96,14 +104,25 @@ class PlexTracker(tracker.TrackerBase):
                 try:
                     xuser = self._get_sessions_info("User", "title")
                     
-                    filename = self.playing_file()
-                    (state, show_tuple) = self._get_playing_show(filename)
+                    player = self.playing_file()
+                    print(player)
+                    (state, show_tuple) = self._get_playing_show(player[0])
                     
                     if self.token:
                         if self.config['plex_user'] == xuser:
                             self.update_show_if_needed(state, show_tuple)
+                            
+                            if player[1] == PAUSED:
+                                self.pause_timer()
+                            elif player[1] == PLAYING:
+                                self.resume_timer()
                     else:
                         self.update_show_if_needed(state, show_tuple)
+                        
+                        if player[1] == PAUSED:
+                            self.pause_timer()
+                        elif player[1] == PLAYING:
+                            self.resume_timer()
                 except IndexError:
                     pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
