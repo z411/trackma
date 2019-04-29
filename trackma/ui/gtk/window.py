@@ -185,7 +185,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._engine.api_info['name'],
             self._engine.api_info['mediatype']))
 
-        if self.statusicon and self.config['tray_api_icon']:
+        if self.statusicon and self._config['tray_api_icon']:
             self.statusicon.set_from_file(api_iconfile)
 
         # Don't show the main dialog if start in tray option is set
