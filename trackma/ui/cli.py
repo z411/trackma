@@ -23,7 +23,6 @@ try:
     has_readline = True
 except ImportError:
     has_readline = False
-    pass # readline is optional
 
 import cmd
 import shlex
@@ -87,6 +86,8 @@ class Trackma_cmd(cmd.Cmd):
     }
 
     def __init__(self, account_num=None, debug=False, interactive=True):
+        super().__init__()
+
         if interactive:
             print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
             print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
@@ -115,15 +116,15 @@ class Trackma_cmd(cmd.Cmd):
 
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
-                u  = self.engine.get_userconfig('username'),
-                a  = self.engine.api_info['shortname'],
-                mt = self.engine.api_info['mediatype'],
-                s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
-                c_r  = _PCOLOR_RESET,
-                c_u  = _PCOLOR_USER,
-                c_a  = _PCOLOR_API,
-                c_mt = _PCOLOR_MEDIATYPE,
-                c_s  = _COLOR_RESET
+            u  = self.engine.get_userconfig('username'),
+            a  = self.engine.api_info['shortname'],
+            mt = self.engine.api_info['mediatype'],
+            s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
+            c_r  = _PCOLOR_RESET,
+            c_u  = _PCOLOR_USER,
+            c_a  = _PCOLOR_API,
+            c_mt = _PCOLOR_MEDIATYPE,
+            c_s  = _COLOR_RESET
         )
 
     def _load_list(self, *args):
@@ -256,7 +257,6 @@ class Trackma_cmd(cmd.Cmd):
 
             names = self.get_names()
             names.sort()
-            cmds = []
             for name in names:
                 if name[:3] == 'do_':
                     doc = getattr(self, name).__doc__
@@ -267,9 +267,9 @@ class Trackma_cmd(cmd.Cmd):
                     (name, args, expl, usage, examples) = self._parse_doc(cmd, doc)
 
                     line = " {0:>{1}} {2:{3}} {4}".format(
-                           name, CMD_LENGTH,
-                           '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
-                           expl[0])
+                        name, CMD_LENGTH,
+                        '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
+                        expl[0])
                     print(tw.fill(line))
 
             print()
@@ -506,16 +506,10 @@ class Trackma_cmd(cmd.Cmd):
 
             # If the user specified an episode, play it
             # otherwise play the next episode not watched yet
-            try:
+            if len(args) > 1:
                 episode = args[1]
-                if episode == (show['my_progress'] + 1):
-                    playing_next = True
-                else:
-                    playing_next = False
-            except IndexError:
-                playing_next = True
 
-            played_episode = self.engine.play_episode(show, episode)
+            self.engine.play_episode(show, episode)
         except utils.TrackmaError as e:
             self.display_error(e)
 
@@ -620,7 +614,6 @@ class Trackma_cmd(cmd.Cmd):
         :usage altname <show index or name> <alternative name>
         """
         try:
-            altnames = self.engine.altnames()
             show = self._get_show(args[0])
             altname = args[1] if len(args) > 1 else ''
             self.engine.altname(show['id'],altname)
@@ -668,7 +661,7 @@ class Trackma_cmd(cmd.Cmd):
         List the queued changes.
         """
         queue = self.engine.get_queue()
-        if len(queue):
+        if queue:
             print("Queue:")
             for show in queue:
                 print("- %s" % show['title'])
@@ -722,8 +715,8 @@ class Trackma_cmd(cmd.Cmd):
     def parse_args(self, arg):
         if arg:
             return shlex.split(arg)
-        else:
-            return []
+
+        return []
 
     def emptyline(self):
         return

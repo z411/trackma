@@ -1,7 +1,7 @@
 import pickle
 from trackma import utils
 
-class AccountManager():
+class AccountManager:
     """
     This is the account manager.
 
@@ -58,7 +58,7 @@ class AccountManager():
         self.accounts['next'] += 1
         self._save()
 
-    def edit_account(self, num, username, password, api, friends=[]):
+    def edit_account(self, num, username, password, api):
         """
         Updates data for account *num* with the specified
         *username*, *password*, and *api*.
@@ -141,5 +141,3 @@ class AccountManager():
         Unsets the default account number.
         """
         self.accounts['default'] = None
-
-

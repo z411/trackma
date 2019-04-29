@@ -19,10 +19,9 @@ import sys
 import threading
 import time
 
-from trackma import messenger
 from trackma import utils
 
-class Data():
+class Data:
     """
     Data Handler Class
 
@@ -49,10 +48,10 @@ class Data():
     autosend_timer = None
 
     signals = {
-                'show_synced':       None,
-                'sync_complete':     None,
-                'queue_changed':     None,
-              }
+        'show_synced':       None,
+        'sync_complete':     None,
+        'queue_changed':     None,
+    }
 
     def __init__(self, messenger, config, account, mediatype):
         """Checks if the config is correct and creates an API object."""
@@ -110,9 +109,9 @@ class Data():
         # Checks if queue should be sent ASAP
         # Note: Hours setting is DEPRECATED!
         return (self.config['autosend'] == 'always' or
-           (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
-           (self.config['autosend'] == 'minutes' and time.time() - self.meta['lastsend'] >= self.config['autosend_minutes']*60) or
-           (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size']))
+                (self.config['autosend'] == 'hours' and time.time() - self.meta['lastsend'] >= self.config['autosend_hours']*3600) or
+                (self.config['autosend'] == 'minutes' and time.time() - self.meta['lastsend'] >= self.config['autosend_minutes']*60) or
+                (self.config['autosend'] == 'size' and len(self.queue) >= self.config['autosend_size']))
 
     def connect_signal(self, signal, callback):
         try:
@@ -217,8 +216,8 @@ class Data():
         self.api.logout()
         if results:
             return results
-        else:
-            raise utils.DataError('No results.')
+
+        raise utils.DataError('No results.')
 
     def queue_add(self, show):
         """
@@ -359,7 +358,7 @@ class Data():
         and failed updates stay there to be processed the next time.
 
         """
-        if len(self.queue):
+        if self.queue:
             self.msg.info(self.name, 'Processing queue...')
 
             # Load the cache if it wasn't loaded for some reason
@@ -480,7 +479,7 @@ class Data():
         show[key] = value
 
     def get_show_titles(self, show):
-            return [show['title']] + show['aliases']
+        return [show['title']] + show['aliases']
 
     def get_altnames_map(self):
         return {name.lower(): showid for showid, name in self.altnames_get().items()}
@@ -546,7 +545,7 @@ class Data():
             # The API needs information to be merged from the
             # info database
             missing = []
-            for k, show in self.showlist.items():
+            for show in self.showlist.values():
                 # Here we search the information in the local
                 # info database. If it isn't available, add it
                 # to the missing list for them to be requested
@@ -560,19 +559,14 @@ class Data():
                     continue
 
                 self.api.merge(show, info)
-                #show['title'] = info['title']
-                #show['image'] = info['image']
 
             # Here we request the missing items and merge them
             # immedately with the list.
-            if len(missing) > 0:
+            if missing:
                 infos = self.api.request_info(missing)
                 for info in infos:
                     showid = info['id']
                     self.api.merge(self.showlist[showid], info)
-
-                    #self.showlist[showid]['title'] = info['title']
-                    #self.showlist[showid]['image'] = info['image']
 
         self._save_cache()
         self.api.logout()
@@ -603,8 +597,8 @@ class Data():
 
         if os.path.isfile(self.lock_file):
             raise utils.DataFatal("Database is locked by another process. "
-                            "If you\'re sure there's no other process is using it, "
-                            "remove the file ~/.trackma/lock")
+                                  "If you\'re sure there's no other process is using it, "
+                                  "remove the file ~/.trackma/lock")
 
         f = open(self.lock_file, 'w')
         f.close()
