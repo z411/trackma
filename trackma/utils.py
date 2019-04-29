@@ -14,8 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, re, shutil, copy
-import subprocess
+import os
+import re
+import shutil
+import copy
 import datetime
 import json
 import difflib
@@ -59,8 +61,8 @@ HOME = os.path.expanduser("~")
 # Put the available APIs here
 available_libs = {
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "https://omaera.org/trackma/anilistv2",
-            "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
+                 "https://omaera.org/trackma/anilistv2",
+                 "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
     'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
@@ -229,7 +231,7 @@ def guess_show(show_title, tracker_list):
 
     playing_show = highest_ratio[0]
     if highest_ratio[1] > 0.7:
-            return playing_show
+        return playing_show
 
 def redirect_show(show_tuple, redirections, tracker_list):
     """ Use a redirection dictionary and return the new show ID and episode acordingly """
@@ -246,10 +248,10 @@ def redirect_show(show_tuple, redirections, tracker_list):
             if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
                 new_show_id = dst_id
                 new_ep = ep + (dst_eps[0] - src_eps[0])
-    
+
                 if new_show_id in showlist:
                     return (showlist[new_show_id], new_ep)
-        
+
     return show_tuple
 
 def get_terminal_size(fd=1):
@@ -261,7 +263,9 @@ def get_terminal_size(fd=1):
     :param fd: file descriptor (default: 1=stdout)
     """
     try:
-        import fcntl, termios, struct
+        import fcntl
+        import termios
+        import struct
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
     except:
         try:
