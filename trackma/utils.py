@@ -70,6 +70,15 @@ available_libs = {
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
 }
 
+available_trackers = [
+    ('auto', 'Auto-detect'),
+    ('inotify_auto', 'inotify'),
+    ('polling', 'Polling (lsof)'),
+    ('mpris', 'MPRIS'),
+    ('plex', 'Plex Media Server'),
+    ('win32', 'Win32'),
+]
+
 def parse_config(filename, default):
     config = copy.copy(default)
 
@@ -349,7 +358,7 @@ config_defaults = {
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
     'auto_date_change': True,
-    'tracker_type': "local",
+    'tracker_type': "auto",
     'plex_host': "localhost",
     'plex_port': "32400",
     'plex_obey_update_wait_s': False,

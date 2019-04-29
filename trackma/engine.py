@@ -1033,6 +1033,11 @@ class Engine:
         elif ttype == 'mpris':
             from trackma.tracker.mpris import MPRISTracker
             return MPRISTracker
+        elif ttype == 'inotify_auto':
+            try:
+                return self._get_tracker_class('pyinotify')
+            except ImportError:
+                return self._get_tracker_class('inotify')
         elif ttype == 'pyinotify':
             from trackma.tracker.pyinotify import pyinotifyTracker
             return pyinotifyTracker
@@ -1052,10 +1057,7 @@ class Engine:
 
             # Try trackers in this order: pyinotify, inotify, polling
             try:
-                return self._get_tracker_class('pyinotify')
+                return self._get_tracker_class('inotify_auto')
             except ImportError:
-                try:
-                    return self._get_tracker_class('inotify')
-                except ImportError:
-                    return self._get_tracker_class('polling')
+                return self._get_tracker_class('polling')
 
