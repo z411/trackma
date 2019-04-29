@@ -1,0 +1,3 @@
+[submodule "trackma/data/anime-relations"]
+	path = trackma/data/anime-relations
+	url = https://github.com/erengy/anime-relations

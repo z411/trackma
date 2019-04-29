@@ -26,7 +26,7 @@ import uuid
 
 VERSION = '0.8.1'
 
-datadir = os.path.dirname(__file__)
+DATADIR = os.path.dirname(__file__) + '/data'
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
 
@@ -60,14 +60,14 @@ HOME = os.path.expanduser("~")
 
 # Put the available APIs here
 available_libs = {
-    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
+    'anilist':  ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
                  "https://omaera.org/trackma/anilistv2",
                  "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
-    'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
-    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
-    'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
-    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
+    'kitsu':    ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
+    'mal':      ('MyAnimeList',  DATADIR + '/mal.jpg',         LOGIN_PASSWD),
+    'shikimori':('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
+    'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
 
 available_trackers = [

@@ -28,7 +28,7 @@ class FilterBar():
     PositionBelowLists = 2
 
 def getIcon(icon_name):
-    fallback = QtGui.QIcon(utils.datadir + '/data/qtui/{}.png'.format(icon_name))
+    fallback = QtGui.QIcon(utils.DATADIR + '/qtui/{}.png'.format(icon_name))
     return QtGui.QIcon.fromTheme(icon_name, fallback)
 
 def getColor(colorString):
