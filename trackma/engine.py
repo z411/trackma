@@ -17,7 +17,6 @@
 import re
 import os
 import subprocess
-import threading
 import difflib
 import time
 import datetime
@@ -70,7 +69,7 @@ class Engine:
                 'prompt_for_update': None,
                 'prompt_for_add':    None,
                 'tracker_state':     None,
-        }
+              }
 
     def __init__(self, account=None, message_handler=None, accountnum=None):
         self.msg = messenger.Messenger(message_handler)
@@ -154,8 +153,8 @@ class Engine:
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show_title, episode)
 
-    def _tracker_state(self, state, timer):
-        self._emit_signal('tracker_state', state, timer)
+    def _tracker_state(self, status):
+        self._emit_signal('tracker_state', status)
 
     def _emit_signal(self, signal, *args):
         try:
@@ -191,13 +190,13 @@ class Engine:
 
         for show in source_list:
             tracker_list[show['id']] = {
-                                 'id': show['id'],
-                                 'title': show['title'],
-                                 'my_progress': show['my_progress'],
-                                 'total': show['total'],
-                                 'type': None,
-                                 'titles': self.data_handler.get_show_titles(show),
-                                 }
+                'id': show['id'],
+                'title': show['title'],
+                'my_progress': show['my_progress'],
+                'total': show['total'],
+                'type': None,
+                'titles': self.data_handler.get_show_titles(show),
+                  }
 
         altnames_map = self.data_handler.get_altnames_map()
         return (tracker_list, altnames_map)
@@ -244,8 +243,12 @@ class Engine:
             raise utils.APIFatal(str(e))
 
         # Load redirection file if any
-        anime_relations_file = utils.to_config_path('anime-relations.txt')
-        if utils.file_exists(anime_relations_file):
+        anime_relations_file = utils.try_files([
+            utils.to_config_path('anime-relations.txt'),
+            utils.DATADIR + '/anime-relations/anime-relations.txt',
+        ])
+
+        if anime_relations_file:
             from trackma.extras import redirections
 
             api = self.api_info['shortname']
@@ -269,7 +272,6 @@ class Engine:
         if self.config['use_hooks']:
             hooks_dir = utils.to_config_path('hooks')
             if os.path.isdir(hooks_dir):
-                import sys
                 import pkgutil
 
                 self.msg.info(self.name, "Importing user hooks...")
@@ -292,13 +294,13 @@ class Engine:
             self.msg.debug(self.name, "Initializing tracker...")
             try:
                 TrackerClass = self._get_tracker_class(self.config['tracker_type'])
-                
+
                 self.tracker = TrackerClass(self.msg,
-                                       self._get_tracker_list(),
-                                       self.config,
-                                       self.searchdirs,
-                                       self.redirections,
-                                      )
+                                            self._get_tracker_list(),
+                                            self.config,
+                                            self.searchdirs,
+                                            self.redirections,
+                                           )
                 self.tracker.connect_signal('detected', self._tracker_detected)
                 self.tracker.connect_signal('removed', self._tracker_removed)
                 self.tracker.connect_signal('playing', self._tracker_playing)
@@ -370,7 +372,7 @@ class Engine:
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
-        
+
         if showid:
             # Get show by ID
             try:
@@ -380,7 +382,7 @@ class Engine:
         elif title:
             showdict = self.data_handler.get()
             # Get show by title, slower
-            for k, show in showdict.items():
+            for show in showdict.values():
                 if show['title'] == title:
                     return show
             raise utils.EngineError("Show not found.")
@@ -421,7 +423,7 @@ class Engine:
         # TODO : Temporal hack for the client autocomplete function
         showlist = self.data_handler.get()
         newlist = list()
-        for k, v in showlist.items():
+        for v in showlist.values():
             if re.match(pattern, v['title'], re.I):
                 if ' ' in v['title']:
                     newlist.append('"' + v['title'] + '" ')
@@ -437,8 +439,8 @@ class Engine:
 
         if self.tracker:
             return self.tracker.get_status()
-        else:
-            return None
+
+        return None
 
     def search(self, criteria, method=utils.SEARCH_METHOD_KW):
         """
@@ -511,9 +513,9 @@ class Engine:
             try:
                 if newep == show['total'] and self.mediainfo.get('status_finish'):
                     if (
-                        not self.config['auto_status_change_if_scored'] or
-                        not self.mediainfo.get('can_score') or
-                        show['my_score']
+                            not self.config['auto_status_change_if_scored'] or
+                            not self.mediainfo.get('can_score') or
+                            show['my_score']
                     ):
                         # Change to finished status
                         self.set_status(show['id'], self.mediainfo['status_finish'])
@@ -607,13 +609,13 @@ class Engine:
 
         # Change status if required
         if (
-            show['total'] and
-            show['my_progress'] == show['total'] and
-            show['my_score'] and
-            self.mediainfo.get('can_status') and
-            self.config['auto_status_change'] and
-            self.config['auto_status_change_if_scored'] and
-            self.mediainfo.get('status_finish')
+                show['total'] and
+                show['my_progress'] == show['total'] and
+                show['my_score'] and
+                self.mediainfo.get('can_status') and
+                self.config['auto_status_change'] and
+                self.config['auto_status_change_if_scored'] and
+                self.mediainfo.get('status_finish')
         ):
             try:
                 self.set_status(show['id'], self.mediainfo['status_finish'])
@@ -724,7 +726,7 @@ class Engine:
                 if episode != candidate_episode_start:
                     continue
             else:
-                if not (candidate_episode_start <= episode <= candidate_episode_end):
+                if not candidate_episode_start <= episode <= candidate_episode_end:
                     continue
 
             matcher.set_seq1(candidate_title.lower())
@@ -863,7 +865,7 @@ class Engine:
                         library_cache[filename] = (show['id'], show_ep)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
-                    
+
                     show_id = show['id']
                 else:
                     self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
@@ -1032,6 +1034,14 @@ class Engine:
         if ttype == 'plex':
             from trackma.tracker.plex import PlexTracker
             return PlexTracker
+        elif ttype == 'mpris':
+            from trackma.tracker.mpris import MPRISTracker
+            return MPRISTracker
+        elif ttype == 'inotify_auto':
+            try:
+                return self._get_tracker_class('pyinotify')
+            except ImportError:
+                return self._get_tracker_class('inotify')
         elif ttype == 'pyinotify':
             from trackma.tracker.pyinotify import pyinotifyTracker
             return pyinotifyTracker
@@ -1051,10 +1061,7 @@ class Engine:
 
             # Try trackers in this order: pyinotify, inotify, polling
             try:
-                return self._get_tracker_class('pyinotify')
+                return self._get_tracker_class('inotify_auto')
             except ImportError:
-                try:
-                    return self._get_tracker_class('inotify')
-                except ImportError:
-                    return self._get_tracker_class('polling')
+                return self._get_tracker_class('polling')
 

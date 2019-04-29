@@ -59,6 +59,10 @@ class TrackerBase(object):
         self.watch_dirs = tuple(sorted(watch_dirs, reverse=True))
         self.wait_s = None
 
+        self.timer = None
+        self.timer_paused = None
+        self.timer_offset = 0
+
         tracker_args = (config, watch_dirs)
         tracker_t = threading.Thread(target=self.observe, args=tracker_args)
         tracker_t.daemon = True
@@ -90,6 +94,7 @@ class TrackerBase(object):
         return {
             'state': self.last_state,
             'timer': self.timer,
+            'paused': bool(self.timer_paused),
             'show': self.last_show_tuple,
             'filename': self.last_filename,
         }
@@ -102,9 +107,13 @@ class TrackerBase(object):
             raise Exception("Call to undefined signal.")
 
     def _update_show(self, state, show_tuple):
+        if self.timer_paused:
+            return
+
         (show, episode) = show_tuple
-        self.timer = int(1 + (self.wait_s or self.config['tracker_update_wait_s']) - (time.time() - self.last_time))
-        self._emit_signal('state', state, self.timer)
+
+        self.timer = int(1 + (self.wait_s or self.config['tracker_update_wait_s']) + self.timer_offset - (time.time() - self.last_time))
+        self._emit_signal('state', self.get_status())
 
         if self.timer <= 0:
             # Perform show update
@@ -126,18 +135,32 @@ class TrackerBase(object):
         self.last_updated = True
         self.last_state = utils.TRACKER_IGNORED
         self.timer = None
-        self._emit_signal('state', utils.TRACKER_IGNORED, None)
+        self._emit_signal('state', self.get_status())
 
     def _update_state(self, state):
         # Call when show or state is changed. Perform queued update if any, and clear playing flag.
         if self.last_close_queue:
             self.last_close_queue()
             self.last_close_queue = None
+        self.timer_offset = 0
         self.last_time = time.time()
         if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
             if last_show['id']:
                 self._emit_signal('playing', last_show['id'], False, last_show_ep)
+
+    def pause_timer(self):
+        if not self.timer_paused:
+            self.timer_paused = time.time()
+
+            self._emit_signal('state', self.get_status())
+
+    def resume_timer(self):
+        if self.timer_paused:
+            self.timer_offset += time.time() - self.timer_paused
+            self.timer_paused = None
+
+            self._emit_signal('state', self.get_status())
 
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
@@ -169,6 +192,7 @@ class TrackerBase(object):
                 self.msg.info(self.name, 'Will update %s %d' % (show['title'], episode))
             elif state == utils.TRACKER_NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
+
             self._update_show(state, show_tuple)
 
         elif self.last_state != state:
@@ -187,9 +211,9 @@ class TrackerBase(object):
             self.last_show_tuple = None
             self.last_updated = False
             self.timer = None
-            self._emit_signal('state', state, None)
 
         self.last_state = state
+        self._emit_signal('state', self.get_status())
 
     def _get_playing_show(self, filename):
         if not self.active:

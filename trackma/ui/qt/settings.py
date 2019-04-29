@@ -69,10 +69,12 @@ class SettingsDialog(QDialog):
         g_media_layout = QFormLayout()
         self.tracker_enabled = QCheckBox()
         self.tracker_enabled.toggled.connect(self.tracker_type_change)
-        self.tracker_type_local = QRadioButton('Local')
-        self.tracker_type_local.toggled.connect(self.tracker_type_change)
-        self.tracker_type_plex = QRadioButton('Plex media server')
-        self.tracker_type_plex.toggled.connect(self.tracker_type_change)
+
+        self.tracker_type = QComboBox()
+        for (n, label) in utils.available_trackers:
+            self.tracker_type.addItem(label, n)
+        self.tracker_type.currentIndexChanged.connect(self.tracker_type_change)
+
         self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
@@ -85,8 +87,7 @@ class SettingsDialog(QDialog):
         self.tracker_not_found_prompt = QCheckBox()
 
         g_media_layout.addRow('Enable tracker', self.tracker_enabled)
-        g_media_layout.addRow(self.tracker_type_local)
-        g_media_layout.addRow(self.tracker_type_plex)
+        g_media_layout.addRow('Tracker type', self.tracker_type)
         g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
         g_media_layout.addRow('Process name (regex)', self.tracker_process)
         g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
@@ -386,11 +387,12 @@ class SettingsDialog(QDialog):
 
     def _load(self):
         engine = self.worker.engine
-        tracker_type = engine.get_config('tracker_type')
+        tracker_type = self.tracker_type.findData(engine.get_config('tracker_type'))
         autoretrieve = engine.get_config('autoretrieve')
         autosend = engine.get_config('autosend')
 
         self.tracker_enabled.setChecked(engine.get_config('tracker_enabled'))
+        self.tracker_type.setCurrentIndex(max(0, tracker_type))
         self.tracker_interval.setValue(engine.get_config('tracker_interval'))
         self.tracker_process.setText(engine.get_config('tracker_process'))
         self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait_s'))
@@ -410,15 +412,6 @@ class SettingsDialog(QDialog):
 
         for path in engine.get_config('searchdir'):
             self._add_dir(path)
-
-        if tracker_type == 'local':
-            self.tracker_type_local.setChecked(True)
-            self.plex_host.setEnabled(False)
-            self.plex_port.setEnabled(False)
-            self.plex_obey_wait.setEnabled(False)
-        elif tracker_type == 'plex':
-            self.tracker_type_plex.setChecked(True)
-            self.tracker_process.setEnabled(False)
 
         if autoretrieve == 'always':
             self.autoretrieve_always.setChecked(True)
@@ -469,10 +462,13 @@ class SettingsDialog(QDialog):
 
         self.color_values = self.config['colors'].copy()
 
+        self.tracker_type_change(None)
+
     def _save(self):
         engine = self.worker.engine
 
         engine.set_config('tracker_enabled',       self.tracker_enabled.isChecked())
+        engine.set_config('tracker_type',          self.tracker_type.itemData(self.tracker_type.currentIndex()))
         engine.set_config('tracker_interval',      self.tracker_interval.value())
         engine.set_config('tracker_process',       str(self.tracker_process.text()))
         engine.set_config('tracker_update_wait_s', self.tracker_update_wait.value())
@@ -491,11 +487,6 @@ class SettingsDialog(QDialog):
         engine.set_config('plex_passwd',       self.plex_passw.text())
 
         engine.set_config('searchdir',         [self.searchdirs.item(i).text() for i in range(self.searchdirs.count())])
-
-        if self.tracker_type_local.isChecked():
-            engine.set_config('tracker_type', 'local')
-        elif self.tracker_type_plex.isChecked():
-            engine.set_config('tracker_type', 'plex')
 
         if self.autoretrieve_always.isChecked():
             engine.set_config('autoretrieve', 'always')
@@ -553,23 +544,27 @@ class SettingsDialog(QDialog):
         if self.tracker_enabled.isChecked():
             self.tracker_interval.setEnabled(True)
             self.tracker_update_wait.setEnabled(True)
-            self.tracker_type_local.setEnabled(True)
-            self.tracker_type_plex.setEnabled(True)
-            if self.tracker_type_local.isChecked():
-                self.tracker_process.setEnabled(True)
-                self.plex_host.setEnabled(False)
-                self.plex_port.setEnabled(False)
-                self.plex_obey_wait.setEnabled(False)
-            elif self.tracker_type_plex.isChecked():
+            self.tracker_type.setEnabled(True)
+            if self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'plex':
                 self.plex_host.setEnabled(True)
                 self.plex_port.setEnabled(True)
                 self.plex_obey_wait.setEnabled(True)
+                self.plex_user.setEnabled(True)
+                self.plex_passw.setEnabled(True)
                 self.tracker_process.setEnabled(False)
+            else:
+                self.tracker_process.setEnabled(True)
+                self.plex_host.setEnabled(False)
+                self.plex_port.setEnabled(False)
+                self.plex_user.setEnabled(False)
+                self.plex_passw.setEnabled(False)
+                self.plex_obey_wait.setEnabled(False)
         else:
-            self.tracker_type_local.setEnabled(False)
-            self.tracker_type_plex.setEnabled(False)
+            self.tracker_type.setEnabled(False)
             self.plex_host.setEnabled(False)
             self.plex_port.setEnabled(False)
+            self.plex_user.setEnabled(False)
+            self.plex_passw.setEnabled(False)
             self.plex_obey_wait.setEnabled(False)
             self.tracker_process.setEnabled(False)
             self.tracker_interval.setEnabled(False)

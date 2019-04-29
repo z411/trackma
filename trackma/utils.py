@@ -14,8 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, re, shutil, copy
-import subprocess
+import os
+import re
+import shutil
+import copy
 import datetime
 import json
 import difflib
@@ -24,7 +26,7 @@ import uuid
 
 VERSION = '0.8.1'
 
-datadir = os.path.dirname(__file__)
+DATADIR = os.path.dirname(__file__) + '/data'
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
 
@@ -58,15 +60,24 @@ HOME = os.path.expanduser("~")
 
 # Put the available APIs here
 available_libs = {
-    'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
-            "https://omaera.org/trackma/anilistv2",
-            "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
+    'anilist':  ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
+                 "https://omaera.org/trackma/anilistv2",
+                 "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                 ),
-    'kitsu':    ('Kitsu',        datadir + '/data/kitsu.png',       LOGIN_PASSWD),
-    'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
-    'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
-    'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
+    'kitsu':    ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
+    'mal':      ('MyAnimeList',  DATADIR + '/mal.jpg',         LOGIN_PASSWD),
+    'shikimori':('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
+    'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
+
+available_trackers = [
+    ('auto', 'Auto-detect'),
+    ('inotify_auto', 'inotify'),
+    ('polling', 'Polling (lsof)'),
+    ('mpris', 'MPRIS'),
+    ('plex', 'Plex Media Server'),
+    ('win32', 'Win32'),
+]
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -155,6 +166,13 @@ def dir_exists(dirname):
 def file_exists(filename):
     return os.path.isfile(filename)
 
+def try_files(filenames):
+    for filename in filenames:
+        if file_exists(filename):
+            return filename
+
+    return None
+
 def copy_file(src, dest):
     shutil.copy(src, dest)
 
@@ -229,7 +247,7 @@ def guess_show(show_title, tracker_list):
 
     playing_show = highest_ratio[0]
     if highest_ratio[1] > 0.7:
-            return playing_show
+        return playing_show
 
 def redirect_show(show_tuple, redirections, tracker_list):
     """ Use a redirection dictionary and return the new show ID and episode acordingly """
@@ -246,10 +264,10 @@ def redirect_show(show_tuple, redirections, tracker_list):
             if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
                 new_show_id = dst_id
                 new_ep = ep + (dst_eps[0] - src_eps[0])
-    
+
                 if new_show_id in showlist:
                     return (showlist[new_show_id], new_ep)
-        
+
     return show_tuple
 
 def get_terminal_size(fd=1):
@@ -261,7 +279,9 @@ def get_terminal_size(fd=1):
     :param fd: file descriptor (default: 1=stdout)
     """
     try:
-        import fcntl, termios, struct
+        import fcntl
+        import termios
+        import struct
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
     except:
         try:
@@ -345,7 +365,7 @@ config_defaults = {
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
     'auto_date_change': True,
-    'tracker_type': "local",
+    'tracker_type': "auto",
     'plex_host': "localhost",
     'plex_port': "32400",
     'plex_obey_update_wait_s': False,

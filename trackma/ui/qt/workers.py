@@ -97,7 +97,7 @@ class EngineWorker(QtCore.QThread):
     changed_show_status = QtCore.pyqtSignal(dict, object)
     changed_list = QtCore.pyqtSignal(dict)
     changed_queue = QtCore.pyqtSignal(int)
-    tracker_state = QtCore.pyqtSignal(int, int)
+    tracker_state = QtCore.pyqtSignal(dict)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
     prompt_for_add = QtCore.pyqtSignal(str, int)
@@ -128,8 +128,8 @@ class EngineWorker(QtCore.QThread):
     def _changed_queue(self, queue):
         self.changed_queue.emit(len(queue))
 
-    def _tracker_state(self, state, timer):
-        self.tracker_state.emit(state, timer)
+    def _tracker_state(self, status):
+        self.tracker_state.emit(status)
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)

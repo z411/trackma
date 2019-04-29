@@ -79,7 +79,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._show_accounts(switch=False)
 
     def _init_widgets(self):
-        Gtk.Window.set_default_icon_from_file(utils.datadir + '/data/icon.png')
+        Gtk.Window.set_default_icon_from_file(utils.DATADIR + '/icon.png')
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_title('Trackma-gtk ' + utils.VERSION)
 
@@ -99,7 +99,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         # Status icon
         if tray_available:
             self.statusicon = Gtk.StatusIcon()
-            self.statusicon.set_from_file(utils.datadir + '/data/icon.png')
+            self.statusicon.set_from_file(utils.DATADIR + '/icon.png')
             self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
             self.statusicon.connect('activate', self._tray_status_event)
             self.statusicon.connect('popup-menu', self._tray_status_menu_event)
