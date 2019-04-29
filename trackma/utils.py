@@ -166,6 +166,13 @@ def dir_exists(dirname):
 def file_exists(filename):
     return os.path.isfile(filename)
 
+def try_files(filenames):
+    for filename in filenames:
+        if file_exists(filename):
+            return filename
+
+    return None
+
 def copy_file(src, dest):
     shutil.copy(src, dest)
 

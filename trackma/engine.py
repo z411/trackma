@@ -243,8 +243,12 @@ class Engine:
             raise utils.APIFatal(str(e))
 
         # Load redirection file if any
-        anime_relations_file = utils.to_config_path('anime-relations.txt')
-        if utils.file_exists(anime_relations_file):
+        anime_relations_file = utils.try_files([
+            utils.to_config_path('anime-relations.txt'),
+            utils.DATADIR + '/anime-relations/anime-relations.txt',
+        ])
+
+        if anime_relations_file:
             from trackma.extras import redirections
 
             api = self.api_info['shortname']
