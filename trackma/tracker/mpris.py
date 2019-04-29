@@ -34,22 +34,34 @@ class MPRISTracker(tracker.TrackerBase):
         properties = dbus.Interface(proxy, dbus_interface='org.freedesktop.DBus.Properties')
         properties.connect_to_signal('PropertiesChanged', self._on_update, sender_keyword='sender')
 
+        metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
+        status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
+
+        if 'xesam:title' in metadata:
+            sender = self.bus.get_name_owner(name)
+            self._playing(metadata['xesam:title'], sender)
+        if status == "Paused":
+            self.pause_timer()
+
+    def _playing(self, title, sender):
+        self.msg.debug(self.name, "New video: {}".format(title))
+
+        (state, show_tuple) = self._get_playing_show(title)
+        self.update_show_if_needed(state, show_tuple)
+
+        self.active_player = sender
+
+        if not self.timing and state == utils.TRACKER_PLAYING:
+            self._pass_timer()
+            GLib.timeout_add_seconds(1, self._pass_timer)
+
     def _on_update(self, name, properties, v, sender=None):
         if 'Metadata' in properties and 'xesam:title' in properties['Metadata']:
             # Player is playing a new video. We pass the title
             # to the tracker and start our playing timer.
             title = properties['Metadata']['xesam:title']
-            self.msg.debug(self.name, "New video: {}".format(title))
 
-            (state, show_tuple) = self._get_playing_show(title)
-            self.update_show_if_needed(state, show_tuple)
-
-            self.active_player = sender
-
-            if not self.timing and state == utils.TRACKER_PLAYING:
-                self._pass_timer()
-                GLib.timeout_add_seconds(1, self._pass_timer)
-
+            self._playing(title, sender)
         if 'PlaybackStatus' in properties:
             status = properties['PlaybackStatus']
             self.msg.debug(self.name, "New playback status: {}".format(status))
