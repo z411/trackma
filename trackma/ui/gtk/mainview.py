@@ -161,9 +161,9 @@ class MainView(Gtk.Box):
         self.statusbox.handler_block(self.statusbox_handler)
         self._reset_widgets()
         self._create_notebook_pages()
+        self._set_score_ranges()
         self.populate_all_pages()
         self._populate_statusbox()
-        self._set_score_ranges()
         self.statusbox.handler_unblock(self.statusbox_handler)
 
         self.set_status_idle("Ready.")
@@ -260,17 +260,17 @@ class MainView(Gtk.Box):
         self.statusbox.show_all()
 
     def _set_score_ranges(self):
-        self.score_decimal_places = 0
+        score_decimal_places = 0
         if isinstance(self._engine.mediainfo['score_step'], float):
-            self.score_decimal_places = len(str(self._engine.mediainfo['score_step']).split('.')[1])
+            score_decimal_places = len(str(self._engine.mediainfo['score_step']).split('.')[1])
 
         self.spinbtn_score.set_value(0)
-        self.spinbtn_score.set_digits(self.score_decimal_places)
+        self.spinbtn_score.set_digits(score_decimal_places)
         self.spinbtn_score.set_range(0, self._engine.mediainfo['score_max'])
         self.spinbtn_score.get_adjustment().set_step_increment(self._engine.mediainfo['score_step'])
 
         for view in self._pages.values():
-            view.decimals = self.score_decimal_places
+            view.decimals = score_decimal_places
 
     def set_status_idle(self, msg):
         # Thread safe
@@ -536,6 +536,14 @@ class NotebookPage(Gtk.ScrolledWindow):
 
     def add_signal_callback(self, signal, callback):
         self.connect(signal, callback)
+
+    @property
+    def decimals(self):
+        return self._show_tree_view.decimals
+
+    @decimals.setter
+    def decimals(self, decimals):
+        self._show_tree_view.decimals = decimals
 
     @property
     def status(self):
