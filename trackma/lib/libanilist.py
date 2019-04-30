@@ -36,7 +36,7 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.0', 'merge': False }
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.1', 'merge': False }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -244,6 +244,7 @@ fragment mediaListEntry on MediaList {
   media {
     id
     title { userPreferred romaji english native }
+    synonyms
     coverImage { large medium }
     format
     status
@@ -281,12 +282,11 @@ fragment mediaListEntry on MediaList {
                 show = utils.show()
                 media = item['media']
                 showid = media['id']
-                aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
                 showdata = {
                     'my_id': item['id'],
                     'id': showid,
                     'title': media['title']['userPreferred'],
-                    'aliases': aliases,
+                    'aliases': self._get_aliases(media),
                     'type': self.type_translate[media['format']],
                     'status': self.status_translate[media['status']],
                     'my_progress': self._c(item['progress']),
@@ -441,13 +441,12 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
-        aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a]
         
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
-            'aliases': aliases,
+            'aliases': self._get_aliases(item),
             'type': self.type_translate[item['format']],
             'status': self.status_translate[item['status']],
             'image': item['coverImage']['large'],
@@ -459,7 +458,7 @@ fragment mediaListEntry on MediaList {
                 ('English',         item['title'].get('english')),
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
-                ('Synonyms',        item['title'].get('synonyms')),
+                ('Synonyms',        item.get('synonyms')),
                 ('Genres',          item.get('genres')),
                 ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
@@ -473,6 +472,11 @@ fragment mediaListEntry on MediaList {
     def _apply_scoreformat(self, fmt):
         media = self.media_info()
         (media['score_max'], media['score_step']) = self.score_types[fmt]
+    
+    def _get_aliases(self, item):
+        aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
+
+        return aliases
 
     def _dict2date(self, item):
         if not item:

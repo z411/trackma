@@ -370,8 +370,8 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
             return
 
-        print(details['title'])
-        print("-" * len(details['title']))
+        print(show['title'])
+        print("-" * len(show['title']))
         print(show['url'])
         print()
 
