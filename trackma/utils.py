@@ -311,7 +311,6 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
-        'neweps':       False,
     }
 
 class TrackmaError(Exception):

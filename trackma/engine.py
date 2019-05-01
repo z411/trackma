@@ -543,10 +543,6 @@ class Engine:
                 # Only warn about engine errors since date change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
-        # Clear neweps flag
-        if self.data_handler.get_show_attr(show, 'neweps'):
-            self.data_handler.set_show_attr(show, 'neweps', False)
-
         # Update the tracker with the new information
         self._update_tracker()
 
@@ -699,71 +695,6 @@ class Engine:
 
         # Emit signal
         self._emit_signal('show_deleted', show)
-
-    def _search_video(self, titles, episode):
-        # DEPRECATED !!!
-        self.msg.debug(self.name, "DEPRECATED: _search_video")
-
-        best_candidate = (None, 0, None)
-
-        matcher = difflib.SequenceMatcher()
-
-        # Check over video files and propose our best candidate
-        for (fullpath, filename) in utils.regex_find_videos('mkv|mp4|avi', self.config['searchdir']):
-            # Analyze what's the title and episode of the file
-            aie = AnimeInfoExtractor(filename)
-            candidate_title = aie.getName()
-            candidate_episode_start, candidate_episode_end = aie.getEpisodeNumbers()
-
-            # Skip this file if we couldn't analyze it
-            if not candidate_title:
-                continue
-            if candidate_episode_start is None:
-                continue
-
-            # Skip this file if it isn't the episode we want
-            if candidate_episode_end is None:
-                if episode != candidate_episode_start:
-                    continue
-            else:
-                if not candidate_episode_start <= episode <= candidate_episode_end:
-                    continue
-
-            matcher.set_seq1(candidate_title.lower())
-
-            # We remember to compare all titles (aliases and whatnot)
-            for requested_title in titles:
-                matcher.set_seq2(requested_title.lower())
-                ratio = matcher.ratio()
-
-                # Propose as our new candidate if its ratio is
-                # better than threshold and it's better than
-                # what we've seen yet
-                if ratio > 0.7 and ratio > best_candidate[1]:
-                    best_candidate = (fullpath, ratio, aie.getEpisode())
-
-        return best_candidate[0], best_candidate[2]
-
-    def get_new_episodes(self, showlist):
-        # DEPRECATED !
-        self.msg.debug(self.name, "DEPRECATED: get_new_episodes")
-
-        results = list()
-        total = len(showlist)
-        t = time.time()
-
-        for i, show in enumerate(showlist):
-            self.msg.info(self.name, "Searching %d/%d..." % (i+1, total))
-
-            titles = self.data_handler.get_show_titles(show)
-
-            (filename, ep) = self._search_video(titles, show['my_progress']+1)
-            if filename:
-                self.data_handler.set_show_attr(show, 'neweps', True)
-                results.append(show)
-
-        self.msg.info(self.name, "Time: %s" % (time.time() - t))
-        return results
 
     def library(self):
         return self.data_handler.library_get()
@@ -945,15 +876,9 @@ class Engine:
             if show['total'] and playep > show['total']:
                 raise utils.EngineError('Episode beyond limits.')
 
-            if self.config.get('debug_oldsearch'):
-                # Deprecated
-                self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
-                titles = self.data_handler.get_show_titles(show)
-                filename, endep = self._search_video(titles, playep)
-            else:
-                self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
-                filename = self.get_episode_path(show, playep)
-                endep = playep
+            self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
+            filename = self.get_episode_path(show, playep)
+            endep = playep
 
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
