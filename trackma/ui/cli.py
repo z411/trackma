@@ -750,7 +750,12 @@ class Trackma_cmd(cmd.Cmd):
         elif cmd == 'help':
             return self.do_help(arg)
         else:
-            return self.execute(cmd, self.parse_args(arg), line)
+            try:
+                args = self.parse_args(arg)
+            except ValueError:
+                return self.default(line)
+            else:
+                return self.execute(cmd, args, line)
 
     def execute(self, cmd, args, line):
         try:
