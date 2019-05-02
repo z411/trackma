@@ -106,9 +106,9 @@ class Engine:
         if isinstance(self.config['searchdir'], str):
             # Compatibility: Turn a string of a single directory into a list
             self.msg.debug(self.name, "Fixing string searchdir to list.")
-            self.searchdirs = [utils.expand_path(self.config['searchdir'])] if self._searchdir_exists(self.config['searchdir']) else []
-        else:
-            self.searchdirs = [utils.expand_path(path) for path in self.config['searchdir'] if self._searchdir_exists(path)]
+            self.config['searchdir'] = [self.config['searchdir']]
+
+        self.searchdirs = [path for path in utils.expand_paths(self.config['searchdir']) if self._searchdir_exists(path)]
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler

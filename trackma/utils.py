@@ -57,6 +57,7 @@ SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
 HOME = os.path.expanduser("~")
+MEDIAREGEX = "(.*(\.mkv|\.mp4|\.avi|\.ts))"
 
 # Put the available APIs here
 available_libs = {
@@ -125,6 +126,9 @@ def log_error(msg):
 
 def expand_path(path):
     return os.path.expanduser(path)
+
+def expand_paths(paths):
+    return (expand_path(path) for path in paths)
 
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
@@ -343,7 +347,7 @@ class APIFatal(TrackmaFatal):
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',
-    'searchdir': ['/home/user/Videos'],
+    'searchdir': ['~/Videos'],
     'tracker_enabled': True,
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
