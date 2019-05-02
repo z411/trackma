@@ -714,7 +714,7 @@ class Engine:
             if self.config['scan_whole_list']:
                 my_status = self.mediainfo['statuses']
             else:
-                my_status = self.mediainfo.get('statuses_library', self.mediainfo['statuses_start'][0])
+                my_status = self.mediainfo.get('statuses_library', self.mediainfo['statuses_start'])
 
         self.msg.info(self.name, "Scanning local library...")
         tracker_list = self._get_tracker_list(my_status)
