@@ -268,8 +268,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         except utils.TrackmaError as e:
             self._error_dialog_idle(e)
 
-        GLib.idle_add(self._main_view.populate_page,
-                      self._engine.mediainfo['status_start'])
+        GLib.idle_add(self._main_view.populate_all_pages)
 
         self._main_view.set_status_idle("Ready.")
         self._main_view.set_buttons_sensitive_idle(True)

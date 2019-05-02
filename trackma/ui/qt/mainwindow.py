@@ -1380,8 +1380,6 @@ class MainWindow(QMainWindow):
 
     def r_library_scanned(self, result):
         if result['success']:
-            status = self.worker.engine.mediainfo['status_start']
-
             self._rebuild_view()
 
             self.status('Ready.')

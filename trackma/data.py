@@ -292,13 +292,14 @@ class Data:
                    }
             item[key] = value
             self.queue.append(item)
-
+            
         show['queued'] = True
 
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', self.queue)
         self.msg.info(self.name, "Queued update for %s" % show['title'])
+        self.msg.debug(self.name, "Queued: {} -> {}".format(key, value))
 
         # Immediately process the action if necessary
         if self._is_queue_ready():

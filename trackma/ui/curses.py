@@ -217,10 +217,7 @@ class Trackma_urwid():
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
-            if show['my_status'] == self.engine.mediainfo['status_start']:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
-            else:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
+            item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
 
             self.lists[show['my_status']].body.append(item)
 
@@ -526,7 +523,7 @@ class Trackma_urwid():
     def do_neweps(self):
         try:
             shows = self.engine.scan_library(rescan=True)
-            self._rebuild_lists(self.engine.mediainfo['status_start'])
+            self._rebuild_lists()
 
             self.status("Ready.")
         except utils.TrackmaError as e:

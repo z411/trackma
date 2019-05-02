@@ -181,9 +181,9 @@ class Engine:
         elif isinstance(filter_num, list):
             source_list = []
             for status in filter_num:
-                if status is not self.mediainfo['status_finish']:
-                    self.msg.debug(self.name, "scanning for \
-                            {}".format(self.mediainfo['statuses_dict'][status]))
+                if status is not self.mediainfo['statuses_finish']:
+                    self.msg.debug(self.name, "Scanning for " \
+                            "{}".format(self.mediainfo['statuses_dict'][status]))
                     source_list = source_list + self.filter_list(status)
         else:
             source_list = self.filter_list(filter_num)
@@ -511,19 +511,19 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == show['total'] and self.mediainfo.get('status_finish'):
+                if newep == show['total'] and self.mediainfo('statuses_finish'):
                     if (
                             not self.config['auto_status_change_if_scored'] or
                             not self.mediainfo.get('can_score') or
                             show['my_score']
                     ):
                         # Change to finished status
-                        self.set_status(show['id'], self.mediainfo['status_finish'])
+                        self.set_status(show['id'], self._guess_new_finish(show))
                     else:
                         self.msg.warn(self.name, "Updated episode but status won't be changed until a score is set.")
-                elif newep == 1 and self.mediainfo.get('status_start'):
-                    # Change to watching status
-                    self.set_status(show['id'], self.mediainfo['status_start'])
+                elif newep == 1 and self.mediainfo.get('statuses_start'):
+                    # Change to start status
+                    self.set_status(show['id'], self._guess_new_start(show))
             except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
@@ -611,10 +611,10 @@ class Engine:
                 self.mediainfo.get('can_status') and
                 self.config['auto_status_change'] and
                 self.config['auto_status_change_if_scored'] and
-                self.mediainfo.get('status_finish')
+                self.mediainfo.get('statuses_finish')
         ):
             try:
-                self.set_status(show['id'], self.mediainfo['status_finish'])
+                self.set_status(show['id'], self._guess_new_finish(show))
             except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
@@ -714,7 +714,7 @@ class Engine:
             if self.config['scan_whole_list']:
                 my_status = self.mediainfo['statuses']
             else:
-                my_status = self.mediainfo['status_start']
+                my_status = self.mediainfo.get('statuses_library', self.mediainfo['statuses_start'][0])
 
         self.msg.info(self.name, "Scanning local library...")
         tracker_list = self._get_tracker_list(my_status)
@@ -953,6 +953,30 @@ class Engine:
             self.msg.warn(self.name, "The specified media directory {} doesn't exist!".format(path))
             return False
         return True
+
+    def _guess_new_finish(self, show):
+        try:
+            # Use corresponding finish status if we're already in a start status
+            new_index = self.mediainfo['statuses_start'].index(show['my_status'])
+            new_status = self.mediainfo['statuses_finish'][new_index]
+        except ValueError:
+            new_status = self.mediainfo['statuses_finish'][0]
+        except IndexError:
+            new_status = self.mediainfo['statuses_finish'][-1]
+
+        return new_status
+
+    def _guess_new_start(self, show):
+        try:
+            # Use following start status if we're already in a finish status
+            new_index = self.mediainfo['statuses_finish'].index(show['my_status'])
+            new_status = self.mediainfo['statuses_start'][new_index+1]
+        except ValueError:
+            new_status = self.mediainfo['statuses_start'][0]
+        except IndexError:
+            new_status = self.mediainfo['statuses_start'][-1]
+
+        return new_status
 
     def _get_tracker_class(self, ttype):
         # Choose the tracker we want to tart

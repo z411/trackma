@@ -228,15 +228,11 @@ class MainView(Gtk.Box):
         tree_view = self._pages[status].show_tree_view
         tree_view.append_start()
 
-        if status == self._engine.mediainfo['status_start']:
-            library = self._engine.library()
-            for show in self._engine.filter_list(tree_view.status_filter):
-                tree_view.append(show,
-                                 self._engine.altname(show['id']),
-                                 library.get(show['id']))
-        else:
-            for show in self._engine.filter_list(tree_view.status_filter):
-                tree_view.append(show, self._engine.altname(show['id']))
+        library = self._engine.library()
+        for show in self._engine.filter_list(tree_view.status_filter):
+            tree_view.append(show,
+                             self._engine.altname(show['id']),
+                             library.get(show['id']))
 
         tree_view.append_finish()
         self._unblock_handlers_for_status(status)
