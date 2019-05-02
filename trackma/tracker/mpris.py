@@ -15,6 +15,7 @@
 #
 
 import os
+import re
 import urllib.parse
 
 import dbus
@@ -30,23 +31,26 @@ class MPRISTracker(tracker.TrackerBase):
 
     def _connect(self, name):
         # Add and connect new player
-        self.players.append(name)
-        self.msg.info(self.name, "Connecting to MPRIS player: {}".format(name))
+        if self.re_players.search(name):
+            self.players.append(name)
+            self.msg.info(self.name, "Connecting to MPRIS player: {}".format(name))
 
-        proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
-        properties = dbus.Interface(proxy, dbus_interface='org.freedesktop.DBus.Properties')
-        properties.connect_to_signal('PropertiesChanged', self._on_update, sender_keyword='sender')
+            proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
+            properties = dbus.Interface(proxy, dbus_interface='org.freedesktop.DBus.Properties')
+            properties.connect_to_signal('PropertiesChanged', self._on_update, sender_keyword='sender')
 
-        metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
-        status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
+            metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
+            status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
 
-        if 'xesam:title' in metadata:
-            filename = self._get_filename(metadata)
-            sender = self.bus.get_name_owner(name)
+            if 'xesam:title' in metadata:
+                filename = self._get_filename(metadata)
+                sender = self.bus.get_name_owner(name)
 
-            self._playing(filename, sender)
-        if status != "Playing":
-            self.pause_timer()
+                self._playing(filename, sender)
+            if status != "Playing":
+                self.pause_timer()
+        else:
+            self.msg.info(self.name, "Unknown player: {}".format(name))
 
     def _get_filename(self, metadata):
         if 'xesam:title' in metadata:
@@ -117,6 +121,7 @@ class MPRISTracker(tracker.TrackerBase):
 
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
+        self.re_players = re.compile(config['tracker_process'])
         self.players = []
         self.timing = False
         self.active_player = None
