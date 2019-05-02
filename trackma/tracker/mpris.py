@@ -14,6 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import urllib.parse
+
 import dbus
 import dbus.mainloop.glib
 from gi.repository import GLib
@@ -38,49 +41,67 @@ class MPRISTracker(tracker.TrackerBase):
         status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
 
         if 'xesam:title' in metadata:
+            filename = self._get_filename(metadata)
             sender = self.bus.get_name_owner(name)
-            self._playing(metadata['xesam:title'], sender)
-        if status == "Paused":
+
+            self._playing(filename, sender)
+        if status != "Playing":
             self.pause_timer()
 
-    def _playing(self, title, sender):
-        self.msg.debug(self.name, "New video: {}".format(title))
+    def _get_filename(self, metadata):
+        if 'xesam:title' in metadata:
+            return metadata['xesam:title']
+        elif 'xesam:url' in metadata:
+            # TODO : Support for full path
+            return os.path.basename(urllib.parse.unquote_plus(metadata['xesam:url']))
 
-        (state, show_tuple) = self._get_playing_show(title)
-        self.update_show_if_needed(state, show_tuple)
+    def _playing(self, filename, sender):
+        if filename != self.last_filename:
+            self.msg.debug(self.name, "New video: {}".format(filename))
 
-        self.active_player = sender
+            (state, show_tuple) = self._get_playing_show(filename)
+            self.update_show_if_needed(state, show_tuple)
 
-        if not self.timing and state == utils.TRACKER_PLAYING:
-            self._pass_timer()
-            GLib.timeout_add_seconds(1, self._pass_timer)
+            self.active_player = sender
+
+            if not self.timing and state == utils.TRACKER_PLAYING:
+                self._pass_timer()
+                GLib.timeout_add_seconds(1, self._pass_timer)
+       
+    def _stopped(self, sender):
+        if sender == self.active_player:
+            # Active player got closed!
+            self.active_player = None
+            
+            (state, show_tuple) = self._get_playing_show(None)
+            self.update_show_if_needed(state, show_tuple)
 
     def _on_update(self, name, properties, v, sender=None):
-        if 'Metadata' in properties and 'xesam:title' in properties['Metadata']:
-            # Player is playing a new video. We pass the title
-            # to the tracker and start our playing timer.
-            title = properties['Metadata']['xesam:title']
+        if not self.active_player or self.active_player == sender:
+            if 'Metadata' in properties:
+                # Player is playing a new video. We pass the title
+                # to the tracker and start our playing timer.
+                filename = self._get_filename(properties['Metadata'])
 
-            self._playing(title, sender)
-        if 'PlaybackStatus' in properties:
-            status = properties['PlaybackStatus']
-            self.msg.debug(self.name, "New playback status: {}".format(status))
+                self._playing(filename, sender)
+            if 'PlaybackStatus' in properties:
+                status = properties['PlaybackStatus']
+                self.msg.debug(self.name, "New playback status: {}".format(status))
 
-            if status == "Paused":
-                self.pause_timer()
-            elif status == "Playing":
-                self.resume_timer()
-
+                if status != "Playing":
+                    self.pause_timer()
+                else:
+                    self.resume_timer()
+        else:
+            self.msg.debug(self.name, "Got signal from an inactive player, ignoring.")
+ 
     def _new_name(self, name, old, new):
         if name.startswith(MPRISTracker.mpris_base):
             if new:
                 # New MPRIS player found; connect signals.
                 self._connect(name)
             else:
-                if old == self.active_player:
-                    # Active player got closed!
-                    (state, show_tuple) = self._get_playing_show(None)
-                    self.update_show_if_needed(state, show_tuple)
+                self._stopped(old)
 
     def _pass_timer(self):
         if self.last_state == utils.TRACKER_PLAYING:

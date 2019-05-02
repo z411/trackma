@@ -221,6 +221,8 @@ class TrackerBase(object):
             return (utils.TRACKER_NOVIDEO, None)
 
         if filename:
+            self.msg.debug(self.name, "Guessing filename: {}".format(filename))
+
             # Trim out watch dir
             if os.path.isabs(filename):
                 for watch_prefix in self.watch_dirs:
