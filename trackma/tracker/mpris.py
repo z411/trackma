@@ -32,7 +32,6 @@ class MPRISTracker(tracker.TrackerBase):
     def _connect(self, name):
         # Add and connect new player
         if self.re_players.search(name):
-            self.players.append(name)
             self.msg.info(self.name, "Connecting to MPRIS player: {}".format(name))
 
             proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
@@ -42,13 +41,10 @@ class MPRISTracker(tracker.TrackerBase):
             metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
             status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
 
-            if 'xesam:title' in metadata:
-                filename = self._get_filename(metadata)
-                sender = self.bus.get_name_owner(name)
+            sender = self.bus.get_name_owner(name)
+            self.filenames[sender] = self._get_filename(metadata)
 
-                self._playing(filename, sender)
-            if status != "Playing":
-                self.pause_timer()
+            self._handle_status(status, sender)
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
@@ -58,6 +54,20 @@ class MPRISTracker(tracker.TrackerBase):
         elif 'xesam:url' in metadata:
             # TODO : Support for full path
             return os.path.basename(urllib.parse.unquote_plus(metadata['xesam:url']))
+        else:
+            return None
+
+    def _handle_status(self, status, sender):
+        self.msg.debug(self.name, "New playback status: {}".format(status))
+
+        if status == "Playing":
+            self._playing(self.filenames[sender], sender)
+            self.resume_timer()
+        elif status == "Paused":
+            self._playing(self.filenames[sender], sender)
+            self.pause_timer()
+        elif status == "Stopped":
+            self._stopped(sender)
 
     def _playing(self, filename, sender):
         if filename != self.last_filename:
@@ -73,6 +83,8 @@ class MPRISTracker(tracker.TrackerBase):
                 GLib.timeout_add_seconds(1, self._pass_timer)
        
     def _stopped(self, sender):
+        self.filenames[sender] = None
+
         if sender == self.active_player:
             # Active player got closed!
             self.active_player = None
@@ -85,17 +97,11 @@ class MPRISTracker(tracker.TrackerBase):
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.
-                filename = self._get_filename(properties['Metadata'])
+                self.filenames[sender] = self._get_filename(properties['Metadata'])
 
-                self._playing(filename, sender)
             if 'PlaybackStatus' in properties:
                 status = properties['PlaybackStatus']
-                self.msg.debug(self.name, "New playback status: {}".format(status))
-
-                if status != "Playing":
-                    self.pause_timer()
-                else:
-                    self.resume_timer()
+                self._handle_status(status, sender)
         else:
             self.msg.debug(self.name, "Got signal from an inactive player, ignoring.")
  
@@ -122,7 +128,7 @@ class MPRISTracker(tracker.TrackerBase):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
         self.re_players = re.compile(config['tracker_process'])
-        self.players = []
+        self.filenames = {}
         self.timing = False
         self.active_player = None
         self.bus = dbus.SessionBus()
