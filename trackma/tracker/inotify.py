@@ -27,6 +27,12 @@ class inotifyTracker(inotifyBase.inotifyBase):
     def observe(self, config, watch_dirs):
         # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
+
+        self.msg.debug(self.name, 'Checking if there are open players...')
+        opened = self._proc_poll()
+        if opened:
+            self._proc_open(*opened)
+
         self.msg.debug(self.name, 'Watching the following paths: ' + ','.join(watch_dirs))
 
         paths = (path.encode('utf-8') for path in watch_dirs)

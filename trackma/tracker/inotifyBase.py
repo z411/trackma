@@ -29,6 +29,39 @@ class inotifyBase(tracker.TrackerBase):
 
         self.re_players = re.compile(config['tracker_process'].encode('utf-8'))
 
+    def _proc_poll(self):
+        """
+        This function scans proc to see if there's any player
+        already open. If it is, and it has a media file open,
+        return its first instance as a filename.
+        """
+
+        time.sleep(0.01)
+        fileregex = re.compile(utils.MEDIAREGEX)
+
+        for p in os.listdir("/proc/"):
+            if not p.isdigit(): continue
+
+            # Get process name
+            with open('/proc/%s/cmdline' % p, 'rb') as f:
+                cmdline = f.read()
+                pname = cmdline.partition(b'\x00')[0]
+
+            # It's not one of our players
+            if not self.re_players.search(pname):
+                continue
+
+            d = "/proc/%s/fd/" % p
+            try:
+                for fd in os.listdir(d):
+                    f = os.readlink(d+fd)
+                    if fileregex.match(f):
+                        return os.path.split(f)
+            except OSError:
+                pass
+
+        return None
+
     def _is_being_played(self, filename):
         """
         This function makes sure that the filename is being played

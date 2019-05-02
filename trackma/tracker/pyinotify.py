@@ -24,6 +24,12 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
 
     def observe(self, config, watch_dirs):
         self.msg.info(self.name, 'Using pyinotify.')
+
+        self.msg.debug(self.name, 'Checking if there are open players...')
+        opened = self._proc_poll()
+        if opened:
+            self._proc_open(*opened)
+
         wm = pyinotify.WatchManager()  # Watch Manager
         mask = (pyinotify.IN_OPEN #pylint: disable=no-member
                 | pyinotify.IN_CLOSE_NOWRITE #pylint: disable=no-member

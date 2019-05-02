@@ -20,6 +20,7 @@ import os
 import subprocess
 
 from trackma.tracker import tracker
+from trackma import utils
 
 class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
@@ -35,7 +36,7 @@ class PollingTracker(tracker.TrackerBase):
                 return None
 
             output = lsof.communicate()[0].decode('utf-8')
-            fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
+            fileregex = re.compile("n" + utils.MEDIAREGEX)
 
             for line in output.splitlines():
                 match = fileregex.match(line)
