@@ -175,6 +175,7 @@ class MainWindow(QMainWindow):
         action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QAction('Rescan &Library', self)
+        action_scan_library.setShortcut('Ctrl+L')
         action_scan_library.triggered.connect(self.s_scan_library)
         action_open_folder = QAction('Open containing folder', self)
         action_open_folder.triggered.connect(self.s_open_folder)
