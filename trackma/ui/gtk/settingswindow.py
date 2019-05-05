@@ -20,12 +20,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
+from trackma.ui.gtk.statusicon import TrackmaStatusIcon
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma import utils
-
-
-# Icon tray isn't available in Wayland
-tray_available = not Gdk.Display.get_default().get_name().lower().startswith('wayland')
 
 
 def reprColor(gdkColor):
@@ -217,7 +214,7 @@ class SettingsWindow(Gtk.Window):
         self._button_toggled(self.checkbox_show_tray, self.checkbox_start_in_tray)
         self._button_toggled(self.checkbox_show_tray, self.checkbox_tray_api_icon)
 
-        if not tray_available:
+        if not TrackmaStatusIcon.is_tray_available():
             self.checkbox_show_tray.set_label('Show tray icon (Not supported in this environment)')
             self.checkbox_show_tray.set_sensitive(False)
             self.checkbox_close_to_tray.set_sensitive(False)

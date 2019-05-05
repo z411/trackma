@@ -7,6 +7,7 @@
     <property name="modal">True</property>
     <property name="default_width">800</property>
     <property name="default_height">400</property>
+    <property name="type_hint">dialog</property>
     <child type="titlebar">
       <object class="GtkHeaderBar">
         <property name="visible">True</property>
