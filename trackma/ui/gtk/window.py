@@ -28,9 +28,9 @@ from trackma.ui.gtk.accountswindow import AccountsWindow
 from trackma.ui.gtk.mainview import MainView
 from trackma.ui.gtk.searchwindow import SearchWindow
 from trackma.ui.gtk.settingswindow import SettingsWindow
-from trackma.ui.gtk.settingswindow import tray_available
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showinfowindow import ShowInfoWindow
+from trackma.ui.gtk.statusicon import TrackmaStatusIcon
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
 from trackma import messenger
@@ -44,14 +44,11 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     btn_appmenu = GtkTemplate.Child()
     btn_mediatype = GtkTemplate.Child()
 
-    _config = None
     show_lists = dict()
     image_thread = None
     close_thread = None
     hidden = False
     quit = False
-
-    statusicon = None
 
     def __init__(self, debug=False):
         Gtk.ApplicationWindow.__init__(self)
@@ -61,12 +58,14 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._configfile = utils.to_config_path('ui-Gtk.json')
         self._config = utils.parse_config(self._configfile, utils.gtk_defaults)
 
+        self.statusicon = None
         self._main_view = None
+        self._modals = []
+
         self._account = None
         self._engine = None
 
         self._init_widgets()
-        self.present()
 
     def main(self):
         """Start the Account Selector"""
@@ -94,19 +93,49 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self.add(self._main_view)
 
         self.connect('delete_event', self._on_delete_event)
-        self.connect('destroy', self._on_destroy)
 
         # Status icon
-        if tray_available:
-            self.statusicon = Gtk.StatusIcon()
-            self.statusicon.set_from_file(utils.DATADIR + '/icon.png')
-            self.statusicon.set_tooltip_text('Trackma-gtk ' + utils.VERSION)
-            self.statusicon.connect('activate', self._tray_status_event)
-            self.statusicon.connect('popup-menu', self._tray_status_menu_event)
+        if TrackmaStatusIcon.is_tray_available():
+            self.statusicon = TrackmaStatusIcon()
+            self.statusicon.connect('hide-clicked', self._on_tray_hide_clicked)
+            self.statusicon.connect('about-clicked', self._on_tray_about_clicked)
+            self.statusicon.connect('quit-clicked', self._on_tray_quit_clicked)
+
             if self._config['show_tray']:
                 self.statusicon.set_visible(True)
             else:
                 self.statusicon.set_visible(False)
+
+        # Don't show the main window if start in tray option is set
+        if self.statusicon and self._config['show_tray'] and self._config['start_in_tray']:
+            self.hidden = True
+        else:
+            self.present()
+
+    def _on_tray_hide_clicked(self, status_icon):
+        self._destroy_modals()
+
+        if self.hidden:
+            self.present()
+
+            if not self._engine:
+                self._show_accounts(switch=False)
+        else:
+            self.hide()
+
+        self.hidden = not self.hidden
+
+    def _destroy_modals(self):
+        for modal_window in self._modals:
+            modal_window.destroy()
+
+        self._modals = []
+
+    def _on_tray_about_clicked(self, status_icon):
+        self._on_about(None, None)
+
+    def _on_tray_quit_clicked(self, status_icon):
+        self._quit()
 
     def _on_delete_event(self, widget, event, data=None):
         if self.statusicon and self.statusicon.get_visible() and self._config['close_to_tray']:
@@ -115,10 +144,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         else:
             self._quit()
         return True
-
-    def _on_destroy(self, widget):
-        if self.quit:
-            Gtk.main_quit()
 
     def _create_engine(self, account):
         self._engine = Engine(account, self._message_handler)
@@ -188,12 +213,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         if self.statusicon and self._config['tray_api_icon']:
             self.statusicon.set_from_file(api_iconfile)
 
-        # Don't show the main dialog if start in tray option is set
-        if self.statusicon and self._config['show_tray'] and self._config['start_in_tray']:
-            self.hidden = True
-        else:
-            self.show()
-
     def _on_change_mediatype(self, action, value):
         action.set_state(value)
         mediatype = value.get_string()
@@ -203,7 +222,9 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         current_status = self._main_view.get_current_status()
         win = SearchWindow(self._engine, self._config['colors'], current_status, transient_for=self)
         win.connect('search-error', self._on_search_error)
-        win.show_all()
+        win.connect('destroy', self._on_modal_destroy)
+        win.present()
+        self._modals.append(win)
 
     def _on_search_error(self, search_window, error_msg):
         print(error_msg)
@@ -285,14 +306,11 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         if forget:
             manager.set_default(None)
 
-        def _on_accountsel_cancel(accounts_window):
-            Gtk.main_quit()
-
         accountsel = AccountsWindow(manager, transient_for=self)
         accountsel.connect('account-open', self._on_account_open)
-
-        if not switch:
-            accountsel.connect('account-cancel', _on_accountsel_cancel)
+        accountsel.connect('account-cancel', self._on_account_cancel, switch)
+        accountsel.connect('destroy', self._on_modal_destroy)
+        self._modals.append(accountsel)
 
     def _on_account_open(self, accounts_window, account_num, remember):
         manager = AccountManager()
@@ -310,12 +328,22 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         else:
             self._create_engine(account)
 
+    def _on_account_cancel(self, accounts_window, switch):
+        manager = AccountManager()
+
+        if not switch or not manager.get_accounts():
+            self._quit()
+
     def _on_preferences(self, action, param):
         win = SettingsWindow(self._engine, self._config, self._configfile, transient_for=self)
-        win.show_all()
+        win.connect('destroy', self._on_modal_destroy)
+        win.present()
+        self._modals.append(win)
 
     def _on_about(self, action, param):
         about = Gtk.AboutDialog(parent=self)
+        about.set_modal(True)
+        about.set_transient_for(self)
         about.set_program_name("Trackma-gtk")
         about.set_version(utils.VERSION)
         about.set_license_type(Gtk.License.GPL_3_0_ONLY)
@@ -324,8 +352,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_copyright("© z411, et al.")
         about.set_authors(["See AUTHORS file"])
         about.set_artists(["shuuichi"])
-        about.run()
-        about.destroy()
+        about.connect('destroy', self._on_modal_destroy)
+        about.present()
+        self._modals.append(about)
+
+    def _on_modal_destroy(self, modal_window):
+        self._modals.remove(modal_window)
 
     def _on_quit(self, action, param):
         self._quit()
@@ -333,6 +365,11 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _quit(self):
         if self._config['remember_geometry']:
             self._store_geometry()
+
+        if not self._engine:
+            Gtk.main_quit()
+            return
+
         if self.close_thread is None:
             self._main_view.set_buttons_sensitive_idle(False)
             self.close_thread = threading.Thread(target=self._unload_task)
@@ -348,6 +385,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _destroy_push(self):
         self.quit = True
         self.destroy()
+        Gtk.main_quit()
 
     def _store_geometry(self):
         (width, height) = self.get_size()
@@ -390,49 +428,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
         utils.save_config(self._config, self._configfile)
 
-    def _tray_status_event(self, widget):
-        # Called when the tray icon is left-clicked
-        if self.hidden:
-            self.show()
-            self.hidden = False
-        else:
-            self.hide()
-            self.hidden = True
-
-    def _tray_status_menu_event(self, icon, button, time):
-        # Called when the tray icon is right-clicked
-        menu = Gtk.Menu()
-        mb_show = Gtk.MenuItem("Show/Hide")
-        mb_about = Gtk.ImageMenuItem('About', Gtk.Image.new_from_icon_name(Gtk.STOCK_ABOUT, 0))
-        mb_quit = Gtk.ImageMenuItem('Quit', Gtk.Image.new_from_icon_name(Gtk.STOCK_QUIT, 0))
-
-        def on_mb_about():
-            self._on_about(None, None)
-
-        def on_mb_quit():
-            self._quit()
-
-        mb_show.connect("activate", self._tray_status_event)
-        mb_about.connect("activate", on_mb_about)
-        mb_quit.connect("activate", on_mb_quit)
-
-        menu.append(mb_show)
-        menu.append(mb_about)
-        menu.append(Gtk.SeparatorMenuItem())
-        menu.append(mb_quit)
-        menu.show_all()
-
-        def pos(menu, icon):
-            return Gtk.StatusIcon.position_menu(menu, icon)
-
-        menu.popup(None, None, None, pos, button, time)
-
     def _error_dialog_idle(self, msg, icon=Gtk.MessageType.ERROR):
         # Thread safe
         GLib.idle_add(self._error_dialog, msg, icon)
 
     def _error_dialog(self, msg, icon=Gtk.MessageType.ERROR):
-        def modal_close(widget, response_id):
+        def error_dialog_response(widget, response_id):
             widget.destroy()
 
         dialog = Gtk.MessageDialog(self,
@@ -441,7 +442,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
                                    Gtk.ButtonsType.OK,
                                    str(msg))
         dialog.show_all()
-        dialog.connect("response", modal_close)
+        dialog.connect("response", error_dialog_response)
         print('Error: {}'.format(msg))
 
     def _on_show_action(self, main_view, event_type, selected_show, data):
@@ -502,7 +503,9 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _open_details(self, show_id):
         show = self._engine.get_show_info(show_id)
-        ShowInfoWindow(self._engine, show, transient_for=self)
+        win = ShowInfoWindow(self._engine, show, transient_for=self)
+        win.connect('destroy', self._on_modal_destroy)
+        self._modals.append(win)
 
     def _open_website(self, show_id):
         show = self._engine.get_show_info(show_id)
@@ -565,7 +568,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         dialog.destroy()
 
     def _remove_show(self, show_id):
-        print('Window__remove_show: ', show_id)
         try:
             show = self._engine.get_show_info(show_id)
             self._engine.delete_show(show)

@@ -39,6 +39,7 @@
   <template class="SettingsWindow" parent="GtkWindow">
     <property name="can_focus">False</property>
     <property name="modal">True</property>
+    <property name="type_hint">dialog</property>
     <child type="titlebar">
       <object class="GtkHeaderBar">
         <property name="visible">True</property>
