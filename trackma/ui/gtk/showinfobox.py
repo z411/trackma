@@ -19,7 +19,6 @@ import html
 import os
 import threading
 import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate

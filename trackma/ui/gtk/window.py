@@ -20,7 +20,6 @@ import os
 import subprocess
 import threading
 import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gio, Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -50,8 +49,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     hidden = False
     quit = False
 
-    def __init__(self, debug=False):
-        Gtk.ApplicationWindow.__init__(self)
+    def __init__(self, app, debug=False):
+        Gtk.ApplicationWindow.__init__(self, application=app)
         self.init_template()
 
         self._debug = debug
@@ -67,8 +66,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
         self._init_widgets()
 
-    def main(self):
-        """Start the Account Selector"""
+    def init_account_selection(self):
         manager = AccountManager()
 
         # Use the remembered account if there's one
@@ -93,6 +91,10 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self.add(self._main_view)
 
         self.connect('delete_event', self._on_delete_event)
+
+        builder = Gtk.Builder.new_from_file(os.path.join(gtk_dir, 'data/shortcuts.ui'))
+        help_overlay = builder.get_object('shortcuts-window')
+        self.set_help_overlay(help_overlay)
 
         # Status icon
         if TrackmaStatusIcon.is_tray_available():
@@ -126,6 +128,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self.hidden = not self.hidden
 
     def _destroy_modals(self):
+        self.get_help_overlay().hide()
+
         for modal_window in self._modals:
             modal_window.destroy()
 
@@ -170,7 +174,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         add_action('accounts', self._on_accounts)
         add_action('preferences', self._on_preferences)
         add_action('about', self._on_about)
-        add_action('quit', self._on_quit)
+
+        add_action('play_next', self._on_action_play_next)
+        add_action('play_random', self._on_action_play_random)
+        add_action('episode_add', self._on_action_episode_add)
+        add_action('episode_remove', self._on_action_episode_remove)
+        add_action('delete', self._on_action_delete)
+        add_action('copy', self._on_action_copy)
 
     def _set_mediatypes_action(self):
         action_name = 'change-mediatype'
@@ -310,6 +320,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         accountsel.connect('account-open', self._on_account_open)
         accountsel.connect('account-cancel', self._on_account_cancel, switch)
         accountsel.connect('destroy', self._on_modal_destroy)
+        accountsel.present()
         self._modals.append(accountsel)
 
     def _on_account_open(self, accounts_window, account_num, remember):
@@ -359,15 +370,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _on_modal_destroy(self, modal_window):
         self._modals.remove(modal_window)
 
-    def _on_quit(self, action, param):
-        self._quit()
-
     def _quit(self):
         if self._config['remember_geometry']:
             self._store_geometry()
 
         if not self._engine:
-            Gtk.main_quit()
+            self.get_application().quit()
             return
 
         if self.close_thread is None:
@@ -377,15 +385,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _unload_task(self):
         self._engine.unload()
-        self._destroy_idle()
-
-    def _destroy_idle(self):
-        GLib.idle_add(self._destroy_push)
-
-    def _destroy_push(self):
-        self.quit = True
-        self.destroy()
-        Gtk.main_quit()
+        GLib.idle_add(self.get_application().quit)
 
     def _store_geometry(self):
         (width, height) = self.get_size()
@@ -445,23 +445,66 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         dialog.connect("response", error_dialog_response)
         print('Error: {}'.format(msg))
 
-    def _on_show_action(self, main_view, event_type, selected_show, data):
-        if event_type == ShowEventType.PLAY_NEXT:
+    def _on_action_play_next(self, action, param):
+        selected_show = self._main_view.get_selected_show()
+
+        if selected_show:
             self._play_next(selected_show)
-        elif event_type == ShowEventType.PLAY_EPISODE:
-            self._play_episode(selected_show, data)
-        elif event_type == ShowEventType.DETAILS:
-            self._open_details(selected_show)
-        elif event_type == ShowEventType.OPEN_WEBSITE:
-            self._open_website(selected_show)
-        elif event_type == ShowEventType.OPEN_FOLDER:
-            self._open_folder(selected_show)
-        elif event_type == ShowEventType.COPY_TITLE:
-            self._copy_title(selected_show)
-        elif event_type == ShowEventType.CHANGE_ALTERNATIVE_TITLE:
-            self._change_alternative_title(selected_show)
-        elif event_type == ShowEventType.REMOVE:
+
+    def _on_action_play_random(self, action, param):
+        self._play_random()
+
+    def _on_action_episode_add(self, action, param):
+        selected_show = self._main_view.get_selected_show()
+
+        if selected_show:
+            self._episode_add(selected_show)
+
+    def _on_action_episode_remove(self, action, param):
+        selected_show = self._main_view.get_selected_show()
+
+        if selected_show:
+            self._episode_remove(selected_show)
+
+    def _on_action_delete(self, action, param):
+        selected_show = self._main_view.get_selected_show()
+
+        if selected_show:
             self._remove_show(selected_show)
+
+    def _on_action_copy(self, action, param):
+        selected_show = self._main_view.get_selected_show()
+
+        if selected_show:
+            self._copy_title(selected_show)
+
+    def _on_show_action(self, main_view, event_type, data):
+        if event_type == ShowEventType.PLAY_NEXT:
+            self._play_next(*data)
+        elif event_type == ShowEventType.PLAY_EPISODE:
+            self._play_episode(*data)
+        elif event_type == ShowEventType.EPISODE_REMOVE:
+            self._episode_remove(*data)
+        elif event_type == ShowEventType.EPISODE_SET:
+            self._episode_set(*data)
+        elif event_type == ShowEventType.EPISODE_ADD:
+            self._episode_add(*data)
+        elif event_type == ShowEventType.SET_SCORE:
+            self._set_score(*data)
+        elif event_type == ShowEventType.SET_STATUS:
+            self._set_status(*data)
+        elif event_type == ShowEventType.DETAILS:
+            self._open_details(*data)
+        elif event_type == ShowEventType.OPEN_WEBSITE:
+            self._open_website(*data)
+        elif event_type == ShowEventType.OPEN_FOLDER:
+            self._open_folder(*data)
+        elif event_type == ShowEventType.COPY_TITLE:
+            self._copy_title(*data)
+        elif event_type == ShowEventType.CHANGE_ALTERNATIVE_TITLE:
+            self._change_alternative_title(*data)
+        elif event_type == ShowEventType.REMOVE:
+            self._remove_show(*data)
 
     def _play_next(self, show_id):
         threading.Thread(target=self._play_task, args=[show_id, True, None]).start()
@@ -487,7 +530,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._main_view.set_buttons_sensitive_idle(True)
 
     def _play_random(self):
-        # TODO: Reimplement functionality in GUI
         threading.Thread(target=self._play_random_task).start()
 
     def _play_random_task(self):
@@ -500,6 +542,32 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
         self._main_view.set_status_idle("Ready.")
         self._main_view.set_buttons_sensitive_idle(True)
+
+    def _episode_add(self, show_id):
+        show = self._engine.get_show_info(show_id)
+        self._episode_set(show_id, show['my_progress'] + 1)
+
+    def _episode_remove(self, show_id):
+        show = self._engine.get_show_info(show_id)
+        self._episode_set(show_id, show['my_progress'] - 1)
+
+    def _episode_set(self, show_id, episode):
+        try:
+            self._engine.set_episode(show_id, episode)
+        except utils.TrackmaError as e:
+            self._error_dialog(e)
+
+    def _set_score(self, show_id, score):
+        try:
+            self._engine.set_score(show_id, score)
+        except utils.TrackmaError as e:
+            self._error_dialog(e)
+
+    def _set_status(self, show_id, status):
+        try:
+            self._engine.set_status(show_id, status)
+        except utils.TrackmaError as e:
+            self._error_dialog(e)
 
     def _open_details(self, show_id):
         show = self._engine.get_show_info(show_id)

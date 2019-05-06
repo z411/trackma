@@ -18,7 +18,6 @@
 import os
 import webbrowser
 import gi
-gi.require_version('Gtk', '3.0')
 from enum import Enum
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
@@ -79,8 +78,6 @@ class AccountsWindow(Gtk.Dialog):
         self._refresh_pixbufs()
         self._refresh_list()
         self._populate_combobox()
-
-        self.show()
 
     def _remove_border(self):
         self.internal_box.set_border_width(0)

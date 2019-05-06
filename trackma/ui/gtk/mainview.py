@@ -18,7 +18,6 @@ import html
 import os
 import threading
 import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -42,7 +41,7 @@ class MainView(Gtk.Box):
         'error-fatal': (GObject.SIGNAL_RUN_FIRST, None,
                         (str,)),
         'show-action': (GObject.SIGNAL_RUN_FIRST, None,
-                        (int, int, int)),
+                        (int, object)),
     }
 
     image_container_box = GtkTemplate.Child()
@@ -300,11 +299,9 @@ class MainView(Gtk.Box):
             self.statusbox.set_sensitive(boolean)
 
     def _on_btn_episode_remove_clicked(self, widget):
-        show = self._engine.get_show_info(self._current_page.selected_show)
-        try:
-            self._engine.set_episode(self._current_page.selected_show, show['my_progress'] - 1)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.EPISODE_REMOVE,
+                  (self._current_page.selected_show,))
 
     def _show_episode_entry(self, *args):
         self.btn_episode_show_entry.hide()
@@ -313,43 +310,40 @@ class MainView(Gtk.Box):
         self.entry_episode.grab_focus()
 
     def _on_entry_episode_activate(self, widget):
-        self._hide_episode_entry()
-        episode = self.entry_episode.get_text()
         try:
-            self._engine.set_episode(self._current_page.selected_show, episode)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+            episode = int(self.entry_episode.get_text())
+            self.emit('show-action',
+                      ShowEventType.EPISODE_SET,
+                      (self._current_page.selected_show, episode))
+        except ValueError:
+            pass
 
     def _hide_episode_entry(self, *args):
         self.entry_episode.hide()
         self.btn_episode_show_entry.show()
 
     def _on_btn_episode_add_clicked(self, widget):
-        show = self._engine.get_show_info(self._current_page.selected_show)
-        try:
-            self._engine.set_episode(self._current_page.selected_show, show['my_progress'] + 1)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.EPISODE_ADD,
+                  (self._current_page.selected_show,))
 
     def _on_btn_play_next_clicked(self, widget, playnext, ep=None):
-        self.emit('show-action', ShowEventType.PLAY_NEXT, self._current_page.selected_show, -1)
+        self.emit('show-action',
+                  ShowEventType.PLAY_NEXT,
+                  (self._current_page.selected_show,))
 
     def _on_spinbtn_score_activate(self, widget):
         score = self.spinbtn_score.get_value()
-
-        try:
-            self._engine.set_score(self._current_page.selected_show, score)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.SET_SCORE,
+                  (self._current_page.selected_show, score))
 
     def _on_statusbox_changed(self, widget):
         statusiter = self.statusbox.get_active_iter()
         status = self.statusmodel.get(statusiter, 0)[0]
-
-        try:
-            self._engine.set_status(self._current_page.selected_show, status)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.SET_STATUS,
+                  (self._current_page.selected_show, status))
 
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
@@ -414,14 +408,10 @@ class MainView(Gtk.Box):
 
     def _on_response_update_next(self, widget, response, show, played_ep):
         widget.destroy()
-        # Update show to the played episode
         if response == Gtk.ResponseType.YES:
-            try:
-                show = self._engine.set_episode(show['id'], played_ep)
-                status = show['my_status']
-                self._pages[status].show_tree_view.update(show)
-            except utils.TrackmaError as e:
-                self.emit('error', e)
+            self.emit('show-action',
+                      ShowEventType.EPISODE_SET,
+                      (show['id'], played_ep))
 
     def _on_switch_notebook_page(self, notebook, page, page_num):
         self._current_page = page
@@ -487,10 +477,16 @@ class MainView(Gtk.Box):
         self.statusbox.handler_unblock(self.statusbox_handler)
 
     def _on_show_action(self, page, event_type, selected_show, data):
-        self.emit('show-action', event_type, selected_show, data)
+        self.emit('show-action', event_type, (selected_show, data))
 
     def get_current_status(self):
         return self._current_page.status
+
+    def get_selected_show(self):
+        if not self._current_page:
+            return None
+
+        return self._current_page.selected_show
 
 
 class NotebookPage(Gtk.ScrolledWindow):
