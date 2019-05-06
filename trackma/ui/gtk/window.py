@@ -410,24 +410,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._show_accounts_idle(switch=False, forget=True)
         self._error_dialog_idle(error_msg)
 
-    def _column_toggled(self, w, column_name, visible):
-        if visible:
-            # Make column visible
-            self._config['visible_columns'].append(column_name)
-
-            for view in self.show_lists.values():
-                view.cols[column_name].set_visible(True)
-        else:
-            # Make column invisible
-            if len(self._config['visible_columns']) <= 1:
-                return # There should be at least 1 column visible
-
-            self._config['visible_columns'].remove(column_name)
-            for view in self.show_lists.values():
-                view.cols[column_name].set_visible(False)
-
-        utils.save_config(self._config, self._configfile)
-
     def _error_dialog_idle(self, msg, icon=Gtk.MessageType.ERROR):
         # Thread safe
         GLib.idle_add(self._error_dialog, msg, icon)

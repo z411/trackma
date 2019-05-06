@@ -64,6 +64,7 @@ class MainView(Gtk.Box):
         Gtk.Box.__init__(self)
         self.init_template()
 
+        self._configfile = utils.to_config_path('ui-Gtk.json')
         self._config = config
         self._engine = None
         self._account = None
@@ -212,6 +213,7 @@ class MainView(Gtk.Box):
             self._page_handler_ids[status] = []
             self._page_handler_ids[status].append(self._pages[status].connect('show-selected', self._on_show_selected))
             self._page_handler_ids[status].append(self._pages[status].connect('show-action', self._on_show_action))
+            self._page_handler_ids[status].append(self._pages[status].connect('column-toggled', self._on_column_toggled))
             self.notebook.append_page(self._pages[status],
                                       Gtk.Label(statuses_names[status]))
 
@@ -488,6 +490,22 @@ class MainView(Gtk.Box):
 
         return self._current_page.selected_show
 
+    def _on_column_toggled(self, page, column_name, visible):
+        if visible:
+            # Make column visible
+            self._config['visible_columns'].append(column_name)
+        else:
+            # Make column invisible
+            if len(self._config['visible_columns']) <= 1:
+                return # There should be at least 1 column visible
+
+            self._config['visible_columns'].remove(column_name)
+
+        for page in self._pages.values():
+            page.set_column_visible(column_name, visible)
+
+        utils.save_config(self._config, self._configfile)
+
 
 class NotebookPage(Gtk.ScrolledWindow):
     __gtype_name__ = 'NotebookPage'
@@ -497,6 +515,8 @@ class NotebookPage(Gtk.ScrolledWindow):
                           (int, )),
         'show-action': (GObject.SIGNAL_RUN_FIRST, None,
                         (int, object)),
+        'column-toggled': (GObject.SIGNAL_RUN_FIRST, None,
+                           (str, bool)),
     }
 
     def __init__(self, engine, page_num, status, config):
@@ -526,8 +546,8 @@ class NotebookPage(Gtk.ScrolledWindow):
 
         self.add(self._show_tree_view)
 
-    def add_signal_callback(self, signal, callback):
-        self.connect(signal, callback)
+    def set_column_visible(self, column_name, visible):
+        self._show_tree_view.cols[column_name].set_visible(visible)
 
     @property
     def decimals(self):
@@ -569,8 +589,8 @@ class NotebookPage(Gtk.ScrolledWindow):
     def _on_row_activated(self, tree_view, path, column):
         self.emit('show-action', ShowEventType.DETAILS, self.selected_show, -1)
 
-    def _on_column_toggled(self, col, name, visible):
-        pass
+    def _on_column_toggled(self, tree_view, column_name, visible):
+        self.emit('column-toggled', column_name, visible)
 
     def _on_show_context_menu(self, tree_view, event):
         x = int(event.x)

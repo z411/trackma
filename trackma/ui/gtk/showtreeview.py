@@ -148,7 +148,7 @@ class ShowTreeView(Gtk.TreeView):
                 menu.append(item)
                 item.show()
 
-            menu.popup(None, None, None, None, event.button, event.time)
+            menu.popup_at_pointer(event)
             return True
 
         return False
