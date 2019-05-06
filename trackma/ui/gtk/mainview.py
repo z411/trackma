@@ -476,8 +476,8 @@ class MainView(Gtk.Box):
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
 
-    def _on_show_action(self, page, event_type, selected_show, data):
-        self.emit('show-action', event_type, (selected_show, data))
+    def _on_show_action(self, page, event_type, data):
+        self.emit('show-action', event_type, data)
 
     def get_current_status(self):
         return self._current_page.status
@@ -496,7 +496,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         'show-selected': (GObject.SIGNAL_RUN_FIRST, None,
                           (int, )),
         'show-action': (GObject.SIGNAL_RUN_FIRST, None,
-                        (int, int, int)),
+                        (int, object)),
     }
 
     def __init__(self, engine, page_num, status, config):
@@ -660,7 +660,5 @@ class NotebookPage(Gtk.ScrolledWindow):
         return menu_eps
 
     def _on_mb_activate(self, menu_item, event_type, data=None):
-        if data is None:
-            data = -1
-
-        self.emit('show-action', event_type, self._selected_show, data)
+        data = (self._selected_show,) if data is None else (self._selected_show, data)
+        self.emit('show-action', event_type, data)
