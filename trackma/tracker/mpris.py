@@ -43,8 +43,9 @@ class MPRISTracker(tracker.TrackerBase):
 
             sender = self.bus.get_name_owner(name)
             self.filenames[sender] = self._get_filename(metadata)
-
-            self._handle_status(status, sender)
+        
+            if not self.active_player:
+                self._handle_status(status, sender)
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
@@ -75,18 +76,21 @@ class MPRISTracker(tracker.TrackerBase):
 
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
+            
+            if self.last_state == utils.TRACKER_PLAYING:
+                self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
+                self.active_player = sender
 
-            self.active_player = sender
-
-            if not self.timing and state == utils.TRACKER_PLAYING:
-                self._pass_timer()
-                GLib.timeout_add_seconds(1, self._pass_timer)
+                if not self.timing:
+                    self._pass_timer()
+                    GLib.timeout_add_seconds(1, self._pass_timer)
        
     def _stopped(self, sender):
         self.filenames[sender] = None
 
         if sender == self.active_player:
             # Active player got closed!
+            self.msg.debug(self.name, "Clearing active player: {}".format(sender))
             self.active_player = None
             
             (state, show_tuple) = self._get_playing_show(None)
