@@ -29,7 +29,7 @@ class PollingTracker(tracker.TrackerBase):
         for path in watch_dirs:
             # TODO: We'll run lsof once for each directory for now.
             try:
-                lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
+                lsof = subprocess.Popen(['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
             except OSError:
                 self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
                 self.disable()
