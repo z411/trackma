@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
     debug = False
     config = None
     tray = None
+    mediainfo = None
     accountman = None
     accountman_widget = None
     worker = None
@@ -133,56 +134,56 @@ class MainWindow(QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
 
         # Build menus
-        action_play_next = QAction(getIcon('media-playback-start'), 'Play &Next', self)
-        action_play_next.setStatusTip('Play the next unwatched episode.')
-        action_play_next.setShortcut('Ctrl+N')
-        action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_dialog = QAction('Play Episode...', self)
-        action_play_dialog.setStatusTip('Select an episode to play.')
-        action_play_dialog.triggered.connect(self.s_play_number)
-        action_details = QAction('Show &details...', self)
-        action_details.setStatusTip('Show detailed information about the selected show.')
-        action_details.triggered.connect(self.s_show_details)
-        action_altname = QAction('Change &alternate name...', self)
-        action_altname.setStatusTip('Set an alternate title for the tracker.')
-        action_altname.triggered.connect(self.s_altname)
+        self.action_play_next = QAction(getIcon('media-playback-start'), 'Play &Next', self)
+        self.action_play_next.setStatusTip('Play the next unwatched episode.')
+        self.action_play_next.setShortcut('Ctrl+N')
+        self.action_play_next.triggered.connect(lambda: self.s_play(True))
+        self.action_play_dialog = QAction('Play Episode...', self)
+        self.action_play_dialog.setStatusTip('Select an episode to play.')
+        self.action_play_dialog.triggered.connect(self.s_play_number)
+        self.action_details = QAction('Show &details...', self)
+        self.action_details.setStatusTip('Show detailed information about the selected show.')
+        self.action_details.triggered.connect(self.s_show_details)
+        self.action_altname = QAction('Change &alternate name...', self)
+        self.action_altname.setStatusTip('Set an alternate title for the tracker.')
+        self.action_altname.triggered.connect(self.s_altname)
         action_play_random = QAction('Play &random show', self)
         action_play_random.setStatusTip('Pick a random show with a new episode and play it.')
         action_play_random.setShortcut('Ctrl+R')
         action_play_random.triggered.connect(self.s_play_random)
-        action_add = QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
-        action_add.setShortcut('Ctrl+A')
-        action_add.triggered.connect(self.s_add)
-        action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
-        action_delete.setStatusTip('Remove this show from your list.')
-        action_delete.setShortcut(QtCore.Qt.Key_Delete)
-        action_delete.triggered.connect(self.s_delete)
+        self.action_add = QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
+        self.action_add.setShortcut('Ctrl+A')
+        self.action_add.triggered.connect(self.s_add)
+        self.action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
+        self.action_delete.setStatusTip('Remove this show from your list.')
+        self.action_delete.setShortcut(QtCore.Qt.Key_Delete)
+        self.action_delete.triggered.connect(self.s_delete)
         action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
-        action_sync = QAction('&Sync', self)
-        action_sync.setStatusTip('Send changes and then retrieve remote list')
-        action_sync.setShortcut('Ctrl+S')
-        action_sync.triggered.connect(lambda: self.s_send(True))
-        action_send = QAction('S&end changes', self)
-        action_send.setShortcut('Ctrl+E')
-        action_send.setStatusTip('Upload any changes made to the list immediately.')
-        action_send.triggered.connect(self.s_send)
-        action_retrieve = QAction('Re&download list', self)
-        action_retrieve.setShortcut('Ctrl+D')
-        action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
-        action_retrieve.triggered.connect(self.s_retrieve)
+        self.action_sync = QAction('&Sync', self)
+        self.action_sync.setStatusTip('Send changes and then retrieve remote list')
+        self.action_sync.setShortcut('Ctrl+S')
+        self.action_sync.triggered.connect(lambda: self.s_send(True))
+        self.action_send = QAction('S&end changes', self)
+        self.action_send.setShortcut('Ctrl+E')
+        self.action_send.setStatusTip('Upload any changes made to the list immediately.')
+        self.action_send.triggered.connect(self.s_send)
+        self.action_retrieve = QAction('Re&download list', self)
+        self.action_retrieve.setShortcut('Ctrl+D')
+        self.action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
+        self.action_retrieve.triggered.connect(self.s_retrieve)
         action_scan_library = QAction('Rescan &Library', self)
         action_scan_library.setShortcut('Ctrl+L')
         action_scan_library.triggered.connect(self.s_scan_library)
         action_open_folder = QAction('Open containing folder', self)
         action_open_folder.triggered.connect(self.s_open_folder)
 
-        action_reload = QAction('Switch &Account', self)
-        action_reload.setStatusTip('Switch to a different account.')
-        action_reload.triggered.connect(self.s_switch_account)
+        self.action_reload = QAction('Switch &Account', self)
+        self.action_reload.setStatusTip('Switch to a different account.')
+        self.action_reload.triggered.connect(self.s_switch_account)
         action_settings = QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
@@ -193,15 +194,15 @@ class MainWindow(QMainWindow):
 
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
-        self.menu_show.addAction(action_play_next)
-        self.menu_show.addAction(action_play_dialog)
-        self.menu_show.addAction(action_details)
-        self.menu_show.addAction(action_altname)
+        self.menu_show.addAction(self.action_play_next)
+        self.menu_show.addAction(self.action_play_dialog)
+        self.menu_show.addAction(self.action_details)
+        self.menu_show.addAction(self.action_altname)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_play_random)
         self.menu_show.addSeparator()
-        self.menu_show.addAction(action_add)
-        self.menu_show.addAction(action_delete)
+        self.menu_show.addAction(self.action_add)
+        self.menu_show.addAction(self.action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_quit)
 
@@ -209,14 +210,12 @@ class MainWindow(QMainWindow):
 
         # Context menu for right click on list item
         self.menu_show_context = QMenu()
-        #self.menu_show_context.addAction(action_play_next)
-        #self.menu_show_context.addAction(action_play_dialog)
         self.menu_show_context.addMenu(self.menu_play)
-        self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(self.action_details)
         self.menu_show_context.addAction(action_open_folder)
-        self.menu_show_context.addAction(action_altname)
+        self.menu_show_context.addAction(self.action_altname)
         self.menu_show_context.addSeparator()
-        self.menu_show_context.addAction(action_delete)
+        self.menu_show_context.addAction(self.action_delete)
 
         # Make icons for viewed episodes
         rect = QtCore.QSize(16,16)
@@ -235,17 +234,17 @@ class MainWindow(QMainWindow):
             painter.end()
 
         menu_list = menubar.addMenu('&List')
-        menu_list.addAction(action_sync)
+        menu_list.addAction(self.action_sync)
         menu_list.addSeparator()
-        menu_list.addAction(action_send)
-        menu_list.addAction(action_retrieve)
+        menu_list.addAction(self.action_send)
+        menu_list.addAction(self.action_retrieve)
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
-        menu_options.addAction(action_reload)
+        menu_options.addAction(self.action_reload)
         menu_options.addSeparator()
         menu_options.addAction(action_settings)
         menu_help = menubar.addMenu('&Help')
@@ -564,22 +563,31 @@ class MainWindow(QMainWindow):
         self._save_config()
 
     def _enable_widgets(self, enable):
-        self.notebook.setEnabled(enable)
         self.view.setEnabled(enable)
-        self.menuBar().setEnabled(enable)
+        self._enable_show_widgets(bool(self.selected_show_id and enable))
 
-        if self.selected_show_id:
-            self.show_progress_btn.setEnabled(enable)
-            self.show_score_btn.setEnabled(enable)
-            if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
-                self.show_tags_btn.setEnabled(enable)
-            else:
-                self.show_tags_btn.setEnabled(False)
-            self.show_play_btn.setEnabled(enable)
-            self.show_inc_btn.setEnabled(enable)
-            self.show_dec_btn.setEnabled(enable)
-            self.show_status.setEnabled(enable)
-
+        self.action_add.setEnabled(enable)
+        self.action_sync.setEnabled(enable)
+        self.action_send.setEnabled(enable)
+        self.action_retrieve.setEnabled(enable)
+        self.action_reload.setEnabled(enable)
+     
+    def _enable_show_widgets(self, enable):
+        self.show_progress.setEnabled(enable)
+        self.show_score.setEnabled(enable)
+        self.show_progress_btn.setEnabled(enable)
+        self.show_score_btn.setEnabled(enable)
+        self.show_tags_btn.setEnabled(bool(self.mediainfo and self.mediainfo.get('can_tag') and enable))
+        self.show_inc_btn.setEnabled(enable)
+        self.show_dec_btn.setEnabled(enable)
+        self.show_play_btn.setEnabled(enable)
+        self.show_status.setEnabled(enable)
+        self.action_play_next.setEnabled(enable)
+        self.action_play_dialog.setEnabled(enable)
+        self.action_altname.setEnabled(enable)
+        self.action_delete.setEnabled(enable)
+        self.action_details.setEnabled(enable)
+        
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
 
@@ -768,17 +776,9 @@ class MainWindow(QMainWindow):
             self.show_image.setText('Trackma-qt')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
-            self.show_progress.setEnabled(False)
-            self.show_score.setEnabled(False)
             self.show_progress_bar.setValue(0)
             self.show_progress_bar.setFormat('?/?')
-            self.show_status.setEnabled(False)
-            self.show_progress_btn.setEnabled(False)
-            self.show_score_btn.setEnabled(False)
-            self.show_tags_btn.setEnabled(False)
-            self.show_play_btn.setEnabled(False)
-            self.show_inc_btn.setEnabled(False)
-            self.show_dec_btn.setEnabled(False)
+            self._enable_show_widgets(False)
 
             return
 
@@ -807,16 +807,7 @@ class MainWindow(QMainWindow):
         self.show_score.setValue(show['my_score'])
 
         # Enable relevant buttons
-        self.show_progress.setEnabled(True)
-        self.show_score.setEnabled(True)
-        self.show_progress_btn.setEnabled(True)
-        self.show_score_btn.setEnabled(True)
-        if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
-            self.show_tags_btn.setEnabled(True)
-        self.show_inc_btn.setEnabled(True)
-        self.show_dec_btn.setEnabled(True)
-        self.show_play_btn.setEnabled(True)
-        self.show_status.setEnabled(True)
+        self._enable_show_widgets(True)
 
         # Download image or use cache
         if show.get('image_thumb') or show.get('image'):
@@ -1090,20 +1081,21 @@ class MainWindow(QMainWindow):
         self.worker_call('play_random', self.r_generic)
 
     def s_play_number(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        ep_default = 1
-        ep_min = 1
-        ep_max = utils.estimate_aired_episodes(show)
-        if not ep_max:
-            # If we don't know the total just allow anything
-            ep_max = show['total'] or 10000
+        if self.selected_show_id:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+            ep_default = 1
+            ep_min = 1
+            ep_max = utils.estimate_aired_episodes(show)
+            if not ep_max:
+                # If we don't know the total just allow anything
+                ep_max = show['total'] or 10000
 
-        episode, ok = QInputDialog.getInt(self, 'Play Episode',
-            'Enter an episode number of %s to play:' % show['title'],
-            ep_default, ep_min, ep_max)
+            episode, ok = QInputDialog.getInt(self, 'Play Episode',
+                'Enter an episode number of %s to play:' % show['title'],
+                ep_default, ep_min, ep_max)
 
-        if ok:
-            self.s_play(False, episode)
+            if ok:
+                self.s_play(False, episode)
 
     def s_play_ep_number(self, action, number):
         return lambda: [action.setIcon(self.ep_icons['part']), self.s_play(False, number)]
