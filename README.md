@@ -86,7 +86,7 @@ following command:
 
 Or download the source code and install:
 
-<pre># git clone https://github.com/z411/trackma.git
+<pre># git clone --recursive https://github.com/z411/trackma.git
 # cd trackma
 # sudo python3 setup.py install</pre>
 
