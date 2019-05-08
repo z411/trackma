@@ -24,7 +24,7 @@ import difflib
 import pickle
 import uuid
 
-VERSION = '0.8.1'
+VERSION = '0.8.2'
 
 DATADIR = os.path.dirname(__file__) + '/data'
 LOGIN_PASSWD = 1
