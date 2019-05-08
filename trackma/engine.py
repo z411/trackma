@@ -716,14 +716,18 @@ class Engine:
             else:
                 my_status = self.mediainfo.get('statuses_library', self.mediainfo['statuses_start'])
 
-        self.msg.info(self.name, "Scanning local library...")
+        if rescan:
+            self.msg.info(self.name, "Scanning local library (overriding cache)...")
+        else:
+            self.msg.info(self.name, "Scanning local library...")
+
         tracker_list = self._get_tracker_list(my_status)
 
         for searchdir in self.searchdirs:
             self.msg.debug(self.name, "Directory: %s" % searchdir)
 
             # Do a full listing of the media directory
-            for fullpath, filename in utils.regex_find_videos('mkv|mp4|avi', searchdir):
+            for fullpath, filename in utils.regex_find_videos(searchdir):
                 if self.config['library_full_path']:
                     filename = self._get_show_name_from_full_path(searchdir, fullpath).strip()
                 (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)

@@ -36,12 +36,10 @@ class PollingTracker(tracker.TrackerBase):
                 return None
 
             output = lsof.communicate()[0].decode('utf-8')
-            fileregex = re.compile("n" + utils.MEDIAREGEX)
 
             for line in output.splitlines():
-                match = fileregex.match(line)
-                if match is not None:
-                    return os.path.basename(match.group(1))
+                if line[0] == 'n' and utils.is_media(line):
+                    return os.path.basename(line[1:])
 
         return None
 

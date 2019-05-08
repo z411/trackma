@@ -57,7 +57,7 @@ SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
 HOME = os.path.expanduser("~")
-MEDIAREGEX = "(.*(\.mkv|\.mp4|\.avi|\.ts))"
+EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
 
 # Put the available APIs here
 available_libs = {
@@ -130,20 +130,18 @@ def expand_path(path):
 def expand_paths(paths):
     return (expand_path(path) for path in paths)
 
-def regex_find_videos(extensions, subdirectory=''):
-    __re = re.compile(extensions, re.I)
+def is_media(filename):
+    return os.path.splitext(filename)[1] in EXTENSIONS
 
+def regex_find_videos(subdirectory=''):
     if subdirectory:
         path = os.path.expanduser(subdirectory)
     else:
         path = os.getcwd()
+
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
-            # Filename manipulation
-
-            extension = os.path.splitext(filename)[1][1:]
-            match = __re.match(extension)
-            if match:
+            if is_media(filename):
                 yield ( os.path.join(root, filename), filename )
 
 def regex_rename_files(pattern, source_dir, dest_dir):

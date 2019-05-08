@@ -37,7 +37,6 @@ class inotifyBase(tracker.TrackerBase):
         """
 
         time.sleep(0.01)
-        fileregex = re.compile(utils.MEDIAREGEX)
 
         for p in os.listdir("/proc/"):
             if not p.isdigit(): continue
@@ -55,7 +54,7 @@ class inotifyBase(tracker.TrackerBase):
             try:
                 for fd in os.listdir(d):
                     f = os.readlink(d+fd)
-                    if fileregex.match(f):
+                    if utils.is_media(f):
                         return os.path.split(f)
             except OSError:
                 pass
