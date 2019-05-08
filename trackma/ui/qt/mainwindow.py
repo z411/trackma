@@ -1111,7 +1111,7 @@ class MainWindow(QMainWindow):
                 self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
-        self.worker_call('scan_library', self.r_library_scanned)
+        self.worker_call('scan_library', self.r_library_scanned, rescan=True)
 
     def s_altname(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
