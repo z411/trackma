@@ -511,7 +511,7 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == show['total'] and self.mediainfo('statuses_finish'):
+                if newep == show['total'] and self.mediainfo.get('statuses_finish'):
                     if (
                             not self.config['auto_status_change_if_scored'] or
                             not self.mediainfo.get('can_score') or
