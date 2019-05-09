@@ -1292,11 +1292,11 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             self.worker_call('set_episode', self.r_generic, show['id'], episode)
 
-    def ws_prompt_add(self, show_title, episode):
+    def ws_prompt_add(self, show, episode):
         page = self.notebook.currentIndex()
         current_status = self.mediainfo['statuses'][page]
 
-        addwindow = AddDialog(None, self.worker, current_status, default=show_title)
+        addwindow = AddDialog(None, self.worker, current_status, default=show['title'])
         addwindow.setModal(True)
         if addwindow.exec_():
             self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)

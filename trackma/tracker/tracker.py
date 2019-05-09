@@ -120,9 +120,9 @@ class TrackerBase(object):
             self.last_updated = True
             action = None
             if state == utils.TRACKER_PLAYING:
-                action = lambda: self._emit_signal('update', show['id'], episode)
+                action = lambda: self._emit_signal('update', show, episode)
             elif state == utils.TRACKER_NOT_FOUND:
-                action = lambda: self._emit_signal('unrecognised', show['title'], episode)
+                action = lambda: self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
                 self.msg.info(self.name, 'Waiting for the player to close.')

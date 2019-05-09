@@ -139,8 +139,7 @@ class Engine:
         show = self.get_show_info(showid)
         self._emit_signal('playing', show, playing, episode)
 
-    def _tracker_update(self, showid, episode):
-        show = self.get_show_info(showid)
+    def _tracker_update(self, show, episode):
         if self.config['tracker_update_prompt']:
             self._emit_signal('prompt_for_update', show, episode)
         else:
@@ -149,9 +148,9 @@ class Engine:
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't update episode: {}".format(e))
 
-    def _tracker_unrecognised(self, show_title, episode):
+    def _tracker_unrecognised(self, show, episode):
         if self.config['tracker_not_found_prompt']:
-            self._emit_signal('prompt_for_add', show_title, episode)
+            self._emit_signal('prompt_for_add', show, episode)
 
     def _tracker_state(self, status):
         self._emit_signal('tracker_state', status)

@@ -100,7 +100,7 @@ class EngineWorker(QtCore.QThread):
     tracker_state = QtCore.pyqtSignal(dict)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
-    prompt_for_add = QtCore.pyqtSignal(str, int)
+    prompt_for_add = QtCore.pyqtSignal(dict, int)
 
     def __init__(self):
         super(EngineWorker, self).__init__()
@@ -137,8 +137,8 @@ class EngineWorker(QtCore.QThread):
     def _prompt_for_update(self, show, episode):
         self.prompt_for_update.emit(show, episode)
 
-    def _prompt_for_add(self, show_title, episode):
-        self.prompt_for_add.emit(show_title, episode)
+    def _prompt_for_add(self, show, episode):
+        self.prompt_for_add.emit(show, episode)
 
     # Callable functions
     def _start(self, account):
