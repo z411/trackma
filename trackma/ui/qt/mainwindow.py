@@ -175,9 +175,11 @@ class MainWindow(QMainWindow):
         self.action_retrieve.setShortcut('Ctrl+D')
         self.action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
         self.action_retrieve.triggered.connect(self.s_retrieve)
-        action_scan_library = QAction('Rescan &Library', self)
+        action_scan_library = QAction('Rescan &Library (quick)', self)
         action_scan_library.setShortcut('Ctrl+L')
         action_scan_library.triggered.connect(self.s_scan_library)
+        action_rescan_library = QAction('Rescan &Library (full)', self)
+        action_rescan_library.triggered.connect(self.s_rescan_library)
         action_open_folder = QAction('Open containing folder', self)
         action_open_folder.triggered.connect(self.s_open_folder)
 
@@ -240,6 +242,7 @@ class MainWindow(QMainWindow):
         menu_list.addAction(self.action_retrieve)
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
+        menu_list.addAction(action_rescan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
@@ -1111,6 +1114,9 @@ class MainWindow(QMainWindow):
                 self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
+        self.worker_call('scan_library', self.r_library_scanned, rescan=False)
+
+    def s_rescan_library(self):
         self.worker_call('scan_library', self.r_library_scanned, rescan=True)
 
     def s_altname(self):
