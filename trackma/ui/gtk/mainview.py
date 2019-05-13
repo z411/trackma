@@ -587,7 +587,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         self.emit('show-selected', self._selected_show)
 
     def _on_row_activated(self, tree_view, path, column):
-        self.emit('show-action', ShowEventType.DETAILS, self.selected_show, -1)
+        self.emit('show-action', ShowEventType.DETAILS, (self.selected_show,))
 
     def _on_column_toggled(self, tree_view, column_name, visible):
         self.emit('column-toggled', column_name, visible)
