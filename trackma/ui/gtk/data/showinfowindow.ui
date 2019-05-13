@@ -32,12 +32,8 @@
     <child internal-child="vbox">
       <object class="GtkBox" id="info_container">
         <property name="can_focus">False</property>
-        <property name="margin_left">18</property>
-        <property name="margin_right">18</property>
-        <property name="margin_top">18</property>
-        <property name="margin_bottom">18</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
+        <property name="border_width">0</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can_focus">False</property>
