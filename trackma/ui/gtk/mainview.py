@@ -283,8 +283,7 @@ class MainView(Gtk.Box):
 
     def set_buttons_sensitive(self, boolean, lists_too=True):
         if lists_too:
-            for widget in self._pages.values():
-                widget.set_sensitive(boolean)
+            self.notebook.set_sensitive(boolean)
 
         if self._current_page.selected_show or not boolean:
             if self._engine.mediainfo['can_play']:

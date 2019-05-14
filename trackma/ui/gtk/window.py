@@ -270,7 +270,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             _download_lists()
 
     def _synchronization_task(self, send, retrieve):
-        self._main_view.set_buttons_sensitive_idle(False)
+        self._set_buttons_sensitive_idle(False)
 
         try:
             if send:
@@ -288,12 +288,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             return
 
         self._main_view.set_status_idle("Ready.")
-        self._main_view.set_buttons_sensitive_idle(True)
+        self._set_buttons_sensitive_idle(True)
 
     def _on_scanfiles(self, action, param):
         threading.Thread(target=self._scanfiles_task).start()
 
     def _scanfiles_task(self):
+        self._set_buttons_sensitive_idle(False)
         try:
             self._engine.scan_library(rescan=True)
         except utils.TrackmaError as e:
@@ -302,7 +303,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         GLib.idle_add(self._main_view.populate_all_pages)
 
         self._main_view.set_status_idle("Ready.")
-        self._main_view.set_buttons_sensitive_idle(True)
+        self._set_buttons_sensitive_idle(False)
 
     def _on_accounts(self, action, param):
         self._show_accounts()
@@ -379,7 +380,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             return
 
         if self.close_thread is None:
-            self._main_view.set_buttons_sensitive_idle(False)
+            self._set_buttons_sensitive_idle(False)
             self.close_thread = threading.Thread(target=self._unload_task)
             self.close_thread.start()
 
@@ -495,7 +496,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         threading.Thread(target=self._play_task, args=[show_id, False, episode]).start()
 
     def _play_task(self, show_id, playnext, episode):
-        self._main_view.set_buttons_sensitive_idle(False)
+        self._set_buttons_sensitive_idle(False)
 
         show = self._engine.get_show_info(show_id)
         try:
@@ -509,13 +510,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._error_dialog_idle(e)
 
         self._main_view.set_status_idle("Ready.")
-        self._main_view.set_buttons_sensitive_idle(True)
+        self._set_buttons_sensitive_idle(True)
 
     def _play_random(self):
         threading.Thread(target=self._play_random_task).start()
 
     def _play_random_task(self):
-        self._main_view.set_buttons_sensitive_idle(False)
+        self._set_buttons_sensitive_idle(False)
 
         try:
             self._engine.play_random()
@@ -523,7 +524,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._error_dialog_idle(e)
 
         self._main_view.set_status_idle("Ready.")
-        self._main_view.set_buttons_sensitive_idle(True)
+        self._set_buttons_sensitive_idle(True)
 
     def _episode_add(self, show_id):
         show = self._engine.get_show_info(show_id)
@@ -623,3 +624,27 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._engine.delete_show(show)
         except utils.TrackmaError as e:
             self._error_dialog_idle(e)
+
+    def _set_buttons_sensitive_idle(self, sensitive):
+        GLib.idle_add(self._set_buttons_sensitive, sensitive)
+        self._main_view.set_buttons_sensitive_idle(sensitive)
+
+    def _set_buttons_sensitive(self, sensitive):
+        actions_names = ['search',
+                         'syncronize',
+                         'upload',
+                         'download',
+                         'scanfiles',
+                         'accounts',
+                         'play_next',
+                         'play_random',
+                         'episode_add',
+                         'episode_remove',
+                         'delete',
+                         'copy']
+
+        for action_name in actions_names:
+            action = self.lookup_action(action_name)
+
+            if action is not None:
+                action.set_enabled(sensitive)
