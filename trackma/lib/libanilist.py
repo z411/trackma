@@ -110,6 +110,7 @@ class libanilist(lib):
         'NOVEL': utils.TYPE_OTHER,
         'ONE_SHOT': utils.TYPE_OTHER,
     }
+
     status_translate = {
             'RELEASING': utils.STATUS_AIRING,
             'FINISHED': utils.STATUS_FINISHED,
@@ -288,8 +289,8 @@ fragment mediaListEntry on MediaList {
                     'id': showid,
                     'title': media['title']['userPreferred'],
                     'aliases': self._get_aliases(media),
-                    'type': self.type_translate[media['format']],
-                    'status': self.status_translate[media['status']],
+                    'type': self._translate_type(media['format']),
+                    'status': self._translate_status(media['status']),
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
                     'my_score': self._c(item['score']),
@@ -448,8 +449,8 @@ fragment mediaListEntry on MediaList {
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
-            'type': self.type_translate[item['format']],
-            'status': self.status_translate[item['status']],
+            'type': self._translate_type(item['format']),
+            'status': self._translate_status(item['status']),
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
@@ -465,7 +466,7 @@ fragment mediaListEntry on MediaList {
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
-                ('Status',          self.status_translate[item['status']]),
+                ('Status',          self._translate_status(item['status'])),
             ]
         })
         return info
@@ -478,6 +479,12 @@ fragment mediaListEntry on MediaList {
         aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
 
         return aliases
+
+    def _translate_type(self, orig_type):
+        return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
+
+    def _translate_status(self, orig_status):
+        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
 
     def _dict2date(self, item):
         if not item:
