@@ -17,7 +17,6 @@
 import html
 import os
 import threading
-import gi
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -221,7 +220,7 @@ class MainView(Gtk.Box):
         self.notebook.show_all()
 
     def populate_all_pages(self):
-        for status in self._pages.keys():
+        for status in self._pages:
             self.populate_page(status)
 
     def populate_page(self, status):

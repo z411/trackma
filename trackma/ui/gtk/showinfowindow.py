@@ -15,7 +15,6 @@
 #
 
 import os
-import gi
 from gi.repository import Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate

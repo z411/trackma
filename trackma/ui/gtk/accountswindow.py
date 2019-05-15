@@ -14,10 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import os
 import webbrowser
-import gi
 from enum import Enum
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
@@ -71,6 +69,7 @@ class AccountsWindow(Gtk.Dialog):
         self.treeiters = {}
         self.current = AccountsView.LIST
         self.manager = manager
+        self.account_edit = None
 
         self._remove_border()
         self._add_separators()
@@ -371,4 +370,3 @@ class AccountRow(Gtk.ListBoxRow):
 
     def get_libname(self):
         return self.account['libname']
-

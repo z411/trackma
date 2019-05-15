@@ -14,12 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import html
 import os
 import threading
-import gi
-from gi.repository import Gtk, Pango, GObject
+from gi.repository import Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox

@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import threading
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gio, Gtk

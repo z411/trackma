@@ -16,8 +16,7 @@
 
 import os
 import threading
-import gi
-from gi.repository import GLib, Gtk, Gdk, GObject
+from gi.repository import GLib, Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.showinfobox import ShowInfoBox

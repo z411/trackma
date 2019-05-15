@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import gi
 from gi.repository import Gtk, GdkPixbuf
 
 
@@ -63,4 +61,3 @@ def scale(w, h, x, y, maximum=True):
     if maximum ^ (nw >= x):
         return nw or 1, y
     return x, nh or 1
-

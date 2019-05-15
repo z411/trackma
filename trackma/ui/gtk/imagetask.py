@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import os
 import time
 import threading
@@ -80,4 +79,3 @@ class ImageTask(threading.Thread):
 
     def cancel(self):
         self.cancelled = True
-

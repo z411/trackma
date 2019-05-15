@@ -14,12 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import html
 import os
 import subprocess
 import threading
-import gi
 from gi.repository import GLib, Gio, Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -43,12 +40,6 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     btn_appmenu = GtkTemplate.Child()
     btn_mediatype = GtkTemplate.Child()
 
-    show_lists = dict()
-    image_thread = None
-    close_thread = None
-    hidden = False
-    quit = False
-
     def __init__(self, app, debug=False):
         Gtk.ApplicationWindow.__init__(self, application=app)
         self.init_template()
@@ -63,6 +54,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
         self._account = None
         self._engine = None
+        self.close_thread = None
+        self.hidden = False
 
         self._init_widgets()
 

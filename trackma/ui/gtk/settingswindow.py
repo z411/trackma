@@ -14,9 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import os
-import gi
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
