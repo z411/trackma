@@ -549,6 +549,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         show = self._engine.get_show_info(show_id)
         win = ShowInfoWindow(self._engine, show, transient_for=self)
         win.connect('destroy', self._on_modal_destroy)
+        win.present()
         self._modals.append(win)
 
     def _open_website(self, show_id):

@@ -21,8 +21,6 @@ from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
-from trackma.ui.gtk.imagetask import ImageTask
-from trackma.ui.gtk.imagetask import imaging_available
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showtreeview import ShowTreeView
 from trackma import utils
@@ -93,17 +91,14 @@ class MainView(Gtk.Box):
         self._engine_reload(account, mediatype)
 
     def _init_widgets(self):
-        self.show_image = ImageBox(100, 149)
-        self.image_container_box.pack_start(self.show_image, False, False, 0)
-        self.show_image.show()
-
-        if not imaging_available:
-            self.show_image.pholder_show("PIL library\nnot available")
+        self.image_box = ImageBox(100, 150)
+        self.image_box.show()
+        self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
-        self.pack_start(self.statusbar, False, False, 0)
         self.statusbar.show()
+        self.pack_start(self.statusbar, False, False, 0)
 
     def _init_signals(self):
         self.btn_episode_remove.connect("clicked", self._on_btn_episode_remove_clicked)
@@ -171,7 +166,7 @@ class MainView(Gtk.Box):
     def _reset_widgets(self):
         self.show_title.set_text('<span size="14000"><b>Trackma</b></span>')
         self.show_title.set_use_markup(True)
-        self.show_image.pholder_show("Trackma")
+        self.image_box.reset()
 
         current_api = utils.available_libs[self._account['api']]
         api_iconfile = current_api[1]
@@ -459,19 +454,12 @@ class MainView(Gtk.Box):
                                   show['id']))
 
             if os.path.isfile(filename):
-                self.show_image.image_show(filename)
+                self.image_box.set_image(filename)
             else:
-                if imaging_available:
-                    self.show_image.pholder_show('Loading...')
-                    self._image_thread = ImageTask(self.show_image,
-                                                   show.get('image_thumb') or show['image'],
-                                                   filename,
-                                                   (100, 149))
-                    self._image_thread.start()
-                else:
-                    self.show_image.pholder_show("PIL library\nnot available")
+                self.image_box.set_image_remote(show.get('image_thumb') or show['image'],
+                                                filename)
         else:
-            self.show_image.pholder_show("No Image")
+            self.image_box.set_text('No Image')
 
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
