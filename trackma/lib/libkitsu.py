@@ -78,7 +78,7 @@ class libkitsu(lib):
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
-        'score_step': 0.5,
+        'score_step': 0.25,
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -93,7 +93,7 @@ class libkitsu(lib):
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
-        'score_step': 0.5,
+        'score_step': 0.25,
     }
     mediatypes['drama'] = {
         'has_progress': True,
@@ -108,7 +108,7 @@ class libkitsu(lib):
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
-        'score_step': 0.5,
+        'score_step': 0.25,
     }
 
     url    = 'https://kitsu.io/api'
