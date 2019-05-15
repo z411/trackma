@@ -77,14 +77,16 @@ class SearchWindow(Gtk.Window):
         self.showlist = SearchTreeView(colors)
         self.showlist.get_selection().connect("changed", self._on_selection_changed)
         self.showlist.set_size_request(250, 350)
+        self.showlist.show()
+
         self.info = ShowInfoBox(engine,orientation=Gtk.Orientation.VERTICAL)
         self.info.set_size_request(200, 350)
+        self.info.show()
 
         self.shows_viewport.add(self.showlist)
         self.show_info_container.pack_start(self.info, True, True, 0)
         self.search_paned.set_position(400)
         self.set_size_request(450, 350)
-        self.show_all()
 
     @GtkTemplate.Callback
     def _on_search_entry_search_changed(self, search_entry):
