@@ -76,12 +76,15 @@ class MPRISTracker(tracker.TrackerBase):
 
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
+
+            self.msg.debug(self.name, "New tracker status: {} ({})".format(state, self.last_state))
             
             if self.last_state == utils.TRACKER_PLAYING:
                 self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
                 self.active_player = sender
 
                 if not self.timing:
+                    self.msg.debug(self.name, "Starting MPRIS timer.")
                     self._pass_timer()
                     GLib.timeout_add_seconds(1, self._pass_timer)
        

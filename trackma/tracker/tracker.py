@@ -234,6 +234,7 @@ class TrackerBase(object):
 
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
+                self.msg.debug(self.name, "Same filename as before. Skipping.")
                 return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename
@@ -246,6 +247,8 @@ class TrackerBase(object):
                 return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized
 
             playing_show = utils.guess_show(show_title, self.list)
+            self.msg.debug(self.name, "Show guess: {}: {}".format(show_title, playing_show))
+
             if playing_show:
                 (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep), self.redirections, self.list)
 
