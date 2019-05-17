@@ -298,14 +298,14 @@ class libkitsu(lib):
                     #showid = int(entry['relationships'][self.mediatype]['data']['id'])
                     showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
-                    rating = entry['attributes']['rating']
+                    rating = entry['attributes']['ratingTwenty']
 
                     showlist[showid] = utils.show()
                     showlist[showid].update({
                         'id': showid,
                         'my_id': entry['id'],
                         'my_progress': entry['attributes']['progress'],
-                        'my_score': float(rating) if rating is not None else 0.0,
+                        'my_score': float(rating)/4.00 if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
@@ -436,7 +436,7 @@ class libkitsu(lib):
         if 'my_status' in item:
             values['data']['attributes']['status'] = item['my_status']
         if 'my_score' in item:
-            values['data']['attributes']['rating'] = item['my_score'] or None
+            values['data']['attributes']['ratingTwenty'] = int(item['my_score']*4) or None
 
         return json.dumps(values)
 
