@@ -142,6 +142,7 @@ class TrackerBase(object):
         if self.last_close_queue:
             self.last_close_queue()
             self.last_close_queue = None
+        self.timer_paused = None
         self.timer_offset = 0
         self.last_time = time.time()
         if self.last_show_tuple:
@@ -196,10 +197,6 @@ class TrackerBase(object):
                 self.msg.info(self.name, 'Will update %s %d' % (show['title'], episode))
             elif state == utils.TRACKER_NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
-
-            # Clear up any remaining pause offset
-            self.timer_paused = None
-            self.timer_offset = 0
 
             self._update_show(state, show_tuple)
         elif self.last_state != state:
