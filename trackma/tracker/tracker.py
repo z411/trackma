@@ -138,13 +138,17 @@ class TrackerBase(object):
         self._emit_signal('state', self.get_status())
 
     def _update_state(self, state):
-        # Call when show or state is changed. Perform queued update if any, and clear playing flag.
+        # Call when show or state is changed. Perform queued update if any.
         if self.last_close_queue:
             self.last_close_queue()
             self.last_close_queue = None
+
+        # Clear up pause and set our new time offset
         self.timer_paused = None
         self.timer_offset = 0
         self.last_time = time.time()
+
+        # Emit the new playing signal
         if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
             if last_show['id']:
