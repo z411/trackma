@@ -197,8 +197,11 @@ class TrackerBase(object):
             elif state == utils.TRACKER_NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
 
-            self._update_show(state, show_tuple)
+            # Clear up any remaining pause offset
+            self.timer_paused = None
+            self.timer_offset = 0
 
+            self._update_show(state, show_tuple)
         elif self.last_state != state:
             self._update_state(state)
 
