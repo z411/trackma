@@ -177,8 +177,12 @@ class TrackerBase(object):
             if state == utils.TRACKER_PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
-                if episode != (show['my_progress'] + 1):
+                if self.config['tracker_ignore_not_next'] and episode != (show['my_progress'] + 1):
                     self.msg.warn(self.name, 'Not playing the next episode of %s. Ignoring.' % show['title'])
+                    self._ignore_current()
+                    return
+                if episode == show['my_progress']:
+                    self.msg.warn(self.name, 'Playing the current episode of %s. Ignoring.' % show['title'])
                     self._ignore_current()
                     return
                 if episode < 1 or (show['total'] and episode > show['total']):
