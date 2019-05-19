@@ -85,6 +85,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_close = QCheckBox()
         self.tracker_update_prompt = QCheckBox()
         self.tracker_not_found_prompt = QCheckBox()
+        self.tracker_ignore_not_next = QCheckBox()
 
         g_media_layout.addRow('Enable tracker', self.tracker_enabled)
         g_media_layout.addRow('Tracker type', self.tracker_type)
@@ -94,6 +95,7 @@ class SettingsDialog(QDialog):
         g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
         g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
         g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
+        g_media_layout.addRow('Ignore if not next episode', self.tracker_ignore_not_next)
 
         g_media.setLayout(g_media_layout)
 
@@ -399,6 +401,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
         self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
         self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
+        self.tracker_ignore_not_next.setChecked(engine.get_config('tracker_ignore_not_next'))
 
         self.player.setText(engine.get_config('player'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
@@ -475,6 +478,7 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
         engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
         engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
+        engine.set_config('tracker_ignore_not_next', self.tracker_ignore_not_next.isChecked())
 
         engine.set_config('player',            self.player.text())
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())

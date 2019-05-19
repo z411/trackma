@@ -70,20 +70,26 @@ class MPRISTracker(tracker.TrackerBase):
         elif status == "Stopped":
             self._stopped(sender)
 
+        self.statuses[sender] = status
+
     def _playing(self, filename, sender):
         if filename != self.last_filename:
             self.msg.debug(self.name, "New video: {}".format(filename))
 
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
+
+            self.msg.debug(self.name, "New tracker status: {} ({})".format(state, self.last_state))
             
-            if self.last_state == utils.TRACKER_PLAYING:
+            # We can override the active player if this player is playing a valid show.
+            if not self.active_player or self.last_state == utils.TRACKER_PLAYING:
                 self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
                 self.active_player = sender
 
                 if not self.timing:
+                    self.msg.debug(self.name, "Starting MPRIS timer.")
                     self._pass_timer()
-                    GLib.timeout_add_seconds(1, self._pass_timer)
+                    self.timer_source = GLib.timeout_add_seconds(1, self._pass_timer)
        
     def _stopped(self, sender):
         self.filenames[sender] = None
@@ -96,12 +102,20 @@ class MPRISTracker(tracker.TrackerBase):
             (state, show_tuple) = self._get_playing_show(None)
             self.update_show_if_needed(state, show_tuple)
 
+            # Remove timer if any
+            #if self.timer_source:
+            #    GLib.Source.Remove(self.timer_source)
+
     def _on_update(self, name, properties, v, sender=None):
         if not self.active_player or self.active_player == sender:
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.
                 self.filenames[sender] = self._get_filename(properties['Metadata'])
+
+                if 'PlaybackStatus' not in properties:
+                    # Query the player status if we don't have it
+                    self._handle_status(self.statuses[sender], sender)
 
             if 'PlaybackStatus' in properties:
                 status = properties['PlaybackStatus']
@@ -133,6 +147,7 @@ class MPRISTracker(tracker.TrackerBase):
 
         self.re_players = re.compile(config['tracker_process'])
         self.filenames = {}
+        self.statuses = {}
         self.timing = False
         self.active_player = None
         self.bus = dbus.SessionBus()

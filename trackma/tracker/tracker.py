@@ -138,12 +138,17 @@ class TrackerBase(object):
         self._emit_signal('state', self.get_status())
 
     def _update_state(self, state):
-        # Call when show or state is changed. Perform queued update if any, and clear playing flag.
+        # Call when show or state is changed. Perform queued update if any.
         if self.last_close_queue:
             self.last_close_queue()
             self.last_close_queue = None
+
+        # Clear up pause and set our new time offset
+        self.timer_paused = None
         self.timer_offset = 0
         self.last_time = time.time()
+
+        # Emit the new playing signal
         if self.last_show_tuple:
             (last_show, last_show_ep) = self.last_show_tuple
             if last_show['id']:
@@ -177,8 +182,12 @@ class TrackerBase(object):
             if state == utils.TRACKER_PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
-                if episode != (show['my_progress'] + 1):
+                if self.config['tracker_ignore_not_next'] and episode != (show['my_progress'] + 1):
                     self.msg.warn(self.name, 'Not playing the next episode of %s. Ignoring.' % show['title'])
+                    self._ignore_current()
+                    return
+                if episode == show['my_progress']:
+                    self.msg.warn(self.name, 'Playing the current episode of %s. Ignoring.' % show['title'])
                     self._ignore_current()
                     return
                 if episode < 1 or (show['total'] and episode > show['total']):
@@ -194,7 +203,6 @@ class TrackerBase(object):
                 self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
 
             self._update_show(state, show_tuple)
-
         elif self.last_state != state:
             self._update_state(state)
 
@@ -234,6 +242,7 @@ class TrackerBase(object):
 
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
+                self.msg.debug(self.name, "Same filename as before. Skipping.")
                 return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename
@@ -246,6 +255,8 @@ class TrackerBase(object):
                 return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized
 
             playing_show = utils.guess_show(show_title, self.list)
+            self.msg.debug(self.name, "Show guess: {}: {}".format(show_title, playing_show))
+
             if playing_show:
                 (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep), self.redirections, self.list)
 
