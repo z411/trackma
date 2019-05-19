@@ -6,3 +6,6 @@
 *.out
 *.log
 .trackma
+*.egg-info
+build
+dist
