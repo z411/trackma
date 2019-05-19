@@ -5,8 +5,8 @@
   <template class="ShowInfoWindow" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="modal">True</property>
-    <property name="default_width">500</property>
-    <property name="default_height">600</property>
+    <property name="default_width">600</property>
+    <property name="default_height">500</property>
     <property name="type_hint">dialog</property>
     <signal name="close" handler="_on_dialog_close" swapped="no"/>
     <child type="titlebar">
