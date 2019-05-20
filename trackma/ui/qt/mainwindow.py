@@ -741,7 +741,10 @@ class MainWindow(QMainWindow):
         self.view.model().sourceModel().setMediaInfo(self.mediainfo)
         self.view.model().sourceModel().setShowList(showlist, altnames, library)
         self.view.resizeRowsToContents()
+        
+        self.s_filter_changed()
 
+    def _init_view(self):
         # Set view options
         self.view.setSortingEnabled(True)
         self.view.sortByColumn(self.config['sort_index'], self.config['sort_order'])
@@ -760,11 +763,14 @@ class MainWindow(QMainWindow):
             self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
-        self.view.horizontalHeader().resizeSection(2, 70)
-        self.view.horizontalHeader().resizeSection(3, 55)
-        self.view.horizontalHeader().resizeSection(4, 100)
-
-        self.s_filter_changed()
+        # Recover column state
+        if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
+            state = QtCore.QByteArray(base64.b64decode(self.api_config['columns_state']))
+            self.view.horizontalHeader().restoreState(state)
+        else:
+            self.view.horizontalHeader().resizeSection(2, 70)
+            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(4, 100)
 
     def _select_show(self, show):
         # Stop any running image timer
@@ -1355,12 +1361,8 @@ class MainWindow(QMainWindow):
 
             # Build our main view and show total counts
             self._rebuild_view()
+            self._init_view()
             self._recalculate_counts()
-
-            # Recover column state
-            if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
-                state = QtCore.QByteArray(base64.b64decode(self.api_config['columns_state']))
-                self.view.horizontalHeader().restoreState(state)
 
             self.s_show_selected(None)
 

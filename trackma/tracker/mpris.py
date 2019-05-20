@@ -108,7 +108,8 @@ class MPRISTracker(tracker.TrackerBase):
             self.timing = False
 
     def _on_update(self, name, properties, v, sender=None):
-        if not self.active_player or self.active_player == sender:
+        # We can override the active player if it's not playing a valid show.
+        if not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING:
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.
