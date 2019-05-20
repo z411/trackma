@@ -88,8 +88,10 @@ class MPRISTracker(tracker.TrackerBase):
 
                 if not self.timing:
                     self.msg.debug(self.name, "Starting MPRIS timer.")
+                    self.timing = True
+
                     self._pass_timer()
-                    self.timer_source = GLib.timeout_add_seconds(1, self._pass_timer)
+                    GLib.timeout_add_seconds(1, self._pass_timer)
        
     def _stopped(self, sender):
         self.filenames[sender] = None
@@ -98,13 +100,12 @@ class MPRISTracker(tracker.TrackerBase):
             # Active player got closed!
             self.msg.debug(self.name, "Clearing active player: {}".format(sender))
             self.active_player = None
-            
+
             (state, show_tuple) = self._get_playing_show(None)
             self.update_show_if_needed(state, show_tuple)
 
             # Remove timer if any
-            #if self.timer_source:
-            #    GLib.Source.Remove(self.timer_source)
+            self.timing = False
 
     def _on_update(self, name, properties, v, sender=None):
         if not self.active_player or self.active_player == sender:
@@ -132,11 +133,7 @@ class MPRISTracker(tracker.TrackerBase):
                 self._stopped(old)
 
     def _pass_timer(self):
-        if self.last_state == utils.TRACKER_PLAYING:
-            self.update_show_if_needed(self.last_state, self.last_show_tuple)
-            self.timing = True
-        else:
-            self.timing = False
+        self.update_show_if_needed(self.last_state, self.last_show_tuple)
 
         return self.timing
 
