@@ -32,7 +32,7 @@ class ShowInfoBox(Gtk.Box):
     data_container = GtkTemplate.Child()
     image_container = GtkTemplate.Child()
 
-    def __init__(self, engine,orientation=Gtk.Orientation.HORIZONTAL):
+    def __init__(self, engine, orientation=Gtk.Orientation.HORIZONTAL):
         Gtk.Box.__init__(self)
         self.init_template()
 
@@ -49,7 +49,8 @@ class ShowInfoBox(Gtk.Box):
         self.data_label = Gtk.Label('')
         self.data_label.set_line_wrap(True)
         self.data_label.set_property('selectable',True)
-        if type(orientation) is Gtk.Orientation:
+        
+        if isinstance(orientation, Gtk.Orientation):
             self.data_container.set_orientation(orientation)
         self.data_container.pack_start(self.data_label, True, True, 0)
 
