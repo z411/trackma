@@ -28,3 +28,8 @@ class ShowEventType(GObject.GEnum):
     PLAY_NEXT = 7
     PLAY_EPISODE = 8
     PLAY_RANDOM = 9
+    EPISODE_ADD = 10
+    EPISODE_SET = 11
+    EPISODE_REMOVE = 12
+    SET_SCORE = 13
+    SET_STATUS = 14

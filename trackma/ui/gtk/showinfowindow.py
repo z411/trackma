@@ -15,8 +15,6 @@
 #
 
 import os
-import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -36,11 +34,11 @@ class ShowInfoWindow(Gtk.Dialog):
         self._engine = engine
         self._show = show_data
 
-        # Info box
-        info = ShowInfoBox(engine)
-        self.info_container.pack_start(info, True, True, 0)
-        info.load(show_data)
-        self.show_all()
+        info_box = ShowInfoBox(engine)
+        info_box.load(show_data)
+        info_box.show()
+
+        self.info_container.pack_start(info_box, True, True, 0)
 
     @GtkTemplate.Callback
     def _on_dialog_close(self, widget):

@@ -17,14 +17,10 @@
 import html
 import os
 import threading
-import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
-from trackma.ui.gtk.imagetask import ImageTask
-from trackma.ui.gtk.imagetask import imaging_available
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showtreeview import ShowTreeView
 from trackma import utils
@@ -42,7 +38,7 @@ class MainView(Gtk.Box):
         'error-fatal': (GObject.SIGNAL_RUN_FIRST, None,
                         (str,)),
         'show-action': (GObject.SIGNAL_RUN_FIRST, None,
-                        (int, int, int)),
+                        (int, object)),
     }
 
     image_container_box = GtkTemplate.Child()
@@ -65,6 +61,7 @@ class MainView(Gtk.Box):
         Gtk.Box.__init__(self)
         self.init_template()
 
+        self._configfile = utils.to_config_path('ui-Gtk.json')
         self._config = config
         self._engine = None
         self._account = None
@@ -94,17 +91,14 @@ class MainView(Gtk.Box):
         self._engine_reload(account, mediatype)
 
     def _init_widgets(self):
-        self.show_image = ImageBox(100, 149)
-        self.image_container_box.pack_start(self.show_image, False, False, 0)
-        self.show_image.show()
-
-        if not imaging_available:
-            self.show_image.pholder_show("PIL library\nnot available")
+        self.image_box = ImageBox(100, 150)
+        self.image_box.show()
+        self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
-        self.pack_start(self.statusbar, False, False, 0)
         self.statusbar.show()
+        self.pack_start(self.statusbar, False, False, 0)
 
     def _init_signals(self):
         self.btn_episode_remove.connect("clicked", self._on_btn_episode_remove_clicked)
@@ -172,7 +166,7 @@ class MainView(Gtk.Box):
     def _reset_widgets(self):
         self.show_title.set_text('<span size="14000"><b>Trackma</b></span>')
         self.show_title.set_use_markup(True)
-        self.show_image.pholder_show("Trackma")
+        self.image_box.reset()
 
         current_api = utils.available_libs[self._account['api']]
         api_iconfile = current_api[1]
@@ -213,6 +207,7 @@ class MainView(Gtk.Box):
             self._page_handler_ids[status] = []
             self._page_handler_ids[status].append(self._pages[status].connect('show-selected', self._on_show_selected))
             self._page_handler_ids[status].append(self._pages[status].connect('show-action', self._on_show_action))
+            self._page_handler_ids[status].append(self._pages[status].connect('column-toggled', self._on_column_toggled))
             self.notebook.append_page(self._pages[status],
                                       Gtk.Label(statuses_names[status]))
 
@@ -220,7 +215,7 @@ class MainView(Gtk.Box):
         self.notebook.show_all()
 
     def populate_all_pages(self):
-        for status in self._pages.keys():
+        for status in self._pages:
             self.populate_page(status)
 
     def populate_page(self, status):
@@ -282,8 +277,7 @@ class MainView(Gtk.Box):
 
     def set_buttons_sensitive(self, boolean, lists_too=True):
         if lists_too:
-            for widget in self._pages.values():
-                widget.set_sensitive(boolean)
+            self.notebook.set_sensitive(boolean)
 
         if self._current_page.selected_show or not boolean:
             if self._engine.mediainfo['can_play']:
@@ -300,11 +294,9 @@ class MainView(Gtk.Box):
             self.statusbox.set_sensitive(boolean)
 
     def _on_btn_episode_remove_clicked(self, widget):
-        show = self._engine.get_show_info(self._current_page.selected_show)
-        try:
-            self._engine.set_episode(self._current_page.selected_show, show['my_progress'] - 1)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.EPISODE_REMOVE,
+                  (self._current_page.selected_show,))
 
     def _show_episode_entry(self, *args):
         self.btn_episode_show_entry.hide()
@@ -313,43 +305,40 @@ class MainView(Gtk.Box):
         self.entry_episode.grab_focus()
 
     def _on_entry_episode_activate(self, widget):
-        self._hide_episode_entry()
-        episode = self.entry_episode.get_text()
         try:
-            self._engine.set_episode(self._current_page.selected_show, episode)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+            episode = int(self.entry_episode.get_text())
+            self.emit('show-action',
+                      ShowEventType.EPISODE_SET,
+                      (self._current_page.selected_show, episode))
+        except ValueError:
+            pass
 
     def _hide_episode_entry(self, *args):
         self.entry_episode.hide()
         self.btn_episode_show_entry.show()
 
     def _on_btn_episode_add_clicked(self, widget):
-        show = self._engine.get_show_info(self._current_page.selected_show)
-        try:
-            self._engine.set_episode(self._current_page.selected_show, show['my_progress'] + 1)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.EPISODE_ADD,
+                  (self._current_page.selected_show,))
 
     def _on_btn_play_next_clicked(self, widget, playnext, ep=None):
-        self.emit('show-action', ShowEventType.PLAY_NEXT, self._current_page.selected_show, -1)
+        self.emit('show-action',
+                  ShowEventType.PLAY_NEXT,
+                  (self._current_page.selected_show,))
 
     def _on_spinbtn_score_activate(self, widget):
         score = self.spinbtn_score.get_value()
-
-        try:
-            self._engine.set_score(self._current_page.selected_show, score)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.SET_SCORE,
+                  (self._current_page.selected_show, score))
 
     def _on_statusbox_changed(self, widget):
         statusiter = self.statusbox.get_active_iter()
         status = self.statusmodel.get(statusiter, 0)[0]
-
-        try:
-            self._engine.set_status(self._current_page.selected_show, status)
-        except utils.TrackmaError as e:
-            self.emit('error', e)
+        self.emit('show-action',
+                  ShowEventType.SET_STATUS,
+                  (self._current_page.selected_show, status))
 
     def message_handler(self, classname, msgtype, msg):
         # Thread safe
@@ -414,14 +403,10 @@ class MainView(Gtk.Box):
 
     def _on_response_update_next(self, widget, response, show, played_ep):
         widget.destroy()
-        # Update show to the played episode
         if response == Gtk.ResponseType.YES:
-            try:
-                show = self._engine.set_episode(show['id'], played_ep)
-                status = show['my_status']
-                self._pages[status].show_tree_view.update(show)
-            except utils.TrackmaError as e:
-                self.emit('error', e)
+            self.emit('show-action',
+                      ShowEventType.EPISODE_SET,
+                      (show['id'], played_ep))
 
     def _on_switch_notebook_page(self, notebook, page, page_num):
         self._current_page = page
@@ -469,28 +454,43 @@ class MainView(Gtk.Box):
                                   show['id']))
 
             if os.path.isfile(filename):
-                self.show_image.image_show(filename)
+                self.image_box.set_image(filename)
             else:
-                if imaging_available:
-                    self.show_image.pholder_show('Loading...')
-                    self._image_thread = ImageTask(self.show_image,
-                                                   show.get('image_thumb') or show['image'],
-                                                   filename,
-                                                   (100, 149))
-                    self._image_thread.start()
-                else:
-                    self.show_image.pholder_show("PIL library\nnot available")
+                self.image_box.set_image_remote(show.get('image_thumb') or show['image'],
+                                                filename)
         else:
-            self.show_image.pholder_show("No Image")
+            self.image_box.set_text('No Image')
 
         # Unblock handlers
         self.statusbox.handler_unblock(self.statusbox_handler)
 
-    def _on_show_action(self, page, event_type, selected_show, data):
-        self.emit('show-action', event_type, selected_show, data)
+    def _on_show_action(self, page, event_type, data):
+        self.emit('show-action', event_type, data)
 
     def get_current_status(self):
         return self._current_page.status
+
+    def get_selected_show(self):
+        if not self._current_page:
+            return None
+
+        return self._current_page.selected_show
+
+    def _on_column_toggled(self, page, column_name, visible):
+        if visible:
+            # Make column visible
+            self._config['visible_columns'].append(column_name)
+        else:
+            # Make column invisible
+            if len(self._config['visible_columns']) <= 1:
+                return # There should be at least 1 column visible
+
+            self._config['visible_columns'].remove(column_name)
+
+        for page in self._pages.values():
+            page.set_column_visible(column_name, visible)
+
+        utils.save_config(self._config, self._configfile)
 
 
 class NotebookPage(Gtk.ScrolledWindow):
@@ -500,7 +500,9 @@ class NotebookPage(Gtk.ScrolledWindow):
         'show-selected': (GObject.SIGNAL_RUN_FIRST, None,
                           (int, )),
         'show-action': (GObject.SIGNAL_RUN_FIRST, None,
-                        (int, int, int)),
+                        (int, object)),
+        'column-toggled': (GObject.SIGNAL_RUN_FIRST, None,
+                           (str, bool)),
     }
 
     def __init__(self, engine, page_num, status, config):
@@ -530,8 +532,8 @@ class NotebookPage(Gtk.ScrolledWindow):
 
         self.add(self._show_tree_view)
 
-    def add_signal_callback(self, signal, callback):
-        self.connect(signal, callback)
+    def set_column_visible(self, column_name, visible):
+        self._show_tree_view.cols[column_name].set_visible(visible)
 
     @property
     def decimals(self):
@@ -571,10 +573,10 @@ class NotebookPage(Gtk.ScrolledWindow):
         self.emit('show-selected', self._selected_show)
 
     def _on_row_activated(self, tree_view, path, column):
-        self.emit('show-action', ShowEventType.DETAILS, self.selected_show, -1)
+        self.emit('show-action', ShowEventType.DETAILS, (self.selected_show,))
 
-    def _on_column_toggled(self, col, name, visible):
-        pass
+    def _on_column_toggled(self, tree_view, column_name, visible):
+        self.emit('column-toggled', column_name, visible)
 
     def _on_show_context_menu(self, tree_view, event):
         x = int(event.x)
@@ -664,7 +666,5 @@ class NotebookPage(Gtk.ScrolledWindow):
         return menu_eps
 
     def _on_mb_activate(self, menu_item, event_type, data=None):
-        if data is None:
-            data = -1
-
-        self.emit('show-action', event_type, self._selected_show, data)
+        data = (self._selected_show,) if data is None else (self._selected_show, data)
+        self.emit('show-action', event_type, data)

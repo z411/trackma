@@ -16,9 +16,7 @@
 
 import os
 import threading
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gtk, Gdk, GObject
+from gi.repository import GLib, Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.showinfobox import ShowInfoBox
@@ -64,6 +62,7 @@ class SearchWindow(Gtk.Window):
     show_info_container = GtkTemplate.Child()
     progress_spinner = GtkTemplate.Child()
     headerbar = GtkTemplate.Child()
+
     def __init__(self, engine, colors, current_status, transient_for=None):
         Gtk.Window.__init__(self, transient_for=transient_for)
         self.init_template()
@@ -78,33 +77,39 @@ class SearchWindow(Gtk.Window):
         self.showlist = SearchTreeView(colors)
         self.showlist.get_selection().connect("changed", self._on_selection_changed)
         self.showlist.set_size_request(250, 350)
-        self.info = ShowInfoBox(engine,orientation=Gtk.Orientation.VERTICAL)
+        self.showlist.show()
+
+        self.info = ShowInfoBox(engine, orientation=Gtk.Orientation.VERTICAL)
         self.info.set_size_request(200, 350)
+        self.info.show()
 
         self.shows_viewport.add(self.showlist)
         self.show_info_container.pack_start(self.info, True, True, 0)
         self.search_paned.set_position(400)
         self.set_size_request(450, 350)
-        self.show_all()
 
     @GtkTemplate.Callback
     def _on_search_entry_search_changed(self, search_entry):
         self._search(search_entry.get_text())
         self.progress_spinner.start()
+
     def _search(self, text):
         if self._search_thread:
             self._search_thread.stop()
-        self.headerbar.set_subtitle("Searching: \"%s\""%text)
+
+        self.headerbar.set_subtitle("Searching: \"%s\"" % text)
         self._search_thread = SearchThread(self._engine,
                                            text,
                                            self._search_finish_idle)
         self._search_thread.start()
+
     def _search_finish_idle(self, entries, error):
         if error:
             self.emit('search-error', error)
             return
+
         self.progress_spinner.stop()
-        self.headerbar.set_subtitle("%d results."%len(entries))
+        self.headerbar.set_subtitle("%d results" % len(entries))
         self._entries = entries
         self._showdict = dict()
 
@@ -113,7 +118,7 @@ class SearchWindow(Gtk.Window):
             self._showdict[show['id']] = show
             self.showlist.append(show)
         self.showlist.append_finish()
-        
+
         self.btn_add_show.set_sensitive(False)
 
     @GtkTemplate.Callback
@@ -183,8 +188,7 @@ class SearchTreeView(Gtk.TreeView):
         self.set_model(self.store)
 
         self.colors = colors
-       
-        
+
     def append_start(self):
         self.freeze_child_notify()
         self.store.clear()

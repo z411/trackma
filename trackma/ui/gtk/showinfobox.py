@@ -14,17 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import html
 import os
 import threading
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Pango, GObject
+from gi.repository import Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
-from trackma.ui.gtk.imagetask import ImageTask
 from trackma import utils
 
 
@@ -36,7 +32,7 @@ class ShowInfoBox(Gtk.Box):
     data_container = GtkTemplate.Child()
     image_container = GtkTemplate.Child()
 
-    def __init__(self, engine,orientation=Gtk.Orientation.HORIZONTAL):
+    def __init__(self, engine, orientation=Gtk.Orientation.HORIZONTAL):
         Gtk.Box.__init__(self)
         self.init_template()
 
@@ -47,12 +43,14 @@ class ShowInfoBox(Gtk.Box):
         self.details_e = None
 
         self.image_box = ImageBox(225, 300)
+        self.image_box.show()
         self.image_container.pack_start(self.image_box, False, False, 0)
 
         self.data_label = Gtk.Label('')
         self.data_label.set_line_wrap(True)
         self.data_label.set_property('selectable',True)
-        if type(orientation) is Gtk.Orientation:
+        
+        if isinstance(orientation, Gtk.Orientation):
             self.data_container.set_orientation(orientation)
         self.data_container.pack_start(self.data_label, True, True, 0)
 
@@ -64,16 +62,16 @@ class ShowInfoBox(Gtk.Box):
 
         # Load image
         if show.get('image'):
-            imagefile = utils.to_cache_path("%s_%s_f_%s.jpg" % (self._engine.api_info['shortname'], self._engine.api_info['mediatype'], show['id']))
+            imagefile = utils.to_cache_path("%s_%s_f_%s.jpg" % (self._engine.api_info['shortname'],
+                                                                self._engine.api_info['mediatype'],
+                                                                show['id']))
 
             if os.path.isfile(imagefile):
-                self.image_box.image_show(imagefile)
+                self.image_box.set_image(imagefile)
             else:
-                self.image_box.pholder_show('Loading...')
-                self.image_thread = ImageTask(self.image_box, show['image'], imagefile, (200, 298))
-                self.image_thread.start()
+                self.image_box.set_image_remote(show['image'], imagefile)
         else:
-            self.image_box.pholder_show('No Image')
+            self.image_box.set_text('No Image')
 
         # Start info loading thread
         threading.Thread(target=self._show_load_start_task).start()
@@ -106,9 +104,11 @@ class ShowInfoBox(Gtk.Box):
 
             self.data_label.set_text("\n\n".join(detail))
             self.data_label.set_use_markup(True)
-            self.show_all()
         else:
             self.label_title.set_text('Error while getting details.')
 
             if self.details_e:
                 self.data_label.set_text(str(self.details_e))
+
+        self.label_title.show()
+        self.data_label.show()
