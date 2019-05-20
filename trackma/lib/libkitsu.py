@@ -62,7 +62,13 @@ class libkitsu(lib):
             'dropped': 'Dropped',
             'planned': 'Plan to Watch'
             }
-
+    manga_statuses_dict = {
+            'current': 'Reading',
+            'completed': 'Completed',
+            'on_hold': 'On Hold',
+            'dropped': 'Dropped',
+            'planned': 'Plan to Read'
+            }
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -91,7 +97,7 @@ class libkitsu(lib):
         'statuses_start': ['current'],
         'statuses_finish': ['completed'],
         'statuses': default_statuses,
-        'statuses_dict': default_statuses_dict,
+        'statuses_dict': manga_statuses_dict,
         'score_max': 5,
         'score_step': 0.25,
     }
@@ -489,7 +495,26 @@ class libkitsu(lib):
             total = attr['chapterCount']
         elif media['type'] == 'drama':
             total = attr['episodeCount'] # TODO Unconfirmed
-
+        Type = {
+            'TV':       utils.TYPE_TV,
+            'ONA':      utils.TYPE_ONA,
+            'OVA':      utils.TYPE_OVA,
+            'movie':    utils.TYPE_MOVIE,
+            'special':  utils.TYPE_SP,
+            'music':    utils.TYPE_MUSIC,
+            'manga':    utils.TYPE_MANGA,
+            'doujin':   utils.TYPE_DOUJIN,
+            'manhua':   utils.TYPE_MANHUA,
+            'manhwa':   utils.TYPE_MANHWA,
+            'novel':    utils.TYPE_NOVEL,
+            'oel':      utils.TYPE_OEL,
+            'oneshot':  utils.TYPE_ONESHOT,
+        }
+        try:
+            attr_type=Type[attr['subtype']]
+        except KeyError as e:
+            print('No such Type: %s'%e.args[0])
+            attr_type=utils.TYPE[utils.TYPE_OTHER]
         info.update({
             'id': int(media['id']),
             # TODO : Some shows actually don't have a canonicalTitle; this should be fixed in the future.
@@ -500,6 +525,7 @@ class libkitsu(lib):
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
+            'type':        attr_type,
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
