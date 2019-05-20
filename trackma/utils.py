@@ -35,14 +35,45 @@ STATUS_AIRING = 1
 STATUS_FINISHED = 2
 STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
-STATUS_OTHER = 100
+STATUS_OTHER = -1
+
+STATUS=[ 'Unknown' , 'Airing' , 'Finished' , 'Not yet aired' , 'Cancelled' , 'Others' ]
+STATUS_MANGA=[ 'Unknown' , 'Publishing' , 'Finished' , 'Not yet published' , 'Cancelled' , 'Others' ]
 
 TYPE_UNKNOWN = 0
 TYPE_TV = 1
 TYPE_MOVIE = 2
 TYPE_OVA = 3
 TYPE_SP = 4
-TYPE_OTHER = 100
+TYPE_ONA = 5
+TYPE_MUSIC = 6
+
+TYPE_DOUJIN = 7
+TYPE_MANGA = 8
+TYPE_MANHUA = 9
+TYPE_MANHWA = 10
+TYPE_NOVEL = 11
+TYPE_OEL = 12
+TYPE_ONESHOT = 13
+TYPE_OTHER = -1
+
+TYPE={
+    'Unknown',
+    'TV',
+    'Movie',
+    'OVA',
+    'Special',
+    'ONA',
+    'Music',
+    'Doujin',
+    'Manga',
+    'Manhua',
+    'Manhwa',
+    'Novel',
+    'OEL',
+    'Oneshot'
+    'Others'
+}
 
 TRACKER_NOVIDEO = 0
 TRACKER_PLAYING = 1
@@ -54,7 +85,7 @@ SEASON_WINTER = 1
 SEASON_SPRING = 2
 SEASON_SUMMER = 3
 SEASON_FALL = 4
-
+SEASON=[ 'All','Winter','Spring','Summer','Fall' ]
 SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
