@@ -741,7 +741,10 @@ class MainWindow(QMainWindow):
         self.view.model().sourceModel().setMediaInfo(self.mediainfo)
         self.view.model().sourceModel().setShowList(showlist, altnames, library)
         self.view.resizeRowsToContents()
+        
+        self.s_filter_changed()
 
+    def _init_view(self):
         # Set view options
         self.view.setSortingEnabled(True)
         self.view.sortByColumn(self.config['sort_index'], self.config['sort_order'])
@@ -763,8 +766,6 @@ class MainWindow(QMainWindow):
         self.view.horizontalHeader().resizeSection(2, 70)
         self.view.horizontalHeader().resizeSection(3, 55)
         self.view.horizontalHeader().resizeSection(4, 100)
-
-        self.s_filter_changed()
 
     def _select_show(self, show):
         # Stop any running image timer
@@ -1355,6 +1356,7 @@ class MainWindow(QMainWindow):
 
             # Build our main view and show total counts
             self._rebuild_view()
+            self._init_view()
             self._recalculate_counts()
 
             # Recover column state
