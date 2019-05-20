@@ -57,7 +57,7 @@ TYPE_OEL = 12
 TYPE_ONESHOT = 13
 TYPE_OTHER = -1
 
-TYPE={
+TYPE=[
     'Unknown',
     'TV',
     'Movie',
@@ -73,7 +73,7 @@ TYPE={
     'OEL',
     'Oneshot'
     'Others'
-}
+]
 
 TRACKER_NOVIDEO = 0
 TRACKER_PLAYING = 1
