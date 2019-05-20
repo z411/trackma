@@ -203,7 +203,6 @@ class SearchTreeView(Gtk.TreeView):
             str(utils.TYPE[show['type']]),
             str(show['total']),
             color]
-        print(row)
         self.store.append(row)
 
     def append_finish(self):
