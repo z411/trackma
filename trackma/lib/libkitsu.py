@@ -511,6 +511,7 @@ class libkitsu(lib):
             'oel':      utils.TYPE_OEL,
             'oneshot':  utils.TYPE_ONESHOT,
         }
+        
         try:
             attr_type = Type[attr['subtype']]
         except KeyError as e:
