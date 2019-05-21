@@ -1,0 +1,12 @@
+*.pyc
+*~
+*.lock
+*.DS_store
+*.swp
+*.out
+*.log
+.trackma
+*.egg-info
+build
+dist
+trackma/data/anime-relations
