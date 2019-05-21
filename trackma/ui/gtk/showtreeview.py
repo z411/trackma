@@ -14,9 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import gi
-gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Pango, GObject
 from trackma import utils
 
@@ -149,7 +146,7 @@ class ShowTreeView(Gtk.TreeView):
                 menu.append(item)
                 item.show()
 
-            menu.popup(None, None, None, None, event.button, event.time)
+            menu.popup_at_pointer(event)
             return True
 
         return False

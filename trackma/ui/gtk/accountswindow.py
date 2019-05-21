@@ -14,11 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import os
 import webbrowser
-import gi
-gi.require_version('Gtk', '3.0')
 from enum import Enum
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
@@ -72,6 +69,7 @@ class AccountsWindow(Gtk.Dialog):
         self.treeiters = {}
         self.current = AccountsView.LIST
         self.manager = manager
+        self.account_edit = None
 
         self._remove_border()
         self._add_separators()
@@ -79,8 +77,6 @@ class AccountsWindow(Gtk.Dialog):
         self._refresh_pixbufs()
         self._refresh_list()
         self._populate_combobox()
-
-        self.show()
 
     def _remove_border(self):
         self.internal_box.set_border_width(0)
@@ -374,4 +370,3 @@ class AccountRow(Gtk.ListBoxRow):
 
     def get_libname(self):
         return self.account['libname']
-
