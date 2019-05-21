@@ -38,7 +38,7 @@ STATUS_CANCELLED = 4
 STATUS_OTHER = -1
 
 STATUS = ['Unknown', 'Airing', 'Finished', 'Not yet aired', 'Cancelled', 'Others']
-STATUS_MANGA=[ 'Unknown' , 'Publishing' , 'Finished' , 'Not yet published' , 'Cancelled' , 'Others' ]
+STATUS_MANGA = ['Unknown', 'Publishing', 'Finished', 'Not yet published', 'Cancelled', 'Others']
 
 TYPE_UNKNOWN = 0
 TYPE_TV = 1
