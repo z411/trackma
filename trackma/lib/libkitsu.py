@@ -514,7 +514,8 @@ class libkitsu(lib):
             attr_type = Type[attr['subtype']]
         except KeyError as e:
             print('No such Type: %s'%e.args[0])
-            attr_type=utils.TYPE[utils.TYPE_OTHER]
+            attr_type = utils.TYPE[utils.TYPE_OTHER]
+            
         info.update({
             'id': int(media['id']),
             # TODO : Some shows actually don't have a canonicalTitle; this should be fixed in the future.
