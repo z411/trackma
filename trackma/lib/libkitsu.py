@@ -495,6 +495,7 @@ class libkitsu(lib):
             total = attr['chapterCount']
         elif media['type'] == 'drama':
             total = attr['episodeCount'] # TODO Unconfirmed
+    
         Type = {
             'TV':       utils.TYPE_TV,
             'ONA':      utils.TYPE_ONA,
