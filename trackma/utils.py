@@ -85,7 +85,7 @@ SEASON_WINTER = 1
 SEASON_SPRING = 2
 SEASON_SUMMER = 3
 SEASON_FALL = 4
-SEASON=[ 'All','Winter','Spring','Summer','Fall' ]
+SEASON = ['All', 'Winter', 'Spring', 'Summer', 'Fall']
 SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
 
