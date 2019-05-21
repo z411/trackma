@@ -17,8 +17,11 @@ if not ACCESS_KEY or not ACCESS_SECRET:
 
 CONSUMER_KEY    = "9Hb6ZdMmvuAWxi4GCkfhToRiH"
 CONSUMER_SECRET = "86kx9Mv9wJ5UTkDEw2jRBFYstpkDK2iP7ZAo12fhf0WooMln5w"
-
-import twitter
+try:
+    import twitter
+except ModuleNotFoundError:
+    print("tweet-hook: python3-twitter is not installed.")
+    return 1
 api = twitter.Api(consumer_key=CONSUMER_KEY,
         consumer_secret=CONSUMER_SECRET,
         access_token_key=ACCESS_KEY,
