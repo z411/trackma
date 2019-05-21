@@ -513,7 +513,7 @@ class libkitsu(lib):
         try:
             attr_type = Type[attr['subtype']]
         except KeyError as e:
-            print('No such Type: %s'%e.args[0])
+            print('No such Type: %s' % e.args[0])
             attr_type = utils.TYPE[utils.TYPE_OTHER]
             
         info.update({
