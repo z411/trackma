@@ -296,7 +296,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         GLib.idle_add(self._main_view.populate_all_pages)
 
         self._main_view.set_status_idle("Ready.")
-        self._set_buttons_sensitive_idle(False)
+        self._set_buttons_sensitive_idle(True)
 
     def _on_accounts(self, action, param):
         self._show_accounts()
