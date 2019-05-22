@@ -466,7 +466,7 @@ class Engine:
             if status not in self.mediainfo['statuses']:
                 raise utils.EngineError('Invalid status.')
 
-            show['my_status'] = status
+            show['my_status'] = status if status is not 'all' else 'planned'
 
         # Add in data handler
         self.data_handler.queue_add(show)
@@ -927,7 +927,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
+        return list(v for k, v in showlist.items() if v['my_status'] == status_num or status_num is 'all')
 
     def list_download(self):
         """Asks the data handler to download the remote list."""

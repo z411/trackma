@@ -186,9 +186,11 @@ class MainView(Gtk.Box):
         self.btn_episode_add.set_sensitive(can_update)
 
     def _create_notebook_pages(self):
-        statuses_nums = self._engine.mediainfo['statuses']
-        statuses_names = self._engine.mediainfo['statuses_dict']
-
+        statuses_nums = self._engine.mediainfo['statuses'][:]
+        if not 'all' in statuses_nums:
+            statuses_nums += ['all']
+        statuses_names = self._engine.mediainfo['statuses_dict'].copy()
+        statuses_names['all'] = "All"
         self.notebook.handler_block(self.notebook_switch_handler)
         # Clear notebook
         for i in range(self.notebook.get_n_pages()):
@@ -355,6 +357,8 @@ class MainView(Gtk.Box):
     def _update_show(self, show):
         status = show['my_status']
         self._pages[status].show_tree_view.update(show)
+        if 'all' in self._pages.keys():
+            self._pages['all'].show_tree_view.update(show)
         if show['id'] == self._current_page.selected_show:
             self.btn_episode_show_entry.set_label(str(show['my_progress']))
             self.spinbtn_score.set_value(show['my_score'])
@@ -365,6 +369,8 @@ class MainView(Gtk.Box):
     def _update_show_title(self, show, altname):
         status = show['my_status']
         self._pages[status].show_tree_view.update_title(show, altname)
+        if 'all' in self._pages.keys():
+            self._pages['all'].show_tree_view.update_title(show)
 
     def _on_changed_show_status_idle(self, show, old_status=None):
         GLib.idle_add(self._update_show_status, show, old_status)
@@ -372,22 +378,33 @@ class MainView(Gtk.Box):
     def _update_show_status(self, show, old_status):
         # Rebuild lists
         status = show['my_status']
-
         self.populate_page(status)
+        if 'all' in self._pages.keys():
+            self.populate_page('all')
+            page_all = self._pages['all']
+        else:
+            page_all = None
         if old_status:
             self.populate_page(old_status)
 
         pagenumber = self._pages[status].pagenumber
-        self.notebook.set_current_page(pagenumber)
-
-        self._pages[status].show_tree_view.select(show)
-
+        if page_all is not None:
+            if self.notebook.get_current_page() is not page_all.pagenumber:
+                self.notebook.set_current_page(pagenumber)
+                self._pages[status].show_tree_view.select(show)
+            else:
+                page_all.show_tree_view.select(show)
+        else:
+            self.notebook.set_current_page(pagenumber)
+            self._pages[status].show_tree_view.select(show)
     def _on_playing_show_idle(self, show, is_playing, episode):
         GLib.idle_add(self._set_show_playing, show, is_playing, episode)
 
     def _set_show_playing(self, show, is_playing, episode):
         status = show['my_status']
         self._pages[status].show_tree_view.playing(show, is_playing)
+        if 'all' in self._pages.keys():
+            self._pages['all'].show_tree_view.playing(show, is_playing)
 
     def _on_prompt_update_next_idle(self, show, played_ep):
         GLib.idle_add(self._prompt_update_next, show, played_ep)
@@ -468,7 +485,7 @@ class MainView(Gtk.Box):
         self.emit('show-action', event_type, data)
 
     def get_current_status(self):
-        return self._current_page.status
+        return self._current_page.status if self._current_page.status is not 'all' else 'planned'
 
     def get_selected_show(self):
         if not self._current_page:
