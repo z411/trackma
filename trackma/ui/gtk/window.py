@@ -249,7 +249,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
                 _download_lists()
 
         queue = self._engine.get_queue()
-        if len(queue) > 0:
+        if queue:
             dialog = Gtk.MessageDialog(self,
                                        Gtk.DialogFlags.MODAL,
                                        Gtk.MessageType.QUESTION,

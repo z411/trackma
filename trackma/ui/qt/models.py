@@ -117,8 +117,10 @@ class ShowListModel(QtCore.QAbstractTableModel):
         for row, show in enumerate(self.showlist):
             self.id_map[show['id']] = row
             self._calculate_color(row, show)
-            self._calculate_next_ep(row, show)
-            self._calculate_eps(row, show)
+
+            if self.mediainfo.get('can_play'):
+                self._calculate_next_ep(row, show)
+                self._calculate_eps(row, show)
 
         self.endResetModel()
 
@@ -178,9 +180,6 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return show['my_score']
             elif column == ShowListModel.COL_PERCENT:
                 #return "{:.0%}".format(show['my_progress'] / 100)
-                if not self.mediainfo.get('can_play'):
-                    return None
-
                 if show['total']:
                     total = show['total']
                 else:
