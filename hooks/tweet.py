@@ -44,7 +44,7 @@ def status_changed(engine, show, old_status):
             try:
                 api.PostUpdate(msg)
             except TwitterError as e:
-                engine.msg.warn('Twitter', "[%d] %s"%(e.message[0]['code'],e.message[0]['message']))
+                engine.msg.warn('Twitter', "[%d] %s" % (e.message[0]['code'], e.message[0]['message']))
         else:
             engine.msg.warn('Twitter', "Tweet too long.")
 
