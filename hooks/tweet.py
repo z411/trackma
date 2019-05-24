@@ -33,7 +33,7 @@ def status_changed(engine, show, old_status):
     finished_status = engine.mediainfo['statuses_finish']
     score_max       = engine.mediainfo['score_max']
 
-    if show['my_status'] == finished_status[0] if finished_status is list else finished_status:
+    if show['my_status'] == finished_status[0] if isinstance(finished_status, list) else finished_status:
         msg = "[%s] Finished %s" % (api_name, show['title'])
         if show['my_score']:
             msg += " - Score: %s/%s" % (show['my_score'], score_max)
