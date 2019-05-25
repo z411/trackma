@@ -71,7 +71,7 @@ TYPE = [
     'Manhwa',
     'Novel',
     'OEL',
-    'Oneshot'
+    'Oneshot',
     'Others'
 ]
 
