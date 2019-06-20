@@ -180,9 +180,11 @@ class libanilist(lib):
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
-                raise utils.APIError("Invalid request: %s" % e.read())
+                raise utils.APIError("Invalid HTTP request: %s" % e.read())
             else:
-                raise utils.APIError("Connection error: %s" % e.read())
+                raise utils.APIError("HTTP error status: %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("HTTP connection error: %s" % e.reason)
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
 
