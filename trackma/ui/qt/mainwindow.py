@@ -16,6 +16,7 @@
 
 pyqt_version = 5
 
+import sys
 import os
 import datetime
 import subprocess
@@ -1142,8 +1143,15 @@ class MainWindow(QMainWindow):
         try:
             filename = self.worker.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")
