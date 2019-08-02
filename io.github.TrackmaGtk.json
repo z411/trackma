@@ -51,7 +51,7 @@
             "sources":[
                 {
                     "type": "git",
-                    "url": "https://github.com/thebitstick/trackma.git"
+                    "url": "https://github.com/z411/trackma.git"
                 }
             ],
             "build-commands" : [
@@ -59,7 +59,6 @@
 		"mkdir -p /app/share/icons/hicolor/128x128/apps",
 		"mkdir -p /app/share/applications",
 		"cp -R trackma/data/icon.png /app/share/icons/hicolor/128x128/apps/io.github.TrackmaGtk.png",
-		"ls",
 		"cp -R io.github.TrackmaGtk.desktop /app/share/applications/"
             ]
         }
