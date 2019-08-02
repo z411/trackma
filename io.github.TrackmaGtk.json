@@ -51,7 +51,7 @@
             "sources":[
                 {
                     "type": "git",
-                    "url": "https://github.com/z411/trackma.git"
+                    "url": "https://github.com/thebitstick/trackma.git"
                 }
             ],
             "build-commands" : [
