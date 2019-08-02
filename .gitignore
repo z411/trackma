@@ -9,3 +9,8 @@
 *.egg-info
 build
 dist
+.flatpak-builder
+flatpak-builder
+repo
+trackma-gtk.flatpak
+

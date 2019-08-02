@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Trackma
+Comment=Open multi-site list manager for Unix-like systems.
+Exec=/usr/bin/flatpak run io.github.TrackmaGtk
+Icon=io.github.TrackmaGtk
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=Network;
+Keywords=anime;internet;
+X-Flatpak-RenamedFrom=io.github.TrackmaGtk.desktop
+X-Flatpak=io.github.TrackmaGtk

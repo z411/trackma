@@ -1,0 +1,67 @@
+{
+    "app-id" : "io.github.TrackmaGtk",
+    "runtime" : "org.gnome.Platform",
+    "runtime-version" : "3.32",
+    "sdk" : "org.gnome.Sdk",
+    "command" : "trackma-gtk",
+    "build-options" : {
+        "build-args" : [
+            "--share=network"
+        ],
+        "env" : {
+            "DEBUG" : "true"
+        }
+    },
+    "finish-args" : [
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=session-bus",
+        "--filesystem=home",
+        "--share=network",
+        "--share=ipc",
+        "--filesystem=xdg-run/dconf",
+        "--filesystem=~/.config/dconf:ro",
+        "--talk-name=ca.desrt.dconf",
+        "--env=DCONF_USER_CONFIG_DIR=.config/dconf"
+    ],
+    "modules" : [
+        {
+            "name" : "pillow",
+            "buildsystem" : "simple",
+            "build-args" : [
+                "--share=network"
+            ],
+            "sources" : [
+                {
+                    "type" : "archive",
+                    "url" : "https://files.pythonhosted.org/packages/51/fe/18125dc680720e4c3086dd3f5f95d80057c41ab98326877fc7d3ff6d0ee5/Pillow-6.1.0.tar.gz",
+                    "sha256" : "0804f77cb1e9b6dbd37601cee11283bba39a8d44b9ddb053400c58e0c0d7d9de"
+                }
+            ],
+            "build-commands" : [
+                "pip3 install --prefix=/app --no-deps ."
+            ]
+        },
+        {
+            "name" : "trackma-gtk",
+            "buildsystem" : "simple",
+            "build-args" : [
+                "--share=network"
+            ],
+            "sources":[
+                {
+                    "type": "git",
+                    "url": "https://github.com/z411/trackma.git"
+                }
+            ],
+            "build-commands" : [
+                "python3 setup.py install --prefix=/app",
+		"mkdir -p /app/share/icons/hicolor/128x128/apps",
+		"mkdir -p /app/share/applications",
+		"cp -R trackma/data/icon.png /app/share/icons/hicolor/128x128/apps/io.github.TrackmaGtk.png",
+		"ls",
+		"cp -R io.github.TrackmaGtk.desktop /app/share/applications/"
+            ]
+        }
+    ]
+}
