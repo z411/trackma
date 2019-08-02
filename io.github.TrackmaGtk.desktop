@@ -2,7 +2,7 @@
 Version=1.0
 Name=Trackma
 Comment=Open multi-site list manager for Unix-like systems.
-Exec=flatpak run io.github.TrackmaGtk
+Exec=trackma-gtk
 Icon=io.github.TrackmaGtk
 Terminal=false
 Type=Application
