@@ -289,7 +289,9 @@ def get_terminal_size(fd=1):
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
     except:
         try:
-            hw = (os.environ['LINES'], os.environ['COLUMNS'])
+            width = int(os.environ.get('COLUMNS', 80))
+            height = int(os.environ.get('LINES', 25))
+            hw = (height, width)
         except:
             hw = (25, 80)
 
