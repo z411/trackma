@@ -98,8 +98,8 @@ class AddDialog(QDialog):
             filters_layout.setAlignment(QtCore.Qt.AlignRight)
         
         view_combo = QComboBox()
-        view_combo.addItem('Table view')
         view_combo.addItem('Card view')
+        view_combo.addItem('Table view')
         view_combo.currentIndexChanged.connect(self.s_change_view)
         
         filters_layout.addWidget(view_combo)
@@ -110,12 +110,13 @@ class AddDialog(QDialog):
         # Set up views
         tableview = AddTableDetailsView(None, self.worker)
         tableview.changed.connect(self.s_selected)
-        self.contents.addWidget(tableview)
         
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
         cardview.activated.connect(self.s_show_details)
+        
         self.contents.addWidget(cardview)
+        self.contents.addWidget(tableview)
         
         # Use for testing
         #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
