@@ -56,6 +56,7 @@ class AddDialog(QDialog):
             self.search_rad = QRadioButton('By keyword:')
             self.search_rad.setChecked(True)
             self.search_txt = QLineEdit()
+            self.search_txt.setClearButtonEnabled(True)
             self.search_txt.returnPressed.connect(self.s_search)
             if default:
                 self.search_txt.setText(default)

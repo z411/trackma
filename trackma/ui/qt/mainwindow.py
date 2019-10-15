@@ -323,6 +323,7 @@ class MainWindow(QMainWindow):
 
         # Create filter list
         self.show_filter = QLineEdit()
+        self.show_filter.setClearButtonEnabled(True)
         self.show_filter.textChanged.connect(self.s_filter_changed)
         filter_tooltip = (
             "General Search: All fields (columns) of each show will be matched against the search term."
