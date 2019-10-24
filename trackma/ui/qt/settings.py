@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (
     QDialog, QGridLayout, QListWidget, QListWidgetItem, QAbstractItemView,
     QWidget, QVBoxLayout, QGroupBox, QFormLayout, QCheckBox, QRadioButton,
     QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget, QSplitter,
-    QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog)
+    QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog, QScrollArea)
 
 from trackma.ui.qt.delegates import ShowsTableDelegate
 from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
@@ -356,10 +356,12 @@ class SettingsDialog(QDialog):
 
         # Content
         self.contents = QStackedWidget()
-        self.contents.addWidget(page_media)
-        self.contents.addWidget(page_sync)
-        self.contents.addWidget(page_ui)
-        self.contents.addWidget(page_theme)
+        for page in (page_media, page_sync, page_ui, page_theme):
+            scrollable_page = QScrollArea()
+            scrollable_page.setWidgetResizable(True)
+            scrollable_page.setWidget(page)
+            self.contents.addWidget(scrollable_page)
+
         if pyqt_version is not 5:
             self.contents.layout().setMargin(0)
 
