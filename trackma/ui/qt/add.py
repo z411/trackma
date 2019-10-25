@@ -114,7 +114,7 @@ class AddDialog(QDialog):
         
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
-        cardview.activated.connect(self.s_show_details)
+        cardview.doubleClicked.connect(self.s_show_details)
         
         self.contents.addWidget(cardview)
         self.contents.addWidget(tableview)
