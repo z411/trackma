@@ -742,11 +742,14 @@ class Trackma_urwid():
 
     def search_request(self, data):
         self.ask_finish(self.search_request)
-        if data:
-            self.last_search = data
-            self._get_cur_list().select_match(data)
-        elif self.last_search:
-            self._get_cur_list().select_match(self.last_search)
+        try:
+            if data:
+                self.last_search = data
+                self._get_cur_list().select_match(data)
+            elif self.last_search:
+                self._get_cur_list().select_match(self.last_search)
+        except re.error as e:
+            self.error(e)
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
