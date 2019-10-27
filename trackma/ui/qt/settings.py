@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 
 from trackma.ui.qt.delegates import ShowsTableDelegate
 from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
-from trackma.ui.qt.util import getIcon, getColor, FilterBar
+from trackma.ui.qt.util import getIcon, getColor
 
 from trackma import utils
 
@@ -269,15 +269,8 @@ class SettingsDialog(QDialog):
         # Group: Lists
         g_lists = QGroupBox('Lists')
         g_lists.setFlat(True)
-        self.filter_bar_position = QComboBox()
-        filter_bar_positions = [(FilterBar.PositionHidden,     'Hidden'),
-                                (FilterBar.PositionAboveLists, 'Above lists'),
-                                (FilterBar.PositionBelowLists, 'Below lists')]
-        for (n, label) in filter_bar_positions:
-            self.filter_bar_position.addItem(label, n)
         self.inline_edit = QCheckBox('Enable in-line editing')
         g_lists_layout = QFormLayout()
-        g_lists_layout.addRow('Filter bar position:', self.filter_bar_position)
         g_lists_layout.addRow(self.inline_edit)
         g_lists.setLayout(g_lists_layout)
 
@@ -452,7 +445,6 @@ class SettingsDialog(QDialog):
         self.remember_geometry.setChecked(self.config['remember_geometry'])
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
-        self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
         self.inline_edit.setChecked(self.config['inline_edit'])
 
         self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
@@ -530,7 +522,6 @@ class SettingsDialog(QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
-        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex())
         self.config['inline_edit'] = self.inline_edit.isChecked()
 
         self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex())
