@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
         self.action_show_filter.setStatusTip('Show the filter bar')
         self.action_show_filter.setShortcut('Ctrl+F')
         self.action_show_filter.setCheckable(True)
-        self.action_show_filter.triggered.connect(self.s_filter)
+        self.action_show_filter.triggered.connect(self.s_enable_filter)
         self.action_filter_top = QAction('Position &Top', self)
         self.action_filter_top.setCheckable(True)
         self.action_filter_top.setData(FilterBar.PositionAboveLists)
@@ -1147,7 +1147,7 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.worker_call('delete_show', self.r_generic, show)
 
-    def s_filter(self, checked):
+    def s_enable_filter(self, checked):
         self.config['filter_bar_enabled'] = checked
         self._save_config()
         self._apply_filter_bar()
