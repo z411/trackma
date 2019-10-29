@@ -168,17 +168,8 @@ class MainWindow(QMainWindow):
         self.action_show_filter.setStatusTip('Show the filter bar')
         self.action_show_filter.setShortcut('Ctrl+F')
         self.action_show_filter.setCheckable(True)
-        self.action_show_filter.triggered.connect(self.s_enable_filter)
-        self.action_filter_top = QAction('Position &Top', self)
-        self.action_filter_top.setCheckable(True)
-        self.action_filter_top.setData(FilterBar.PositionAboveLists)
-        self.action_filter_bottom = QAction('Position &Bottom', self)
-        self.action_filter_bottom.setCheckable(True)
-        self.action_filter_bottom.setData(FilterBar.PositionBelowLists)
-
         self.action_show_filter.setChecked(self.config['filter_bar_enabled'])
-        self.action_filter_top.setChecked(self.config['filter_bar_position'] is FilterBar.PositionAboveLists)
-        self.action_filter_bottom.setChecked(self.config['filter_bar_position'] is FilterBar.PositionBelowLists)
+        self.action_show_filter.triggered.connect(self.s_enable_filter)
 
         self.action_sync = QAction('&Sync', self)
         self.action_sync.setStatusTip('Send changes and then retrieve remote list')
@@ -260,15 +251,8 @@ class MainWindow(QMainWindow):
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
         menu_list.addAction(action_rescan_library)
-        menu_filter = menubar.addMenu('&Filter')
-        menu_filter.addAction(self.action_show_filter)
-        menu_filter.addSeparator()
-        menu_filter.addAction(self.action_filter_top)
-        menu_filter.addAction(self.action_filter_bottom)
-        self.filter_actiongroup = QActionGroup(self, exclusive=True)
-        self.action_filter_top.setActionGroup(self.filter_actiongroup)
-        self.action_filter_bottom.setActionGroup(self.filter_actiongroup)
-        self.filter_actiongroup.triggered.connect(self.s_filter_position)
+        menu_list.addSeparator()
+        menu_list.addAction(self.action_show_filter)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
@@ -435,19 +419,10 @@ class MainWindow(QMainWindow):
         filter_bar_box_layout.addWidget(self.show_filter_casesens)
         self.filter_bar_box.setLayout(filter_bar_box_layout)
 
-        if not self.config['filter_bar_enabled']:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.filter_bar_box.hide()
-        else:
-            if self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
-                self.list_box.addWidget(self.filter_bar_box)
-                self.list_box.addWidget(self.notebook)
-                self.list_box.addWidget(self.view)
-            elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
-                self.list_box.addWidget(self.notebook)
-                self.list_box.addWidget(self.view)
-                self.list_box.addWidget(self.filter_bar_box)
+        self.list_box.addWidget(self.notebook)
+        self.list_box.addWidget(self.view)
+        self.list_box.addWidget(self.filter_bar_box)
+        self.filter_bar_box.setVisible(self.config['filter_bar_enabled'])
 
         main_hbox.addLayout(left_box)
         main_hbox.addLayout(self.list_box, 1)
@@ -664,25 +639,6 @@ class MainWindow(QMainWindow):
                 self.tray.setIcon(QtGui.QIcon(utils.available_libs[self.account['api']][1]))
             else:
                 self.tray.setIcon(self.windowIcon())
-
-    def _apply_filter_bar(self):
-        self.list_box.removeWidget(self.filter_bar_box)
-        self.list_box.removeWidget(self.notebook)
-        self.list_box.removeWidget(self.view)
-        self.filter_bar_box.show()
-        if not self.config['filter_bar_enabled']:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.filter_bar_box.hide()
-        else:
-            if self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
-                self.list_box.addWidget(self.filter_bar_box)
-                self.list_box.addWidget(self.notebook)
-                self.list_box.addWidget(self.view)
-            elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
-                self.list_box.addWidget(self.notebook)
-                self.list_box.addWidget(self.view)
-                self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
         if wait:
@@ -1148,15 +1104,9 @@ class MainWindow(QMainWindow):
                 self.worker_call('delete_show', self.r_generic, show)
 
     def s_enable_filter(self, checked):
+        self.filter_bar_box.setVisible(checked)
         self.config['filter_bar_enabled'] = checked
         self._save_config()
-        self._apply_filter_bar()
-
-    def s_filter_position(self, action):
-        index = action.data()
-        self.config['filter_bar_position'] = index
-        self._save_config()
-        self._apply_filter_bar()
 
     def s_scan_library(self):
         self.worker_call('scan_library', self.r_library_scanned, rescan=False)

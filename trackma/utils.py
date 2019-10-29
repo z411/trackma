@@ -482,7 +482,6 @@ qt_defaults = {
     'episodebar_style': 1,
     'episodebar_text': False,
     'filter_bar_enabled': False,
-    'filter_bar_position': 2,
     'filter_global': False,
     'colors': {
         'is_airing': '#D2FAFA',
