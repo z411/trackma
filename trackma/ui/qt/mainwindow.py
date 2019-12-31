@@ -245,7 +245,7 @@ class MainWindow(QMainWindow):
         menu_list.addAction(action_scan_library)
         menu_list.addAction(action_rescan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
-        self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
+        self.mediatype_actiongroup = QActionGroup(self, exclusionPolicy=QActionGroup.ExclusionPolicy["Exclusive"])
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(self.action_reload)
@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
                             'my_end': 9,
                             'tag': 10}
 
-        self.menu_columns_group = QActionGroup(self, exclusive=False)
+        self.menu_columns_group = QActionGroup(self, exclusionPolicy=QActionGroup.ExclusionPolicy["None"])
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
