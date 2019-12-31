@@ -22,7 +22,8 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
-    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter)
+    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter,
+    QMessageBox)
 
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
@@ -114,7 +115,7 @@ class AddDialog(QDialog):
         
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
-        cardview.activated.connect(self.s_show_details)
+        cardview.doubleClicked.connect(self.s_show_details)
         
         self.contents.addWidget(cardview)
         self.contents.addWidget(tableview)
@@ -207,3 +208,5 @@ class AddDialog(QDialog):
         if result['success']:
             if self.default:
                 self.accept()
+            else:
+                QMessageBox.information(self, 'Information', "Show added successfully")
