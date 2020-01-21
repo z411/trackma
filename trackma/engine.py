@@ -27,7 +27,7 @@ from decimal import Decimal
 from trackma import messenger
 from trackma import data
 from trackma import utils
-from trackma.extras import AnimeInfoExtractor
+
 
 class Engine:
     """
@@ -389,20 +389,22 @@ class Engine:
             # Guess show by filename
             self.msg.debug(self.name, "Guessing by filename.")
 
-            aie = AnimeInfoExtractor(filename)
-            (show_title, ep) = aie.getName(), aie.getEpisode()
-            self.msg.debug(self.name, "Guessed {}".format(show_title))
-
-            if show_title:
-                tracker_list = self._get_tracker_list()
-
-                show = utils.guess_show(show_title, tracker_list)
+            # aie = AnimeInfoExtractor(filename)
+            # #animeInformation = anitopy.parse(filename)
+            # (show_title, ep) = aie.getName(), aie.getEpisode()
+            # #(show_title, ep) = animeInformation['anime_title'], animeInformation['episode_number']
+            # self.msg.debug(self.name, "Guessed {}".format(show_title))
+            tracker_list = self._get_tracker_list()
+            (show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename, tracker_list)
+            if show:
+                return utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
+            else:
+                (show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename,
+                                                                                                   tracker_list)
                 if show:
-                    return utils.redirect_show((show, ep), self.redirections, tracker_list)
+                    return utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
                 else:
                     raise utils.EngineError("Show not found.")
-            else:
-                raise utils.EngineError("File name not recognized.")
 
     def get_show_details(self, show):
         """
@@ -700,6 +702,7 @@ class Engine:
 
     def scan_library(self, my_status=None, rescan=False):
         # Check if operation is supported by the API
+
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
@@ -782,31 +785,27 @@ class Engine:
             # the information from the filename and do a fuzzy search
             # on the user's list. Cache the information.
             # If it fails, cache it as None.
-            aie = AnimeInfoExtractor(filename)
-            show_title = aie.getName()
-            (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
-            if show_title:
-                show = utils.guess_show(show_title, tracker_list)
-                if show:
-                    self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
 
-                    if show_ep_start == show_ep_end:
-                        # TODO : Support redirections for episode ranges
-                        (show, show_ep) = utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
-                        show_ep_end = show_ep_start = show_ep
-
-                        self.msg.debug(self.name, "Redirected to {} {}".format(show['title'], show_ep))
-                        library_cache[filename] = (show['id'], show_ep)
-                    else:
-                        library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
-
-                    show_id = show['id']
-                else:
-                    self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
+            (show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename, tracker_list)
+            if show is None:
+                (show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename, tracker_list)
+                if show is None:
+                    self.msg.debug(self.name, "Not recognized, skipping: {}".format(fullpath))
                     library_cache[filename] = None
+                    return library, library_cache
+
+            self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
+            if show_ep_start == show_ep_end:
+                # TODO : Support redirections for episode ranges
+                (show, show_ep) = utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
+                show_ep_end = show_ep_start = show_ep
+
+                self.msg.debug(self.name, "Redirected to {} {}".format(show['title'], show_ep))
+                library_cache[filename] = (show['id'], show_ep)
             else:
-                self.msg.debug(self.name, "Not recognized, skipping: {}".format(fullpath))
-                library_cache[filename] = None
+                library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+
+            show_id = show['id']
 
         # After we got our information, add it to our library
         if show_id:

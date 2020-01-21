@@ -23,6 +23,8 @@ import json
 import difflib
 import pickle
 import uuid
+import anitopy
+from trackma.extras import AnimeInfoExtractor
 
 VERSION = '0.8.2'
 
@@ -318,6 +320,41 @@ def show():
         'image_thumb':  '',
         'queued':       False,
     }
+
+def get_anitopy_anime_information(filename):
+    try:
+        anime_information = anitopy.parse(filename)
+        show_title = anime_information['anime_title']
+        (show_ep_start, show_ep_end) = int(anime_information['episode_number']), int(anime_information['episode_number'])
+        return show_title, show_ep_start, show_ep_end
+    except:
+        return None, None, None
+
+def guess_anitopy_anime_information(filename, tracker_list):
+    try:
+        (show_title, show_ep_start, show_ep_end) = get_anitopy_anime_information(filename)
+        show = guess_show(show_title, tracker_list)
+        return show, show_title, show_ep_start, show_ep_end
+    except:
+        return None, None, None, None
+
+def get_aie_anime_information(filename):
+    try:
+        aie = AnimeInfoExtractor(filename)
+        show_title = aie.getName()
+        (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
+        return show_title, show_ep_start, show_ep_end
+    except:
+        return None, None, None
+
+def guess_aie_anime_information(filename, tracker_list):
+    try:
+        (show_title, show_ep_start, show_ep_end) = get_aie_anime_information(filename)
+        show = guess_show(show_title, tracker_list)
+        return show, show_title, show_ep_start, show_ep_end
+    except:
+        return None, None, None, None
+
 
 class TrackmaError(Exception):
     pass
