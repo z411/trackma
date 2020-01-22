@@ -249,16 +249,17 @@ class TrackerBase(object):
 
             # Do a regex to the filename to get
             # the show title and episode number
-            aie = AnimeInfoExtractor(filename)
-            (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+            (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename, self.list)
+            if not playing_show:
+                (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename, self.list)
+
             if not show_title:
                 return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized
 
-            playing_show = utils.guess_show(show_title, self.list)
             self.msg.debug(self.name, "Show guess: {}: {}".format(show_title, playing_show))
 
             if playing_show:
-                (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep), self.redirections, self.list)
+                (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep_start), self.redirections, self.list)
 
                 return (utils.TRACKER_PLAYING, (playing_show, show_ep))
             else:
@@ -266,7 +267,7 @@ class TrackerBase(object):
                 if self.config['tracker_not_found_prompt']:
                     # Dummy show to search for
                     show = {'id': 0, 'title': show_title}
-                    return (utils.TRACKER_NOT_FOUND, (show, show_ep))
+                    return (utils.TRACKER_NOT_FOUND, (show, show_ep_start))
                 else:
                     return (utils.TRACKER_NOT_FOUND, None)
         else:
