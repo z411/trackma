@@ -104,11 +104,11 @@ class libanilist(lib):
         'MOVIE': utils.TYPE_MOVIE,
         'SPECIAL': utils.TYPE_SP,
         'OVA': utils.TYPE_OVA,
-        'ONA': utils.TYPE_OVA,
-        'MUSIC': utils.TYPE_OTHER,
-        'MANGA': utils.TYPE_OTHER,
-        'NOVEL': utils.TYPE_OTHER,
-        'ONE_SHOT': utils.TYPE_OTHER,
+        'ONA': utils.TYPE_ONA,
+        'MUSIC': utils.TYPE_MUSIC,
+        'MANGA': utils.TYPE_MANGA,
+        'NOVEL': utils.TYPE_NOVEL,
+        'ONE_SHOT': utils.TYPE_ONESHOT,
     }
 
     status_translate = {
