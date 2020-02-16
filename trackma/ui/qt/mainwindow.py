@@ -16,6 +16,7 @@
 
 pyqt_version = 5
 
+import sys
 import os
 import datetime
 import subprocess
@@ -244,7 +245,7 @@ class MainWindow(QMainWindow):
         menu_list.addAction(action_scan_library)
         menu_list.addAction(action_rescan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
-        self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
+        self.mediatype_actiongroup = QActionGroup(self, exclusionPolicy=QActionGroup.ExclusionPolicy["Exclusive"])
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
         menu_options.addAction(self.action_reload)
@@ -288,7 +289,7 @@ class MainWindow(QMainWindow):
         self.view.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.view.itemDelegate().setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
         self.view.middleClicked.connect(lambda: self.s_play(True))
-        self.view.activated.connect(self.s_show_details)
+        self.view.doubleClicked.connect(self.s_show_details)
         self._apply_view()
 
         self.view.model().sourceModel().progressChanged.connect(self.s_set_episode)
@@ -308,7 +309,7 @@ class MainWindow(QMainWindow):
                             'my_end': 9,
                             'tag': 10}
 
-        self.menu_columns_group = QActionGroup(self, exclusive=False)
+        self.menu_columns_group = QActionGroup(self, exclusionPolicy=QActionGroup.ExclusionPolicy["None"])
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
@@ -322,6 +323,7 @@ class MainWindow(QMainWindow):
 
         # Create filter list
         self.show_filter = QLineEdit()
+        self.show_filter.setClearButtonEnabled(True)
         self.show_filter.textChanged.connect(self.s_filter_changed)
         filter_tooltip = (
             "General Search: All fields (columns) of each show will be matched against the search term."
@@ -1142,8 +1144,15 @@ class MainWindow(QMainWindow):
         try:
             filename = self.worker.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                        os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")

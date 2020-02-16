@@ -324,7 +324,9 @@ class libkitsu(lib):
 
             return showlist
         except urllib.request.HTTPError as e:
-            raise utils.APIError("Error getting list.")
+            raise utils.APIError("Error getting list (HTTPError): %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("Error getting list (URLError): %s" % e.reason)
 
     def merge(self, show, info):
         show['title']   = info['title']
@@ -358,6 +360,8 @@ class libkitsu(lib):
             return int(data_json['data']['id'])
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error adding: ' + str(e.reason))
 
     def update_show(self, item):
         """Sends a show update to the server"""
@@ -370,6 +374,8 @@ class libkitsu(lib):
             self._request('PATCH', self.prefix + "/library-entries/%s" % item['my_id'], body=data, auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error updating: ' + str(e.reason))
 
     def delete_show(self, item):
         """Sends a show delete to the server"""
@@ -380,6 +386,8 @@ class libkitsu(lib):
             self._request('DELETE', self.prefix + "/library-entries/%s" % item['my_id'], auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error deleting: ' + str(e.reason))
 
     def search(self, query, method):
         self.msg.info(self.name, "Searching for %s..." % query)
@@ -406,6 +414,8 @@ class libkitsu(lib):
             return infolist
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error searching: ' + str(e.reason))
 
     def _build_data(self, item):
         values = {'data': {

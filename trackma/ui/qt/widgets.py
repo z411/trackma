@@ -234,8 +234,10 @@ class AddTableDetailsView(QSplitter):
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setModel(proxy)
+
+        # Allow sorting but don't sort by default
+        self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.AscendingOrder)
         self.table.setSortingEnabled(True)
-        self.table.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         if pyqt_version is 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
