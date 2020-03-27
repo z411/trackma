@@ -508,16 +508,16 @@ class libkitsu(lib):
             'total':       total or 0,
             'image':       attr['posterImage'] and attr['posterImage']['small'],
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
+            'type':        utils.translate_status(attr['subtype']),
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
                 ('Synopsis', attr['synopsis']),
-                ('Type',     attr['subtype']),
+                ('Type',     utils.translate_status(attr['subtype'])),
             ]
         })
-
         # WORKAROUND: Shows with 1 episode (TVs, SPs, OVAs) end the same day they start
         if total == 1:
             info['end_date'] = info['start_date']

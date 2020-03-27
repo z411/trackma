@@ -37,13 +37,6 @@ STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
 STATUS_OTHER = 100
 
-TYPE_UNKNOWN = 0
-TYPE_TV = 1
-TYPE_MOVIE = 2
-TYPE_OVA = 3
-TYPE_SP = 4
-TYPE_OTHER = 100
-
 TRACKER_NOVIDEO = 0
 TRACKER_PLAYING = 1
 TRACKER_UNRECOGNIZED = 2
@@ -73,6 +66,17 @@ available_libs = {
     'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
 
+def translate_status(orig):
+	parts = orig.replace('_',' ').title().split()
+	replace = {
+		'Tv' : 'TV',
+		'Ova': 'OVA',
+		'Ona': 'ONA'
+	}
+	for n in range(0,len(parts)):
+		if parts[n] in replace.keys():
+			parts[n]=replace[parts[n]]
+	return ' '.join(parts)
 available_trackers = [
     ('auto', 'Auto-detect'),
     ('inotify_auto', 'inotify'),
