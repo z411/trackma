@@ -75,6 +75,8 @@ except ImportError:
 
 def main():
     app = QApplication(sys.argv)
+    app.setApplicationName("trackma")
+    app.setDesktopFileName("trackma")
     try:
         mainwindow = MainWindow(debug)
         sys.exit(app.exec_())

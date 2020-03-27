@@ -22,7 +22,8 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
-    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter)
+    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter,
+    QMessageBox)
 
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
@@ -56,6 +57,7 @@ class AddDialog(QDialog):
             self.search_rad = QRadioButton('By keyword:')
             self.search_rad.setChecked(True)
             self.search_txt = QLineEdit()
+            self.search_txt.setClearButtonEnabled(True)
             self.search_txt.returnPressed.connect(self.s_search)
             if default:
                 self.search_txt.setText(default)
@@ -98,8 +100,8 @@ class AddDialog(QDialog):
             filters_layout.setAlignment(QtCore.Qt.AlignRight)
         
         view_combo = QComboBox()
-        view_combo.addItem('Table view')
         view_combo.addItem('Card view')
+        view_combo.addItem('Table view')
         view_combo.currentIndexChanged.connect(self.s_change_view)
         
         filters_layout.addWidget(view_combo)
@@ -110,12 +112,13 @@ class AddDialog(QDialog):
         # Set up views
         tableview = AddTableDetailsView(None, self.worker)
         tableview.changed.connect(self.s_selected)
-        self.contents.addWidget(tableview)
         
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
-        cardview.activated.connect(self.s_show_details)
+        cardview.doubleClicked.connect(self.s_show_details)
+        
         self.contents.addWidget(cardview)
+        self.contents.addWidget(tableview)
         
         # Use for testing
         #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
@@ -205,3 +208,5 @@ class AddDialog(QDialog):
         if result['success']:
             if self.default:
                 self.accept()
+            else:
+                QMessageBox.information(self, 'Information', "Show added successfully")

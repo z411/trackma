@@ -363,8 +363,15 @@ class Trackma_urwid():
             show = self.engine.get_show_info(item.showid)
             filename = self.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")
@@ -735,11 +742,14 @@ class Trackma_urwid():
 
     def search_request(self, data):
         self.ask_finish(self.search_request)
-        if data:
-            self.last_search = data
-            self._get_cur_list().select_match(data)
-        elif self.last_search:
-            self._get_cur_list().select_match(self.last_search)
+        try:
+            if data:
+                self.last_search = data
+                self._get_cur_list().select_match(data)
+            elif self.last_search:
+                self._get_cur_list().select_match(self.last_search)
+        except re.error as e:
+            self.error(e)
 
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
