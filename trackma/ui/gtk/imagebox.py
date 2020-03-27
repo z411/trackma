@@ -18,6 +18,8 @@ import os
 import threading
 import urllib.request
 from io import BytesIO
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, GdkPixbuf
 from trackma import utils
 

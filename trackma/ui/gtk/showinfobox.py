@@ -17,6 +17,8 @@
 import html
 import os
 import threading
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -49,7 +51,7 @@ class ShowInfoBox(Gtk.Box):
         self.data_label = Gtk.Label('')
         self.data_label.set_line_wrap(True)
         self.data_label.set_property('selectable',True)
-        
+
         if isinstance(orientation, Gtk.Orientation):
             self.data_container.set_orientation(orientation)
         self.data_container.pack_start(self.data_label, True, True, 0)

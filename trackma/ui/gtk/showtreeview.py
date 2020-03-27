@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Pango, GObject
 from trackma import utils
 
 
 class ShowTreeView(Gtk.TreeView):
-    __gsignals__ = {'column-toggled': (GObject.SIGNAL_RUN_LAST, \
+    __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST, \
             GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
 
     def __init__(self, status, colors, visible_columns, progress_style=1, decimals=0):
@@ -284,19 +285,19 @@ class ProgressCellRenderer(Gtk.CellRenderer):
     __gproperties__ = {
         "value": (GObject.TYPE_INT, "Value",
                   "Progress percentage", 0, 1000, 0,
-                  GObject.PARAM_READWRITE),
+                  GObject.ParamFlags.READWRITE),
 
         "subvalue": (GObject.TYPE_INT, "Subvalue",
                      "Sub percentage", 0, 1000, 0,
-                     GObject.PARAM_READWRITE),
+                     GObject.ParamFlags.READWRITE),
 
         "total": (GObject.TYPE_INT, "Total",
                   "Total percentage", 0, 1000, 0,
-                  GObject.PARAM_READWRITE),
+                  GObject.ParamFlags.READWRITE),
 
         "eps": (GObject.TYPE_PYOBJECT, "Episodes",
                 "Available episodes",
-                GObject.PARAM_READWRITE),
+                GObject.ParamFlags.READWRITE),
     }
 
     def __init__(self, colors):
@@ -364,4 +365,3 @@ class ProgressCellRenderer(Gtk.CellRenderer):
     def __getColor(self, colorString):
         color = Gdk.color_parse(colorString)
         return color.red_float, color.green_float, color.blue_float
-
