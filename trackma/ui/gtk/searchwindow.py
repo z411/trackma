@@ -16,6 +16,8 @@
 
 import os
 import threading
+import gi
+gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -52,7 +54,7 @@ class SearchWindow(Gtk.Window):
     __gtype_name__ = 'SearchWindow'
 
     __gsignals__ = {
-        'search-error': (GObject.SIGNAL_RUN_FIRST, None,
+        'search-error': (GObject.SignalFlags.RUN_FIRST, None,
                          (str,))
     }
 
@@ -90,8 +92,15 @@ class SearchWindow(Gtk.Window):
 
     @GtkTemplate.Callback
     def _on_search_entry_search_changed(self, search_entry):
-        self._search(search_entry.get_text())
+        search_text=search_entry.get_text().strip()
         self.progress_spinner.start()
+        if search_text == "":
+            if self._search_thread:
+                self._search_thread.stop()
+            self._search_finish()
+        else:
+            self._search(search_text)
+            self.progress_spinner.start()
 
     def _search(self, text):
         if self._search_thread:
@@ -102,17 +111,19 @@ class SearchWindow(Gtk.Window):
                                            text,
                                            self._search_finish_idle)
         self._search_thread.start()
+    def _search_finish(self):
+        self.headerbar.set_subtitle(
+            "%s result%s." % ( (len(self._entries),'s') \
+                if len(self._entries) > 0 \
+                else ('No', '')
+            )
+        )
+        self.progress_spinner.stop()
 
     def _search_finish_idle(self, entries, error):
-        if error:
-            self.emit('search-error', error)
-            return
-
-        self.progress_spinner.stop()
-        self.headerbar.set_subtitle("%d results" % len(entries))
         self._entries = entries
         self._showdict = dict()
-
+        self._search_finish()
         self.showlist.append_start()
         for show in entries:
             self._showdict[show['id']] = show
@@ -120,6 +131,9 @@ class SearchWindow(Gtk.Window):
         self.showlist.append_finish()
 
         self.btn_add_show.set_sensitive(False)
+
+        if error:
+            self.emit('search-error', error)
 
     @GtkTemplate.Callback
     def _on_btn_add_show_clicked(self, btn):
