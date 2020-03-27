@@ -395,7 +395,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._prompt_update_next, show, played_ep)
 
     def _prompt_update_next(self, show, played_ep):
-        dialog = Gtk.MessageDialog(self,
+        dialog = Gtk.MessageDialog(self.get_toplevel(),
                                    Gtk.DialogFlags.MODAL,
                                    Gtk.MessageType.QUESTION,
                                    Gtk.ButtonsType.YES_NO,
