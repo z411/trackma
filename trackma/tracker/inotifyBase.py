@@ -42,9 +42,12 @@ class inotifyBase(tracker.TrackerBase):
             if not p.isdigit(): continue
 
             # Get process name
-            with open('/proc/%s/cmdline' % p, 'rb') as f:
-                cmdline = f.read()
-                pname = cmdline.partition(b'\x00')[0]
+            try:
+                with open('/proc/%s/cmdline' % p, 'rb') as f:
+                    cmdline = f.read()
+                    pname = cmdline.partition(b'\x00')[0]
+            except FileNotFoundError:       # Handle FileNotFoundError
+                pass
 
             # It's not one of our players
             if not self.re_players.search(pname):
@@ -139,4 +142,3 @@ class inotifyBase(tracker.TrackerBase):
 
         (state, show_tuple) = self._get_playing_show(None)
         self.update_show_if_needed(state, show_tuple)
-

@@ -23,6 +23,7 @@ import json
 import difflib
 import pickle
 import uuid
+import enum
 
 VERSION = '0.8.2'
 
@@ -66,17 +67,52 @@ available_libs = {
     'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
 
-def translate_status(orig):
-	parts = orig.replace('_',' ').title().split()
-	replace = {
-		'Tv' : 'TV',
-		'Ova': 'OVA',
-		'Ona': 'ONA'
-	}
-	for n in range(0,len(parts)):
-		if parts[n] in replace.keys():
-			parts[n]=replace[parts[n]]
-	return ' '.join(parts)
+class TypesBaseMeta(enum.EnumMeta):
+    def __getitem__(self, name):
+        try:
+            return super().__getitem__(name)
+        except (TypeError, KeyError) as error:
+            return self.default()
+
+class TypesBase(enum.Enum, metaclass=TypesBaseMeta):
+    @classmethod
+    def default(cls):
+        other_member = object.__new__(cls)
+        other_member._name_ = 'OTHERS'
+        other_member._value_ = -1
+        other_member = cls._value2member_map_.setdefault(-1, other_member)
+        return other_member
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __le__(self, other):
+        return self.value <= other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __ge__(self, other):
+        return self.value >= other.value
+
+    def __add__(self, other):
+        if isinstance(other, str):
+            return str(self) + other
+        else:
+            return super().__add__(other)
+
+    def __str__(self,r={
+        'Tv' : 'TV',
+        'Ova': 'OVA',
+        'Ona': 'ONA'
+    }):
+        parts = self.name.replace('_',' ').title().split()
+        for n in range(0,len(parts)):
+            if parts[n] in r.keys():
+                parts[n] = r[parts[n]]
+            return ' '.join(parts)
+
+
 available_trackers = [
     ('auto', 'Auto-detect'),
     ('inotify_auto', 'inotify'),

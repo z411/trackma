@@ -340,4 +340,3 @@ class libshikimori(lib):
 
     def _c(self, s):
         return 0 if s is None else s
-

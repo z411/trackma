@@ -276,7 +276,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
                 return item.get('title')
             elif column == 1:
                 if 'type' in item:
-                    return item['type']
+                    return item['type'].name
                 else:
                     return '?'
             elif column == 2:
@@ -342,7 +342,7 @@ class AddListModel(QtCore.QAbstractListModel):
         elif role == QtCore.Qt.DecorationRole:
             return self.thumbs.get(row)
         elif role == QtCore.Qt.BackgroundRole:
-            t = self.results[row].get('type')
+            t = self.results[row].get('type').name
             if t == 'TV':
                 return QtGui.QColor(202, 253, 150)
             elif t == 'Movie':

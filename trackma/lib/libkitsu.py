@@ -29,6 +29,29 @@ import socket
 from trackma.lib.lib import lib
 from trackma import utils
 
+class Types(utils.TypesBase):
+    # mediatype: anime
+    TV          = utils.enum.auto()
+    OVA         = utils.enum.auto()
+    ONA         = utils.enum.auto()
+    movie       = utils.enum.auto()
+    music       = utils.enum.auto()
+    special     = utils.enum.auto()
+    # mediatype: manga
+    doujin      = utils.enum.auto()
+    manga       = utils.enum.auto()
+    manhua      = utils.enum.auto()
+    manhwa      = utils.enum.auto()
+    novel       = utils.enum.auto()
+    oel         = utils.enum.auto()
+    oneshot     = utils.enum.auto()
+    def __str__(self):
+        return super().__str__( r={
+            'Tv' : 'TV',
+            'Ova': 'OVA',
+            'Ona': 'ONA',
+            'Oel': 'OEL'
+        })
 
 class libkitsu(lib):
     """
@@ -468,7 +491,7 @@ class libkitsu(lib):
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
         except:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
-            return None # Ignore date if it's invalid            
+            return None # Ignore date if it's invalid
 
     def _guess_status(self, start_date, end_date):
         # Try to guess show status by checking start and end dates
@@ -508,14 +531,14 @@ class libkitsu(lib):
             'total':       total or 0,
             'image':       attr['posterImage'] and attr['posterImage']['small'],
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
-            'type':        utils.translate_status(attr['subtype']),
+            'type':        Types[attr['subtype']],
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
                 ('Synopsis', attr['synopsis']),
-                ('Type',     utils.translate_status(attr['subtype'])),
+                ('Type',     Types[attr['subtype']]),
             ]
         })
         # WORKAROUND: Shows with 1 episode (TVs, SPs, OVAs) end the same day they start

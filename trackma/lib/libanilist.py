@@ -24,6 +24,18 @@ import datetime
 from trackma.lib.lib import lib
 from trackma import utils
 
+class Types(utils.TypesBase):
+    TV          = utils.enum.auto()
+    MOVIE       = utils.enum.auto()
+    OVA         = utils.enum.auto()
+    ONA         = utils.enum.auto()
+    SPECIAL     = utils.enum.auto()
+    MANGA       = utils.enum.auto()
+    NOVEL       = utils.enum.auto()
+    TV_SHORT    = utils.enum.auto()
+    ONE_SHOT    = utils.enum.auto()
+    MUSIC       = utils.enum.auto()
+
 class libanilist(lib):
     """
     API class to communicate with Anilist
@@ -111,7 +123,7 @@ class libanilist(lib):
         utils.SEASON_SUMMER: 'SUMMER',
         utils.SEASON_FALL: 'FALL',
     }
- 
+
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
@@ -134,7 +146,7 @@ class libanilist(lib):
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes_watched"
-       
+
         # If we already know the scoreFormat of the cached list, apply it now
         self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
         if self.scoreformat:
@@ -258,7 +270,7 @@ fragment mediaListEntry on MediaList {
         # Handle different score formats provided by Anilist
         self.scoreformat = data['user']['mediaListOptions']['scoreFormat']
         self._apply_scoreformat(self.scoreformat)
-        
+
         self._set_userconfig('scoreformat_' + self.mediatype, self.scoreformat)
         self._emit_signal('userconfig_changed')
 
@@ -278,7 +290,7 @@ fragment mediaListEntry on MediaList {
                     'id': showid,
                     'title': media['title']['userPreferred'],
                     'aliases': self._get_aliases(media),
-                    'type': utils.translate_status(media['format']),
+                    'type': Types[media['format']],
                     'status': self._translate_status(media['status']),
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
@@ -360,7 +372,7 @@ fragment mediaListEntry on MediaList {
             variables = {'query': urllib.parse.quote_plus(criteria)}
         elif method == utils.SEARCH_METHOD_SEASON:
             season, seasonYear = criteria
-            
+
             query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
             variables = {'season': self.season_translate[season], 'seasonYear': seasonYear}
 
@@ -432,13 +444,13 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
-        
+
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
-            'type': utils.translate_status(item['format']),
+            'type': Types[item['format']],
             'status': self._translate_status(item['status']),
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
@@ -453,7 +465,7 @@ fragment mediaListEntry on MediaList {
                 ('Genres',          item.get('genres')),
                 ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
-                ('Type',            utils.translate_status(item.get('format'))),
+                ('Type',            Types[item.get('format')]),
                 ('Average score',   item.get('averageScore')),
                 ('Status',          self._translate_status(item['status'])),
             ]
@@ -463,7 +475,7 @@ fragment mediaListEntry on MediaList {
     def _apply_scoreformat(self, fmt):
         media = self.media_info()
         (media['score_max'], media['score_step']) = self.score_types[fmt]
-    
+
     def _get_aliases(self, item):
         aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
 
@@ -515,4 +527,3 @@ fragment mediaListEntry on MediaList {
             return 0
         else:
             return s
-

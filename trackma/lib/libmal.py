@@ -26,6 +26,12 @@ import xml.etree.ElementTree as ET
 from trackma.lib.lib import lib
 from trackma import utils
 
+class Types(utils.TypesBase):
+    TV      = utils.enum.auto()
+    Movie   = utils.enum.auto()
+    OVA     = utils.enum.auto()
+    Special = utils.enum.auto()
+
 class libmal(lib):
     """
     API class to communicate with MyAnimeList
@@ -262,7 +268,7 @@ class libmal(lib):
             show.update({
                 'id':           showid,
                 'title':        child.find('title').text,
-                'type':         utils.translate_status(child.find('type').text),
+                'type':         Types[child.find('type').text],
                 'status':       status_translate.get(child.find('status').text, utils.STATUS_OTHER),
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
@@ -274,7 +280,7 @@ class libmal(lib):
                     ('Synonyms', child.find('synonyms').text),
                     ('Synopsis', self._translate_synopsis(child.find('synopsis').text)),
                     (episodes_str.title(), child.find(episodes_str).text),
-                    ('Type',     utils.translate_status(child.find('type').text)),
+                    ('Type',     Types[child.find('type').text)],
                     ('Score',    child.find('score').text),
                     ('Status',   child.find('status').text),
                     ('Start date', child.find('start_date').text),
