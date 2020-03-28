@@ -139,6 +139,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._update_widgets)
 
     def _engine_reload(self, account, mediatype):
+        self.set_buttons_sensitive(False)
         threading.Thread(target=self._engine_reload_task,
                          args=[account, mediatype]).start()
 
