@@ -359,8 +359,10 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_authors(["See AUTHORS file"])
         about.set_artists(["shuuichi"])
         about.connect('destroy', self._on_modal_destroy)
-        about.present()
         self._modals.append(about)
+        if about.run() in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.DELETE_EVENT):
+            about.hide()
+            self._modals.remove(about)
 
     def _on_modal_destroy(self, modal_window):
         self._modals.remove(modal_window)
