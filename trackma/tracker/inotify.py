@@ -24,21 +24,46 @@ from trackma import utils
 class inotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (inotify)'
 
+<<<<<<< HEAD
     def observe(self, watch_dir, interval):
         # Note that this lib uses bytestrings for filenames and paths.
         self.msg.info(self.name, 'Using inotify.')
 
         watch_dir = watch_dir.encode('utf-8')
+=======
+    def observe(self, config, watch_dirs):
+        # Note that this lib uses bytestrings for filenames and paths.
+        self.msg.info(self.name, 'Using inotify.')
+
+        self.msg.debug(self.name, 'Checking if there are open players...')
+        opened = self._proc_poll()
+        if opened:
+            self._proc_open(*opened)
+
+        self.msg.debug(self.name, 'Watching the following paths: ' + ','.join(watch_dirs))
+
+        paths = (path.encode('utf-8') for path in watch_dirs)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         mask = (inotify.constants.IN_OPEN
                 | inotify.constants.IN_CLOSE
                 | inotify.constants.IN_CREATE
                 | inotify.constants.IN_MOVE
                 | inotify.constants.IN_DELETE)
 
+<<<<<<< HEAD
         i = inotify.adapters.InotifyTree(watch_dir, mask=mask)
 
         try:
             for event in i.event_gen():
+=======
+        i = inotify.adapters.InotifyTrees(paths, mask=mask)
+
+        try:
+            for event in i.event_gen():
+                if not self.active:
+                    return
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                 if event is not None:
                     # With inotifyx impl., only the event type was used,
                     # such that it only served to poll lsof when an

@@ -24,10 +24,49 @@ from trackma import utils
 class inotifyBase(tracker.TrackerBase):
     open_file = (None, None, None)
 
+<<<<<<< HEAD
     def __init__(self, messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt):
         super().__init__(messenger, tracker_list, process_name, watch_dir, interval, update_wait, update_close, not_found_prompt)
 
         self.re_players = re.compile(self.process_name.encode('utf-8'))
+=======
+    def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
+        super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
+
+        self.re_players = re.compile(config['tracker_process'].encode('utf-8'))
+
+    def _proc_poll(self):
+        """
+        This function scans proc to see if there's any player
+        already open. If it is, and it has a media file open,
+        return its first instance as a filename.
+        """
+
+        time.sleep(0.01)
+
+        for p in os.listdir("/proc/"):
+            if not p.isdigit(): continue
+
+            # Get process name
+            with open('/proc/%s/cmdline' % p, 'rb') as f:
+                cmdline = f.read()
+                pname = cmdline.partition(b'\x00')[0]
+
+            # It's not one of our players
+            if not self.re_players.search(pname):
+                continue
+
+            d = "/proc/%s/fd/" % p
+            try:
+                for fd in os.listdir(d):
+                    f = os.readlink(d+fd)
+                    if utils.is_media(f):
+                        return os.path.split(f)
+            except OSError:
+                pass
+
+        return None
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def _is_being_played(self, filename):
         """
@@ -79,7 +118,14 @@ class inotifyBase(tracker.TrackerBase):
             self._emit_signal('detected', path, name)
             self.open_file = (pathname, pid, fd)
 
+<<<<<<< HEAD
             (state, show_tuple) = self._get_playing_show(name)
+=======
+            if self.config['library_full_path']:
+                (state, show_tuple) = self._get_playing_show(pathname)
+            else:
+                (state, show_tuple) = self._get_playing_show(name)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
         else:

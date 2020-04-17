@@ -1,7 +1,7 @@
 import pickle
 from trackma import utils
 
-class AccountManager():
+class AccountManager:
     """
     This is the account manager.
 
@@ -14,8 +14,8 @@ class AccountManager():
     accounts = {'default': None, 'next': 1, 'accounts': dict()}
 
     def __init__(self):
-        utils.make_dir('')
-        self.filename = utils.get_root_filename('accounts.dict')
+        utils.make_dir(utils.to_config_path())
+        self.filename = utils.to_config_path('accounts.dict')
         self._load()
 
     def _load(self):
@@ -58,7 +58,7 @@ class AccountManager():
         self.accounts['next'] += 1
         self._save()
 
-    def edit_account(self, num, username, password, api, friends=[]):
+    def edit_account(self, num, username, password, api):
         """
         Updates data for account *num* with the specified
         *username*, *password*, and *api*.
@@ -99,7 +99,7 @@ class AccountManager():
         Renames stale cache files for account number **num**.
         """
         account = self.accounts['accounts'][num]
-        userfolder = "%s.%s" % (account['username'], account['api'])
+        userfolder = utils.to_data_path("%s.%s" % (account['username'], account['api']))
         utils.make_dir(userfolder + '.old')
         utils.regex_rename_files('(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
 
@@ -141,5 +141,3 @@ class AccountManager():
         Unsets the default account number.
         """
         self.accounts['default'] = None
-
-

@@ -5,6 +5,18 @@
 *.swp
 *.out
 *.log
+<<<<<<< HEAD
 build
 dist
 Trackma.egg-info
+=======
+.trackma
+*.egg-info
+build
+dist
+.flatpak-builder
+flatpak-builder
+repo
+trackma-gtk.flatpak
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34

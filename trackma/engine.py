@@ -17,7 +17,6 @@
 import re
 import os
 import subprocess
-import threading
 import difflib
 import time
 import datetime
@@ -49,6 +48,10 @@ class Engine:
     """
     data_handler = None
     tracker = None
+<<<<<<< HEAD
+=======
+    redirections = None
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     config = {}
     msg = None
     loaded = False
@@ -69,12 +72,21 @@ class Engine:
                 'prompt_for_update': None,
                 'prompt_for_add':    None,
                 'tracker_state':     None,
+<<<<<<< HEAD
         }
+=======
+              }
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
-    def __init__(self, account, message_handler=None):
-        """Reads configuration file and asks the data handler for the API info."""
+    def __init__(self, account=None, message_handler=None, accountnum=None):
         self.msg = messenger.Messenger(message_handler)
 
+        # Utility parameter to get the account from the account manager
+        if accountnum:
+            from trackma import accounts
+            account = accounts.AccountManager().get_account(accountnum)
+
+        # Initialize
         self._load(account)
         self._init_data_handler()
 
@@ -82,12 +94,12 @@ class Engine:
         self.account = account
 
         # Create home directory
-        utils.make_dir('')
-        self.configfile = utils.get_root_filename('config.json')
+        utils.make_dir(utils.to_config_path())
+        self.configfile = utils.to_config_path('config.json')
 
         # Create user directory
         userfolder = "%s.%s" % (account['username'], account['api'])
-        utils.make_dir(userfolder)
+        utils.make_dir(utils.to_data_path(userfolder))
 
         self.msg.info(self.name, 'Trackma v{0} - using account {1}({2}).'.format(
             utils.VERSION, account['username'], account['api']))
@@ -97,6 +109,7 @@ class Engine:
         except IOError:
             raise utils.EngineFatal("Couldn't open config file.")
 
+<<<<<<< HEAD
         # Load hook files
         hooks_dir = utils.get_root_filename('hooks')
         if os.path.isdir(hooks_dir):
@@ -117,6 +130,15 @@ class Engine:
                     self.hooks_available.append(module)
                 except ImportError:
                     self.msg.warn(self.name, "Error importing hook {}.".format(name))
+=======
+        # Expand media directories and ignore those that don't exist
+        if isinstance(self.config['searchdir'], str):
+            # Compatibility: Turn a string of a single directory into a list
+            self.msg.debug(self.name, "Fixing string searchdir to list.")
+            self.config['searchdir'] = [self.config['searchdir']]
+
+        self.searchdirs = [path for path in utils.expand_paths(self.config['searchdir']) if self._searchdir_exists(path)]
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def _init_data_handler(self, mediatype=None):
         # Create data handler
@@ -147,8 +169,7 @@ class Engine:
         show = self.get_show_info(showid)
         self._emit_signal('playing', show, playing, episode)
 
-    def _tracker_update(self, showid, episode):
-        show = self.get_show_info(showid)
+    def _tracker_update(self, show, episode):
         if self.config['tracker_update_prompt']:
             self._emit_signal('prompt_for_update', show, episode)
         else:
@@ -157,12 +178,21 @@ class Engine:
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't update episode: {}".format(e))
 
+<<<<<<< HEAD
     def _tracker_unrecognised(self, show_title, episode):
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show_title, episode)
 
     def _tracker_state(self, state, timer):
         self._emit_signal('tracker_state', state, timer)
+=======
+    def _tracker_unrecognised(self, show, episode):
+        if self.config['tracker_not_found_prompt']:
+            self._emit_signal('prompt_for_add', show, episode)
+
+    def _tracker_state(self, status):
+        self._emit_signal('tracker_state', status)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def _emit_signal(self, signal, *args):
         try:
@@ -183,20 +213,31 @@ class Engine:
                     self.msg.warn(self.name, "Exception on hook {}:{}: {}".format(module.__name__, signal, err))
 
     def _get_tracker_list(self, filter_num=None):
+<<<<<<< HEAD
         tracker_list = []
+=======
+        tracker_list = {}
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         if isinstance(filter_num, type(None)):
             source_list = self.get_list()
         elif isinstance(filter_num, list):
             source_list = []
             for status in filter_num:
+<<<<<<< HEAD
                 if status is not self.mediainfo['status_finish']:
                     self.msg.debug(self.name, "scanning for \
                             {}".format(self.mediainfo['statuses_dict'][status]))
+=======
+                if status is not self.mediainfo['statuses_finish']:
+                    self.msg.debug(self.name, "Scanning for " \
+                            "{}".format(self.mediainfo['statuses_dict'][status]))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                     source_list = source_list + self.filter_list(status)
         else:
             source_list = self.filter_list(filter_num)
 
         for show in source_list:
+<<<<<<< HEAD
             tracker_list.append({'id': show['id'],
                                  'title': show['title'],
                                  'my_progress': show['my_progress'],
@@ -206,6 +247,19 @@ class Engine:
                                  })  # TODO types
 
         return tracker_list
+=======
+            tracker_list[show['id']] = {
+                'id': show['id'],
+                'title': show['title'],
+                'my_progress': show['my_progress'],
+                'total': show['total'],
+                'type': None,
+                'titles': self.data_handler.get_show_titles(show),
+                  }
+
+        altnames_map = self.data_handler.get_altnames_map()
+        return (tracker_list, altnames_map)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def _update_tracker(self):
         if self.tracker:
@@ -216,6 +270,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Forcing exit...")
             self.data_handler.unload(True)
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def connect_signal(self, signal, callback):
@@ -246,6 +302,25 @@ class Engine:
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
 
+        # Load redirection file if any
+        anime_relations_file = utils.try_files([
+            utils.to_config_path('anime-relations.txt'),
+            utils.DATADIR + '/anime-relations/anime-relations.txt',
+        ])
+
+        if anime_relations_file:
+            from trackma.extras import redirections
+
+            api = self.api_info['shortname']
+            mediatype = self.data_handler.userconfig['mediatype']
+
+            self.msg.info(self.name, "Parsing redirection file (anime-relations.txt)...")
+            try:
+                self.redirections = redirections.parse_anime_relations(anime_relations_file, api, mediatype)
+            except Exception as e:
+                self.msg.warn(self.name, "Error parsing anime-relations.txt!")
+                self.msg.debug(self.name, "{}".format(e))
+
         # Rescan library if necessary
         if self.config['library_autoscan']:
             try:
@@ -253,8 +328,30 @@ class Engine:
             except utils.TrackmaError as e:
                 self.msg.warn(self.name, "Can't auto-scan library: {}".format(e))
 
+        # Load hook files
+        if self.config['use_hooks']:
+            hooks_dir = utils.to_config_path('hooks')
+            if os.path.isdir(hooks_dir):
+                import pkgutil
+
+                self.msg.info(self.name, "Importing user hooks...")
+                for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                    # List all the hook files in the hooks folder, import them
+                    # and call the init() function if they have them
+                    # We build the list "hooks available" with the loaded modules
+                    # for later calls.
+                    try:
+                        self.msg.debug(self.name, "Importing hook {}...".format(name))
+                        module = loader.find_module(name).load_module(name)
+                        if hasattr(module, 'init'):
+                            module.init(self)
+                        self.hooks_available.append(module)
+                    except ImportError:
+                        self.msg.warn(self.name, "Error importing hook {}.".format(name))
+
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
+<<<<<<< HEAD
             # Choose the tracker we want to tart
             if self.config['tracker_type'] == 'plex':
                 from trackma.tracker.plex import PlexTracker
@@ -290,6 +387,26 @@ class Engine:
             self.tracker.connect_signal('update', self._tracker_update)
             self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
             self.tracker.connect_signal('state', self._tracker_state)
+=======
+            self.msg.debug(self.name, "Initializing tracker...")
+            try:
+                TrackerClass = self._get_tracker_class(self.config['tracker_type'])
+
+                self.tracker = TrackerClass(self.msg,
+                                            self._get_tracker_list(),
+                                            self.config,
+                                            self.searchdirs,
+                                            self.redirections,
+                                           )
+                self.tracker.connect_signal('detected', self._tracker_detected)
+                self.tracker.connect_signal('removed', self._tracker_removed)
+                self.tracker.connect_signal('playing', self._tracker_playing)
+                self.tracker.connect_signal('update', self._tracker_update)
+                self.tracker.connect_signal('unrecognised', self._tracker_unrecognised)
+                self.tracker.connect_signal('state', self._tracker_state)
+            except ImportError:
+                self.msg.warn(self.name, "Couldn't import specified tracker: {}".format(self.config['tracker_type']))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
         self.loaded = True
         return True
@@ -305,7 +422,8 @@ class Engine:
         if self.loaded:
             self.msg.info(self.name, "Unloading...")
             self.data_handler.unload()
-
+            if self.tracker:
+                self.tracker.disable()
             self.loaded = False
 
     def reload(self, account=None, mediatype=None):
@@ -347,24 +465,43 @@ class Engine:
         """
         return self.data_handler.get().values()
 
-    def get_show_info(self, showid):
+    def get_show_info(self, showid=None, title=None, filename=None):
         """
         Returns the show dictionary for the specified **showid**.
         """
         showdict = self.data_handler.get()
 
-        try:
-            return showdict[showid]
-        except KeyError:
+        if showid:
+            # Get show by ID
+            try:
+                return showdict[showid]
+            except KeyError:
+                raise utils.EngineError("Show not found.")
+        elif title:
+            showdict = self.data_handler.get()
+            # Get show by title, slower
+            for show in showdict.values():
+                if show['title'] == title:
+                    return show
             raise utils.EngineError("Show not found.")
+        elif filename:
+            # Guess show by filename
+            self.msg.debug(self.name, "Guessing by filename.")
 
-    def get_show_info_title(self, pattern):
-        showdict = self.data_handler.get()
-        # Do title lookup, slower
-        for k, show in showdict.items():
-            if show['title'] == pattern:
-                return show
-        raise utils.EngineError("Show not found.")
+            aie = AnimeInfoExtractor(filename)
+            (show_title, ep) = aie.getName(), aie.getEpisode()
+            self.msg.debug(self.name, "Guessed {}".format(show_title))
+
+            if show_title:
+                tracker_list = self._get_tracker_list()
+
+                show = utils.guess_show(show_title, tracker_list)
+                if show:
+                    return utils.redirect_show((show, ep), self.redirections, tracker_list)
+                else:
+                    raise utils.EngineError("Show not found.")
+            else:
+                raise utils.EngineError("File name not recognized.")
 
     def get_show_details(self, show):
         """
@@ -384,7 +521,7 @@ class Engine:
         # TODO : Temporal hack for the client autocomplete function
         showlist = self.data_handler.get()
         newlist = list()
-        for k, v in showlist.items():
+        for v in showlist.values():
             if re.match(pattern, v['title'], re.I):
                 if ' ' in v['title']:
                     newlist.append('"' + v['title'] + '" ')
@@ -400,16 +537,26 @@ class Engine:
 
         if self.tracker:
             return self.tracker.get_status()
+<<<<<<< HEAD
         else:
             return None
 
     def search(self, criteria):
+=======
+
+        return None
+
+    def search(self, criteria, method=utils.SEARCH_METHOD_KW):
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         """
         Request a remote list of shows matching the criteria
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        return self.data_handler.search(str(criteria).strip())
+        if method not in self.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW]):
+            raise utils.EngineError('Search method not supported by API or mediatype.')
+
+        return self.data_handler.search(criteria, method)
 
     def add_show(self, show, status=None):
         """
@@ -469,19 +616,19 @@ class Engine:
         # Change status if required
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == show['total'] and self.mediainfo.get('status_finish'):
+                if newep == show['total'] and self.mediainfo.get('statuses_finish'):
                     if (
-                        not self.config['auto_status_change_if_scored'] or
-                        not self.mediainfo.get('can_score') or
-                        show['my_score']
+                            not self.config['auto_status_change_if_scored'] or
+                            not self.mediainfo.get('can_score') or
+                            show['my_score']
                     ):
                         # Change to finished status
-                        self.set_status(show['id'], self.mediainfo['status_finish'])
+                        self.set_status(show['id'], self._guess_new_finish(show))
                     else:
                         self.msg.warn(self.name, "Updated episode but status won't be changed until a score is set.")
-                elif newep == 1 and self.mediainfo.get('status_start'):
-                    # Change to watching status
-                    self.set_status(show['id'], self.mediainfo['status_start'])
+                elif newep == 1 and self.mediainfo.get('statuses_start'):
+                    # Change to start status
+                    self.set_status(show['id'], self._guess_new_start(show))
             except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
@@ -500,10 +647,6 @@ class Engine:
             except utils.EngineError as e:
                 # Only warn about engine errors since date change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but dates weren\'t changed: %s' % e)
-
-        # Clear neweps flag
-        if self.data_handler.get_show_attr(show, 'neweps'):
-            self.data_handler.set_show_attr(show, 'neweps', False)
 
         # Update the tracker with the new information
         self._update_tracker()
@@ -567,16 +710,16 @@ class Engine:
 
         # Change status if required
         if (
-            show['total'] and
-            show['my_progress'] == show['total'] and
-            show['my_score'] and
-            self.mediainfo.get('can_status') and
-            self.config['auto_status_change'] and
-            self.config['auto_status_change_if_scored'] and
-            self.mediainfo.get('status_finish')
+                show['total'] and
+                show['my_progress'] == show['total'] and
+                show['my_score'] and
+                self.mediainfo.get('can_status') and
+                self.config['auto_status_change'] and
+                self.config['auto_status_change_if_scored'] and
+                self.mediainfo.get('statuses_finish')
         ):
             try:
-                self.set_status(show['id'], self.mediainfo['status_finish'])
+                self.set_status(show['id'], self._guess_new_finish(show))
             except utils.EngineError as e:
                 # Only warn about engine errors since status change here is not crtical
                 self.msg.warn(self.name, 'Updated episode but status wasn\'t changed: %s' % e)
@@ -658,6 +801,7 @@ class Engine:
         # Emit signal
         self._emit_signal('show_deleted', show)
 
+<<<<<<< HEAD
     def _search_video(self, titles, episode):
         # DEPRECATED !!!
         self.msg.debug(self.name, "DEPRECATED: _search_video")
@@ -723,6 +867,8 @@ class Engine:
         self.msg.info(self.name, "Time: %s" % (time.time() - t))
         return results
 
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def library(self):
         return self.data_handler.library_get()
 
@@ -731,11 +877,15 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
         if not self.config['searchdir']:
+<<<<<<< HEAD
             raise utils.EngineError('Media directory is not set.')
 
         searchdir = utils.expand_path(self.config['searchdir'])
         if not utils.dir_exists(searchdir):
             raise utils.EngineError('The set media directory ({}) doesn\'t exist.'.format(searchdir))
+=======
+            raise utils.EngineError('Media directories not set.')
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
         t = time.time()
         library = {}
@@ -745,6 +895,7 @@ class Engine:
             if self.config['scan_whole_list']:
                 my_status = self.mediainfo['statuses']
             else:
+<<<<<<< HEAD
                 my_status = self.mediainfo['status_start']
 
         self.msg.info(self.name, "Scanning local library...")
@@ -757,10 +908,29 @@ class Engine:
             if self.config['library_full_path']:
                 filename = self._get_show_name_from_full_path(fullpath).strip()
             (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
+=======
+                my_status = self.mediainfo.get('statuses_library', self.mediainfo['statuses_start'])
 
-        self.msg.debug(self.name, "Time: %s" % (time.time() - t))
-        self.data_handler.library_save(library)
-        self.data_handler.library_cache_save(library_cache)
+        if rescan:
+            self.msg.info(self.name, "Scanning local library (overriding cache)...")
+        else:
+            self.msg.info(self.name, "Scanning local library...")
+
+        tracker_list = self._get_tracker_list(my_status)
+
+        for searchdir in self.searchdirs:
+            self.msg.debug(self.name, "Directory: %s" % searchdir)
+
+            # Do a full listing of the media directory
+            for fullpath, filename in utils.regex_find_videos(searchdir):
+                if self.config['library_full_path']:
+                    filename = self._get_show_name_from_full_path(searchdir, fullpath).strip()
+                (library, library_cache) = self._add_show_to_library(library, library_cache, rescan, fullpath, filename, tracker_list)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
+
+            self.msg.debug(self.name, "Time: %s" % (time.time() - t))
+            self.data_handler.library_save(library)
+            self.data_handler.library_cache_save(library_cache)
         return library
 
     def remove_from_library(self, path, filename):
@@ -817,11 +987,24 @@ class Engine:
                 if show:
                     self.msg.debug(self.name, "Adding to library: {}".format(fullpath))
 
+<<<<<<< HEAD
                     show_id = show['id']
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                     if show_ep_start == show_ep_end:
-                        library_cache[filename] = (show['id'], show_ep_start)
+                        # TODO : Support redirections for episode ranges
+                        (show, show_ep) = utils.redirect_show((show, show_ep_start), self.redirections, tracker_list)
+                        show_ep_end = show_ep_start = show_ep
+
+                        self.msg.debug(self.name, "Redirected to {} {}".format(show['title'], show_ep))
+                        library_cache[filename] = (show['id'], show_ep)
                     else:
                         library_cache[filename] = (show['id'], (show_ep_start, show_ep_end))
+<<<<<<< HEAD
+=======
+
+                    show_id = show['id']
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                 else:
                     self.msg.debug(self.name, "Not a show, skipping: {}".format(fullpath))
                     library_cache[filename] = None
@@ -835,6 +1018,7 @@ class Engine:
                 library[show_id] = {}
             for show_ep in range(show_ep_start, show_ep_end+1):
                 library[show_id][show_ep] = fullpath
+
         return library, library_cache
 
     def get_episode_path(self, show, episode):
@@ -899,6 +1083,7 @@ class Engine:
             if show['total'] and playep > show['total']:
                 raise utils.EngineError('Episode beyond limits.')
 
+<<<<<<< HEAD
             if self.config.get('debug_oldsearch'):
                 # Deprecated
                 self.msg.info(self.name, "Searching for %s %s..." % (show['title'], playep))
@@ -908,6 +1093,11 @@ class Engine:
                 self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
                 filename = self.get_episode_path(show, playep)
                 endep = playep
+=======
+            self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
+            filename = self.get_episode_path(show, playep)
+            endep = playep
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
@@ -963,7 +1153,7 @@ class Engine:
 
     def list_upload(self):
         """Asks the data handler to upload the unsynced changes in the queue."""
-        result = self.data_handler.process_queue()
+        self.data_handler.process_queue()
         #for show in result:
         #    self._emit_signal('episode_changed', show)
 
@@ -971,9 +1161,84 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
+<<<<<<< HEAD
     def _get_show_name_from_full_path(self, fullpath):
         """Joins the directory name with the file name to return the show name."""
         searchdir = utils.expand_path(self.config['searchdir'])
         relative = fullpath[len(searchdir):]
         
         return relative.replace(os.path.sep, " ")
+=======
+    def _get_show_name_from_full_path(self, searchdir, fullpath):
+        """Joins the directory name with the file name to return the show name."""
+        relative = fullpath[len(searchdir):]
+        return relative.replace(os.path.sep, " ")
+
+    def _searchdir_exists(self, path):
+        """Variation of dir_exists that warns the user if the path doesn't exist."""
+        if not utils.dir_exists(path):
+            self.msg.warn(self.name, "The specified media directory {} doesn't exist!".format(path))
+            return False
+        return True
+
+    def _guess_new_finish(self, show):
+        try:
+            # Use corresponding finish status if we're already in a start status
+            new_index = self.mediainfo['statuses_start'].index(show['my_status'])
+            new_status = self.mediainfo['statuses_finish'][new_index]
+        except ValueError:
+            new_status = self.mediainfo['statuses_finish'][0]
+        except IndexError:
+            new_status = self.mediainfo['statuses_finish'][-1]
+
+        return new_status
+
+    def _guess_new_start(self, show):
+        try:
+            # Use following start status if we're already in a finish status
+            new_index = self.mediainfo['statuses_finish'].index(show['my_status'])
+            new_status = self.mediainfo['statuses_start'][new_index+1]
+        except ValueError:
+            new_status = self.mediainfo['statuses_start'][0]
+        except IndexError:
+            new_status = self.mediainfo['statuses_start'][-1]
+
+        return new_status
+
+    def _get_tracker_class(self, ttype):
+        # Choose the tracker we want to tart
+        if ttype == 'plex':
+            from trackma.tracker.plex import PlexTracker
+            return PlexTracker
+        elif ttype == 'mpris':
+            from trackma.tracker.mpris import MPRISTracker
+            return MPRISTracker
+        elif ttype == 'inotify_auto':
+            try:
+                return self._get_tracker_class('pyinotify')
+            except ImportError:
+                return self._get_tracker_class('inotify')
+        elif ttype == 'pyinotify':
+            from trackma.tracker.pyinotify import pyinotifyTracker
+            return pyinotifyTracker
+        elif ttype == 'inotify':
+            from trackma.tracker.inotify import inotifyTracker
+            return inotifyTracker
+        elif ttype == 'win32':
+            from trackma.tracker.win32 import Win32Tracker
+            return Win32Tracker
+        elif ttype == 'polling':
+            from trackma.tracker.polling import PollingTracker
+            return PollingTracker
+        else:
+            # Guess the working tracker
+            if os.name == 'nt':
+                return self._get_tracker_class('win32')
+
+            # Try trackers in this order: pyinotify, inotify, polling
+            try:
+                return self._get_tracker_class('inotify_auto')
+            except ImportError:
+                return self._get_tracker_class('polling')
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34

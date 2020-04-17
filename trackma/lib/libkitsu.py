@@ -72,12 +72,22 @@ class libkitsu(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+<<<<<<< HEAD
         'status_start': 'current',
         'status_finish': 'completed',
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
         'score_step': 0.5,
+=======
+        'statuses_start': ['current'],
+        'statuses_finish': ['completed'],
+        'statuses_library': ['current', 'on_hold', 'planned'],
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
+        'score_max': 5,
+        'score_step': 0.25,
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -87,12 +97,21 @@ class libkitsu(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
+<<<<<<< HEAD
         'status_start': 'current',
         'status_finish': 'completed',
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
         'score_step': 0.5,
+=======
+        'statuses_start': ['current'],
+        'statuses_finish': ['completed'],
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
+        'score_max': 5,
+        'score_step': 0.25,
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     }
     mediatypes['drama'] = {
         'has_progress': True,
@@ -102,12 +121,21 @@ class libkitsu(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
+<<<<<<< HEAD
         'status_start': 'current',
         'status_finish': 'completed',
         'statuses': default_statuses,
         'statuses_dict': default_statuses_dict,
         'score_max': 5,
         'score_step': 0.5,
+=======
+        'statuses_start': ['current'],
+        'statuses_finish': ['completed'],
+        'statuses': default_statuses,
+        'statuses_dict': default_statuses_dict,
+        'score_max': 5,
+        'score_step': 0.25,
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     }
 
     url    = 'https://kitsu.io/api'
@@ -297,15 +325,26 @@ class libkitsu(lib):
                     #showid = int(entry['relationships'][self.mediatype]['data']['id'])
                     showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
+<<<<<<< HEAD
                     rating = entry['attributes']['rating']
+=======
+                    rating = entry['attributes']['ratingTwenty']
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
                     showlist[showid] = utils.show()
                     showlist[showid].update({
                         'id': showid,
                         'my_id': entry['id'],
                         'my_progress': entry['attributes']['progress'],
+<<<<<<< HEAD
                         'my_score': float(rating) if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
+=======
+                        'my_score': float(rating)/4.00 if rating is not None else 0.0,
+                        'my_status': entry['attributes']['status'],
+                        'my_start_date': self._iso2date(entry['attributes']['startedAt']),
+                        'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                     })
 
                 if 'included' in data_json:
@@ -321,7 +360,13 @@ class libkitsu(lib):
 
             return showlist
         except urllib.request.HTTPError as e:
+<<<<<<< HEAD
             raise utils.APIError("Error getting list.")
+=======
+            raise utils.APIError("Error getting list (HTTPError): %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("Error getting list (URLError): %s" % e.reason)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def merge(self, show, info):
         show['title']   = info['title']
@@ -355,6 +400,11 @@ class libkitsu(lib):
             return int(data_json['data']['id'])
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
+<<<<<<< HEAD
+=======
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error adding: ' + str(e.reason))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def update_show(self, item):
         """Sends a show update to the server"""
@@ -367,6 +417,11 @@ class libkitsu(lib):
             self._request('PATCH', self.prefix + "/library-entries/%s" % item['my_id'], body=data, auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
+<<<<<<< HEAD
+=======
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error updating: ' + str(e.reason))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def delete_show(self, item):
         """Sends a show delete to the server"""
@@ -377,8 +432,15 @@ class libkitsu(lib):
             self._request('DELETE', self.prefix + "/library-entries/%s" % item['my_id'], auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
+<<<<<<< HEAD
 
     def search(self, query):
+=======
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error deleting: ' + str(e.reason))
+
+    def search(self, query, method):
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         self.msg.info(self.name, "Searching for %s..." % query)
 
         values = {
@@ -403,6 +465,11 @@ class libkitsu(lib):
             return infolist
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
+<<<<<<< HEAD
+=======
+        except urllib.error.URLError as e:
+            raise utils.APIError('Error searching: ' + str(e.reason))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def _build_data(self, item):
         values = {'data': {
@@ -433,7 +500,11 @@ class libkitsu(lib):
         if 'my_status' in item:
             values['data']['attributes']['status'] = item['my_status']
         if 'my_score' in item:
+<<<<<<< HEAD
             values['data']['attributes']['rating'] = item['my_score'] or None
+=======
+            values['data']['attributes']['ratingTwenty'] = int(item['my_score']*4) or None
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
         return json.dumps(values)
 
@@ -447,6 +518,19 @@ class libkitsu(lib):
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None # Ignore date if it's invalid
 
+<<<<<<< HEAD
+=======
+    def _iso2date(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        except:
+            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            return None # Ignore date if it's invalid            
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def _guess_status(self, start_date, end_date):
         # Try to guess show status by checking start and end dates
         now = datetime.datetime.now()

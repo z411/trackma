@@ -1,0 +1,10 @@
+[MASTER]
+persistent=no
+jobs=4
+extension-pkg-whitelist=PyQt5
+disable=
+	invalid-name,
+	# TODO: Following disables should be removed
+	bad-whitespace,
+	line-too-long,
+	missing-docstring

@@ -14,24 +14,56 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, re, shutil, copy
-import subprocess
+import os
+import re
+import shutil
+import copy
 import datetime
 import json
 import difflib
 import pickle
 import uuid
 
+<<<<<<< HEAD
 VERSION = '0.7.6'
+=======
+VERSION = '0.8.2'
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
-datadir = os.path.dirname(__file__)
+DATADIR = os.path.dirname(__file__) + '/data'
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
 
+STATUS_UNKNOWN = 0
 STATUS_AIRING = 1
 STATUS_FINISHED = 2
 STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
+STATUS_OTHER = 100
+
+TYPE_UNKNOWN = 0
+TYPE_TV = 1
+TYPE_MOVIE = 2
+TYPE_OVA = 3
+TYPE_SP = 4
+TYPE_OTHER = 100
+
+TRACKER_NOVIDEO = 0
+TRACKER_PLAYING = 1
+TRACKER_UNRECOGNIZED = 2
+TRACKER_NOT_FOUND = 3
+TRACKER_IGNORED = 4
+
+SEASON_WINTER = 1
+SEASON_SPRING = 2
+SEASON_SUMMER = 3
+SEASON_FALL = 4
+
+SEARCH_METHOD_KW = 1
+SEARCH_METHOD_SEASON = 2
+
+HOME = os.path.expanduser("~")
+EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
 
 TRACKER_NOVIDEO = 0
 TRACKER_PLAYING = 1
@@ -41,6 +73,7 @@ TRACKER_IGNORED = 4
 
 # Put the available APIs here
 available_libs = {
+<<<<<<< HEAD
     'anilist':  ('Anilist',      datadir + '/data/anilist.jpg',     LOGIN_OAUTH,
             "http://omaera.org/trackma/anilistv2",
             "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
@@ -49,8 +82,26 @@ available_libs = {
     'mal':      ('MyAnimeList',  datadir + '/data/mal.jpg',         LOGIN_PASSWD),
     'shikimori':('Shikimori',    datadir + '/data/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         datadir + '/data/vndb.jpg',        LOGIN_PASSWD),
+=======
+    'anilist':  ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
+                 "https://omaera.org/trackma/anilistv2",
+                 "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
+                ),
+    'kitsu':    ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
+    'mal':      ('MyAnimeList',  DATADIR + '/mal.jpg',         LOGIN_PASSWD),
+    'shikimori':('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
+    'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 }
 
+available_trackers = [
+    ('auto', 'Auto-detect'),
+    ('inotify_auto', 'inotify'),
+    ('polling', 'Polling (lsof)'),
+    ('mpris', 'MPRIS'),
+    ('plex', 'Plex Media Server'),
+    ('win32', 'Win32'),
+]
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -93,26 +144,32 @@ def save_data(data, filename):
         pickle.dump(data, datafile, protocol=2)
 
 def log_error(msg):
-    with open(get_root_filename('error.log'), 'a') as logfile:
+    with open(to_data_path('error.log'), 'a') as logfile:
         logfile.write(msg)
 
 def expand_path(path):
     return os.path.expanduser(path)
 
+<<<<<<< HEAD
 def regex_find_videos(extensions, subdirectory=''):
     __re = re.compile(extensions, re.I)
+=======
+def expand_paths(paths):
+    return (expand_path(path) for path in paths)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
+def is_media(filename):
+    return os.path.splitext(filename)[1] in EXTENSIONS
+
+def regex_find_videos(subdirectory=''):
     if subdirectory:
         path = os.path.expanduser(subdirectory)
     else:
         path = os.getcwd()
+
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
-            # Filename manipulation
-
-            extension = os.path.splitext(filename)[1][1:]
-            match = __re.match(extension)
-            if match:
+            if is_media(filename):
                 yield ( os.path.join(root, filename), filename )
 
 def regex_rename_files(pattern, source_dir, dest_dir):
@@ -129,10 +186,9 @@ def list_library(path):
         for filename in names:
             yield ( os.path.join(root, filename), filename )
 
-def make_dir(directory):
-    path = os.path.expanduser(os.path.join('~', '.trackma', directory))
+def make_dir(path):
     if not os.path.isdir(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 def dir_exists(dirname):
     return os.path.isdir(dirname)
@@ -140,23 +196,39 @@ def dir_exists(dirname):
 def file_exists(filename):
     return os.path.isfile(filename)
 
+def try_files(filenames):
+    for filename in filenames:
+        if file_exists(filename):
+            return filename
+
+    return None
+
 def copy_file(src, dest):
     shutil.copy(src, dest)
 
-def get_filename(subdir, filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', subdir, filename))
+def to_config_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
 
-def get_root_filename(filename):
-    return os.path.expanduser(os.path.join('~', '.trackma', filename))
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.join(HOME, ".config")), "trackma", *paths)
 
-def get_root():
-    return os.path.expanduser(os.path.join('~', '.trackma'))
+def to_data_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", *paths)
+
+    return os.path.join(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share")), "trackma", *paths)
+
+def to_cache_path(*paths):
+    if dir_exists(os.path.join(HOME, ".trackma")):
+        return os.path.join(HOME, ".trackma", "cache", *paths)
+
+    return os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "trackma", *paths)
 
 def change_permissions(filename, mode):
     os.chmod(filename, mode)
 
 def estimate_aired_episodes(show):
-    # Estimate how many episodes have passed since airing
+    """ Estimate how many episodes have passed since airing """
 
     if show['status'] == STATUS_FINISHED:
         return show['total']
@@ -171,12 +243,22 @@ def estimate_aired_episodes(show):
                 return 0
 
             eps = days // 7 + 1
-            if eps > show['total'] and show['total'] > 0:
+            if show['total'] and eps > show['total']:
                 return show['total']
             return eps
     return 0
 
 def guess_show(show_title, tracker_list):
+    """ Take a title and search for it fuzzily in the tracker list """
+    (showlist, altnames_map) = tracker_list
+
+    # Return the show immediately if we find an altname for it
+    if altnames_map and show_title.lower() in altnames_map:
+        showid = altnames_map[show_title.lower()]
+
+        if showid in showlist:
+            return showlist[showid]
+
     # Use difflib to see if the show title is similar to
     # one we have in the list
     highest_ratio = (None, 0)
@@ -185,7 +267,7 @@ def guess_show(show_title, tracker_list):
 
     # Compare to every show in our list to see which one
     # has the most similar name
-    for item in tracker_list:
+    for item in showlist.values():
         # Make sure to search through all the aliases
         for title in item['titles']:
             matcher.set_seq2(title.lower())
@@ -197,6 +279,27 @@ def guess_show(show_title, tracker_list):
     if highest_ratio[1] > 0.7:
         return playing_show
 
+def redirect_show(show_tuple, redirections, tracker_list):
+    """ Use a redirection dictionary and return the new show ID and episode acordingly """
+    if not redirections:
+        return show_tuple
+
+    (show, ep) = show_tuple
+    showlist = tracker_list[0]
+
+    if show['id'] in redirections:
+        for redirection in redirections[show['id']]:
+            (src_eps, dst_id, dst_eps) = redirection
+
+            if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
+                new_show_id = dst_id
+                new_ep = ep + (dst_eps[0] - src_eps[0])
+
+                if new_show_id in showlist:
+                    return (showlist[new_show_id], new_ep)
+
+    return show_tuple
+
 def get_terminal_size(fd=1):
     """
     Returns height and width of current terminal. First tries to get
@@ -206,7 +309,9 @@ def get_terminal_size(fd=1):
     :param fd: file descriptor (default: 1=stdout)
     """
     try:
-        import fcntl, termios, struct
+        import fcntl
+        import termios
+        import struct
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
     except:
         try:
@@ -236,7 +341,6 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
-        'neweps':       False,
     }
 
 class TrackmaError(Exception):
@@ -269,7 +373,7 @@ class APIFatal(TrackmaFatal):
 # Configuration defaults
 config_defaults = {
     'player': 'mpv',
-    'searchdir': '/home/user/Videos',
+    'searchdir': ['~/Videos'],
     'tracker_enabled': True,
     'tracker_update_wait_s': 120,
     'tracker_update_close': False,
@@ -277,6 +381,7 @@ config_defaults = {
     'tracker_not_found_prompt': False,
     'tracker_interval': 10,
     'tracker_process': 'mplayer|mplayer2|mpv',
+    'tracker_ignore_not_next': True,
     'autoretrieve': 'days',
     'autoretrieve_days': 3,
     'autosend': 'minutes',
@@ -290,13 +395,17 @@ config_defaults = {
     'auto_status_change': True,
     'auto_status_change_if_scored': True,
     'auto_date_change': True,
-    'tracker_type': "local",
+    'tracker_type': "auto",
     'plex_host': "localhost",
     'plex_port': "32400",
     'plex_obey_update_wait_s': False,
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+<<<<<<< HEAD
+=======
+    'use_hooks': True,
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 }
 userconfig_defaults = {
     'mediatype': '',
@@ -316,7 +425,11 @@ curses_defaults = {
         'openfolder': 'o',
         'play_random': '&',
         'status': 'f6',
+<<<<<<< HEAD
         'score': 'k',
+=======
+        'score': 'z',
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         'send': 's',
         'retrieve': 'R',
         'addsearch': 'a',
@@ -330,6 +443,12 @@ curses_defaults = {
         'details': 'enter',
         'details_exit': 'esc',
         'open_web': 'O',
+        'left': 'h',
+        'up': 'k',
+        'down': 'j',
+        'right': 'l',
+        'page_up': 'K',
+        'page_down': 'J',
     },
     'palette': {
         'body':             ('', ''),
@@ -388,7 +507,8 @@ qt_defaults = {
     'last_width': 740,
     'last_height': 480,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
-    'columns_state': {},
+    'inline_edit': True,
+    'columns_state': None,
     'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
@@ -412,5 +532,5 @@ qt_defaults = {
 
 qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
-    'columns_state': {},
+    'columns_state': None,
 }

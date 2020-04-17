@@ -45,8 +45,9 @@ class libshikimori(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'status_start': 1,
-        'status_finish': 2,
+        'statuses_start': [1, 9],
+        'statuses_finish': [2],
+        'statuses_library': [1, 3, 0],
         'statuses':  [1, 2, 3, 9, 4, 0],
         'statuses_dict': {
             1: 'Watching',
@@ -67,8 +68,8 @@ class libshikimori(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
-        'status_start': 1,
-        'status_finish': 2,
+        'statuses_start': [1, 9],
+        'statuses_finish': [2],
         'statuses':  [1, 2, 3, 9, 4, 0],
         'statuses_dict': {
             1: 'Reading',
@@ -146,9 +147,11 @@ class libshikimori(lib):
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
-                raise utils.APIError("400")
+                raise utils.APIError("HTTP error code 400")
             else:
-                raise utils.APIError("Connection error: %s" % e)
+                raise utils.APIError("HTTP error code: %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("HTTP connection error: %s" % e.reason)
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
         except ValueError:
@@ -241,7 +244,7 @@ class libshikimori(lib):
 
         data = self._request("DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
         self.msg.info(self.name, "Searching for {}...".format(criteria))
@@ -265,7 +268,7 @@ class libshikimori(lib):
                 'type': item.get('kind', ''),
                 #'status': item[self.airing_str],
                 'status': 0,
-                'my_status': self.media_info()['status_start'],
+                'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
                 'image': self.url + item['image']['original'],
                 'image_thumb': self.url + item['image']['preview'],

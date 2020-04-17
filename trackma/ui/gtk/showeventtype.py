@@ -14,12 +14,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-os.environ['PYQT4'] = 'True'
-from trackma.ui import qtui
+from gi.repository import GObject
 
-def main():
-    qtui.main()
 
-if __name__ == '__main__':
-    main()
+class ShowEventType(GObject.GEnum):
+    NONE = 0
+    DETAILS = 1
+    OPEN_WEBSITE = 2
+    OPEN_FOLDER = 3
+    COPY_TITLE = 4
+    CHANGE_ALTERNATIVE_TITLE = 5
+    REMOVE = 6
+    PLAY_NEXT = 7
+    PLAY_EPISODE = 8
+    PLAY_RANDOM = 9
+    EPISODE_ADD = 10
+    EPISODE_SET = 11
+    EPISODE_REMOVE = 12
+    SET_SCORE = 13
+    SET_STATUS = 14

@@ -36,7 +36,11 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
+<<<<<<< HEAD
     api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.0', 'merge': False }
+=======
+    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.1', 'merge': False }
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -48,6 +52,7 @@ class libanilist(lib):
         'can_play': True,
         'can_date': True,
         'date_next_ep': True,
+<<<<<<< HEAD
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
         'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -55,11 +60,23 @@ class libanilist(lib):
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
             'PAUSED': 'On Hold',
+=======
+        'statuses_start': ['CURRENT', 'REPEATING'],
+        'statuses_finish': ['COMPLETED'],
+        'statuses_library': ['CURRENT', 'REPEATING', 'PAUSED', 'PLANNING'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses_dict': {
+            'CURRENT': 'Watching',
+            'COMPLETED': 'Completed',
+            'REPEATING': 'Rewatching',
+            'PAUSED': 'Paused',
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Watch'
         },
         'score_max': 100,
         'score_step': 1,
+        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -70,6 +87,7 @@ class libanilist(lib):
         'can_update': True,
         'can_play': False,
         'can_date': True,
+<<<<<<< HEAD
         'status_start': 'CURRENT',
         'status_finish': 'COMPLETED',
         'statuses':  ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
@@ -77,11 +95,22 @@ class libanilist(lib):
             'CURRENT': 'Watching',
             'COMPLETED': 'Completed',
             'PAUSED': 'On Hold',
+=======
+        'statuses_start': ['CURRENT', 'REPEATING'],
+        'statuses_finish': ['COMPLETED'],
+        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses_dict': {
+            'CURRENT': 'Reading',
+            'COMPLETED': 'Completed',
+            'REPEATING': 'Rereading',
+            'PAUSED': 'Paused',
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Read'
         },
         'score_max': 100,
         'score_step': 1,
+        'search_methods': [utils.SEARCH_METHOD_KW],
     }
     default_mediatype = 'anime'
 
@@ -93,8 +122,38 @@ class libanilist(lib):
         'POINT_3': (3, 1),
     }
 
+<<<<<<< HEAD
     release_formats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC', 'MANGA', 'NOVEL', 'ONE_SHOT']
 
+=======
+    type_translate = {
+        'TV': utils.TYPE_TV,
+        'TV_SHORT': utils.TYPE_TV,
+        'MOVIE': utils.TYPE_MOVIE,
+        'SPECIAL': utils.TYPE_SP,
+        'OVA': utils.TYPE_OVA,
+        'ONA': utils.TYPE_OVA,
+        'MUSIC': utils.TYPE_OTHER,
+        'MANGA': utils.TYPE_OTHER,
+        'NOVEL': utils.TYPE_OTHER,
+        'ONE_SHOT': utils.TYPE_OTHER,
+    }
+
+    status_translate = {
+            'RELEASING': utils.STATUS_AIRING,
+            'FINISHED': utils.STATUS_FINISHED,
+            'NOT_YET_RELEASED': utils.STATUS_NOTYET,
+            'CANCELLED': utils.STATUS_CANCELLED,
+    }
+
+    season_translate = {
+        utils.SEASON_WINTER: 'WINTER',
+        utils.SEASON_SPRING: 'SPRING',
+        utils.SEASON_SUMMER: 'SUMMER',
+        utils.SEASON_FALL: 'FALL',
+    }
+ 
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     # Supported signals for the data handler
     signals = { 'show_info_changed': None, }
 
@@ -117,6 +176,7 @@ class libanilist(lib):
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes_watched"
+<<<<<<< HEAD
         self.status_translate = {
             'RELEASING': utils.STATUS_AIRING,
             'FINISHED': utils.STATUS_FINISHED,
@@ -124,6 +184,9 @@ class libanilist(lib):
             'CANCELLED': utils.STATUS_CANCELLED,
         }
         
+=======
+       
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         # If we already know the scoreFormat of the cached list, apply it now
         self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
         if self.scoreformat:
@@ -156,9 +219,17 @@ class libanilist(lib):
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
+<<<<<<< HEAD
                 raise utils.APIError("Invalid request: %s" % e.read())
             else:
                 raise utils.APIError("Connection error: %s" % e.read())
+=======
+                raise utils.APIError("Invalid HTTP request: %s" % e.read())
+            else:
+                raise utils.APIError("HTTP error status: %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("HTTP connection error: %s" % e.reason)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
 
@@ -167,9 +238,15 @@ class libanilist(lib):
             data = {'query': query, 'variables': variables}
         else:
             data = {'query': query}
+<<<<<<< HEAD
 
         return self._raw_request('POST', self.query_url, jsonpost=data, auth=True)
 
+=======
+
+        return self._raw_request('POST', self.query_url, jsonpost=data, auth=True)
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def check_credentials(self):
         if len(self.pin) == 40:  # Old pins were 40 digits, new ones seem to be 654 digits
             raise utils.APIFatal("This appears to be a V1 API PIN. You need a V2 API PIN to continue using AniList."
@@ -200,7 +277,10 @@ class libanilist(lib):
     lists {
       name
       isCustomList
+<<<<<<< HEAD
       isSplitCompletedList
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
       status
       entries {
         ... mediaListEntry
@@ -223,6 +303,10 @@ fragment mediaListEntry on MediaList {
   media {
     id
     title { userPreferred romaji english native }
+<<<<<<< HEAD
+=======
+    synonyms
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     coverImage { large medium }
     format
     status
@@ -251,24 +335,40 @@ fragment mediaListEntry on MediaList {
 
         for remotelist in data['lists']:
             my_status = remotelist['status']
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             if my_status not in self.media_info()['statuses']:
                 continue
             if remotelist['isCustomList']:
                 continue  # Maybe do something with this later
+<<<<<<< HEAD
             if remotelist['isSplitCompletedList']:
                 continue  # Maybe do something with this later
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             for item in remotelist['entries']:
                 show = utils.show()
                 media = item['media']
                 showid = media['id']
+<<<<<<< HEAD
                 aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                 showdata = {
                     'my_id': item['id'],
                     'id': showid,
                     'title': media['title']['userPreferred'],
+<<<<<<< HEAD
                     'aliases': aliases,
                     'type': media['format'],  # Need to reformat output
                     'status': self.status_translate[media['status']],
+=======
+                    'aliases': self._get_aliases(media),
+                    'type': self._translate_type(media['format']),
+                    'status': self._translate_status(media['status']),
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
                     'my_score': self._c(item['score']),
@@ -340,6 +440,7 @@ fragment mediaListEntry on MediaList {
         variables = {'id': item['my_id']}
         self._request(query, variables)
 
+<<<<<<< HEAD
     def search(self, criteria):
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
@@ -388,8 +489,49 @@ fragment mediaListEntry on MediaList {
                 showdata['my_score'] = self._c(media['mediaListEntry']['score'])
             show.update({k:v for k,v in showdata.items() if v})
             showlist.append(show)
+=======
+    def search(self, criteria, method):
+        self.check_credentials()
+        self.msg.info(self.name, "Searching for {}...".format(criteria))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
-        return showlist
+        if method == utils.SEARCH_METHOD_KW:
+            query = "query ($query: String, $type: MediaType) { Page { media(search: $query, type: $type) {"
+            variables = {'query': urllib.parse.quote_plus(criteria)}
+        elif method == utils.SEARCH_METHOD_SEASON:
+            season, seasonYear = criteria
+            
+            query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
+            variables = {'season': self.season_translate[season], 'seasonYear': seasonYear}
+
+        query += '''
+      id
+      title { userPreferred romaji english native }
+      coverImage { medium large }
+      format
+      averageScore
+      chapters episodes
+      status
+      startDate { year month day }
+      endDate { year month day }
+      siteUrl
+      description
+      genres
+      synonyms
+      averageScore
+      studios(sort: NAME, isMain: true) { nodes { name } }
+    }
+  }
+}'''
+        variables['type'] = self.mediatype.upper()
+        data = self._request(query, variables)['data']['Page']['media']
+
+        infolist = []
+        for media in data:
+            infolist.append(self._parse_info(media))
+
+        self._emit_signal('show_info_changed', infolist)
+        return infolist
 
     def request_info(self, itemlist):
         self.check_credentials()
@@ -411,6 +553,10 @@ fragment mediaListEntry on MediaList {
       genres
       synonyms
       averageScore
+<<<<<<< HEAD
+=======
+      studios(sort: NAME, isMain: true) { nodes { name } }
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
   }
 }'''
 
@@ -429,11 +575,21 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
+        
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
+<<<<<<< HEAD
             'status': self.status_translate[item['status']],
             'image': item['coverImage']['large'],
+=======
+            'total': self._c(item[self.total_str]),
+            'aliases': self._get_aliases(item),
+            'type': self._translate_type(item['format']),
+            'status': self._translate_status(item['status']),
+            'image': item['coverImage']['large'],
+            'image_thumb': item['coverImage']['medium'],
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             'url': item['siteUrl'],
             'start_date': self._dict2date(item.get('startDate')),
             'end_date': self._dict2date(item.get('endDate')),
@@ -441,15 +597,24 @@ fragment mediaListEntry on MediaList {
                 ('English',         item['title'].get('english')),
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
+<<<<<<< HEAD
                 ('Synonyms',        item['title'].get('synonyms')),
                 #('Classification',  item.get('classification')),
+=======
+                ('Synonyms',        item.get('synonyms')),
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                 ('Genres',          item.get('genres')),
+                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
+<<<<<<< HEAD
                 ('Status',          self.status_translate[item['status']]),
                 #('Start Date',      item.get('start_date')),
                 #('End Date',        item.get('end_date')),
+=======
+                ('Status',          self._translate_status(item['status'])),
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             ]
         })
         return info
@@ -457,9 +622,30 @@ fragment mediaListEntry on MediaList {
     def _apply_scoreformat(self, fmt):
         media = self.media_info()
         (media['score_max'], media['score_step']) = self.score_types[fmt]
+<<<<<<< HEAD
 
     def _dict2date(self, item):
         if not item:
+=======
+    
+    def _get_aliases(self, item):
+        aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
+
+        return aliases
+
+    def _translate_type(self, orig_type):
+        return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
+
+    def _translate_status(self, orig_status):
+        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+
+    def _dict2date(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime(item['year'], item['month'], item['day'])
+        except (TypeError, ValueError):
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             return None
         try:
             return datetime.datetime(item['year'], item['month'], item['day'])
@@ -474,6 +660,17 @@ fragment mediaListEntry on MediaList {
         except (TypeError, ValueError):
             return {}
 
+<<<<<<< HEAD
+=======
+    def _date2dict(self, date):
+        if not date:
+            return {}
+        try:
+            return {'year': date.year, 'month': date.month, 'day': date.day}
+        except (TypeError, ValueError):
+            return {}
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def _score2raw(self, score):
         if score == 0:
             return 0

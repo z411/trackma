@@ -60,7 +60,11 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
+<<<<<<< HEAD
         self.config = utils.parse_config(utils.get_root_filename('ui-curses.json'), utils.curses_defaults)
+=======
+        self.config = utils.parse_config(utils.to_config_path('ui-curses.json'), utils.curses_defaults)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         keymap = utils.curses_defaults['keymap']
         keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
@@ -151,6 +155,12 @@ class Trackma_urwid():
                     'details': self.do_info,
                     'details_exit': self.do_info_exit,
                     'open_web': self.do_open_web,
+                    'left': self.key_left,
+                    'down': self.key_down,
+                    'up': self.key_up,
+                    'right': self.key_right,
+                    'page_down': self.key_page_down,
+                    'page_up': self.key_page_up,
                     }
 
         for func, keybind in keymap.items():
@@ -183,17 +193,29 @@ class Trackma_urwid():
 
         track_info = self.engine.tracker_status()
         if track_info:
+<<<<<<< HEAD
             self.tracker_state(track_info['state'], None)
+=======
+            self.tracker_state(track_info)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
         for status in self.filters_nums:
             self.lists[status] = urwid.ListBox(ShowWalker([]))
 
         self._rebuild_lists()
+<<<<<<< HEAD
         
         # Put the number of shows in every status in a list
         for status in self.filters_nums:
             self.filters_sizes.append(len(self.lists[status].body))
         
+=======
+
+        # Put the number of shows in every status in a list
+        for status in self.filters_nums:
+            self.filters_sizes.append(len(self.lists[status].body))
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         self.set_filter(0)
         self.status('Ready.')
         self.started = True
@@ -211,10 +233,7 @@ class Trackma_urwid():
         sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
-            if show['my_status'] == self.engine.mediainfo['status_start']:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
-            else:
-                item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']))
+            item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
 
             self.lists[show['my_status']].body.append(item)
 
@@ -276,6 +295,27 @@ class Trackma_urwid():
             # Unbinded key pressed; do nothing
             pass
 
+<<<<<<< HEAD
+=======
+    def key_left(self):
+        self.mainloop.process_input(['left'])
+
+    def key_down(self):
+        self.mainloop.process_input(['down'])
+
+    def key_up(self):
+        self.mainloop.process_input(['up'])
+
+    def key_right(self):
+        self.mainloop.process_input(['right'])
+
+    def key_page_down(self):
+        self.mainloop.process_input(['page down'])
+
+    def key_page_up(self):
+        self.mainloop.process_input(['page up'])
+
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def forget_account(self):
         manager = AccountManager()
         manager.set_default(None)
@@ -342,8 +382,20 @@ class Trackma_urwid():
             show = self.engine.get_show_info(item.showid)
             filename = self.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
+<<<<<<< HEAD
                 subprocess.Popen(["/usr/bin/xdg-open",
                 os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+=======
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")
@@ -502,15 +554,22 @@ class Trackma_urwid():
     def do_neweps(self):
         try:
             shows = self.engine.scan_library(rescan=True)
+<<<<<<< HEAD
             self._rebuild_lists(self.engine.mediainfo['status_start'])
+=======
+            self._rebuild_lists()
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
             self.status("Ready.")
         except utils.TrackmaError as e:
             self.error(e)
 
     def do_quit(self):
-        self.engine.unload()
-        raise urwid.ExitMainLoop()
+        if self.viewing_info:
+            self.do_info_exit()
+        else:
+            self.engine.unload()
+            raise urwid.ExitMainLoop()
 
     def addsearch_request(self, data):
         self.ask_finish(self.addsearch_request)
@@ -545,7 +604,7 @@ class Trackma_urwid():
             show = self.engine.get_show_info(showid)
 
             try:
-                show = self.engine.delete_show(show)
+                self.engine.delete_show(show)
             except utils.TrackmaError as e:
                 self.error(e)
 
@@ -650,11 +709,23 @@ class Trackma_urwid():
     def changed_queue(self, queue):
         self.status_queue.set_text("Q:{}".format(len(queue)))
 
+<<<<<<< HEAD
     def tracker_state(self, state, timer):
         if state == utils.TRACKER_NOVIDEO:
             st = 'LISTEN'
         elif state == utils.TRACKER_PLAYING:
             st = '+{}'.format(timer)
+=======
+    def tracker_state(self, status):
+        state = status['state']
+        timer = status['timer']
+        paused = status['paused']
+
+        if state == utils.TRACKER_NOVIDEO:
+            st = 'LISTEN'
+        elif state == utils.TRACKER_PLAYING:
+            st = '{}{}'.format('#' if paused else '+', timer)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         elif state == utils.TRACKER_UNRECOGNIZED:
             st = 'UNRECOG'
         elif state == utils.TRACKER_NOT_FOUND:
@@ -667,11 +738,14 @@ class Trackma_urwid():
         self.status_tracker.set_text("T:{}".format(st))
         self.mainloop.draw_screen()
 
+<<<<<<< HEAD
     def tracker_timer(self, timer):
         if timer is not None:
             self.status_tracker.set_text("T:+{}".format(timer))
             self.mainloop.draw_screen()
 
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     def playing_show(self, show, is_playing, episode=None):
         status = show['my_status']
         self.lists[status].body.playing_show(show, is_playing)
@@ -723,7 +797,7 @@ class Dialog(urwid.Overlay):
         self.widget = urwid.AttrMap(urwid.LineBox(widget, title=title), 'window')
         self.oldwidget = loop.widget
         self.loop = loop
-        self.__super.__init__(self.widget, loop.widget,
+        super().__init__(self.widget, loop.widget,
                 align="center",
                 width=width,
                 valign="middle",
@@ -765,7 +839,7 @@ class AddDialog(Dialog):
 
         self.info_txt = urwid.Text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
         self.frame = urwid.Frame(self.listbox, header=self.listheader, footer=self.info_txt)
-        self.__super.__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
+        super().__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
 
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
@@ -840,7 +914,7 @@ class AccountDialog(Dialog):
 
         self.foot = urwid.Text('enter:Use once  r:Use always  a:Add  D:Delete')
         self.frame = urwid.Frame(listbox, header=listheader, footer=self.foot)
-        self.__super.__init__(self.frame, loop, width=width, height=15, title='Select Account')
+        super().__init__(self.frame, loop, width=width, height=15, title='Select Account')
 
         self.adding = False
 
@@ -965,7 +1039,7 @@ class AccountItem(urwid.WidgetWrap):
             ('fixed', 15, urwid.Text(account['api'])),
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
-        self.__super.__init__(w)
+        super().__init__(w)
 
     def selectable(self):
         return True
@@ -982,7 +1056,7 @@ class SearchItem(urwid.WidgetWrap):
             ('fixed', 7, urwid.Text("%d" % show['total'])),
         ]
         w = urwid.AttrMap(urwid.Columns(self.item), 'window', 'focus')
-        self.__super.__init__(w)
+        super().__init__(w)
 
     def selectable(self):
         return True
@@ -1080,7 +1154,7 @@ class ShowItem(urwid.WidgetWrap):
 
         self.m = urwid.AttrMap(urwid.Columns(self.item), self.color, 'focus')
 
-        self.__super.__init__(self.m)
+        super().__init__(self.m)
 
     def get_showid(self):
         return self.showid

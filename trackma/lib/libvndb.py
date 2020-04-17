@@ -58,8 +58,8 @@ class libvndb(lib):
         'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
         'score_max': 10,
         'score_step': 0.1,
-        'status_start': 1,
-        'status_finish': 2,
+        'statuses_start': [1],
+        'statuses_finish': [2],
     }
     mediatypes['wishlist'] = {
         'has_progress': False,
@@ -73,8 +73,8 @@ class libvndb(lib):
         'statuses_dict': { 0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist' },
         'score_max': 10,
         'score_step': 0.1,
-        'status_start': None,
-        'status_finish': None,
+        'statuses_start': [],
+        'statuses_finish': [],
     }
 
     def __init__(self, messenger, account, userconfig):
@@ -216,11 +216,15 @@ class libvndb(lib):
 
             for item in data['items']:
                 vnid = item['vn']
-                try:
-                    vns[vnid]['my_score'] = (item['vote'] / 10.0)
-                except KeyError:
-                    # Ghost vote; ignore it
-                    pass
+                if vnid not in vns:
+                    # Ghost vote; create entry for it.
+                    vns[vnid] = utils.show()
+                    vns[vnid]['id'] = vnid
+                    vns[vnid]['url'] = self._get_url(vnid)
+                    vns[vnid]['my_status'] = 0
+
+                vns[vnid]['my_score'] = (item['vote'] / 10.0)
+                vns[vnid]['my_finish_date'] = datetime.datetime.fromtimestamp(item['added'])
 
             if not data['more']:
                 # No more VNs, finish
@@ -309,7 +313,7 @@ class libvndb(lib):
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
 
-    def search(self, criteria):
+    def search(self, criteria, method):
         self.check_credentials()
 
         results = list()

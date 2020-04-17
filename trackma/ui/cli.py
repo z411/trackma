@@ -23,13 +23,20 @@ try:
     has_readline = True
 except ImportError:
     has_readline = False
+<<<<<<< HEAD
     pass # readline is optional
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
 import cmd
 import shlex
 import textwrap
 import re
+<<<<<<< HEAD
 import getopt
+=======
+import argparse
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 from operator import itemgetter # Used for sorting list
 
 from trackma.engine import Engine
@@ -86,19 +93,38 @@ class Trackma_cmd(cmd.Cmd):
         'status':       2,
     }
 
+<<<<<<< HEAD
     def __init__(self, account_num=None, debug=False):
         print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
         print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
         print('This is free software, and you are welcome to redistribute it')
         print('under certain conditions; see the COPYING file for details.')
         print()
+=======
+    def __init__(self, account_num=None, debug=False, interactive=True):
+        super().__init__()
+
+        if interactive:
+            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
+            print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
+            print('This is free software, and you are welcome to redistribute it')
+            print('under certain conditions; see the COPYING file for details.')
+            print()
+
+        self.interactive = interactive
+        self.debug = debug
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
         self.debug = debug
 
         self.accountman = Trackma_accounts()
         if account_num:
             try:
+<<<<<<< HEAD
                 self.account = self.accountman.get_account(int(account_num))
+=======
+                self.account = self.accountman.get_account(account_num)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             except KeyError:
                 print("Account {} doesn't exist.".format(account_num))
                 self.account = self.accountman.select_account(True)
@@ -113,15 +139,15 @@ class Trackma_cmd(cmd.Cmd):
 
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
-                u  = self.engine.get_userconfig('username'),
-                a  = self.engine.api_info['shortname'],
-                mt = self.engine.api_info['mediatype'],
-                s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
-                c_r  = _PCOLOR_RESET,
-                c_u  = _PCOLOR_USER,
-                c_a  = _PCOLOR_API,
-                c_mt = _PCOLOR_MEDIATYPE,
-                c_s  = _COLOR_RESET
+            u  = self.engine.get_userconfig('username'),
+            a  = self.engine.api_info['shortname'],
+            mt = self.engine.api_info['mediatype'],
+            s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
+            c_r  = _PCOLOR_RESET,
+            c_u  = _PCOLOR_USER,
+            c_a  = _PCOLOR_API,
+            c_mt = _PCOLOR_MEDIATYPE,
+            c_s  = _COLOR_RESET
         )
 
     def _load_list(self, *args):
@@ -136,17 +162,24 @@ class Trackma_cmd(cmd.Cmd):
             index = int(title)-1
             return self.sortedlist[index][1]
         except (ValueError, AttributeError, IndexError):
-            return self.engine.get_show_info_title(title)
+            return self.engine.get_show_info(title=title)
 
     def _ask_update(self, show, episode):
         do = input("Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
         if do.lower() == 'y':
             self.engine.set_episode(show['id'], episode)
 
+<<<<<<< HEAD
     def _ask_add(self, show_title, episode):
         do = input("Should I search for the show {}? [y/N] ".format(show_title))
         if do.lower() == 'y':
             self.do_add([show_title])
+=======
+    def _ask_add(self, show, episode):
+        do = input("Should I search for the show {}? [y/N] ".format(show['title']))
+        if do.lower() == 'y':
+            self.do_add([show['title']])
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
     def start(self):
         """
@@ -154,8 +187,16 @@ class Trackma_cmd(cmd.Cmd):
 
         Creates an Engine object and starts it.
         """
-        print('Initializing engine...')
-        self.engine = Engine(self.account, self.messagehandler)
+
+        if self.interactive:
+            print('Initializing engine...')
+            self.engine = Engine(self.account, self.messagehandler)
+        else:
+            self.engine = Engine(self.account)
+            self.engine.set_config("tracker_enabled", False)
+            self.engine.set_config("library_autoscan", False)
+            self.engine.set_config("use_hooks", False)
+
         self.engine.connect_signal('show_added', self._load_list)
         self.engine.connect_signal('show_deleted', self._load_list)
         self.engine.connect_signal('status_changed', self._load_list)
@@ -167,12 +208,34 @@ class Trackma_cmd(cmd.Cmd):
         # Start with default filter selected
         self.filter_num = self.engine.mediainfo['statuses'][0]
         self._load_list()
-        self._update_prompt()
 
+        if self.interactive:
+            self._update_prompt()
+
+            print()
+            print("Ready. Type 'help' for a list of commands.")
+            print("Press tab for autocompletion and up/down for command history.")
+            self.do_filter(None) # Show available filters
+            print()
+        else:
+            # We set the message handler only after initializing
+            # so we still receive the important messages but avoid
+            # the initial spam.
+            self.engine.set_message_handler(self.messagehandler)
+
+    def do_about(self, args):
+        print("Trackma {}  by z411 (z411@omaera.org)".format(utils.VERSION))
+        print("Trackma is an open source client for media tracking websites.")
+        print("https://github.com/z411/trackma")
         print()
-        print("Ready. Type 'help' for a list of commands.")
-        print("Press tab for autocompletion and up/down for command history.")
-        self.do_filter(None) # Show available filters
+        print("This program is licensed under the GPLv3 and it comes with ASOLUTELY NO WARRANTY.")
+        print("Many contributors have helped to run this project; for more information see the AUTHORS file.")
+        print("For more information about the license, see the COPYING file.")
+        print()
+        print("If you encounter any problems please report them in https://github.com/z411/trackma/issues")
+        print()
+        print("This is the CLI version of Trackma. To see available commands type `help'.")
+        print("For other available interfaces please see the README file.")
         print()
 
     def do_about(self, args):
@@ -195,7 +258,7 @@ class Trackma_cmd(cmd.Cmd):
             try:
                 doc = getattr(self, 'do_' + arg).__doc__
                 if doc:
-                    (name, args, expl, usage) = self._parse_doc(arg, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(arg, doc)
 
                     print()
                     print(name)
@@ -210,6 +273,8 @@ class Trackma_cmd(cmd.Cmd):
                                 print("    {} (optional): {}".format(arg[0], arg[1]))
                     if usage:
                         print("\n  Usage: " + usage)
+                    for example in examples:
+                        print("  Example: " + example)
                     print()
                     return
             except AttributeError:
@@ -237,7 +302,6 @@ class Trackma_cmd(cmd.Cmd):
 
             names = self.get_names()
             names.sort()
-            cmds = []
             for name in names:
                 if name[:3] == 'do_':
                     doc = getattr(self, name).__doc__
@@ -245,12 +309,12 @@ class Trackma_cmd(cmd.Cmd):
                         continue
 
                     cmd = name[3:]
-                    (name, args, expl, usage) = self._parse_doc(cmd, doc)
+                    (name, args, expl, usage, examples) = self._parse_doc(cmd, doc)
 
                     line = " {0:>{1}} {2:{3}} {4}".format(
-                           name, CMD_LENGTH,
-                           '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
-                           expl[0])
+                        name, CMD_LENGTH,
+                        '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
+                        expl[0])
                     print(tw.fill(line))
 
             print()
@@ -351,8 +415,13 @@ class Trackma_cmd(cmd.Cmd):
             self.display_error(e)
             return
 
+<<<<<<< HEAD
         print(details['title'])
         print("-" * len(details['title']))
+=======
+        print(show['title'])
+        print("-" * len(show['title']))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         print(show['url'])
         print()
 
@@ -462,7 +531,11 @@ class Trackma_cmd(cmd.Cmd):
 
                 print("State: {}".format(state))
                 print("Filename: {}".format(info['filename'] or 'N/A'))
+<<<<<<< HEAD
                 print("Timer: {}".format(info['timer'] or 'N/A'))
+=======
+                print("Timer: {}{}".format(info['timer'] or 'N/A', ' [P]' if info['paused'] else ''))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
                 if info['show']:
                     (show, ep) = info['show']
                     print("Show: {}\nEpisode: {}".format(show['title'], ep))
@@ -487,20 +560,15 @@ class Trackma_cmd(cmd.Cmd):
 
             # If the user specified an episode, play it
             # otherwise play the next episode not watched yet
-            try:
+            if len(args) > 1:
                 episode = args[1]
-                if episode == (show['my_progress'] + 1):
-                    playing_next = True
-                else:
-                    playing_next = False
-            except IndexError:
-                playing_next = True
 
-            played_episode = self.engine.play_episode(show, episode)
+            self.engine.play_episode(show, episode)
         except utils.TrackmaError as e:
             self.display_error(e)
 
     def do_openfolder(self, args):
+<<<<<<< HEAD
         """
         Opens the folder containing the show
 
@@ -527,14 +595,62 @@ class Trackma_cmd(cmd.Cmd):
         :param show Show index or name.
         :optparam ep Episode number (numeric).
         :usage update <show index or name> [episode number]
+=======
         """
+        Opens the folder containing the show
+
+        :param show Show index or name.
+        :usage openfolder <show index or name>
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
+        """
+
         try:
             show = self._get_show(args[0])
+<<<<<<< HEAD
+=======
+            filename = self.engine.get_episode_path(show, 1)
+            with open(os.devnull, 'wb') as DEVNULL:
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+        except OSError:
+            # xdg-open failed.
+            self.display_error("Could not open folder.")
+        except utils.TrackmaError as e:
+            self.display_error(e)
+
+    def do_update(self, args):
+        """
+        Updates the progress of a show to the specified episode (next if unspecified).
+
+        :param show Show index, title or filename (prepend with file:).
+        :optparam ep Episode number (numeric).
+        :usage update <show index or name> [episode number]
+        :example update Toradora! 5
+        :example update 6
+        :example update file:filename.mkv
+        """
+        try:
+            if args[0][:5] == "file:":
+                (show, ep) = self.engine.get_show_info(filename=args[0][5:])
+            else:
+                (show, ep) = (self._get_show(args[0]), None)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 
             if len(args) > 1:
                 self.engine.set_episode(show['id'], args[1])
             else:
+<<<<<<< HEAD
                 self.engine.set_episode(show['id'], show['my_progress']+1)
+=======
+                self.engine.set_episode(show['id'], ep or show['my_progress']+1)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -595,7 +711,10 @@ class Trackma_cmd(cmd.Cmd):
         :usage altname <show index or name> <alternative name>
         """
         try:
+<<<<<<< HEAD
             altnames = self.engine.altnames()
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             show = self._get_show(args[0])
             altname = args[1] if len(args) > 1 else ''
             self.engine.altname(show['id'],altname)
@@ -643,7 +762,7 @@ class Trackma_cmd(cmd.Cmd):
         List the queued changes.
         """
         queue = self.engine.get_queue()
-        if len(queue):
+        if queue:
             print("Queue:")
             for show in queue:
                 print("- %s" % show['title'])
@@ -697,8 +816,8 @@ class Trackma_cmd(cmd.Cmd):
     def parse_args(self, arg):
         if arg:
             return shlex.split(arg)
-        else:
-            return []
+
+        return []
 
     def emptyline(self):
         return
@@ -732,15 +851,18 @@ class Trackma_cmd(cmd.Cmd):
         elif cmd == 'help':
             return self.do_help(arg)
         else:
-            return self.execute(cmd, arg, line)
+            try:
+                args = self.parse_args(arg)
+            except ValueError:
+                return self.default(line)
+            else:
+                return self.execute(cmd, args, line)
 
-    def execute(self, cmd, arg, line):
+    def execute(self, cmd, args, line):
         try:
             func = getattr(self, 'do_' + cmd)
         except AttributeError:
             return self.default(line)
-
-        args = self.parse_args(arg)
 
         try:
             needed = self.needed_args[cmd]
@@ -812,6 +934,7 @@ class Trackma_cmd(cmd.Cmd):
         args = []
         expl = []
         usage = None
+        examples = []
 
         for line in lines:
             line = line.strip()
@@ -823,10 +946,12 @@ class Trackma_cmd(cmd.Cmd):
                 usage = line[7:]
             elif line[:5] == ':name':
                 name = line[6:]
+            elif line[:8] == ':example':
+                examples.append(line[9:])
             elif line:
                 expl.append(line)
 
-        return (name, args, expl, usage)
+        return (name, args, expl, usage, examples)
 
     def _make_list(self, showlist):
         """
@@ -872,7 +997,11 @@ class Trackma_cmd(cmd.Cmd):
             #Get title (and alt. title) and if need be, truncate it
             title_str = show['title']
             if altnames.get(show['id']):
+<<<<<<< HEAD
                 title_str += "[{}]".format(altnames.get(show['id']))
+=======
+                title_str += " [{}]".format(altnames.get(show['id']))
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
             title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
 
             # Color title according to status
@@ -897,7 +1026,7 @@ class Trackma_accounts(AccountManager):
         if index < 1:
             raise IndexError
 
-        return self.indexes[index-1]
+        return index
 
     def select_account(self, bypass):
         if not bypass and self.get_default():
@@ -974,20 +1103,16 @@ class Trackma_accounts(AccountManager):
                     return self.get_account(account_id)
                 except ValueError:
                     print("Invalid value.")
-                except IndexError:
+                except (IndexError, KeyError):
                     print("Account doesn't exist.")
 
     def list_accounts(self):
         accounts = self.get_accounts()
-        self.indexes = []
 
         print("Available accounts:")
-        i = 0
         if accounts:
             for k, account in accounts:
-                print("%i: %s (%s)" % (i+1, account['username'], account['api']))
-                self.indexes.append(k)
-                i += 1
+                print("%i: %s (%s)" % (k, account['username'], account['api']))
         else:
             print("No accounts.")
 
@@ -1008,6 +1133,7 @@ def usage():
 
 def main():
     # Process args
+<<<<<<< HEAD
     debug = False
     account_num = None
 
@@ -1029,9 +1155,29 @@ def main():
 
     # Boot Trackma CLI
     main_cmd = Trackma_cmd(account_num, debug)
+=======
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--account', type=int, help='Use specific account number.')
+    parser.add_argument('-d', '--debug', action='store_true', help='Show debugging messages.')
+    parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified. - will take in commands from stdin.')
+    parser.add_argument('args', nargs=argparse.REMAINDER, help='Arguments for the aforementioned command, if any.')
+    args = parser.parse_args()
+
+    # Boot Trackma CLI
+    main_cmd = Trackma_cmd(args.account, args.debug, interactive=args.cmd is None)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
     try:
         main_cmd.start()
-        main_cmd.cmdloop()
+        if args.cmd:
+            if args.cmd == '-':
+                # Run commands from stdin
+                for cmd in sys.stdin:
+                    main_cmd.onecmd(cmd)
+            else:
+                # Run the specified command in the arguments
+                main_cmd.execute(args.cmd, args.args, args.cmd)
+        else:
+            main_cmd.cmdloop()
     except utils.TrackmaFatal as e:
         main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))

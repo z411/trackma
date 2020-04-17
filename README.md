@@ -18,7 +18,11 @@ Features
 Currently supported websites
 ----------------------------
 - [Anilist](https://anilist.co/) (Anime, Manga)
+<<<<<<< HEAD
 - [Kitsu](https://kitsu.io/) (Anime, Manga)
+=======
+- [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
@@ -42,11 +46,14 @@ CLI
 
 ![CLI](http://z411.github.com/trackma/images/screen_cli.png)
 
+<<<<<<< HEAD
 Documentation
 -------------
 
 The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
 
+=======
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 Dependencies
 ------------
 
@@ -73,6 +80,10 @@ The following media recognition trackers are available and their requirements ar
 | inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
 | Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
 | Plex | Connects to Plex server. Enabled manually. | None |
+<<<<<<< HEAD
+=======
+| MPRIS | Connects to running MPRIS capable media players. | dbus-python |
+>>>>>>> 4d45ab9ce62be93169cf75644673abe458aeec34
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional dependencies:
@@ -90,7 +101,7 @@ following command:
 
 Or download the source code and install:
 
-<pre># git clone https://github.com/z411/trackma.git
+<pre># git clone --recursive https://github.com/z411/trackma.git
 # cd trackma
 # sudo python3 setup.py install</pre>
 
@@ -118,7 +129,7 @@ A user from the community also is providing a Docker image:
 Configuration
 -------------
 
-A configuration file will be created in `~/.trackma/config.json`, make sure to fill in the directory
+A configuration file will be created in `~/.config/trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
 https://github.com/z411/trackma/wiki/Configuration-File
@@ -148,6 +159,4 @@ Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-Trackma was originally written by z411 <z411@krutt.org>
-For other authors see AUTHORS file
-GTK icon designed by shuuichi
+Trackma was originally written by z411 <z411@omaera.org>. For other contributors see AUTHORS file. GTK icon designed by shuuichi.
