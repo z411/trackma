@@ -817,7 +817,7 @@ class Engine:
 
         return library, library_cache
 
-    def get_episode_path(self, show, episode):
+    def get_episode_path(self, show, episode, error_on_fail=True):
         """
         This function returns the full path of the requested episode from the requested show.
         """
@@ -828,7 +828,9 @@ class Engine:
         if showid not in library:
             raise utils.EngineError('Show not in library.')
         if episode not in library[showid]:
-            raise utils.EngineError('Episode not in library.')
+            if error_on_fail:
+                raise utils.EngineError('Episode not in library.')
+            return
 
         return library[showid][episode]
 
@@ -854,7 +856,7 @@ class Engine:
         ep = self.play_episode(show)
         return (show, ep)
 
-    def play_episode(self, show, playep=0):
+    def play_episode(self, show, playep=0, playto=0):
         """
         Does a local search in the hard disk (in the folder specified by the config file)
         for the specified episode (**playep**) for the specified **show**.
@@ -865,10 +867,21 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError('Operation not supported by current site or mediatype.')
 
+        eps = re.split('-', str(playep))
+        if len(eps) > 1:
+            if eps[0] != '':
+                playep = eps[0]
+            else:
+                playep = 0
+            if eps[1] != '':
+                playto = eps[1]
+            else:
+                playto = show['total']
         try:
             playep = int(playep)
+            playto = int(playto)
         except ValueError:
-            raise utils.EngineError('Episode must be numeric.')
+            raise utils.EngineError('Episode[s] must be numeric.')
 
         if show:
             playing_next = False
@@ -876,17 +889,26 @@ class Engine:
                 playep = show['my_progress'] + 1
                 playing_next = True
 
-            if show['total'] and playep > show['total']:
-                raise utils.EngineError('Episode beyond limits.')
+            if not playto or playto < playep:
+                playto = playep
+
+            if show['total']:
+                if playep > show['total']:
+                    raise utils.EngineError('Episode beyond limits.')
+                if playto > show['total']:
+                    self.msg.info(self.name, "Play to %i is beyond limits of show %s. Defaulting to total episodes of %s" % (playto, show['title'], show['total']))
+                    playto = show['total']
 
             self.msg.info(self.name, "Getting %s %s from library..." % (show['title'], playep))
-            filename = self.get_episode_path(show, playep)
             endep = playep
 
-            if filename:
+            if self.get_episode_path(show, playep):
                 self.msg.info(self.name, 'Found. Starting player...')
                 arg_list = shlex.split(self.config['player'])
-                arg_list.append(filename)
+                for episode in range(playep, playto+1):
+                   ep = self.get_episode_path(show, episode, error_on_fail=False)
+                   if ep:
+                        arg_list.append(ep)
                 try:
                     with open(os.devnull, 'wb') as DEVNULL:
                         subprocess.Popen(arg_list, stdout=DEVNULL, stderr=DEVNULL)

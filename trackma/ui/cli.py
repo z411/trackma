@@ -78,7 +78,7 @@ class Trackma_cmd(cmd.Cmd):
         'add':          1,
         'del':          1,
         'delete':       1,
-        'play':         (1, 2),
+        'play':         (1, 3),
         'openfolder':   1,
         'update':       (1, 2),
         'score':        2,
@@ -498,6 +498,7 @@ class Trackma_cmd(cmd.Cmd):
 
         :param show Episode index or title.
         :optparam ep Episode number. Assume next if not specified.
+        :optparam playto Episode number to play to in range.
         :usage play <show index or title> [episode number]
         """
         try:
@@ -508,8 +509,11 @@ class Trackma_cmd(cmd.Cmd):
             # otherwise play the next episode not watched yet
             if len(args) > 1:
                 episode = args[1]
+            playto = episode
+            if len(args) > 2:
+                playto = args[2]
 
-            self.engine.play_episode(show, episode)
+            self.engine.play_episode(show, episode, playto)
         except utils.TrackmaError as e:
             self.display_error(e)
 
