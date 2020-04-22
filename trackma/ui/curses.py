@@ -354,7 +354,7 @@ class Trackma_urwid():
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
-            self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
+            self.ask('[Play] Episodes to play (eg: 1, 1-3 or - to play all unseen): ', self.play_request, show['my_progress']+1)
 
     def do_openfolder(self):
         item = self._get_selected_item()
