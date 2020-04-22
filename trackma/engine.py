@@ -881,7 +881,7 @@ class Engine:
             playep = int(playep)
             playto = int(playto)
         except ValueError:
-            raise utils.EngineError('Episode[s] must be numeric.')
+            raise utils.EngineError('Episode[s] must be numeric or with optional range (eg: 1-3, -3, or - to play all unseen episodes)')
 
         if show:
             playing_next = False
