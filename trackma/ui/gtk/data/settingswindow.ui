@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 -->
+<!-- Generated with glade 3.22.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkAdjustment" id="adjustment_download_days">
@@ -163,12 +163,27 @@
                             <property name="receives_default">False</property>
                             <property name="draw_indicator">True</property>
                             <property name="group">radio_tracker_plex</property>
-                            <signal name="toggled" handler="_on_radio_tracker_local_toggled" swapped="no"/>
+                            <signal name="toggled" handler="_set_tracker_radio_buttons" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkRadioButton" id="radio_tracker_mpris">
+                            <property name="label" translatable="yes">MPRIS</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="draw_indicator">True</property>
+                            <property name="group">radio_tracker_plex</property>
+                            <signal name="toggled" handler="_set_tracker_radio_buttons" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                         <child>
@@ -320,7 +335,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">1</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
@@ -375,7 +390,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">2</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                       </object>
@@ -399,7 +414,7 @@
                             <property name="receives_default">False</property>
                             <property name="draw_indicator">True</property>
                             <property name="group">radio_tracker_local</property>
-                            <signal name="toggled" handler="_on_radio_tracker_plex_toggled" swapped="no"/>
+                            <signal name="toggled" handler="_set_tracker_radio_buttons" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>

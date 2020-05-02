@@ -17,6 +17,8 @@
 import html
 import os
 import threading
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -33,11 +35,11 @@ class MainView(Gtk.Box):
     __gtype_name__ = 'MainView'
 
     __gsignals__ = {
-        'error': (GObject.SIGNAL_RUN_FIRST, None,
+        'error': (GObject.SignalFlags.RUN_FIRST, None,
                   (str, )),
-        'error-fatal': (GObject.SIGNAL_RUN_FIRST, None,
+        'error-fatal': (GObject.SignalFlags.RUN_FIRST, None,
                         (str,)),
-        'show-action': (GObject.SIGNAL_RUN_FIRST, None,
+        'show-action': (GObject.SignalFlags.RUN_FIRST, None,
                         (int, object)),
     }
 
@@ -137,6 +139,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._update_widgets)
 
     def _engine_reload(self, account, mediatype):
+        self.set_buttons_sensitive(False)
         threading.Thread(target=self._engine_reload_task,
                          args=[account, mediatype]).start()
 
@@ -393,7 +396,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._prompt_update_next, show, played_ep)
 
     def _prompt_update_next(self, show, played_ep):
-        dialog = Gtk.MessageDialog(self,
+        dialog = Gtk.MessageDialog(self.get_toplevel(),
                                    Gtk.DialogFlags.MODAL,
                                    Gtk.MessageType.QUESTION,
                                    Gtk.ButtonsType.YES_NO,
@@ -497,11 +500,11 @@ class NotebookPage(Gtk.ScrolledWindow):
     __gtype_name__ = 'NotebookPage'
 
     __gsignals__ = {
-        'show-selected': (GObject.SIGNAL_RUN_FIRST, None,
+        'show-selected': (GObject.SignalFlags.RUN_FIRST, None,
                           (int, )),
-        'show-action': (GObject.SIGNAL_RUN_FIRST, None,
+        'show-action': (GObject.SignalFlags.RUN_FIRST, None,
                         (int, object)),
-        'column-toggled': (GObject.SIGNAL_RUN_FIRST, None,
+        'column-toggled': (GObject.SignalFlags.RUN_FIRST, None,
                            (str, bool)),
     }
 

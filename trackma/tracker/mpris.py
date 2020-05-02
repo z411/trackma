@@ -43,7 +43,7 @@ class MPRISTracker(tracker.TrackerBase):
 
             sender = self.bus.get_name_owner(name)
             self.filenames[sender] = self._get_filename(metadata)
-        
+
             if not self.active_player:
                 self._handle_status(status, sender)
         else:
@@ -80,7 +80,7 @@ class MPRISTracker(tracker.TrackerBase):
             self.update_show_if_needed(state, show_tuple)
 
             self.msg.debug(self.name, "New tracker status: {} ({})".format(state, self.last_state))
-            
+
             # We can override the active player if this player is playing a valid show.
             if not self.active_player or self.last_state == utils.TRACKER_PLAYING:
                 self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
@@ -92,7 +92,7 @@ class MPRISTracker(tracker.TrackerBase):
 
                     self._pass_timer()
                     GLib.timeout_add_seconds(1, self._pass_timer)
-       
+
     def _stopped(self, sender):
         self.filenames[sender] = None
 
@@ -124,7 +124,7 @@ class MPRISTracker(tracker.TrackerBase):
                 self._handle_status(status, sender)
         else:
             self.msg.debug(self.name, "Got signal from an inactive player, ignoring.")
- 
+
     def _new_name(self, name, old, new):
         if name.startswith(MPRISTracker.mpris_base):
             if new:

@@ -17,6 +17,8 @@
 import os
 import webbrowser
 from enum import Enum
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -35,9 +37,9 @@ class AccountsWindow(Gtk.Dialog):
     __gtype_name__ = 'AccountsWindow'
 
     __gsignals__ = {
-        'account-cancel': (GObject.SIGNAL_RUN_FIRST, None,
+        'account-cancel': (GObject.SignalFlags.RUN_FIRST, None,
                            ()),
-        'account-open': (GObject.SIGNAL_RUN_FIRST, None,
+        'account-open': (GObject.SignalFlags.RUN_FIRST, None,
                          (int, bool))
     }
 

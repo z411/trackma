@@ -15,6 +15,8 @@
 #
 
 import os
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
@@ -48,6 +50,7 @@ class SettingsWindow(Gtk.Window):
     switch_tracker = GtkTemplate.Child()
 
     radio_tracker_local = GtkTemplate.Child()
+    radio_tracker_mpris = GtkTemplate.Child()
     entry_player_process = GtkTemplate.Child()
     btn_file_chooser_executable = GtkTemplate.Child()
     listbox_directories = GtkTemplate.Child()
@@ -126,6 +129,9 @@ class SettingsWindow(Gtk.Window):
             'progress_complete': self.colorbutton_progress_complete
         }
 
+        if os.sys.platform == 'linux':
+            self.radio_tracker_mpris.set_visible(True)
+
         self.radiobutton_download_days.connect("toggled", self._button_toggled, self.spinbutton_download_days)
         self.radiobutton_upload_minutes.connect("toggled", self._button_toggled, self.spinbutton_upload_minutes)
         self.radiobutton_upload_size.connect("toggled", self._button_toggled, self.spinbutton_upload_size)
@@ -142,6 +148,8 @@ class SettingsWindow(Gtk.Window):
 
         if self.engine.get_config('tracker_type') == 'local':
             self.radio_tracker_local.set_active(True)
+        elif self.engine.get_config('tracker_type') == 'mpris':
+                self.radio_tracker_mpris.set_active(True)
         elif self.engine.get_config('tracker_type') == 'plex':
             self.radio_tracker_plex.set_active(True)
 
@@ -229,6 +237,7 @@ class SettingsWindow(Gtk.Window):
     @GtkTemplate.Callback
     def _on_switch_tracker_state_set(self, switch, state):
         self.radio_tracker_local.set_sensitive(state)
+        self.radio_tracker_mpris.set_sensitive(state)
         self.radio_tracker_plex.set_sensitive(state)
 
         if state:
@@ -242,15 +251,8 @@ class SettingsWindow(Gtk.Window):
         self.checkbox_tracker_not_found_prompt.set_sensitive(state)
 
     @GtkTemplate.Callback
-    def _on_radio_tracker_local_toggled(self, radio_button):
-        self._set_tracker_radio_buttons()
-
-    @GtkTemplate.Callback
-    def _on_radio_tracker_plex_toggled(self, radio_button):
-        self._set_tracker_radio_buttons()
-
-    def _set_tracker_radio_buttons(self):
-        if self.radio_tracker_local.get_active():
+    def _set_tracker_radio_buttons(self, radio_button=None):
+        if self.radio_tracker_local.get_active() or self.radio_tracker_mpris.get_active():
             self._enable_local(True)
             self._enable_plex(False)
         else:
@@ -324,6 +326,8 @@ class SettingsWindow(Gtk.Window):
         # Tracker type
         if self.radio_tracker_local.get_active():
             self.engine.set_config('tracker_type', 'local')
+        elif self.radio_tracker_mpris.get_active():
+            self.engine.set_config('tracker_type', 'mpris')
         elif self.radio_tracker_plex.get_active():
             self.engine.set_config('tracker_type', 'plex')
 
