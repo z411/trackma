@@ -50,7 +50,7 @@ class MPRISTracker(tracker.TrackerBase):
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
     def _get_filename(self, metadata):
-        if 'xesam:title' in metadata:
+        if 'xesam:title' in metadata and len(metadata['xesam:title'])>5:
             return metadata['xesam:title']
         elif 'xesam:url' in metadata:
             # TODO : Support for full path
