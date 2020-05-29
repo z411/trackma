@@ -37,6 +37,15 @@ STATUS_NOTYET = 3
 STATUS_CANCELLED = 4
 STATUS_OTHER = 100
 
+STATUS_DICT = {
+    STATUS_UNKNOWN: 'Unknown',
+    STATUS_AIRING: 'Airing',
+    STATUS_FINISHED: 'Finished',
+    STATUS_NOTYET: 'Not yet aired',
+    STATUS_CANCELLED: 'Cancelled',
+    STATUS_OTHER: 'Other',
+}
+
 TYPE_UNKNOWN = 0
 TYPE_TV = 1
 TYPE_MOVIE = 2
