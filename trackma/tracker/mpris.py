@@ -82,7 +82,7 @@ class MPRISTracker(tracker.TrackerBase):
             self.msg.debug(self.name, "New tracker status: {} ({})".format(state, self.last_state))
 
             # We can override the active player if this player is playing a valid show.
-            if not self.active_player or self.last_state == utils.TRACKER_PLAYING:
+            if not self.active_player or self.last_state == utils.Tracker.PLAYING:
                 self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
                 self.active_player = sender
 
@@ -109,7 +109,7 @@ class MPRISTracker(tracker.TrackerBase):
 
     def _on_update(self, name, properties, v, sender=None):
         # We can override the active player if it's not playing a valid show.
-        if not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING:
+        if not self.active_player or self.active_player == sender or self.last_state != utils.Tracker.PLAYING:
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.

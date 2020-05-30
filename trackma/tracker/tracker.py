@@ -31,7 +31,7 @@ class TrackerBase(object):
     list = None
     last_show_tuple = None
     last_filename = None
-    last_state = utils.TRACKER_NOVIDEO
+    last_state = utils.Tracker.NOVIDEO
     last_time = 0
     last_updated = False
     last_close_queue = None
@@ -119,9 +119,9 @@ class TrackerBase(object):
             # Perform show update
             self.last_updated = True
             action = None
-            if state == utils.TRACKER_PLAYING:
+            if state == utils.Tracker.PLAYING:
                 action = lambda: self._emit_signal('update', show, episode)
-            elif state == utils.TRACKER_NOT_FOUND:
+            elif state == utils.Tracker.NOT_FOUND:
                 action = lambda: self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
@@ -133,7 +133,7 @@ class TrackerBase(object):
     def _ignore_current(self):
         # Stops attempt to update current episode
         self.last_updated = True
-        self.last_state = utils.TRACKER_IGNORED
+        self.last_state = utils.Tracker.IGNORED
         self.timer = None
         self._emit_signal('state', self.get_status())
 
@@ -179,7 +179,7 @@ class TrackerBase(object):
             # There's a new show/ep detected, so let's save the show information
             self.last_show_tuple = show_tuple
             self.last_updated = False
-            if state == utils.TRACKER_PLAYING:
+            if state == utils.Tracker.PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
                 if self.config['tracker_ignore_not_next'] and episode != (show['my_progress'] + 1):
@@ -197,9 +197,9 @@ class TrackerBase(object):
 
             # Start our countdown
             (show, episode) = show_tuple
-            if state == utils.TRACKER_PLAYING:
+            if state == utils.Tracker.PLAYING:
                 self.msg.info(self.name, 'Will update %s %d' % (show['title'], episode))
-            elif state == utils.TRACKER_NOT_FOUND:
+            elif state == utils.Tracker.NOT_FOUND:
                 self.msg.info(self.name, 'Will add %s %d' % (show['title'], episode))
 
             self._update_show(state, show_tuple)
@@ -207,13 +207,13 @@ class TrackerBase(object):
             self._update_state(state)
 
             # React depending on state
-            if state == utils.TRACKER_NOVIDEO:  # No video is playing
+            if state == utils.Tracker.NOVIDEO:  # No video is playing
                 # Video didn't get to update phase before it was closed
-                if self.last_state == utils.TRACKER_PLAYING and not self.last_updated:
+                if self.last_state == utils.Tracker.PLAYING and not self.last_updated:
                     self.msg.info(self.name, 'Player was closed before update.')
-            elif state == utils.TRACKER_UNRECOGNIZED:  # There's a new video playing but the regex didn't recognize the format
+            elif state == utils.Tracker.UNRECOGNIZED:  # There's a new video playing but the regex didn't recognize the format
                 self.msg.warn(self.name, 'Found video but the file name format couldn\'t be recognized.')
-            elif state == utils.TRACKER_NOT_FOUND:  # There's a new video playing but an associated show wasn't found
+            elif state == utils.Tracker.NOT_FOUND:  # There's a new video playing but an associated show wasn't found
                 self.msg.warn(self.name, 'Found player but show not in list.')
 
             self.last_show_tuple = None
@@ -226,7 +226,7 @@ class TrackerBase(object):
     def _get_playing_show(self, filename):
         if not self.active:
             # Don't do anything if the Tracker is disabled
-            return (utils.TRACKER_NOVIDEO, None)
+            return (utils.Tracker.NOVIDEO, None)
 
         if filename:
             self.msg.debug(self.name, "Guessing filename: {}".format(filename))
@@ -252,7 +252,7 @@ class TrackerBase(object):
             aie = AnimeInfoExtractor(filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
-                return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized
+                return (utils.Tracker.UNRECOGNIZED, None)  # Format not recognized
 
             playing_show = utils.guess_show(show_title, self.list)
             self.msg.debug(self.name, "Show guess: {}: {}".format(show_title, playing_show))
@@ -260,15 +260,15 @@ class TrackerBase(object):
             if playing_show:
                 (playing_show, show_ep) = utils.redirect_show((playing_show, show_ep), self.redirections, self.list)
 
-                return (utils.TRACKER_PLAYING, (playing_show, show_ep))
+                return (utils.Tracker.PLAYING, (playing_show, show_ep))
             else:
                 # Show not in list
                 if self.config['tracker_not_found_prompt']:
                     # Dummy show to search for
                     show = {'id': 0, 'title': show_title}
-                    return (utils.TRACKER_NOT_FOUND, (show, show_ep))
+                    return (utils.Tracker.NOT_FOUND, (show, show_ep))
                 else:
-                    return (utils.TRACKER_NOT_FOUND, None)
+                    return (utils.Tracker.NOT_FOUND, None)
         else:
             self.last_filename = None
-            return (utils.TRACKER_NOVIDEO, None)  # Not playing
+            return (utils.Tracker.NOVIDEO, None)  # Not playing
