@@ -65,6 +65,10 @@ class Type(Enum):
     MANGA = "Manga"
     NOVEL = "Novel"
     ONE_SHOT = "One-Shot"
+    DOUJIN = "Doujin"
+    MANHUA = "Manhua"
+    MANHWA = "Manhwa"
+    OEL = "OEL"
 
     @classmethod
     def find(cls, name):

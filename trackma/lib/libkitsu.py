@@ -508,6 +508,7 @@ class libkitsu(lib):
             'total':       total or 0,
             'image':       attr['posterImage'] and attr['posterImage']['small'],
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
+            'type':        utils.Type.find(attr['subtype']),
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
