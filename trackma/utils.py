@@ -40,6 +40,29 @@ class Status(Enum):
     CANCELLED = 'Cancelled'
     OTHER = 'Other'
 
+    # aliases
+    RELEASING = AIRING
+    PUBLISHING = AIRING
+    CURRENTLY_AIRING = AIRING
+    FINISHED_AIRING = FINISHED
+    NOT_YET_AIRED = NOTYET
+    NOT_YET_RELEASED = NOTYET
+    NOT_YET_PUBLISHED = NOTYET
+
+    @classmethod
+    def find(cls, name):
+        try:
+            return cls(name)
+        except ValueError:
+            pass
+
+        try:
+            return cls[name.upper().replace(' ', '_')]
+        except KeyError:
+            pass
+
+        return cls.UNKNOWN
+
     @classmethod
     def from_int(cls, value):
         try:

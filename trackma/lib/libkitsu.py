@@ -56,12 +56,12 @@ class libkitsu(lib):
     default_mediatype = 'anime'
     default_statuses = ['current', 'completed', 'on_hold', 'dropped', 'planned']
     default_statuses_dict = {
-            'current': 'Watching',
-            'completed': 'Completed',
-            'on_hold': 'On Hold',
-            'dropped': 'Dropped',
-            'planned': 'Plan to Watch'
-            }
+        'current': 'Watching',
+        'completed': 'Completed',
+        'on_hold': 'On Hold',
+        'dropped': 'Dropped',
+        'planned': 'Plan to Watch'
+    }
 
     mediatypes = dict()
     mediatypes['anime'] = {
@@ -117,10 +117,6 @@ class libkitsu(lib):
     # TODO : These values are previsional.
     _client_id     = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
-
-    status_translate = {'Currently Airing': utils.Status.AIRING,
-            'Finished Airing': utils.Status.FINISHED,
-            'Not Yet Aired': utils.Status.NOTYET}
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""

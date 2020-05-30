@@ -98,13 +98,6 @@ class libanilist(lib):
         'POINT_3': (3, 1),
     }
 
-    status_translate = {
-            'RELEASING': utils.Status.AIRING,
-            'FINISHED': utils.Status.FINISHED,
-            'NOT_YET_RELEASED': utils.Status.NOTYET,
-            'CANCELLED': utils.Status.CANCELLED,
-    }
-
     season_translate = {
         utils.Season.WINTER: 'WINTER',
         utils.Season.SPRING: 'SPRING',
@@ -279,7 +272,7 @@ fragment mediaListEntry on MediaList {
                     'title': media['title']['userPreferred'],
                     'aliases': self._get_aliases(media),
                     'type': utils.Type.find(media['format']),
-                    'status': self._translate_status(media['status']),
+                    'status': utils.Status.find(media['status']),
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
                     'my_score': self._c(item['score']),
@@ -439,7 +432,7 @@ fragment mediaListEntry on MediaList {
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
             'type': utils.Type.find(item['format']),
-            'status': self._translate_status(item['status']),
+            'status': utils.Status.find(item['status']),
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
@@ -455,7 +448,7 @@ fragment mediaListEntry on MediaList {
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
-                ('Status',          self._translate_status(item['status'])),
+                ('Status',          item['status']),
             ]
         })
         return info
@@ -468,9 +461,6 @@ fragment mediaListEntry on MediaList {
         aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
 
         return aliases
-
-    def _translate_status(self, orig_status):
-        return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
     def _dict2date(self, item):
         if not item:

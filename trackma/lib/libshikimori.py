@@ -104,22 +104,10 @@ class libshikimori(lib):
             self.total_str = "chapters"
             self.watched_str = "chapters"
             self.airing_str = "publishing_status"
-            self.status_translate = {
-                'publishing': utils.Status.AIRING,
-                'finished': utils.Status.FINISHED,
-                'not yet published': utils.Status.NOTYET,
-                'cancelled': utils.Status.CANCELLED,
-            }
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes"
             self.airing_str = "airing_status"
-            self.status_translate = {
-                'currently airing': utils.Status.AIRING,
-                'finished airing': utils.Status.FINISHED,
-                'not yet aired': utils.Status.NOTYET,
-                'cancelled': utils.Status.CANCELLED,
-            }
 
         #handler=urllib.request.HTTPHandler(debuglevel=1)
         #self.opener = urllib.request.build_opener(handler)
@@ -212,9 +200,8 @@ class libshikimori(lib):
                 'my_id': item['id'],
                 'title': item[self.mediatype]['name'],
                 'aliases': [item[self.mediatype]['russian']],
-                #'type': item[self.mediatype]['type'],
-                #'status': self.status_translate[item[self.mediatype][self.airing_str]],
-                'my_id': item['id'],
+                # 'type': item[self.mediatype]['type'],
+                # 'status': utils.Status.find(item[self.mediatype][self.airing_str]),
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
                 'my_score': item['score'],
@@ -266,7 +253,7 @@ class libshikimori(lib):
                 'title': item['name'],
                 'aliases': [item['russian']],
                 'type': item.get('kind', ''),
-                #'status': item[self.airing_str],
+                #'status': utils.Status.find(item[self.airing_str]),
                 'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
                 'image': self.url + item['image']['original'],
