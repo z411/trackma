@@ -99,16 +99,16 @@ class libanilist(lib):
     }
 
     type_translate = {
-        'TV': utils.TYPE_TV,
-        'TV_SHORT': utils.TYPE_TV,
-        'MOVIE': utils.TYPE_MOVIE,
-        'SPECIAL': utils.TYPE_SP,
-        'OVA': utils.TYPE_OVA,
-        'ONA': utils.TYPE_OVA,
-        'MUSIC': utils.TYPE_OTHER,
-        'MANGA': utils.TYPE_OTHER,
-        'NOVEL': utils.TYPE_OTHER,
-        'ONE_SHOT': utils.TYPE_OTHER,
+        'TV': utils.Type.TV,
+        'TV_SHORT': utils.Type.TV,
+        'MOVIE': utils.Type.MOVIE,
+        'SPECIAL': utils.Type.SPECIAL,
+        'OVA': utils.Type.OVA,
+        'ONA': utils.Type.OVA,
+        'MUSIC': utils.Type.OTHER,
+        'MANGA': utils.Type.OTHER,
+        'NOVEL': utils.Type.OTHER,
+        'ONE_SHOT': utils.Type.OTHER,
     }
 
     status_translate = {
@@ -483,7 +483,7 @@ fragment mediaListEntry on MediaList {
         return aliases
 
     def _translate_type(self, orig_type):
-        return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
+        return self.type_translate.get(orig_type, utils.Type.UNKNOWN)
 
     def _translate_status(self, orig_status):
         return self.status_translate.get(orig_status, utils.Status.UNKNOWN)

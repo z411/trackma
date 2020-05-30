@@ -48,12 +48,13 @@ class Status(Enum):
             return cls.UNKNOWN
 
 
-TYPE_UNKNOWN = 0
-TYPE_TV = 1
-TYPE_MOVIE = 2
-TYPE_OVA = 3
-TYPE_SP = 4
-TYPE_OTHER = 100
+class Type(Enum):
+    UNKNOWN = "Unknown"
+    TV = "TV"
+    MOVIE = "Movie"
+    OVA = "OVA"
+    SPECIAL = "Special"
+    OTHER = "Other"
 
 
 class Tracker(Enum):
@@ -327,7 +328,7 @@ def show():
         'my_score':     0,
         'my_start_date':  None,
         'my_finish_date': None,
-        'type':         0,
+        'type':         Type.UNKNOWN,
         'status':       Status.UNKNOWN,
         'total':        0,
         'start_date':   None,

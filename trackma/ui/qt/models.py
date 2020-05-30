@@ -242,10 +242,6 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
 class AddTableModel(QtCore.QAbstractTableModel):
     columns = ["Name", "Type", "Total"]
-    types = {utils.TYPE_TV: "TV",
-             utils.TYPE_MOVIE: "Movie",
-             utils.TYPE_OVA: "OVA",
-             utils.TYPE_SP: "Special"}
 
     def __init__(self, parent=None):
         self.results = None
@@ -280,7 +276,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
                 return item.get('title')
             elif column == 1:
                 if 'type' in item:
-                    return self.types.get(item['type'], '?')
+                    return item['type'].value
                 else:
                     return '?'
             elif column == 2:
@@ -347,13 +343,13 @@ class AddListModel(QtCore.QAbstractListModel):
             return self.thumbs.get(row)
         elif role == QtCore.Qt.BackgroundRole:
             t = self.results[row].get('type')
-            if t == utils.TYPE_TV:
+            if t == utils.Type.TV:
                 return QtGui.QColor(202, 253, 150)
-            elif t == utils.TYPE_MOVIE:
+            elif t == utils.Type.MOVIE:
                 return QtGui.QColor(150, 202, 253)
-            elif t == utils.TYPE_OVA:
+            elif t == utils.Type.OVA:
                 return QtGui.QColor(253, 253, 150)
-            elif t == utils.TYPE_SP:
+            elif t == utils.Type.SPECIAL:
                 return QtGui.QColor(253, 150, 150)
             else:
                 return QtGui.QColor(250, 250, 250)

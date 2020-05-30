@@ -251,10 +251,10 @@ class libmal(lib):
             status_translate = {'Currently Airing': utils.Status.AIRING,
                     'Finished Airing': utils.Status.FINISHED,
                     'Not yet aired': utils.Status.NOTYET}
-            type_translate = {'TV': utils.TYPE_TV,
-                              'Movie': utils.TYPE_MOVIE,
-                              'OVA': utils.TYPE_OVA,
-                              'Special': utils.TYPE_SP}
+            type_translate = {'TV': utils.Type.TV,
+                              'Movie': utils.Type.MOVIE,
+                              'OVA': utils.Type.OVA,
+                              'Special': utils.Type.SPECIAL}
         elif self.mediatype == 'manga':
             status_translate = {'Publishing': utils.Status.AIRING,
                     'Finished': utils.Status.AIRING}
@@ -266,7 +266,7 @@ class libmal(lib):
             show.update({
                 'id':           showid,
                 'title':        child.find('title').text,
-                'type':         type_translate.get(child.find('type').text, utils.TYPE_OTHER),
+                'type':         type_translate.get(child.find('type').text, utils.Type.OTHER),
                 'status':       status_translate.get(child.find('status').text, utils.Status.OTHER),
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
