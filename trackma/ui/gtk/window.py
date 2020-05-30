@@ -18,6 +18,8 @@ import sys
 import os
 import subprocess
 import threading
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import GLib, Gio, Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -297,7 +299,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         GLib.idle_add(self._main_view.populate_all_pages)
 
         self._main_view.set_status_idle("Ready.")
-        self._set_buttons_sensitive_idle(False)
+        self._set_buttons_sensitive_idle(True)
 
     def _on_accounts(self, action, param):
         self._show_accounts()
@@ -359,6 +361,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_authors(["See AUTHORS file"])
         about.set_artists(["shuuichi"])
         about.connect('destroy', self._on_modal_destroy)
+        about.connect('response', lambda dialog, response: dialog.destroy())
         about.present()
         self._modals.append(about)
 

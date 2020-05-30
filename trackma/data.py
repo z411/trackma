@@ -292,7 +292,7 @@ class Data:
                    }
             item[key] = value
             self.queue.append(item)
-            
+
         show['queued'] = True
 
         self._save_queue()

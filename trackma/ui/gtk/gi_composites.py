@@ -20,6 +20,8 @@ from os.path import abspath, join
 
 import inspect
 import warnings
+from gi import require_version
+require_version('Gtk', '3.0')
 
 from gi.repository import Gio
 from gi.repository import GLib
@@ -267,4 +269,3 @@ class _GtkTemplate(object):
 #    GtkTemplate = lambda c: c
 #else:
 GtkTemplate = _GtkTemplate
-
