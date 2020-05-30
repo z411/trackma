@@ -248,16 +248,16 @@ class libmal(lib):
         # Since the MAL API returns the status as a string, and
         # we handle statuses as integers, we need to convert them
         if self.mediatype == 'anime':
-            status_translate = {'Currently Airing': utils.STATUS_AIRING,
-                    'Finished Airing': utils.STATUS_FINISHED,
-                    'Not yet aired': utils.STATUS_NOTYET}
+            status_translate = {'Currently Airing': utils.Status.AIRING,
+                    'Finished Airing': utils.Status.FINISHED,
+                    'Not yet aired': utils.Status.NOTYET}
             type_translate = {'TV': utils.TYPE_TV,
                               'Movie': utils.TYPE_MOVIE,
                               'OVA': utils.TYPE_OVA,
                               'Special': utils.TYPE_SP}
         elif self.mediatype == 'manga':
-            status_translate = {'Publishing': utils.STATUS_AIRING,
-                    'Finished': utils.STATUS_AIRING}
+            status_translate = {'Publishing': utils.Status.AIRING,
+                    'Finished': utils.Status.AIRING}
 
         entries = list()
         for child in root.iter('entry'):
@@ -267,7 +267,7 @@ class libmal(lib):
                 'id':           showid,
                 'title':        child.find('title').text,
                 'type':         type_translate.get(child.find('type').text, utils.TYPE_OTHER),
-                'status':       status_translate.get(child.find('status').text, utils.STATUS_OTHER),
+                'status':       status_translate.get(child.find('status').text, utils.Status.OTHER),
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
                 'url':          "https://myanimelist.net/anime/%d" % showid,
@@ -343,7 +343,7 @@ class libmal(lib):
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'my_tags':         child.find('my_tags').text,
                 'total':     int(child.find('series_episodes').text),
-                'status':       int(child.find('series_status').text),
+                'status':       utils.Status.from_int(int(child.find('series_status').text)),
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,
@@ -373,7 +373,7 @@ class libmal(lib):
                 'my_start_date':  self._str2date( child.find('my_start_date').text ),
                 'my_finish_date': self._str2date( child.find('my_finish_date').text ),
                 'total':     int(child.find('series_chapters').text),
-                'status':       int(child.find('series_status').text),
+                'status':       utils.Status.from_int(int(child.find('series_status').text)),
                 'start_date':   self._str2date( child.find('series_start').text ),
                 'end_date':     self._str2date( child.find('series_end').text ),
                 'image':        child.find('series_image').text,

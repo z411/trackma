@@ -169,9 +169,9 @@ class ShowTreeView(Gtk.TreeView):
             return self.colors['is_queued']
         elif eps and max(eps) > show['my_progress']:
             return self.colors['new_episode']
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             return self.colors['is_airing']
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             return self.colors['not_aired']
         else:
             return None

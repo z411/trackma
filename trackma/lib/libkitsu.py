@@ -118,9 +118,9 @@ class libkitsu(lib):
     _client_id     = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
 
-    status_translate = {'Currently Airing': utils.STATUS_AIRING,
-            'Finished Airing': utils.STATUS_FINISHED,
-            'Not Yet Aired': utils.STATUS_NOTYET}
+    status_translate = {'Currently Airing': utils.Status.AIRING,
+            'Finished Airing': utils.Status.FINISHED,
+            'Not Yet Aired': utils.Status.NOTYET}
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
@@ -475,16 +475,16 @@ class libkitsu(lib):
         now = datetime.datetime.now()
 
         if end_date and end_date < now:
-            return utils.STATUS_FINISHED
+            return utils.Status.FINISHED
 
         if start_date:
             if start_date > now:
-                return utils.STATUS_NOTYET
+                return utils.Status.NOTYET
             else:
-                return utils.STATUS_AIRING
+                return utils.Status.AIRING
 
         # Safe to assume dates haven't even been announced yet
-        return utils.STATUS_NOTYET
+        return utils.Status.NOTYET
 
     def _parse_info(self, media):
         info = utils.show()

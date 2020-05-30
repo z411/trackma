@@ -105,20 +105,20 @@ class libshikimori(lib):
             self.watched_str = "chapters"
             self.airing_str = "publishing_status"
             self.status_translate = {
-                'publishing': utils.STATUS_AIRING,
-                'finished': utils.STATUS_FINISHED,
-                'not yet published': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
+                'publishing': utils.Status.AIRING,
+                'finished': utils.Status.FINISHED,
+                'not yet published': utils.Status.NOTYET,
+                'cancelled': utils.Status.CANCELLED,
             }
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes"
             self.airing_str = "airing_status"
             self.status_translate = {
-                'currently airing': utils.STATUS_AIRING,
-                'finished airing': utils.STATUS_FINISHED,
-                'not yet aired': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
+                'currently airing': utils.Status.AIRING,
+                'finished airing': utils.Status.FINISHED,
+                'not yet aired': utils.Status.NOTYET,
+                'cancelled': utils.Status.CANCELLED,
             }
 
         #handler=urllib.request.HTTPHandler(debuglevel=1)
@@ -267,7 +267,6 @@ class libshikimori(lib):
                 'aliases': [item['russian']],
                 'type': item.get('kind', ''),
                 #'status': item[self.airing_str],
-                'status': 0,
                 'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
                 'image': self.url + item['image']['original'],
@@ -323,7 +322,6 @@ class libshikimori(lib):
         info.update({
             'id': item['id'],
             'title': item['name'],
-            'status': 0,
             'image': self.url + item['image']['original'],
             'url': self.url + item['url'],
             'extra': [

@@ -23,6 +23,7 @@ import json
 import difflib
 import pickle
 import uuid
+from enum import Enum
 
 VERSION = '0.8.2'
 
@@ -30,21 +31,22 @@ DATADIR = os.path.dirname(__file__) + '/data'
 LOGIN_PASSWD = 1
 LOGIN_OAUTH = 2
 
-STATUS_UNKNOWN = 0
-STATUS_AIRING = 1
-STATUS_FINISHED = 2
-STATUS_NOTYET = 3
-STATUS_CANCELLED = 4
-STATUS_OTHER = 100
 
-STATUS_DICT = {
-    STATUS_UNKNOWN: 'Unknown',
-    STATUS_AIRING: 'Airing',
-    STATUS_FINISHED: 'Finished',
-    STATUS_NOTYET: 'Not yet aired',
-    STATUS_CANCELLED: 'Cancelled',
-    STATUS_OTHER: 'Other',
-}
+class Status(Enum):
+    UNKNOWN = 'Unknown'
+    AIRING = 'Airing'
+    FINISHED = 'Finished'
+    NOTYET = 'Not yet aired'
+    CANCELLED = 'Cancelled'
+    OTHER = 'Other'
+
+    @classmethod
+    def from_int(cls, value):
+        try:
+            return list(cls.__members__.items())[value]
+        except IndexError:
+            return cls.UNKNOWN
+
 
 TYPE_UNKNOWN = 0
 TYPE_TV = 1
@@ -213,11 +215,11 @@ def change_permissions(filename, mode):
 def estimate_aired_episodes(show):
     """ Estimate how many episodes have passed since airing """
 
-    if show['status'] == STATUS_FINISHED:
+    if show['status'] == Status.FINISHED:
         return show['total']
-    elif show['status'] == STATUS_NOTYET:
+    elif show['status'] == Status.NOTYET:
         return 0
-    elif show['status'] == STATUS_AIRING:   # It's airing, so we make an estimate based on available information
+    elif show['status'] == Status.AIRING:   # It's airing, so we make an estimate based on available information
         if 'next_ep_number' in show: # Do we have the upcoming episode number?
             return show['next_ep_number']-1
         elif show['start_date']: # Do we know when it started? Let's just assume 1 episode = 1 week
@@ -319,7 +321,7 @@ def show():
         'my_start_date':  None,
         'my_finish_date': None,
         'type':         0,
-        'status':       0,
+        'status':       Status.UNKNOWN,
         'total':        0,
         'start_date':   None,
         'end_date':     None,
