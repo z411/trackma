@@ -85,8 +85,6 @@ class TrackmaApplication(Gtk.Application):
         if not self.window:
             self.window = TrackmaWindow(self, self.debug)
 
-        self.window.present()
-
         if not self.window._engine:
             self.window.init_account_selection()
 
