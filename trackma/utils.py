@@ -50,11 +50,35 @@ class Status(Enum):
 
 class Type(Enum):
     UNKNOWN = "Unknown"
+    OTHER = "Other"
+
+    # anime
     TV = "TV"
+    TV_SHORT = "TV Short"
     MOVIE = "Movie"
     OVA = "OVA"
+    ONA = "ONA"
     SPECIAL = "Special"
-    OTHER = "Other"
+    MUSIC = "Music"
+
+    # "text"
+    MANGA = "Manga"
+    NOVEL = "Novel"
+    ONE_SHOT = "One-Shot"
+
+    @classmethod
+    def find(cls, name):
+        try:
+            return cls(name)
+        except ValueError:
+            pass
+
+        try:
+            return cls[name.upper()]
+        except KeyError:
+            pass
+
+        return cls.UNKNOWN
 
 
 class Tracker(Enum):

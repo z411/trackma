@@ -98,19 +98,6 @@ class libanilist(lib):
         'POINT_3': (3, 1),
     }
 
-    type_translate = {
-        'TV': utils.Type.TV,
-        'TV_SHORT': utils.Type.TV,
-        'MOVIE': utils.Type.MOVIE,
-        'SPECIAL': utils.Type.SPECIAL,
-        'OVA': utils.Type.OVA,
-        'ONA': utils.Type.OVA,
-        'MUSIC': utils.Type.OTHER,
-        'MANGA': utils.Type.OTHER,
-        'NOVEL': utils.Type.OTHER,
-        'ONE_SHOT': utils.Type.OTHER,
-    }
-
     status_translate = {
             'RELEASING': utils.Status.AIRING,
             'FINISHED': utils.Status.FINISHED,
@@ -291,7 +278,7 @@ fragment mediaListEntry on MediaList {
                     'id': showid,
                     'title': media['title']['userPreferred'],
                     'aliases': self._get_aliases(media),
-                    'type': self._translate_type(media['format']),
+                    'type': utils.Type.find(media['format']),
                     'status': self._translate_status(media['status']),
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
@@ -451,7 +438,7 @@ fragment mediaListEntry on MediaList {
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
-            'type': self._translate_type(item['format']),
+            'type': utils.Type.find(item['format']),
             'status': self._translate_status(item['status']),
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
@@ -481,9 +468,6 @@ fragment mediaListEntry on MediaList {
         aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a] + item['synonyms']
 
         return aliases
-
-    def _translate_type(self, orig_type):
-        return self.type_translate.get(orig_type, utils.Type.UNKNOWN)
 
     def _translate_status(self, orig_status):
         return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
