@@ -362,7 +362,7 @@ class SettingsDialog(QDialog):
             scrollable_page.setWidget(page)
             self.contents.addWidget(scrollable_page)
 
-        if pyqt_version is not 5:
+        if pyqt_version != 5:
             self.contents.layout().setMargin(0)
 
         # Bottom buttons
@@ -601,7 +601,7 @@ class SettingsDialog(QDialog):
         self.auto_status_change_if_scored.setEnabled(checked)
 
     def s_player_browse(self):
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable')[0])
         else:
             self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable'))

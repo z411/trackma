@@ -498,7 +498,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
-            if pyqt_version is 5 and self.finish:
+            if pyqt_version == 5 and self.finish:
                 QApplication.instance().quit()
         elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
@@ -756,7 +756,7 @@ class MainWindow(QMainWindow):
             if column not in self.api_config['visible_columns']:
                 self.view.setColumnHidden(i, True)
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
             self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)

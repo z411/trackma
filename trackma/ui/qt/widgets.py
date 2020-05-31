@@ -160,7 +160,7 @@ class ShowsTableView(QTableView):
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.horizontalHeader().setHighlightSections(False)
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.horizontalHeader().setSectionsMovable(True)
         else:
             self.horizontalHeader().setMovable(True)
@@ -239,7 +239,7 @@ class AddTableDetailsView(QSplitter):
         self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.AscendingOrder)
         self.table.setSortingEnabled(True)
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)

@@ -140,11 +140,11 @@ class AccountDialog(QDialog):
             self._error("Please select an account.")
 
     def s_edit(self, index):
-        if   index is 1:
+        if index == 1:
             self.edit()
-        elif index is 2:
+        elif index == 2:
             self.delete()
-        elif index is 3:
+        elif index == 3:
             self.purge()
 
     def rebuild(self):
@@ -164,7 +164,7 @@ class AccountDialog(QDialog):
 
             i += 1
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
@@ -247,12 +247,12 @@ class AccountAddDialog(QDialog):
         self.setLayout(layout)
 
     def validate(self):
-        if len(self.username.text()) is 0:
-            if len(self.password.text()) is 0:
+        if len(self.username.text()) == 0:
+            if len(self.password.text()) == 0:
                 self._error('Please fill the credentials fields.')
             else:
                 self._error('Please fill the username field.')
-        elif len(self.password.text()) is 0:
+        elif len(self.password.text()) == 0:
             self._error('Please fill the password/PIN field.')
         else:
             self.accept()
@@ -262,7 +262,7 @@ class AccountAddDialog(QDialog):
             self.username.setText("")
             self.password.setText("")
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             apiname = self.api.itemData(index)
         else:
             apiname = str(self.api.itemData(index))

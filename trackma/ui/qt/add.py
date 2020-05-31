@@ -198,7 +198,7 @@ class AddDialog(QDialog):
             self.set_results(result['result'])
             
             """
-            if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!
+            if self.table.currentRow() == 0:  # Row number hasn't changed but the data probably has!
                 self.s_show_selected(self.table.item(0, 0))
             self.table.setCurrentItem(self.table.item(0, 0))"""
         else:
