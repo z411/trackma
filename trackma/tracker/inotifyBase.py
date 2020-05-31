@@ -43,11 +43,11 @@ class inotifyBase(tracker.TrackerBase):
 
             # Get process name
             try:
-		        with open('/proc/%s/cmdline' % p, 'rb') as f:
-		            cmdline = f.read()
-		            pname = cmdline.partition(b'\x00')[0]
-			except FileNotFoundError:
-				continue			# Continue without raising exception if process doesn't exist.
+                with open('/proc/%s/cmdline' % p, 'rb') as f:
+                    cmdline = f.read()
+                    pname = cmdline.partition(b'\x00')[0]
+            except FileNotFoundError:
+                continue            # Continue without raising exception if process doesn't exist.
             # It's not one of our players
             if not self.re_players.search(pname):
                 continue
