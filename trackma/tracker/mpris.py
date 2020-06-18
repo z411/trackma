@@ -37,15 +37,15 @@ class MPRISTracker(tracker.TrackerBase):
             proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
             properties = dbus.Interface(proxy, dbus_interface='org.freedesktop.DBus.Properties')
             properties.connect_to_signal('PropertiesChanged', self._on_update, sender_keyword='sender')
-
-            metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
-            status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
-
-            sender = self.bus.get_name_owner(name)
-            self.filenames[sender] = self._get_filename(metadata)
-
-            if not self.active_player:
-                self._handle_status(status, sender)
+            try:
+                metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
+                status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
+                sender = self.bus.get_name_owner(name)
+                self.filenames[sender] = self._get_filename(metadata)
+                if not self.active_player:
+                    self._handle_status(status, sender)
+            except dbus.exceptions.DBusException:
+                pass
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
