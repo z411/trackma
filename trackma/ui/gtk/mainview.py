@@ -24,7 +24,7 @@ from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.showeventtype import ShowEventType
-from trackma.ui.gtk.showtreeview import ShowTreeView
+from trackma.ui.gtk.showtreeview import ShowTreeView, ShowList
 from trackma import utils
 from trackma import messenger
 
@@ -67,6 +67,7 @@ class MainView(Gtk.Box):
         self._config = config
         self._engine = None
         self._account = None
+        self._list = ShowList(colors=config['colors'])
         self._debug = debug
 
         self._image_thread = None
@@ -205,35 +206,37 @@ class MainView(Gtk.Box):
             self._pages[status] = NotebookPage(self._engine,
                                                self.notebook.get_n_pages(),
                                                status,
-                                               self._config)
+                                               self._config,
+                                               self._list)
 
             self._page_handler_ids[status] = []
             self._page_handler_ids[status].append(self._pages[status].connect('show-selected', self._on_show_selected))
             self._page_handler_ids[status].append(self._pages[status].connect('show-action', self._on_show_action))
             self._page_handler_ids[status].append(self._pages[status].connect('column-toggled', self._on_column_toggled))
             self.notebook.append_page(self._pages[status],
-                                      Gtk.Label(statuses_names[status]))
+                                      Gtk.Label(label=statuses_names[status]))
 
         self.notebook.handler_unblock(self.notebook_switch_handler)
         self.notebook.show_all()
 
     def populate_all_pages(self):
         for status in self._pages:
-            self.populate_page(status)
+            self._block_handlers_for_status(status)
+            tree_view = self._pages[status].show_tree_view
+            tree_view.freeze_child_notify()
 
-    def populate_page(self, status):
-        self._block_handlers_for_status(status)
-        tree_view = self._pages[status].show_tree_view
-        tree_view.append_start()
-
+        self._list.clear()
         library = self._engine.library()
-        for show in self._engine.filter_list(tree_view.status_filter):
-            tree_view.append(show,
+        for show in self._engine.get_list():
+            self._list.append(show,
                              self._engine.altname(show['id']),
                              library.get(show['id']))
 
-        tree_view.append_finish()
-        self._unblock_handlers_for_status(status)
+        self._list.store.set_sort_column_id(1, Gtk.SortType.ASCENDING)
+        for status in self._pages:
+            tree_view = self._pages[status].show_tree_view
+            tree_view.thaw_child_notify()
+            self._unblock_handlers_for_status(status)
 
     def _block_handlers_for_status(self, status):
         for handler_id in self._page_handler_ids[status]:
@@ -357,7 +360,7 @@ class MainView(Gtk.Box):
 
     def _update_show(self, show):
         status = show['my_status']
-        self._pages[status].show_tree_view.update(show)
+        self._list.update(show)
         if show['id'] == self._current_page.selected_show:
             self.btn_episode_show_entry.set_label(str(show['my_progress']))
             self.spinbtn_score.set_value(show['my_score'])
@@ -366,8 +369,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._update_show_title, show, altname)
 
     def _update_show_title(self, show, altname):
-        status = show['my_status']
-        self._pages[status].show_tree_view.update_title(show, altname)
+        self._list.update_title(show, altname)
 
     def _on_changed_show_status_idle(self, show, old_status=None):
         GLib.idle_add(self._update_show_status, show, old_status)
@@ -375,11 +377,11 @@ class MainView(Gtk.Box):
     def _update_show_status(self, show, old_status):
         # Rebuild lists
         status = show['my_status']
-
-        self.populate_page(status)
-        if old_status:
-            self.populate_page(old_status)
-
+        try:
+            self._engine.get_show_info(showid=show['id'])
+            self._list.update_or_append(show)
+        except:
+            self._list.remove(show)
         pagenumber = self._pages[status].pagenumber
         self.notebook.set_current_page(pagenumber)
 
@@ -389,8 +391,7 @@ class MainView(Gtk.Box):
         GLib.idle_add(self._set_show_playing, show, is_playing, episode)
 
     def _set_show_playing(self, show, is_playing, episode):
-        status = show['my_status']
-        self._pages[status].show_tree_view.playing(show, is_playing)
+        self._list.playing(show, is_playing)
 
     def _on_prompt_update_next_idle(self, show, played_ep):
         GLib.idle_add(self._prompt_update_next, show, played_ep)
@@ -413,6 +414,7 @@ class MainView(Gtk.Box):
 
     def _on_switch_notebook_page(self, notebook, page, page_num):
         self._current_page = page
+        self._list.filter(page.status)
         self._update_widgets_for_selected_show()
 
     def _on_show_selected(self, page, selected_show):
@@ -424,7 +426,12 @@ class MainView(Gtk.Box):
             return
 
         self.set_buttons_sensitive(True, lists_too=False)
-        show = self._engine.get_show_info(self._current_page.selected_show)
+        try:
+            show = self._engine.get_show_info(self._current_page.selected_show)
+        except utils.EngineError:
+            self._list.remove(id=self._current_page.selected_show)
+            self.set_buttons_sensitive(False, lists_too=False)
+            return
 
         # Block handlers
         self.statusbox.handler_block(self.statusbox_handler)
@@ -508,15 +515,16 @@ class NotebookPage(Gtk.ScrolledWindow):
                            (str, bool)),
     }
 
-    def __init__(self, engine, page_num, status, config):
+    def __init__(self, engine, page_num, status, config, list=None):
         super().__init__()
         self._engine = engine
         self._page_number = page_num
         self._status = status
         self._selected_show = 0
-        self._init_widgets(page_num, status, config)
+        self._list = list
+        self._init_widgets(page_num, status, config, list=list)
 
-    def _init_widgets(self, page_num, status, config):
+    def _init_widgets(self, page_num, status, config, list=None):
         self.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         self.set_size_request(550, 300)
         self.set_border_width(5)
@@ -526,7 +534,7 @@ class NotebookPage(Gtk.ScrolledWindow):
             config['colors'],
             config['visible_columns'],
             config['episodebar_style'])
-
+        self._show_tree_view.set_model(list)
         self._show_tree_view.get_selection().connect("changed", self._on_selection_changed)
         self._show_tree_view.connect("row-activated", self._on_row_activated)
         self._show_tree_view.connect("column-toggled", self._on_column_toggled)
@@ -540,7 +548,7 @@ class NotebookPage(Gtk.ScrolledWindow):
 
     @property
     def decimals(self):
-        return self._show_tree_view.decimals
+        return self._list.decimals
 
     @decimals.setter
     def decimals(self, decimals):
@@ -552,7 +560,7 @@ class NotebookPage(Gtk.ScrolledWindow):
 
     @property
     def pagenumber(self):
-        return self._page_number
+        return self._show_tree_view.pagenumber
 
     @property
     def selected_show(self):
