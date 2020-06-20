@@ -24,7 +24,7 @@ from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.showeventtype import ShowEventType
-from trackma.ui.gtk.showtreeview import ShowTreeView, ShowList
+from trackma.ui.gtk.showtreeview import ShowTreeView, ShowListStore, ShowListFilter
 from trackma import utils
 from trackma import messenger
 
@@ -67,7 +67,7 @@ class MainView(Gtk.Box):
         self._config = config
         self._engine = None
         self._account = None
-        self._list = ShowList(colors=config['colors'])
+        self._list = ShowListStore(colors=config['colors'])
         self._debug = debug
 
         self._image_thread = None
@@ -204,18 +204,20 @@ class MainView(Gtk.Box):
 
         # Insert pages
         for status in statuses_nums:
+            page_title = Gtk.Label(label=statuses_names[status])
             self._pages[status] = NotebookPage(self._engine,
                                                self.notebook.get_n_pages(),
                                                status,
                                                self._config,
-                                               self._list)
+                                               self._list,
+                                               page_title)
 
             self._page_handler_ids[status] = []
             self._page_handler_ids[status].append(self._pages[status].connect('show-selected', self._on_show_selected))
             self._page_handler_ids[status].append(self._pages[status].connect('show-action', self._on_show_action))
             self._page_handler_ids[status].append(self._pages[status].connect('column-toggled', self._on_column_toggled))
             self.notebook.append_page(self._pages[status],
-                                      Gtk.Label(label=statuses_names[status]))
+                                      page_title)
 
         self.notebook.handler_unblock(self.notebook_switch_handler)
         self.notebook.show_all()
@@ -233,7 +235,7 @@ class MainView(Gtk.Box):
                              self._engine.altname(show['id']),
                              library.get(show['id']))
 
-        self._list.store.set_sort_column_id(1, Gtk.SortType.ASCENDING)
+        self._list.set_sort_column_id(1, Gtk.SortType.ASCENDING)
         for status in self._pages:
             tree_view = self._pages[status].show_tree_view
             tree_view.thaw_child_notify()
@@ -381,12 +383,16 @@ class MainView(Gtk.Box):
         try:
             self._engine.get_show_info(showid=show['id'])
             self._list.update_or_append(show)
-        except:
+        except utils.EngineError:
             self._list.remove(show)
         pagenumber = self._pages[status].pagenumber
-        self.notebook.set_current_page(pagenumber)
-
-        self._pages[status].show_tree_view.select(show)
+        current_page = self.notebook.get_current_page()
+        if current_page != pagenumber:
+            if current_page != self._pages[None].pagenumber:
+                self.notebook.set_current_page(pagenumber)
+                self._pages[status].show_tree_view.select(show)
+            else:
+                self._pages[None].show_tree_view.select(show)
 
     def _on_playing_show_idle(self, show, is_playing, episode):
         GLib.idle_add(self._set_show_playing, show, is_playing, episode)
@@ -415,7 +421,6 @@ class MainView(Gtk.Box):
 
     def _on_switch_notebook_page(self, notebook, page, page_num):
         self._current_page = page
-        self._list.filter(page.status)
         self._update_widgets_for_selected_show()
 
     def _on_show_selected(self, page, selected_show):
@@ -517,36 +522,52 @@ class NotebookPage(Gtk.ScrolledWindow):
                            (str, bool)),
     }
 
-    def __init__(self, engine, page_num, status, config, list=None):
+    def __init__(self, engine, page_num, status, config, _list=None, title=None):
         super().__init__()
         self._engine = engine
         self._page_number = page_num
         self._status = status
         self._selected_show = 0
-        self._list = list
-        self._init_widgets(page_num, status, config, list=list)
+        self._list = _list
+        self._title = title
+        self._title_text = self._engine.mediainfo['statuses_dict'][status] if status in self._engine.mediainfo['statuses_dict'].keys() else 'All'
+        self._init_widgets(page_num, status, config)
 
-    def _init_widgets(self, page_num, status, config, list=None):
+    def _init_widgets(self, page_num, status, config):
         self.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         self.set_size_request(550, 300)
         self.set_border_width(5)
 
         self._show_tree_view = ShowTreeView(
-            status,
-            config['colors'],
+                config['colors'],
             config['visible_columns'],
             config['episodebar_style'])
-        self._show_tree_view.set_model(list)
+        self._show_tree_view.set_model(
+            Gtk.TreeModelSort(
+                model=ShowListFilter(
+                    status=self.status,
+                    child_model=self._list
+                )
+            )
+        )
         self._show_tree_view.get_selection().connect("changed", self._on_selection_changed)
         self._show_tree_view.connect("row-activated", self._on_row_activated)
         self._show_tree_view.connect("column-toggled", self._on_column_toggled)
         self._show_tree_view.connect("button-press-event", self._on_show_context_menu)
+        self._show_tree_view.get_model().connect("row-inserted", self._update_title)
+        self._show_tree_view.get_model().connect("row-deleted", self._update_title)
         self._show_tree_view.pagenumber = page_num
 
         self.add(self._show_tree_view)
 
     def set_column_visible(self, column_name, visible):
         self._show_tree_view.cols[column_name].set_visible(visible)
+
+    def _update_title(self, model, *args):
+        self._title.set_text('%s (%d)' % (
+            self._title_text,
+            len(model)
+        ))
 
     @property
     def decimals(self):

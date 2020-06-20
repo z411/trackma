@@ -19,23 +19,10 @@ from gi.repository import Gtk, Gdk, Pango, GObject
 from trackma import utils
 
 
-class ShowListFilter(Gtk.TreeModelFilter):
-    status = None
-    def __init__(self, *args, **kwargs):
-        Gtk.TreeModelFilter.__init__(
-            self,
-            *args,
-            **kwargs
-        )
-        self.set_visible_func(self.status_filter)
-
-    def status_filter(self, model, iter, data):
-        return self.status is None or model[iter][15] == self.status
-
-
-class ShowList(Gtk.TreeModelSort):
+class ShowListStore(Gtk.ListStore):
     def __init__(self, decimals=0, colors=dict()):
-        store = Gtk.ListStore(
+        Gtk.ListStore.__init__(
+            self,
             int,  # ID
             str,  # Title
             int,  # Episodes
@@ -53,15 +40,9 @@ class ShowList(Gtk.TreeModelSort):
             str,  # my_finish_date
             str   # status
         )
-        Gtk.TreeModelSort.__init__(
-            self,
-            model=ShowListFilter(
-                child_model=store
-            )
-        )
         self.colors = colors
         self.decimals = decimals
-        self.store.set_sort_column_id(1, Gtk.SortType.ASCENDING)
+        self.set_sort_column_id(1, Gtk.SortType.ASCENDING)
 
     @staticmethod
     def format_date(date):
@@ -72,17 +53,6 @@ class ShowList(Gtk.TreeModelSort):
                 return '?'
         else:
             return '-'
-
-    @property
-    def store(self):
-        return self.props.model.props.child_model
-
-    def filter(self, status=None):
-        self.props.model.status = status
-        self.props.model.refilter()
-
-    def clear(self):
-        self.store.clear()
 
     def _get_color(self, show, eps):
         if show.get('queued'):
@@ -138,10 +108,10 @@ class ShowList(Gtk.TreeModelSort):
                my_start_date,
                my_finish_date,
                show['my_status']]
-        self.store.append(row)
+        Gtk.ListStore.append(self, row)
 
     def update_or_append(self, show):
-        for row in self.store:
+        for row in self:
             if int(row[0]) == show['id']:
                 episodes_str = "%d / %d" % (show['my_progress'], show['total'])
                 row[2] = show['my_progress']
@@ -150,11 +120,12 @@ class ShowList(Gtk.TreeModelSort):
                 row[3] = show['my_score']
                 row[5] = score_str
                 row[9] = self._get_color(show, row[8])
+                row[15] = show['my_status']
                 return
         self.append(show)
 
     def update(self, show):
-        for row in self.store:
+        for row in self:
             if int(row[0]) == show['id']:
                 episodes_str = "%d / %d" % (show['my_progress'], show['total'])
                 row[2] = show['my_progress']
@@ -165,11 +136,13 @@ class ShowList(Gtk.TreeModelSort):
                 row[3] = show['my_score']
                 row[5] = score_str
                 row[9] = self._get_color(show, row[8])
+                row[15] = show['my_status']
                 return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
+
     def update_title(self, show, altname=None):
-        for row in self.store:
+        for row in self:
             if int(row[0]) == show['id']:
                 if altname:
                     title_str = "%s [%s]" % (show['title'], altname)
@@ -180,16 +153,15 @@ class ShowList(Gtk.TreeModelSort):
                 return
 
     def remove(self, show=None, id=None):
-        for row in self.store:
+        for row in self:
             if int(row[0]) == (show['id'] if show is not None else id):
-                self.store.remove(row.iter)
+                Gtk.ListStore.remove(self, row.iter)
                 return
 
     def playing(self, show, is_playing):
         # Change the color if the show is currently playing
-        for row in self.store:
+        for row in self:
             if int(row[0]) == show['id']:
-                print(type(row))
                 if is_playing:
                     row[9] = self.colors['is_playing']
                 else:
@@ -197,16 +169,29 @@ class ShowList(Gtk.TreeModelSort):
                 return
 
 
+class ShowListFilter(Gtk.TreeModelFilter):
+    def __init__(self, status=None, *args, **kwargs):
+        Gtk.TreeModelFilter.__init__(
+            self,
+            *args,
+            **kwargs
+        )
+        self.set_visible_func(self.status_filter)
+        self._status = status
+
+    def status_filter(self, model, iter, data):
+        return self._status is None or model[iter][15] == self._status
+
+
 class ShowTreeView(Gtk.TreeView):
     __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST, \
             GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
 
-    def __init__(self, status, colors, visible_columns, progress_style=1):
+    def __init__(self, colors, visible_columns, progress_style=1):
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
         self.visible_columns = visible_columns
-        self.status_filter = status
         self.progress_style = progress_style
 
         self.set_enable_search(True)
