@@ -190,9 +190,10 @@ class MainView(Gtk.Box):
         self.btn_episode_add.set_sensitive(can_update)
 
     def _create_notebook_pages(self):
-        statuses_nums = self._engine.mediainfo['statuses']
-        statuses_names = self._engine.mediainfo['statuses_dict']
-
+        statuses_nums = self._engine.mediainfo['statuses'].copy()
+        statuses_names = self._engine.mediainfo['statuses_dict'].copy()
+        statuses_nums.append(None)
+        statuses_names[None]='All'
         self.notebook.handler_block(self.notebook_switch_handler)
         # Clear notebook
         for i in range(self.notebook.get_n_pages()):
@@ -478,7 +479,8 @@ class MainView(Gtk.Box):
         self.emit('show-action', event_type, data)
 
     def get_current_status(self):
-        return self._current_page.status
+        print(self._engine.mediainfo['statuses'])
+        return self._current_page.status if self._current_page.status is not None else self._engine.mediainfo['statuses'][-1]
 
     def get_selected_show(self):
         if not self._current_page:
