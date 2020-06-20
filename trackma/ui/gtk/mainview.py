@@ -554,7 +554,7 @@ class NotebookPage(Gtk.ScrolledWindow):
 
     @decimals.setter
     def decimals(self, decimals):
-        self._show_tree_view.decimals = decimals
+        self._list.decimals = decimals
 
     @property
     def status(self):

@@ -201,12 +201,11 @@ class ShowTreeView(Gtk.TreeView):
     __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST, \
             GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
 
-    def __init__(self, status, colors, visible_columns, progress_style=1, decimals=0):
+    def __init__(self, status, colors, visible_columns, progress_style=1):
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
         self.visible_columns = visible_columns
-        self.decimals = decimals
         self.status_filter = status
         self.progress_style = progress_style
 
