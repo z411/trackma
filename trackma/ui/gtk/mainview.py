@@ -556,7 +556,6 @@ class NotebookPage(Gtk.ScrolledWindow):
         self._show_tree_view.connect("button-press-event", self._on_show_context_menu)
         self._show_tree_view.get_model().connect("row-inserted", self._update_title)
         self._show_tree_view.get_model().connect("row-deleted", self._update_title)
-        self._show_tree_view.pagenumber = page_num
 
         self.add(self._show_tree_view)
 
@@ -583,7 +582,7 @@ class NotebookPage(Gtk.ScrolledWindow):
 
     @property
     def pagenumber(self):
-        return self._show_tree_view.pagenumber
+        return self._page_number
 
     @property
     def selected_show(self):
