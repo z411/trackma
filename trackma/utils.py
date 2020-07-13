@@ -274,7 +274,7 @@ def redirect_show(show_tuple, redirections, tracker_list):
         for redirection in redirections[show['id']]:
             (src_eps, dst_id, dst_eps) = redirection
 
-            if (src_eps[1] == -1 and ep > src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
+            if (src_eps[1] == -1 and ep >= src_eps[0]) or (ep in range(src_eps[0], src_eps[1] + 1)):
                 new_show_id = dst_id
                 new_ep = ep + (dst_eps[0] - src_eps[0])
 
