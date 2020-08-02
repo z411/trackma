@@ -288,7 +288,7 @@ class MainView(Gtk.Box):
         if lists_too:
             self.notebook.set_sensitive(boolean)
 
-        if self._current_page.selected_show or not boolean:
+        if ( self._current_page and self._current_page.selected_show ) or not boolean:
             if self._engine.mediainfo['can_play']:
                 self.btn_play_next.set_sensitive(boolean)
 
@@ -364,7 +364,7 @@ class MainView(Gtk.Box):
     def _update_show(self, show):
         status = show['my_status']
         self._list.update(show)
-        if show['id'] == self._current_page.selected_show:
+        if self._current_page and show['id'] == self._current_page.selected_show:
             self.btn_episode_show_entry.set_label(str(show['my_progress']))
             self.spinbtn_score.set_value(show['my_score'])
 
@@ -427,7 +427,7 @@ class MainView(Gtk.Box):
         self._update_widgets_for_selected_show()
 
     def _update_widgets_for_selected_show(self):
-        if not self._current_page.selected_show:
+        if not (self._current_page and self._current_page.selected_show):
             self.set_buttons_sensitive(False, lists_too=False)
             return
 
