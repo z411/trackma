@@ -550,6 +550,10 @@ class NotebookPage(Gtk.ScrolledWindow):
                 )
             )
         )
+        self._title.set_text('%s (%d)' % (
+            self._title_text,
+            len(self._show_tree_view.props.model)
+        ))
         self._show_tree_view.get_selection().connect("changed", self._on_selection_changed)
         self._show_tree_view.connect("row-activated", self._on_row_activated)
         self._show_tree_view.connect("column-toggled", self._on_column_toggled)
