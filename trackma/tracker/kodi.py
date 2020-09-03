@@ -16,16 +16,19 @@
 
 import time
 import json
+import base64
 import urllib.request
 
 import trackma.utils as utils
 from trackma.tracker import tracker
 
 NOT_RUNNING = 0
-ACTIVE = 1
-PLAYING = 2
-PAUSED = 3
-IDLE = 4
+IDLE = 1
+ACTIVE = 2
+AUTH_REQUIRED = 3
+
+PLAYING = 4
+PAUSED = 5
 
 class KodiTracker(tracker.TrackerBase):
     name = 'Tracker (Kodi)'
@@ -33,7 +36,7 @@ class KodiTracker(tracker.TrackerBase):
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         self.config = config
 
-        self.host_port = self.config['kodi_host']+":"+self.config['kodi_port']
+        self.host_port = "{}:{}".format(self.config['kodi_host'], self.config['kodi_port'])
         self.status_log = [None, None]
         self.headers = {'content-type': 'application/json'}
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
@@ -47,8 +50,11 @@ class KodiTracker(tracker.TrackerBase):
                 return ACTIVE
             else:
                 return IDLE
-        except urllib.request.URLError:
-            return NOT_RUNNING
+        except urllib.request.URLError as e:
+            if e.code == 401:
+                return AUTH_REQUIRED
+            else:
+                return NOT_RUNNING
 
     def _playing_file(self):
         # returns the filename of the currently playing file
@@ -77,7 +83,7 @@ class KodiTracker(tracker.TrackerBase):
         return round(seconds*0.80)
 
     def _get_rpc_info(self, method, params={}):
-        url = "http://"+self.host_port+"/jsonrpc"
+        url = "http://{}/jsonrpc".format(self.host_port)
 
         body = {
             "method": method,
@@ -85,8 +91,14 @@ class KodiTracker(tracker.TrackerBase):
             "jsonrpc": "2.0",
             "id": 0
         }
-
-        req = urllib.request.Request(url, json.dumps(body).encode(), headers=self.headers)
+        
+        if not self.config['kodi_user'] == '':
+            req = urllib.request.Request(url, json.dumps(body).encode(), headers=self.headers)
+            b64 = base64.b64encode(bytes("{}:{}".format(self.config['kodi_user'], self.config['kodi_passwd']),'ascii'))
+            req.add_header("Authorization", "Basic {}".format(b64.decode('utf-8')))
+        else:
+            req = urllib.request.Request(url, json.dumps(body).encode(), headers=self.headers)
+            
         response = urllib.request.urlopen(req)
         data = json.loads(response.read().decode())
 
@@ -108,11 +120,11 @@ class KodiTracker(tracker.TrackerBase):
 
         while self.active:
             self.status_log.append(self._get_kodi_status())
-
-            if self.status_log[-1] == ACTIVE:
-                if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
+            
+            if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
                     self.msg.info(self.name, "Reconnected to Kodi.")
 
+            if self.status_log[-1] == ACTIVE:
                 if self.config['kodi_obey_update_wait_s']:
                     self.wait_s = config['tracker_update_wait_s']
                 else:
@@ -128,7 +140,9 @@ class KodiTracker(tracker.TrackerBase):
                 elif player[1] == PLAYING:
                     self.resume_timer()
 
-            elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
+            elif self.status_log[-1] == AUTH_REQUIRED:
+                self.msg.warn(self.name, "Authentication needed by Kodi, login in the settings and restart trackma.")
+            elif self.status_log[-1] == NOT_RUNNING:
                 self.msg.warn(self.name, "Kodi HTTP Server is not running.")
 
             del self.status_log[0]

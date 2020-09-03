@@ -391,6 +391,8 @@ config_defaults = {
     'kodi_host': "localhost",
     'kodi_port': "8080",
     'kodi_obey_update_wait_s': False,
+    'kodi_user': '',
+    'kodi_passwd': '',
     'use_hooks': True,
 }
 userconfig_defaults = {
