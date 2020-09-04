@@ -1017,7 +1017,6 @@ class Engine:
             # Try trackers in this order: pyinotify, inotify, polling
             try:
                 return self._get_tracker_class('inotify_auto')
-            except ImportError as e:
-                print(e)
+            except ImportError:
                 return self._get_tracker_class('polling')
 
