@@ -44,10 +44,11 @@ class KodiTracker(tracker.TrackerBase):
     def _get_kodi_status(self):
         # returns the status of the active players (if any)
         try:
-            player = self._get_rpc_info("Player.GetActivePlayers")[0]['type']
+            player = self._get_rpc_info("Player.GetActivePlayers")
 
-            if player == "video":
-                return ACTIVE
+            if player:
+                if player[0]['type'] == "video":
+                    return ACTIVE
             else:
                 return IDLE
         except urllib.request.URLError as e:
