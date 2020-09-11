@@ -49,11 +49,16 @@ class KodiTracker(tracker.TrackerBase):
             if player:
                 if player[0]['type'] == "video":
                     return ACTIVE
+                else:
+                    return IDLE
             else:
                 return IDLE
         except urllib.request.URLError as e:
-            if e.code == 401:
-                return AUTH_REQUIRED
+            if hasattr(e, 'code'):
+                if e.code == 401:
+                    return AUTH_REQUIRED
+                else:
+                    return NOT_RUNNING
             else:
                 return NOT_RUNNING
 
