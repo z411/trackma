@@ -289,8 +289,8 @@ class SettingsWindow(Gtk.Window):
         chooser_dialog = Gtk.FileChooserDialog('Select a directory',
                                                self.get_parent_window(),
                                                Gtk.FileChooserAction.OPEN,
-                                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+                                               ("_Cancel", Gtk.ResponseType.CANCEL,
+                                                "_Open", Gtk.ResponseType.OK))
         chooser_dialog.set_default_response(Gtk.ResponseType.OK)
         chooser_dialog.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
 

@@ -42,6 +42,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     btn_appmenu = GtkTemplate.Child()
     btn_mediatype = GtkTemplate.Child()
+    header_bar = GtkTemplate.Child()
 
     def __init__(self, app, debug=False):
         Gtk.ApplicationWindow.__init__(self, application=app)
@@ -74,7 +75,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _init_widgets(self):
         Gtk.Window.set_default_icon_from_file(utils.DATADIR + '/icon.png')
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_title('Trackma-gtk ' + utils.VERSION)
+        self.set_title('Trackma GTK')
 
         if self._config['remember_geometry']:
             self.resize(self._config['last_width'], self._config['last_height'])
@@ -211,10 +212,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         api_iconpath = 1
         api_iconfile = current_api[api_iconpath]
 
-        self.set_title('Trackma-gtk %s [%s (%s)]' % (
-            utils.VERSION,
-            self._engine.api_info['name'],
-            self._engine.api_info['mediatype']))
+        self.header_bar.set_subtitle(self._engine.api_info['name'] + " (" +
+                                     self._engine.api_info['mediatype'] + ")")
 
         if self.statusicon and self._config['tray_api_icon']:
             self.statusicon.set_from_file(api_iconfile)
@@ -222,7 +221,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _on_change_mediatype(self, action, value):
         action.set_state(value)
         mediatype = value.get_string()
-        self._main_view.load_account_mediatype(None, mediatype)
+        self._main_view.load_account_mediatype(None, mediatype, self.header_bar)
 
     def _on_search(self, action, param):
         current_status = self._main_view.get_current_status()
@@ -332,27 +331,27 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         # Reload the engine if already started,
         # start it otherwise
         if self._engine and self._engine.loaded:
-            self._main_view.load_account_mediatype(account, None)
+            self._main_view.load_account_mediatype(account, None, None)
         else:
             self._create_engine(account)
 
-    def _on_account_cancel(self, accounts_window, switch):
+    def _on_account_cancel(self, _accounts_window, switch):
         manager = AccountManager()
 
         if not switch or not manager.get_accounts():
             self._quit()
 
-    def _on_preferences(self, action, param):
+    def _on_preferences(self, _action, _param):
         win = SettingsWindow(self._engine, self._config, self._configfile, transient_for=self)
         win.connect('destroy', self._on_modal_destroy)
         win.present()
         self._modals.append(win)
 
-    def _on_about(self, action, param):
+    def _on_about(self, _action, _param):
         about = Gtk.AboutDialog(parent=self)
         about.set_modal(True)
         about.set_transient_for(self)
-        about.set_program_name("Trackma-gtk")
+        about.set_program_name("Trackma GTK")
         about.set_version(utils.VERSION)
         about.set_license_type(Gtk.License.GPL_3_0_ONLY)
         about.set_comments("Trackma is an open source client for media tracking websites.\nThanks to all contributors.")

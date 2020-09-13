@@ -86,11 +86,11 @@ class MainView(Gtk.Box):
         self._engine_start()
         self._init_signals_engine()
 
-    def load_account_mediatype(self, account, mediatype):
+    def load_account_mediatype(self, account, mediatype, extern_widget):
         if account:
             self._account = account
 
-        self._engine_reload(account, mediatype)
+        self._engine_reload(account, mediatype, extern_widget)
 
     def _init_widgets(self):
         self.image_box = ImageBox(100, 150)
@@ -98,7 +98,7 @@ class MainView(Gtk.Box):
         self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.statusbar = Gtk.Statusbar()
-        self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
+        self.statusbar.push(0, 'Trackma GTK ' + utils.VERSION)
         self.statusbar.show()
         self.pack_start(self.statusbar, False, False, 0)
 
@@ -138,12 +138,12 @@ class MainView(Gtk.Box):
 
         GLib.idle_add(self._update_widgets)
 
-    def _engine_reload(self, account, mediatype):
+    def _engine_reload(self, account, mediatype, extern_widget):
         self.set_buttons_sensitive(False)
         threading.Thread(target=self._engine_reload_task,
-                         args=[account, mediatype]).start()
+                         args=[account, mediatype, extern_widget]).start()
 
-    def _engine_reload_task(self, account, mediatype):
+    def _engine_reload_task(self, account, mediatype, extern_widget):
         try:
             self._engine.reload(account, mediatype)
         except utils.TrackmaError as e:
@@ -152,9 +152,9 @@ class MainView(Gtk.Box):
             self.emit('error-fatal', e)
             return
 
-        GLib.idle_add(self._update_widgets)
+        GLib.idle_add(self._update_widgets, extern_widget)
 
-    def _update_widgets(self):
+    def _update_widgets(self, extern_widget=None):
         self.statusbox.handler_block(self.statusbox_handler)
         self._reset_widgets()
         self._create_notebook_pages()
@@ -162,6 +162,9 @@ class MainView(Gtk.Box):
         self.populate_all_pages()
         self._populate_statusbox()
         self.statusbox.handler_unblock(self.statusbox_handler)
+        if extern_widget is not None:
+            extern_widget.set_subtitle(self._engine.api_info['name'] + " (" +
+                                       self._engine.api_info['mediatype'] + ")")
 
         self.set_status_idle("Ready.")
         self.set_buttons_sensitive_idle(True)
@@ -602,7 +605,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         menu = Gtk.Menu()
         mb_play = Gtk.ImageMenuItem('Play Next',
                                     Gtk.Image.new_from_icon_name(
-                                        Gtk.STOCK_MEDIA_PLAY, 0))
+                                        "media-playback-start", Gtk.IconSize.MENU))
         mb_play.connect("activate",
                         self._on_mb_activate,
                         ShowEventType.PLAY_NEXT)
@@ -628,7 +631,7 @@ class NotebookPage(Gtk.ScrolledWindow):
                              ShowEventType.CHANGE_ALTERNATIVE_TITLE)
         mb_delete = Gtk.ImageMenuItem('Delete',
                                       Gtk.Image.new_from_icon_name(
-                                          Gtk.STOCK_DELETE, 0))
+                                          "edit-delete", Gtk.IconSize.MENU))
         mb_delete.connect("activate",
                           self._on_mb_activate,
                           ShowEventType.REMOVE)
