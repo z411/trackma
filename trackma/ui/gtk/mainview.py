@@ -50,7 +50,9 @@ class MainView(Gtk.Box):
     api_user = GtkTemplate.Child()
     btn_episode_remove = GtkTemplate.Child()
     btn_episode_show_entry = GtkTemplate.Child()
+    entry_popover = GtkTemplate.Child()
     entry_episode = GtkTemplate.Child()
+    entry_done = GtkTemplate.Child()
     btn_episode_add = GtkTemplate.Child()
     btn_play_next = GtkTemplate.Child()
     spinbtn_score = GtkTemplate.Child()
@@ -106,7 +108,8 @@ class MainView(Gtk.Box):
         self.btn_episode_remove.connect("clicked", self._on_btn_episode_remove_clicked)
         self.btn_episode_show_entry.connect("clicked", self._show_episode_entry)
         self.entry_episode.connect("activate", self._on_entry_episode_activate)
-        self.entry_episode.connect("focus-out-event", self._hide_episode_entry)
+        self.entry_done.connect("clicked", self._on_entry_episode_activate)
+        self.entry_popover.connect("focus-out-event", self._hide_episode_entry)
         self.btn_episode_add.connect("clicked", self._on_btn_episode_add_clicked)
         self.btn_play_next.connect("clicked", self._on_btn_play_next_clicked, True)
         self.spinbtn_score.connect("activate", self._on_spinbtn_score_activate)
@@ -189,6 +192,7 @@ class MainView(Gtk.Box):
         self.btn_play_next.set_sensitive(can_play)
         self.btn_episode_show_entry.set_sensitive(can_update)
         self.entry_episode.set_sensitive(can_update)
+        self.entry_done.set_sensitive(can_update)
         self.btn_episode_add.set_sensitive(can_update)
 
     def _create_notebook_pages(self):
@@ -292,6 +296,7 @@ class MainView(Gtk.Box):
             if self._engine.mediainfo['can_update']:
                 self.btn_episode_show_entry.set_sensitive(boolean)
                 self.entry_episode.set_sensitive(boolean)
+                self.entry_done.set_sensitive(boolean)
                 self.btn_episode_add.set_sensitive(boolean)
                 self.btn_episode_remove.set_sensitive(boolean)
 
@@ -304,10 +309,11 @@ class MainView(Gtk.Box):
                   ShowEventType.EPISODE_REMOVE,
                   (self._current_page.selected_show,))
 
-    def _show_episode_entry(self, *args):
-        self.btn_episode_show_entry.hide()
+    def _show_episode_entry(self, widget):
+        self.entry_popover.set_relative_to(widget)
+        self.entry_popover.set_position(Gtk.PositionType.BOTTOM)
         self.entry_episode.set_text(self.btn_episode_show_entry.get_label())
-        self.entry_episode.show()
+        self.entry_popover.show()
         self.entry_episode.grab_focus()
 
     def _on_entry_episode_activate(self, widget):
@@ -316,12 +322,12 @@ class MainView(Gtk.Box):
             self.emit('show-action',
                       ShowEventType.EPISODE_SET,
                       (self._current_page.selected_show, episode))
+            self._hide_episode_entry()
         except ValueError:
             pass
 
     def _hide_episode_entry(self, *args):
-        self.entry_episode.hide()
-        self.btn_episode_show_entry.show()
+        self.entry_popover.hide()
 
     def _on_btn_episode_add_clicked(self, widget):
         self.emit('show-action',
@@ -440,7 +446,6 @@ class MainView(Gtk.Box):
 
         # Episode selector
         self.btn_episode_show_entry.set_label(str(show['my_progress']))
-        self._hide_episode_entry()
 
         # Status selector
         for i in self.statusmodel:
