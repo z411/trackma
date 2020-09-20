@@ -96,7 +96,7 @@ class ImageBox(Gtk.HBox):
 
     def reset(self):
         if imaging_available:
-            self.set_text("Trackma")
+            self.set_image(utils.DATADIR + '/icon.png')
         else:
             self.set_text("PIL library\nnot available")
 

@@ -75,7 +75,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _init_widgets(self):
         Gtk.Window.set_default_icon_from_file(utils.DATADIR + '/icon.png')
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_title('Trackma GTK')
+        self.set_title('Trackma')
 
         if self._config['remember_geometry']:
             self.resize(self._config['last_width'], self._config['last_height'])
