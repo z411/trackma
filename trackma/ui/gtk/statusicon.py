@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from gi import require_version
-require_version('Gtk', '3.0')
 require_version('Gdk', '3.0')
 from gi.repository import Gdk, Gtk, GObject
 from trackma import utils
@@ -24,12 +23,9 @@ class TrackmaStatusIcon(Gtk.StatusIcon):
     __gtype_name__ = 'TrackmaStatusIcon'
 
     __gsignals__ = {
-        'hide-clicked': (GObject.SignalFlags.RUN_FIRST, None,
-                         ()),
-        'about-clicked': (GObject.SignalFlags.RUN_FIRST, None,
-                          ()),
-        'quit-clicked': (GObject.SignalFlags.RUN_FIRST, None,
-                         ()),
+        'hide-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'about-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'quit-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self):

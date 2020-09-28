@@ -15,8 +15,7 @@
 #
 
 import os
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
@@ -399,8 +398,8 @@ class DirectoryRow(Gtk.ListBoxRow):
 
         self.set_activatable(False)
         self.set_margin_bottom(5)
-        self.set_margin_left(16)
-        self.set_margin_right(16)
+        self.set_margin_start(16)
+        self.set_margin_end(16)
         self.set_margin_top(5)
 
         self.add(box)

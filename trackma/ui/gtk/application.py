@@ -16,6 +16,7 @@
 
 from gi import require_version
 require_version('Gtk', '3.0')
+
 from gi.repository import GLib, Gio, Gtk
 from trackma.ui.gtk.window import TrackmaWindow
 from trackma import utils
@@ -25,13 +26,16 @@ class TrackmaApplication(Gtk.Application):
     __gtype_name__ = 'TrackmaApplication'
 
     def __init__(self):
-        super().__init__(application_id="com.github.z411.TrackmaGtk",
-                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE|Gio.ApplicationFlags.NON_UNIQUE)
+        super().__init__(
+            application_id="com.github.z411.TrackmaGtk",
+            flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.NON_UNIQUE
+        )
 
         self.debug = False
         self.window = None
-        self.add_main_option("debug", ord("d"), GLib.OptionFlags.NONE,
-                             GLib.OptionArg.NONE, "Show debugging information", None)
+        self.add_main_option(
+            "debug", ord("d"), GLib.OptionFlags.NONE, GLib.OptionArg.NONE, "Show debugging information", None
+        )
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -88,11 +92,15 @@ class TrackmaApplication(Gtk.Application):
         if not self.window._engine:
             self.window.init_account_selection()
 
-    def message_error(self, error):
-        md = Gtk.MessageDialog(None,
-                           Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                           Gtk.MessageType.ERROR,
-                           Gtk.ButtonsType.CLOSE, str(error))
+    @staticmethod
+    def message_error(error):
+        md = Gtk.MessageDialog(
+            None,
+            Gtk.DialogFlags.DESTROY_WITH_PARENT,
+            Gtk.MessageType.ERROR,
+            Gtk.ButtonsType.CLOSE,
+            str(error)
+        )
         md.run()
         md.destroy()
 

@@ -16,8 +16,7 @@
 
 import os
 import threading
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import GLib, Gtk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate

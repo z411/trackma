@@ -17,8 +17,7 @@
 import os
 import webbrowser
 from enum import Enum
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -37,10 +36,8 @@ class AccountsWindow(Gtk.Dialog):
     __gtype_name__ = 'AccountsWindow'
 
     __gsignals__ = {
-        'account-cancel': (GObject.SignalFlags.RUN_FIRST, None,
-                           ()),
-        'account-open': (GObject.SignalFlags.RUN_FIRST, None,
-                         (int, bool))
+        'account-cancel': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'account-open': (GObject.SignalFlags.RUN_FIRST, None, (int, bool))
     }
 
     header_bar = GtkTemplate.Child()
@@ -63,7 +60,7 @@ class AccountsWindow(Gtk.Dialog):
     btn_pin_request = GtkTemplate.Child()
 
     def __init__(self, manager, **kwargs):
-        Gtk.Window.__init__(self, **kwargs)
+        super().__init__(self, **kwargs)
         self.init_template()
 
         self.accounts = []
@@ -86,7 +83,8 @@ class AccountsWindow(Gtk.Dialog):
     def _add_separators(self):
         self.accounts_listbox.set_header_func(self._accounts_listbox_header_func, None)
 
-    def _accounts_listbox_header_func(self, row, before, user_data):
+    @staticmethod
+    def _accounts_listbox_header_func(row, before, _user_data):
         if before is None:
             row.set_header(None)
             return
@@ -322,15 +320,19 @@ class AccountsWindow(Gtk.Dialog):
             self._refresh_btn_edit_confirm()
 
     def _refresh_btn_new_confirm(self):
-        sensitive = (self._get_combo_active_api_name() and
-                     self.username_entry.get_text().strip() and
-                     self.password_entry.get_text())
+        sensitive = (
+            self._get_combo_active_api_name() and
+            self.username_entry.get_text().strip() and
+            self.password_entry.get_text()
+        )
 
         self.btn_new_confirm.set_sensitive(sensitive)
 
     def _refresh_btn_edit_confirm(self):
-        sensitive = (self.password_entry.get_text() and
-                     not self.account_edit['password'] == self.password_entry.get_text())
+        sensitive = (
+            self.password_entry.get_text() and
+            not self.account_edit['password'] == self.password_entry.get_text()
+        )
         self.btn_edit_confirm.set_sensitive(sensitive)
 
     def _add_account(self):
