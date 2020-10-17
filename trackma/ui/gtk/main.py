@@ -22,7 +22,6 @@ from trackma import utils
 
 def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    signal.signal(signal.SIGCLD, signal.SIG_IGN)
 
     print("Trackma-gtk v{}".format(utils.VERSION))
     app = TrackmaApplication()
