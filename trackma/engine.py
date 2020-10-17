@@ -16,12 +16,14 @@
 
 import re
 import os
+import sys
 import subprocess
 import difflib
 import time
 import datetime
 import random
 import shlex
+import shutil
 from decimal import Decimal
 
 from trackma import messenger
@@ -886,13 +888,37 @@ class Engine:
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
                 arg_list = shlex.split(self.config['player'])
-                arg_list.append(filename)
-                try:
-                    with open(os.devnull, 'wb') as DEVNULL:
-                        subprocess.Popen(arg_list, stdout=DEVNULL, stderr=DEVNULL)
-                except OSError:
+
+                if len(arg_list) > 0 and shutil.which(arg_list[0]) == None:
                     raise utils.EngineError('Player not found, check your config.json')
-                return endep
+
+                arg_list.append(filename)
+
+                ## Do a double fork on *nix to prevent zombie processes
+                if not sys.platform.startswith('win32'):
+                    try:
+                        pid = os.fork()
+                        if pid > 0:
+                            os.waitpid(pid, 0)
+                            return endep
+                    except OSError:
+                        sys.exit(1)
+
+                    os.setsid()
+                    fd = os.open("/dev/null", os.O_RDWR)
+                    os.dup2(fd, 0)
+                    os.dup2(fd, 1)
+                    os.dup2(fd, 2)
+                    try:
+                        pid = os.fork()
+                        if pid > 0:
+                            sys.exit(0)
+                    except OSError:
+                        sys.exit(1)
+                    os.execv(arg_list[0],arg_list)
+                else:
+                    subprocess.Popen(arg_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    return endep
             else:
                 raise utils.EngineError('Episode file not found.')
 
@@ -1016,4 +1042,3 @@ class Engine:
                 return self._get_tracker_class('inotify_auto')
             except ImportError:
                 return self._get_tracker_class('polling')
-
