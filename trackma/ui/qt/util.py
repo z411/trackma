@@ -22,10 +22,6 @@ class FilterBar():
     """
     Constants relating to filter bar settings can live here.
     """
-    # Position
-    PositionHidden = 0
-    PositionAboveLists = 1
-    PositionBelowLists = 2
 
 def getIcon(icon_name):
     fallback = QtGui.QIcon(utils.DATADIR + '/qtui/{}.png'.format(icon_name))

@@ -490,7 +490,7 @@ qt_defaults = {
     'columns_per_api': False,
     'episodebar_style': 1,
     'episodebar_text': False,
-    'filter_bar_position': 2,
+    'filter_bar_enabled': False,
     'filter_global': False,
     'colors': {
         'is_airing': '#D2FAFA',

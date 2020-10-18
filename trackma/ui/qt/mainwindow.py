@@ -164,6 +164,13 @@ class MainWindow(QMainWindow):
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
+        self.action_show_filter = QAction('Show &Filter', self)
+        self.action_show_filter.setStatusTip('Show the filter bar')
+        self.action_show_filter.setShortcut('Ctrl+F')
+        self.action_show_filter.setCheckable(True)
+        self.action_show_filter.setChecked(self.config['filter_bar_enabled'])
+        self.action_show_filter.triggered.connect(self.s_enable_filter)
+
         self.action_sync = QAction('&Sync', self)
         self.action_sync.setStatusTip('Send changes and then retrieve remote list')
         self.action_sync.setShortcut('Ctrl+S')
@@ -244,6 +251,8 @@ class MainWindow(QMainWindow):
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
         menu_list.addAction(action_rescan_library)
+        menu_list.addSeparator()
+        menu_list.addAction(self.action_show_filter)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
         self.mediatype_actiongroup = QActionGroup(self)
         self.mediatype_actiongroup.setExclusive(True)
@@ -411,18 +420,10 @@ class MainWindow(QMainWindow):
         filter_bar_box_layout.addWidget(self.show_filter_casesens)
         self.filter_bar_box.setLayout(filter_bar_box_layout)
 
-        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.filter_bar_box.hide()
-        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
-            self.list_box.addWidget(self.filter_bar_box)
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.list_box.addWidget(self.filter_bar_box)
+        self.list_box.addWidget(self.notebook)
+        self.list_box.addWidget(self.view)
+        self.list_box.addWidget(self.filter_bar_box)
+        self.filter_bar_box.setVisible(self.config['filter_bar_enabled'])
 
         main_hbox.addLayout(left_box)
         main_hbox.addLayout(self.list_box, 1)
@@ -621,7 +622,6 @@ class MainWindow(QMainWindow):
     def _update_config(self):
         self._apply_view()
         self._apply_tray()
-        self._apply_filter_bar()
         # TODO: Reload listviews?
 
     def _apply_view(self):
@@ -640,24 +640,6 @@ class MainWindow(QMainWindow):
                 self.tray.setIcon(QtGui.QIcon(utils.available_libs[self.account['api']][1]))
             else:
                 self.tray.setIcon(self.windowIcon())
-
-    def _apply_filter_bar(self):
-        self.list_box.removeWidget(self.filter_bar_box)
-        self.list_box.removeWidget(self.notebook)
-        self.list_box.removeWidget(self.view)
-        self.filter_bar_box.show()
-        if self.config['filter_bar_position'] is FilterBar.PositionHidden:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.filter_bar_box.hide()
-        elif self.config['filter_bar_position'] is FilterBar.PositionAboveLists:
-            self.list_box.addWidget(self.filter_bar_box)
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-        elif self.config['filter_bar_position'] is FilterBar.PositionBelowLists:
-            self.list_box.addWidget(self.notebook)
-            self.list_box.addWidget(self.view)
-            self.list_box.addWidget(self.filter_bar_box)
 
     def _busy(self, wait=False):
         if wait:
@@ -1121,6 +1103,11 @@ class MainWindow(QMainWindow):
 
             if reply == QMessageBox.Yes:
                 self.worker_call('delete_show', self.r_generic, show)
+
+    def s_enable_filter(self, checked):
+        self.filter_bar_box.setVisible(checked)
+        self.config['filter_bar_enabled'] = checked
+        self._save_config()
 
     def s_scan_library(self):
         self.worker_call('scan_library', self.r_library_scanned, rescan=False)
