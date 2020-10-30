@@ -182,9 +182,7 @@ class MainView(Gtk.Box):
 
         self.api_icon.set_from_file(api_iconfile)
 
-        self.api_user.set_text("%s (%s)" % (
-            self._engine.get_userconfig('username'),
-            self._engine.api_info['mediatype']))
+        self.api_user.set_text("%s" % self._engine.get_userconfig('username'))
 
         can_play = self._engine.mediainfo['can_play']
         can_update = self._engine.mediainfo['can_update']
