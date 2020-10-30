@@ -99,6 +99,9 @@ class MainView(Gtk.Box):
         self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.notebook.set_scrollable(True)
+        self.notebook.add_events(Gdk.EventMask.SCROLL_MASK |\
+            Gdk.EventMask.SMOOTH_SCROLL_MASK)
+        self.notebook.connect('scroll-event', self._notebook_handle_scroll)
 
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
@@ -190,6 +193,19 @@ class MainView(Gtk.Box):
         self.btn_episode_show_entry.set_sensitive(can_update)
         self.entry_episode.set_sensitive(can_update)
         self.btn_episode_add.set_sensitive(can_update)
+
+    def _notebook_handle_scroll(self, widget, event):
+        page    = self.notebook.get_current_page()
+        npage   = self.notebook.get_n_pages()
+        scroll  = event.get_scroll_deltas()[2]
+
+        if scroll < 0 and page > 0:
+            self.notebook.prev_page()
+        elif scroll > 0 and page < npage:
+            self.notebook.next_page()
+        else:
+            return False
+        return True
 
     def _create_notebook_pages(self):
         statuses_nums = self._engine.mediainfo['statuses'].copy()
