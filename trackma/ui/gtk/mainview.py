@@ -98,6 +98,8 @@ class MainView(Gtk.Box):
         self.image_box.show()
         self.image_container_box.pack_start(self.image_box, False, False, 0)
 
+        self.notebook.set_scrollable(True)
+
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
         self.statusbar.show()
