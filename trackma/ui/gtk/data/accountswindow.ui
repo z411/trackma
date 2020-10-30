@@ -127,8 +127,8 @@
                             <property name="can_focus">False</property>
                             <property name="halign">center</property>
                             <property name="valign">center</property>
-                            <property name="margin_left">18</property>
-                            <property name="margin_right">18</property>
+                            <property name="margin_start">18</property>
+                            <property name="margin_end">18</property>
                             <property name="margin_top">18</property>
                             <property name="margin_bottom">18</property>
                             <property name="label_xalign">0</property>
@@ -283,8 +283,8 @@
                 <property name="width_request">250</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">18</property>
-                <property name="margin_right">18</property>
+                <property name="margin_start">18</property>
+                <property name="margin_end">18</property>
                 <property name="margin_top">36</property>
                 <property name="margin_bottom">36</property>
                 <property name="orientation">vertical</property>

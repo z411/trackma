@@ -18,8 +18,7 @@ import os
 import threading
 import urllib.request
 from io import BytesIO
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import GLib, Gtk, GdkPixbuf
 from trackma import utils
 
@@ -96,7 +95,7 @@ class ImageBox(Gtk.HBox):
 
     def reset(self):
         if imaging_available:
-            self.set_text("Trackma")
+            self.set_image(utils.DATADIR + '/icon.png')
         else:
             self.set_text("PIL library\nnot available")
 

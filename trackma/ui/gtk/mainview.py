@@ -17,8 +17,7 @@
 import html
 import os
 import threading
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -50,7 +49,9 @@ class MainView(Gtk.Box):
     api_user = GtkTemplate.Child()
     btn_episode_remove = GtkTemplate.Child()
     btn_episode_show_entry = GtkTemplate.Child()
+    entry_popover = GtkTemplate.Child()
     entry_episode = GtkTemplate.Child()
+    entry_done = GtkTemplate.Child()
     btn_episode_add = GtkTemplate.Child()
     btn_play_next = GtkTemplate.Child()
     spinbtn_score = GtkTemplate.Child()
@@ -86,11 +87,11 @@ class MainView(Gtk.Box):
         self._engine_start()
         self._init_signals_engine()
 
-    def load_account_mediatype(self, account, mediatype):
+    def load_account_mediatype(self, account, mediatype, extern_widget):
         if account:
             self._account = account
 
-        self._engine_reload(account, mediatype)
+        self._engine_reload(account, mediatype, extern_widget)
 
     def _init_widgets(self):
         self.image_box = ImageBox(100, 150)
@@ -98,7 +99,7 @@ class MainView(Gtk.Box):
         self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.statusbar = Gtk.Statusbar()
-        self.statusbar.push(0, 'Trackma-gtk ' + utils.VERSION)
+        self.statusbar.push(0, 'Trackma GTK ' + utils.VERSION)
         self.statusbar.show()
         self.pack_start(self.statusbar, False, False, 0)
 
@@ -106,7 +107,8 @@ class MainView(Gtk.Box):
         self.btn_episode_remove.connect("clicked", self._on_btn_episode_remove_clicked)
         self.btn_episode_show_entry.connect("clicked", self._show_episode_entry)
         self.entry_episode.connect("activate", self._on_entry_episode_activate)
-        self.entry_episode.connect("focus-out-event", self._hide_episode_entry)
+        self.entry_done.connect("clicked", self._on_entry_episode_activate)
+        self.entry_popover.connect("focus-out-event", self._hide_episode_entry)
         self.btn_episode_add.connect("clicked", self._on_btn_episode_add_clicked)
         self.btn_play_next.connect("clicked", self._on_btn_play_next_clicked, True)
         self.spinbtn_score.connect("activate", self._on_spinbtn_score_activate)
@@ -138,12 +140,12 @@ class MainView(Gtk.Box):
 
         GLib.idle_add(self._update_widgets)
 
-    def _engine_reload(self, account, mediatype):
+    def _engine_reload(self, account, mediatype, extern_widget):
         self.set_buttons_sensitive(False)
         threading.Thread(target=self._engine_reload_task,
-                         args=[account, mediatype]).start()
+                         args=[account, mediatype, extern_widget]).start()
 
-    def _engine_reload_task(self, account, mediatype):
+    def _engine_reload_task(self, account, mediatype, extern_widget):
         try:
             self._engine.reload(account, mediatype)
         except utils.TrackmaError as e:
@@ -152,9 +154,9 @@ class MainView(Gtk.Box):
             self.emit('error-fatal', e)
             return
 
-        GLib.idle_add(self._update_widgets)
+        GLib.idle_add(self._update_widgets, extern_widget)
 
-    def _update_widgets(self):
+    def _update_widgets(self, extern_widget=None):
         self.statusbox.handler_block(self.statusbox_handler)
         self._reset_widgets()
         self._create_notebook_pages()
@@ -162,6 +164,9 @@ class MainView(Gtk.Box):
         self.populate_all_pages()
         self._populate_statusbox()
         self.statusbox.handler_unblock(self.statusbox_handler)
+        if extern_widget is not None:
+            extern_widget.set_subtitle(self._engine.api_info['name'] + " (" +
+                                       self._engine.api_info['mediatype'] + ")")
 
         self.set_status_idle("Ready.")
         self.set_buttons_sensitive_idle(True)
@@ -186,6 +191,7 @@ class MainView(Gtk.Box):
         self.btn_play_next.set_sensitive(can_play)
         self.btn_episode_show_entry.set_sensitive(can_update)
         self.entry_episode.set_sensitive(can_update)
+        self.entry_done.set_sensitive(can_update)
         self.btn_episode_add.set_sensitive(can_update)
 
     def _create_notebook_pages(self):
@@ -289,6 +295,7 @@ class MainView(Gtk.Box):
             if self._engine.mediainfo['can_update']:
                 self.btn_episode_show_entry.set_sensitive(boolean)
                 self.entry_episode.set_sensitive(boolean)
+                self.entry_done.set_sensitive(boolean)
                 self.btn_episode_add.set_sensitive(boolean)
                 self.btn_episode_remove.set_sensitive(boolean)
 
@@ -301,10 +308,11 @@ class MainView(Gtk.Box):
                   ShowEventType.EPISODE_REMOVE,
                   (self._current_page.selected_show,))
 
-    def _show_episode_entry(self, *args):
-        self.btn_episode_show_entry.hide()
+    def _show_episode_entry(self, widget):
+        self.entry_popover.set_relative_to(widget)
+        self.entry_popover.set_position(Gtk.PositionType.BOTTOM)
         self.entry_episode.set_text(self.btn_episode_show_entry.get_label())
-        self.entry_episode.show()
+        self.entry_popover.show()
         self.entry_episode.grab_focus()
 
     def _on_entry_episode_activate(self, widget):
@@ -313,12 +321,12 @@ class MainView(Gtk.Box):
             self.emit('show-action',
                       ShowEventType.EPISODE_SET,
                       (self._current_page.selected_show, episode))
+            self._hide_episode_entry()
         except ValueError:
             pass
 
     def _hide_episode_entry(self, *args):
-        self.entry_episode.hide()
-        self.btn_episode_show_entry.show()
+        self.entry_popover.hide()
 
     def _on_btn_episode_add_clicked(self, widget):
         self.emit('show-action',
@@ -437,7 +445,6 @@ class MainView(Gtk.Box):
 
         # Episode selector
         self.btn_episode_show_entry.set_label(str(show['my_progress']))
-        self._hide_episode_entry()
 
         # Status selector
         for i in self.statusmodel:
@@ -602,7 +609,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         menu = Gtk.Menu()
         mb_play = Gtk.ImageMenuItem('Play Next',
                                     Gtk.Image.new_from_icon_name(
-                                        Gtk.STOCK_MEDIA_PLAY, 0))
+                                        "media-playback-start", Gtk.IconSize.MENU))
         mb_play.connect("activate",
                         self._on_mb_activate,
                         ShowEventType.PLAY_NEXT)
@@ -628,7 +635,7 @@ class NotebookPage(Gtk.ScrolledWindow):
                              ShowEventType.CHANGE_ALTERNATIVE_TITLE)
         mb_delete = Gtk.ImageMenuItem('Delete',
                                       Gtk.Image.new_from_icon_name(
-                                          Gtk.STOCK_DELETE, 0))
+                                          "edit-delete", Gtk.IconSize.MENU))
         mb_delete.connect("activate",
                           self._on_mb_activate,
                           ShowEventType.REMOVE)
