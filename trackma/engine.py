@@ -1012,6 +1012,9 @@ class Engine:
         if ttype == 'plex':
             from trackma.tracker.plex import PlexTracker
             return PlexTracker
+        elif ttype == 'kodi':
+            from trackma.tracker.kodi import KodiTracker
+            return KodiTracker
         elif ttype == 'mpris':
             from trackma.tracker.mpris import MPRISTracker
             return MPRISTracker

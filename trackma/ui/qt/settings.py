@@ -120,6 +120,28 @@ class SettingsDialog(QDialog):
         g_plex_layout.addWidget(self.plex_passw,                           2, 2, 1, 2)
 
         g_plex.setLayout(g_plex_layout)
+        
+        # Group: Kodi settings
+        g_kodi = QGroupBox('Kodi')
+        g_kodi.setFlat(True)
+        self.kodi_host = QLineEdit()
+        self.kodi_port = QLineEdit()
+        self.kodi_user = QLineEdit()
+        self.kodi_passw = QLineEdit()
+        self.kodi_passw.setEchoMode(QLineEdit.Password)
+        self.kodi_obey_wait = QCheckBox()
+
+        g_kodi_layout = QGridLayout()
+        g_kodi_layout.addWidget(QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_host,                            0, 1, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_port,                            0, 2, 1, 2)
+        g_kodi_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_obey_wait,                       1, 2, 1, 1)
+        g_kodi_layout.addWidget(QLabel('Kodi login'),   2, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_user,                            2, 1, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_passw,                           2, 2, 1, 2)
+
+        g_kodi.setLayout(g_kodi_layout)
 
         # Group: Library
         g_playnext = QGroupBox('Library')
@@ -143,7 +165,6 @@ class SettingsDialog(QDialog):
         self.scan_whole_list = QCheckBox()
         self.library_full_path = QCheckBox()
 
-
         g_playnext_layout = QGridLayout()
         g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
         g_playnext_layout.addWidget(self.player,                         0, 1, 1, 1)
@@ -163,6 +184,7 @@ class SettingsDialog(QDialog):
         # Media form
         page_media_layout.addWidget(g_media)
         page_media_layout.addWidget(g_plex)
+        page_media_layout.addWidget(g_kodi)
         page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
 
@@ -409,11 +431,18 @@ class SettingsDialog(QDialog):
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
         self.library_full_path.setChecked(engine.get_config('library_full_path'))
+        
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
         self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
         self.plex_user.setText(engine.get_config('plex_user'))
         self.plex_passw.setText(engine.get_config('plex_passwd'))
+        
+        self.kodi_host.setText(engine.get_config('kodi_host'))
+        self.kodi_port.setText(engine.get_config('kodi_port'))
+        self.kodi_obey_wait.setChecked(engine.get_config('kodi_obey_update_wait_s'))
+        self.kodi_user.setText(engine.get_config('kodi_user'))
+        self.kodi_passw.setText(engine.get_config('kodi_passwd'))
 
         for path in engine.get_config('searchdir'):
             self._add_dir(path)
@@ -486,11 +515,18 @@ class SettingsDialog(QDialog):
         engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
         engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
         engine.set_config('library_full_path', self.library_full_path.isChecked())
+        
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
         engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
         engine.set_config('plex_user',         self.plex_user.text())
         engine.set_config('plex_passwd',       self.plex_passw.text())
+        
+        engine.set_config('kodi_host',         self.kodi_host.text())
+        engine.set_config('kodi_port',         self.kodi_port.text())
+        engine.set_config('kodi_obey_update_wait_s', self.kodi_obey_wait.isChecked())
+        engine.set_config('kodi_user',         self.kodi_user.text())
+        engine.set_config('kodi_passwd',       self.kodi_passw.text())
 
         engine.set_config('searchdir',         [self.searchdirs.item(i).text() for i in range(self.searchdirs.count())])
 
@@ -545,6 +581,20 @@ class SettingsDialog(QDialog):
     def s_save(self):
         self._save()
         self.accept()
+        
+    def switch_kodi_state(self, state):
+        self.kodi_host.setEnabled(state)
+        self.kodi_port.setEnabled(state)
+        self.kodi_user.setEnabled(state)
+        self.kodi_passw.setEnabled(state)
+        self.kodi_obey_wait.setEnabled(state)
+        
+    def switch_plex_state(self, state):
+        self.plex_host.setEnabled(state)
+        self.plex_port.setEnabled(state)
+        self.plex_user.setEnabled(state)
+        self.plex_passw.setEnabled(state)
+        self.plex_obey_wait.setEnabled(state)
 
     def tracker_type_change(self, checked):
         if self.tracker_enabled.isChecked():
@@ -552,26 +602,22 @@ class SettingsDialog(QDialog):
             self.tracker_update_wait.setEnabled(True)
             self.tracker_type.setEnabled(True)
             if self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'plex':
-                self.plex_host.setEnabled(True)
-                self.plex_port.setEnabled(True)
-                self.plex_obey_wait.setEnabled(True)
-                self.plex_user.setEnabled(True)
-                self.plex_passw.setEnabled(True)
+                self.switch_plex_state(True)
+                self.switch_kodi_state(False)
+                self.tracker_process.setEnabled(False)
+            elif self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'kodi':
+                self.switch_kodi_state(True)
+                self.switch_plex_state(False)
                 self.tracker_process.setEnabled(False)
             else:
                 self.tracker_process.setEnabled(True)
-                self.plex_host.setEnabled(False)
-                self.plex_port.setEnabled(False)
-                self.plex_user.setEnabled(False)
-                self.plex_passw.setEnabled(False)
-                self.plex_obey_wait.setEnabled(False)
+                self.switch_plex_state(False)
+                self.switch_kodi_state(False)
         else:
             self.tracker_type.setEnabled(False)
-            self.plex_host.setEnabled(False)
-            self.plex_port.setEnabled(False)
-            self.plex_user.setEnabled(False)
-            self.plex_passw.setEnabled(False)
-            self.plex_obey_wait.setEnabled(False)
+            self.switch_plex_state(False)
+            self.switch_kodi_state(False)
+
             self.tracker_process.setEnabled(False)
             self.tracker_interval.setEnabled(False)
             self.tracker_update_wait.setEnabled(False)
