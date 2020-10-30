@@ -29,7 +29,7 @@ import shlex
 import textwrap
 import re
 import argparse
-from operator import itemgetter # Used for sorting list
+from operator import itemgetter  # Used for sorting list
 
 from trackma.engine import Engine
 from trackma.accounts import AccountManager
@@ -90,7 +90,8 @@ class Trackma_cmd(cmd.Cmd):
 
         if interactive:
             print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2017  z411')
-            print('This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
+            print(
+                'This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
             print('This is free software, and you are welcome to redistribute it')
             print('under certain conditions; see the COPYING file for details.')
             print()
@@ -116,15 +117,16 @@ class Trackma_cmd(cmd.Cmd):
 
     def _update_prompt(self):
         self.prompt = "{c_u}{u}{c_r} [{c_a}{a}{c_r}] ({c_mt}{mt}{c_r}) {c_s}{s}{c_r} >> ".format(
-            u  = self.engine.get_userconfig('username'),
-            a  = self.engine.api_info['shortname'],
-            mt = self.engine.api_info['mediatype'],
-            s  = self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(' ', ''),
-            c_r  = _PCOLOR_RESET,
-            c_u  = _PCOLOR_USER,
-            c_a  = _PCOLOR_API,
-            c_mt = _PCOLOR_MEDIATYPE,
-            c_s  = _COLOR_RESET
+            u=self.engine.get_userconfig('username'),
+            a=self.engine.api_info['shortname'],
+            mt=self.engine.api_info['mediatype'],
+            s=self.engine.mediainfo['statuses_dict'][self.filter_num].lower().replace(
+                ' ', ''),
+            c_r=_PCOLOR_RESET,
+            c_u=_PCOLOR_USER,
+            c_a=_PCOLOR_API,
+            c_mt=_PCOLOR_MEDIATYPE,
+            c_s=_COLOR_RESET
         )
 
     def _load_list(self, *args):
@@ -142,12 +144,14 @@ class Trackma_cmd(cmd.Cmd):
             return self.engine.get_show_info(title=title)
 
     def _ask_update(self, show, episode):
-        do = input("Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
+        do = input(
+            "Should I update {} to episode {}? [y/N] ".format(show['title'], episode))
         if do.lower() == 'y':
             self.engine.set_episode(show['id'], episode)
 
     def _ask_add(self, show, episode):
-        do = input("Should I search for the show {}? [y/N] ".format(show['title']))
+        do = input(
+            "Should I search for the show {}? [y/N] ".format(show['title']))
         if do.lower() == 'y':
             self.do_add([show['title']])
 
@@ -185,7 +189,7 @@ class Trackma_cmd(cmd.Cmd):
             print()
             print("Ready. Type 'help' for a list of commands.")
             print("Press tab for autocompletion and up/down for command history.")
-            self.do_filter(None) # Show available filters
+            self.do_filter(None)  # Show available filters
             print()
         else:
             # We set the message handler only after initializing
@@ -225,7 +229,8 @@ class Trackma_cmd(cmd.Cmd):
                             if arg[2]:
                                 print("    {}: {}".format(arg[0], arg[1]))
                             else:
-                                print("    {} (optional): {}".format(arg[0], arg[1]))
+                                print("    {} (optional): {}".format(
+                                    arg[0], arg[1]))
                     if usage:
                         print("\n  Usage: " + usage)
                     for example in examples:
@@ -250,9 +255,9 @@ class Trackma_cmd(cmd.Cmd):
 
             print()
             print(" {0:>{1}} {2:{3}} {4}".format(
-                    'command', CMD_LENGTH,
-                    'args', ARG_LENGTH,
-                    'description'))
+                'command', CMD_LENGTH,
+                'args', ARG_LENGTH,
+                'description'))
             print(" " + "-"*(min(prev_width+81, width-3)))
 
             names = self.get_names()
@@ -268,14 +273,13 @@ class Trackma_cmd(cmd.Cmd):
 
                     line = " {0:>{1}} {2:{3}} {4}".format(
                         name, CMD_LENGTH,
-                        '<' + ','.join( a[0] for a in args) + '>', ARG_LENGTH,
+                        '<' + ','.join(a[0] for a in args) + '>', ARG_LENGTH,
                         expl[0])
                     print(tw.fill(line))
 
             print()
             print("Use `help <command>` for detailed information.")
             print()
-
 
     def do_account(self, args):
         """
@@ -307,7 +311,8 @@ class Trackma_cmd(cmd.Cmd):
             except KeyError:
                 print("Invalid filter.")
         else:
-            print("Available statuses: %s" % ', '.join( v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values() ))
+            print("Available statuses: %s" % ', '.join(v.lower().replace(' ', '')
+                                                       for v in self.engine.mediainfo['statuses_dict'].values()))
 
     def do_sort(self, args):
         """
@@ -342,9 +347,10 @@ class Trackma_cmd(cmd.Cmd):
             else:
                 print("Invalid mediatype.")
         else:
-            print("Supported mediatypes: %s" % ', '.join(self.engine.api_info['supported_mediatypes']))
+            print("Supported mediatypes: %s" % ', '.join(
+                self.engine.api_info['supported_mediatypes']))
 
-    def do_ls(self,args):
+    def do_ls(self, args):
         self.do_list(args)
 
     def do_list(self, args):
@@ -388,7 +394,8 @@ class Trackma_cmd(cmd.Cmd):
         :param pattern Regex pattern to search for.
         :usage search <pattern>
         """
-        sortedlist = list(v for v in self.sortedlist if re.search(args[0], v[1]['title'], re.I))
+        sortedlist = list(v for v in self.sortedlist if re.search(
+            args[0], v[1]['title'], re.I))
         self._make_list(sortedlist)
 
     def do_add(self, args):
@@ -484,7 +491,8 @@ class Trackma_cmd(cmd.Cmd):
 
                 print("State: {}".format(state))
                 print("Filename: {}".format(info['filename'] or 'N/A'))
-                print("Timer: {}{}".format(info['timer'] or 'N/A', ' [P]' if info['paused'] else ''))
+                print("Timer: {}{}".format(
+                    info['timer'] or 'N/A', ' [P]' if info['paused'] else ''))
                 if info['show']:
                     (show, ep) = info['show']
                     print("Show: {}\nEpisode: {}".format(show['title'], ep))
@@ -530,13 +538,13 @@ class Trackma_cmd(cmd.Cmd):
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 elif sys.platform == 'win32':
                     subprocess.Popen(["explorer",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 else:
                     subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             self.display_error("Could not open folder.")
@@ -563,7 +571,8 @@ class Trackma_cmd(cmd.Cmd):
             if len(args) > 1:
                 self.engine.set_episode(show['id'], args[1])
             else:
-                self.engine.set_episode(show['id'], ep or show['my_progress']+1)
+                self.engine.set_episode(
+                    show['id'], ep or show['my_progress']+1)
         except IndexError:
             print("Missing arguments.")
         except utils.TrackmaError as e:
@@ -626,7 +635,7 @@ class Trackma_cmd(cmd.Cmd):
         try:
             show = self._get_show(args[0])
             altname = args[1] if len(args) > 1 else ''
-            self.engine.altname(show['id'],altname)
+            self.engine.altname(show['id'], altname)
         except IndexError:
             print("Missing arguments")
             return
@@ -648,7 +657,8 @@ class Trackma_cmd(cmd.Cmd):
         """
         try:
             if self.engine.get_queue():
-                answer = input("There are unqueued changes. Overwrite local list? [y/N] ")
+                answer = input(
+                    "There are unqueued changes. Overwrite local list? [y/N] ")
                 if answer.lower() == 'y':
                     self.engine.list_download()
             else:
@@ -753,7 +763,7 @@ class Trackma_cmd(cmd.Cmd):
         if cmd is None:
             return self.default(line)
         self.lastcmd = line
-        if line == 'EOF' :
+        if line == 'EOF':
             self.lastcmd = ''
         if cmd == '':
             return self.default(line)
@@ -811,11 +821,13 @@ class Trackma_cmd(cmd.Cmd):
         if msgtype == messenger.TYPE_INFO:
             out = "%s%s: %s%s" % (color_escape, classname, msg, color_reset)
         elif msgtype == messenger.TYPE_WARN:
-            out = "%s%s warning: %s%s" % (color_escape, classname, msg, color_reset)
+            out = "%s%s warning: %s%s" % (
+                color_escape, classname, msg, color_reset)
         elif self.debug and msgtype == messenger.TYPE_DEBUG:
-            out = "[D] %s%s: %s%s" % (color_escape, classname, msg, color_reset)
+            out = "[D] %s%s: %s%s" % (
+                color_escape, classname, msg, color_reset)
         else:
-            return # Unrecognized message, don't show anything
+            return  # Unrecognized message, don't show anything
 
         if has_readline and self.in_prompt:
             # If we're in a prompt and receive a message
@@ -848,9 +860,9 @@ class Trackma_cmd(cmd.Cmd):
         for line in lines:
             line = line.strip()
             if line[:6] == ":param":
-                args.append( line[7:].split(' ', 1) + [True] )
+                args.append(line[7:].split(' ', 1) + [True])
             elif line[:9] == ":optparam":
-                args.append( line[10:].split(' ', 1) + [False] )
+                args.append(line[10:].split(' ', 1) + [False])
             elif line[:6] == ':usage':
                 usage = line[7:]
             elif line[:5] == ':name':
@@ -877,7 +889,8 @@ class Trackma_cmd(cmd.Cmd):
         # Calculate maximum width for the title column
         # based on the width of the terminal
         (height, width) = utils.get_terminal_size()
-        max_title_length = width - col_id_length - col_episodes_length - col_score_length - col_index_length - 5
+        max_title_length = width - col_id_length - \
+            col_episodes_length - col_score_length - col_index_length - 5
 
         # Find the widest title so we can adjust the title column
         for index, show in showlist:
@@ -891,23 +904,25 @@ class Trackma_cmd(cmd.Cmd):
 
         # Print header
         print("| {0:{1}} {2:{3}} {4:{5}} {6:{7}} |".format(
-                'Index',    col_index_length,
-                'Title',    max_title_length,
-                'Progress', col_episodes_length,
-                'Score',    col_score_length))
+            'Index',    col_index_length,
+            'Title',    max_title_length,
+            'Progress', col_episodes_length,
+            'Score',    col_score_length))
 
         # List shows
         for index, show in showlist:
             if self.engine.mediainfo['has_progress']:
-                episodes_str = "{0:3} / {1}".format(show['my_progress'], show['total'] or '?')
+                episodes_str = "{0:3} / {1}".format(
+                    show['my_progress'], show['total'] or '?')
             else:
                 episodes_str = "-"
 
-            #Get title (and alt. title) and if need be, truncate it
+            # Get title (and alt. title) and if need be, truncate it
             title_str = show['title']
             if altnames.get(show['id']):
                 title_str += " [{}]".format(altnames.get(show['id']))
-            title_str = title_str[:max_title_length] if len(title_str) > max_title_length else title_str
+            title_str = title_str[:max_title_length] if len(
+                title_str) > max_title_length else title_str
 
             # Color title according to status
             if show['status'] == utils.STATUS_AIRING:
@@ -926,6 +941,7 @@ class Trackma_cmd(cmd.Cmd):
         print('%d results' % len(showlist))
         print()
 
+
 class Trackma_accounts(AccountManager):
     def _get_id(self, index):
         if index < 1:
@@ -942,7 +958,8 @@ class Trackma_accounts(AccountManager):
         while True:
             print('--- Accounts ---')
             self.list_accounts()
-            key = input("Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
+            key = input(
+                "Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.keys()))
@@ -982,7 +999,8 @@ class Trackma_accounts(AccountManager):
                 try:
                     num = int(num)
                     account_id = self._get_id(num)
-                    confirm = input("Are you sure you want to delete account %d (%s)? [y/N] " % (num, self.get_account(account_id)['username']))
+                    confirm = input("Are you sure you want to delete account %d (%s)? [y/N] " % (
+                        num, self.get_account(account_id)['username']))
                     if confirm.lower() == 'y':
                         self.delete_account(account_id)
                         print('Account %d deleted.' % num)
@@ -1025,14 +1043,19 @@ class Trackma_accounts(AccountManager):
 def main():
     # Process args
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--account', type=int, help='Use specific account number.')
-    parser.add_argument('-d', '--debug', action='store_true', help='Show debugging messages.')
-    parser.add_argument('cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified. - will take in commands from stdin.')
-    parser.add_argument('args', nargs=argparse.REMAINDER, help='Arguments for the aforementioned command, if any.')
+    parser.add_argument('-a', '--account', type=int,
+                        help='Use specific account number.')
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help='Show debugging messages.')
+    parser.add_argument(
+        'cmd', nargs='?', help='Run the following command and exit. Will run in interactive mode if not specified. - will take in commands from stdin.')
+    parser.add_argument('args', nargs=argparse.REMAINDER,
+                        help='Arguments for the aforementioned command, if any.')
     args = parser.parse_args()
 
     # Boot Trackma CLI
-    main_cmd = Trackma_cmd(args.account, args.debug, interactive=args.cmd is None)
+    main_cmd = Trackma_cmd(args.account, args.debug,
+                           interactive=args.cmd is None)
     try:
         main_cmd.start()
         if args.cmd:
@@ -1048,6 +1071,7 @@ def main():
     except utils.TrackmaFatal as e:
         main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))
+
 
 if __name__ == '__main__':
     main()

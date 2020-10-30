@@ -36,6 +36,7 @@ from trackma.accounts import AccountManager
 from trackma import messenger
 from trackma import utils
 
+
 class Trackma_urwid():
     """
     Main class for the urwid version of Trackma
@@ -60,7 +61,8 @@ class Trackma_urwid():
 
     def __init__(self):
         """Creates main widgets and creates mainloop"""
-        self.config = utils.parse_config(utils.to_config_path('ui-curses.json'), utils.curses_defaults)
+        self.config = utils.parse_config(utils.to_config_path(
+            'ui-curses.json'), utils.curses_defaults)
         keymap = utils.curses_defaults['keymap']
         keymap.update(self.config['keymap'])
         self.keymap_str = self.get_keymap_str(keymap)
@@ -68,10 +70,10 @@ class Trackma_urwid():
 
         palette = []
         for k, color in self.config['palette'].items():
-            palette.append( (k, color[0], color[1]) )
+            palette.append((k, color[0], color[1]))
 
         # Prepare header
-        sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07");
+        sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07")
         self.header_title = urwid.Text('Trackma-curses ' + utils.VERSION)
         self.header_api = urwid.Text('API:')
         self.header_filter = urwid.Text('Filter:')
@@ -103,7 +105,7 @@ class Trackma_urwid():
             self.status_text,
             ('fixed', 10, self.status_tracker),
             ('fixed', 6, self.status_queue),
-            ]), 'status')
+        ]), 'status')
 
         self.listheader = urwid.AttrMap(
             urwid.Columns([
@@ -118,8 +120,10 @@ class Trackma_urwid():
 
         self.viewing_info = False
 
-        self.view = urwid.Frame(self.listframe, header=self.top_pile, footer=self.statusbar)
-        self.mainloop = urwid.MainLoop(self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
+        self.view = urwid.Frame(
+            self.listframe, header=self.top_pile, footer=self.statusbar)
+        self.mainloop = urwid.MainLoop(
+            self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
 
     def run(self):
         self.mainloop.set_alarm_in(0, self.do_switch_account)
@@ -127,37 +131,37 @@ class Trackma_urwid():
 
     def map_key_to_func(self, keymap):
         keymapping = dict()
-        funcmap = { 'help': self.do_help,
-                    'prev_filter': self.do_prev_filter,
-                    'next_filter': self.do_next_filter,
-                    'sort': self.do_sort,
-                    'sort_order': self.change_sort_order,
-                    'update': self.do_update,
-                    'play': self.do_play,
-                    'openfolder': self.do_openfolder,
-                    'play_random': self.do_play_random,
-                    'status': self.do_status,
-                    'score': self.do_score,
-                    'send': self.do_send,
-                    'retrieve': self.do_retrieve,
-                    'addsearch': self.do_addsearch,
-                    'reload': self.do_reload,
-                    'switch_account': self.do_switch_account,
-                    'delete': self.do_delete,
-                    'quit': self.do_quit,
-                    'altname': self.do_altname,
-                    'search': self.do_search,
-                    'neweps': self.do_neweps,
-                    'details': self.do_info,
-                    'details_exit': self.do_info_exit,
-                    'open_web': self.do_open_web,
-                    'left': self.key_left,
-                    'down': self.key_down,
-                    'up': self.key_up,
-                    'right': self.key_right,
-                    'page_down': self.key_page_down,
-                    'page_up': self.key_page_up,
-                    }
+        funcmap = {'help': self.do_help,
+                   'prev_filter': self.do_prev_filter,
+                   'next_filter': self.do_next_filter,
+                   'sort': self.do_sort,
+                   'sort_order': self.change_sort_order,
+                   'update': self.do_update,
+                   'play': self.do_play,
+                   'openfolder': self.do_openfolder,
+                   'play_random': self.do_play_random,
+                   'status': self.do_status,
+                   'score': self.do_score,
+                   'send': self.do_send,
+                   'retrieve': self.do_retrieve,
+                   'addsearch': self.do_addsearch,
+                   'reload': self.do_reload,
+                   'switch_account': self.do_switch_account,
+                   'delete': self.do_delete,
+                   'quit': self.do_quit,
+                   'altname': self.do_altname,
+                   'search': self.do_search,
+                   'neweps': self.do_neweps,
+                   'details': self.do_info,
+                   'details_exit': self.do_info_exit,
+                   'open_web': self.do_open_web,
+                   'left': self.key_left,
+                   'down': self.key_down,
+                   'up': self.key_up,
+                   'right': self.key_right,
+                   'page_down': self.key_page_down,
+                   'page_up': self.key_page_up,
+                   }
 
         for func, keybind in keymap.items():
             try:
@@ -214,10 +218,12 @@ class Trackma_urwid():
             showlist = self.engine.get_list()
 
         library = self.engine.library()
-        sortedlist = sorted(showlist, key=itemgetter(self.cur_sort), reverse=self.cur_order)
+        sortedlist = sorted(showlist, key=itemgetter(
+            self.cur_sort), reverse=self.cur_order)
 
         for show in sortedlist:
-            item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(show['id']), library.get(show['id']))
+            item = ShowItem(show, self.engine.mediainfo['has_progress'], self.engine.altname(
+                show['id']), library.get(show['id']))
 
             self.lists[show['my_status']].body.append(item)
 
@@ -247,7 +253,8 @@ class Trackma_urwid():
     def set_filter(self, filter_num):
         self.cur_filter = filter_num
         _filter = self.filters_nums[self.cur_filter]
-        self.header_filter.set_text("Filter:%s (%d)" % (self.filters[_filter], self.filters_sizes[self.cur_filter]))
+        self.header_filter.set_text("Filter:%s (%d)" % (
+            self.filters[_filter], self.filters_sizes[self.cur_filter]))
 
         self.listframe.body = self.lists[_filter]
 
@@ -348,13 +355,15 @@ class Trackma_urwid():
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
-            self.ask('[Update] Episode # to update to: ', self.update_request, show['my_progress']+1)
+            self.ask('[Update] Episode # to update to: ',
+                     self.update_request, show['my_progress']+1)
 
     def do_play(self):
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
-            self.ask('[Play] Episode # to play: ', self.play_request, show['my_progress']+1)
+            self.ask('[Play] Episode # to play: ',
+                     self.play_request, show['my_progress']+1)
 
     def do_openfolder(self):
         item = self._get_selected_item()
@@ -365,21 +374,20 @@ class Trackma_urwid():
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 elif sys.platform == 'win32':
                     subprocess.Popen(["explorer",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 else:
                     subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")
 
         except utils.EngineError:
             # Show not in library.
-             self.error("No folder found.")
-
+            self.error("No folder found.")
 
     def do_play_random(self):
         try:
@@ -401,7 +409,8 @@ class Trackma_urwid():
             self.error(e)
 
     def do_help(self):
-        helptext = "Trackma-curses "+utils.VERSION+"  by z411 (z411@omaera.org)\n\n"
+        helptext = "Trackma-curses "+utils.VERSION + \
+            "  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
@@ -409,7 +418,8 @@ class Trackma_urwid():
         helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
         helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
-        ok_button_wrap = urwid.Padding(urwid.AttrMap(ok_button, 'button', 'button hilight'), 'center', 6)
+        ok_button_wrap = urwid.Padding(urwid.AttrMap(
+            ok_button, 'button', 'button hilight'), 'center', 6)
         pile = urwid.Pile([urwid.Text(helptext), ok_button_wrap])
         self.dialog = Dialog(pile, self.mainloop, width=62, title='About/Help')
         self.dialog.show()
@@ -422,13 +432,15 @@ class Trackma_urwid():
         if item:
             show = self.engine.get_show_info(item.showid)
             self.status(show['title'])
-            self.ask('[Altname] New alternative name: ', self.altname_request, self.engine.altname(item.showid))
+            self.ask('[Altname] New alternative name: ',
+                     self.altname_request, self.engine.altname(item.showid))
 
     def do_score(self):
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
-            self.ask('[Score] Score to change to: ', self.score_request, show['my_score'])
+            self.ask('[Score] Score to change to: ',
+                     self.score_request, show['my_score'])
 
     def do_status(self):
         item = self._get_selected_item()
@@ -465,12 +477,15 @@ class Trackma_urwid():
             # Make it selected if it's the current mediatype
             if self.engine.api_info['mediatype'] == mediatype:
                 but.set_state(True)
-            urwid.connect_signal(but, 'change', self.reload_request, [None, mediatype])
+            urwid.connect_signal(
+                but, 'change', self.reload_request, [None, mediatype])
             mediatypes.append(urwid.AttrMap(but, 'button', 'button hilight'))
-        mediatype = urwid.Columns([urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
+        mediatype = urwid.Columns(
+            [urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
 
         #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
-        self.dialog = Dialog(mediatype, self.mainloop, width=30, title='Change media type')
+        self.dialog = Dialog(mediatype, self.mainloop,
+                             width=30, title='Change media type')
         self.dialog.show()
 
     def do_reload_engine(self, account=None, mediatype=None):
@@ -503,11 +518,11 @@ class Trackma_urwid():
             self.error(e)
             return
 
-        title = urwid.Text( ('info_title', show['title']), 'center', 'any')
+        title = urwid.Text(('info_title', show['title']), 'center', 'any')
         widgets = []
         for line in details['extra']:
             if line[0] and line[1]:
-                widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
+                widgets.append(urwid.Text(('info_section', "%s: " % line[0])))
                 if isinstance(line[1], dict):
                     linestr = repr(line[1])
                 elif isinstance(line[1], int) or isinstance(line[1], list):
@@ -515,7 +530,8 @@ class Trackma_urwid():
                 else:
                     linestr = line[1]
 
-                widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
+                widgets.append(urwid.Padding(
+                    urwid.Text(linestr + "\n"), left=3))
 
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
@@ -554,7 +570,8 @@ class Trackma_urwid():
 
             if len(shows) > 0:
                 self.status("Ready.")
-                self.dialog = AddDialog(self.mainloop, self.engine, showlist=shows, width=('relative', 80))
+                self.dialog = AddDialog(
+                    self.mainloop, self.engine, showlist=shows, width=('relative', 80))
                 urwid.connect_signal(self.dialog, 'done', self.addsearch_do)
                 self.dialog.show()
             else:
@@ -656,7 +673,8 @@ class Trackma_urwid():
 
     def prompt_update(self, show, episode):
         self.last_update_prompt = (show, episode)
-        self.question("Update %s to episode %d? [y/N] " % (show['title'], episode), self.prompt_update_request)
+        self.question("Update %s to episode %d? [y/N] " %
+                      (show['title'], episode), self.prompt_update_request)
 
     def changed_show(self, show, changes=None):
         if self.started and show:
@@ -736,7 +754,7 @@ class Trackma_urwid():
         self.ask(text, self.search_request, key)
         #urwid.connect_signal(self.asker, 'change', self.search_live)
 
-    #def search_live(self, widget, data):
+    # def search_live(self, widget, data):
     #    if data:
     #        self.listwalker.select_match(data)
 
@@ -751,16 +769,18 @@ class Trackma_urwid():
         except re.error as e:
             self.error(e)
 
+
 class Dialog(urwid.Overlay):
     def __init__(self, widget, loop, width=30, height=None, title=''):
-        self.widget = urwid.AttrMap(urwid.LineBox(widget, title=title), 'window')
+        self.widget = urwid.AttrMap(
+            urwid.LineBox(widget, title=title), 'window')
         self.oldwidget = loop.widget
         self.loop = loop
         super().__init__(self.widget, loop.widget,
-                align="center",
-                width=width,
-                valign="middle",
-                height=height)
+                         align="center",
+                         width=width,
+                         valign="middle",
+                         height=height)
 
     def show(self):
         self.loop.widget = self
@@ -774,6 +794,7 @@ class Dialog(urwid.Overlay):
         elif key == 'esc':
             self.close()
 
+
 class AddDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
@@ -783,11 +804,11 @@ class AddDialog(Dialog):
         self.engine = engine
 
         self.listheader = urwid.Columns([
-                ('fixed', 7, urwid.Text('ID')),
-                ('weight', 1, urwid.Text('Title')),
-                ('fixed', 10, urwid.Text('Type')),
-                ('fixed', 7, urwid.Text('Total')),
-            ])
+            ('fixed', 7, urwid.Text('ID')),
+            ('weight', 1, urwid.Text('Title')),
+            ('fixed', 10, urwid.Text('Type')),
+            ('fixed', 7, urwid.Text('Total')),
+        ])
 
         self.listwalker = urwid.SimpleListWalker([])
         self.listbox = urwid.ListBox(self.listwalker)
@@ -796,9 +817,12 @@ class AddDialog(Dialog):
         for show in showlist:
             self.listwalker.append(SearchItem(show))
 
-        self.info_txt = urwid.Text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
-        self.frame = urwid.Frame(self.listbox, header=self.listheader, footer=self.info_txt)
-        super().__init__(self.frame, loop, width=width, height=('relative', 80), title='Search results')
+        self.info_txt = urwid.Text(
+            "Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
+        self.frame = urwid.Frame(
+            self.listbox, header=self.listheader, footer=self.info_txt)
+        super().__init__(self.frame, loop, width=width,
+                         height=('relative', 80), title='Search results')
 
     def keypress(self, size, key):
         if key in ('up', 'down', 'left', 'right', 'tab'):
@@ -824,11 +848,11 @@ class AddDialog(Dialog):
         #self.status("Getting show details...")
         details = self.engine.get_show_details(show)
 
-        title = urwid.Text( ('info_title', show['title']), 'center', 'any')
+        title = urwid.Text(('info_title', show['title']), 'center', 'any')
         widgets = []
         for line in details['extra']:
             if line[0] and line[1]:
-                widgets.append( urwid.Text( ('info_section', "%s: " % line[0] ) ) )
+                widgets.append(urwid.Text(('info_section', "%s: " % line[0])))
                 if isinstance(line[1], dict):
                     linestr = repr(line[1])
                 elif isinstance(line[1], int):
@@ -836,21 +860,25 @@ class AddDialog(Dialog):
                 else:
                     linestr = line[1]
 
-                widgets.append( urwid.Padding(urwid.Text( linestr + "\n" ), left=3) )
+                widgets.append(urwid.Padding(
+                    urwid.Text(linestr + "\n"), left=3))
 
         self.frame.body = urwid.ListBox(widgets)
         self.frame.header = title
         self.viewing_info = True
-        self.info_txt.set_text("Detail View | ESC:Return  Up/Down:Scroll  O:View website")
+        self.info_txt.set_text(
+            "Detail View | ESC:Return  Up/Down:Scroll  O:View website")
 
     def do_info_exit(self):
         if self.viewing_info:
             self.frame.body = self.listbox
             self.frame.header = self.listheader
-            self.info_txt.set_text("Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
+            self.info_txt.set_text(
+                "Add View | Enter:Add  i:Info  O:Website  Esc:Cancel")
             self.viewing_info = False
         else:
             self.close()
+
 
 class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
@@ -862,9 +890,9 @@ class AccountDialog(Dialog):
         self.manager = manager
 
         listheader = urwid.Columns([
-                ('weight', 1, urwid.Text('Username')),
-                ('fixed', 15, urwid.Text('Site')),
-            ])
+            ('weight', 1, urwid.Text('Username')),
+            ('fixed', 15, urwid.Text('Site')),
+        ])
 
         self.listwalker = urwid.SimpleListWalker([])
         listbox = urwid.ListBox(self.listwalker)
@@ -886,7 +914,7 @@ class AccountDialog(Dialog):
             self.listwalker.append(AccountItem(k, account))
 
     def keypress(self, size, key):
-        #if key in ('up', 'down', 'left', 'right', 'tab'):
+        # if key in ('up', 'down', 'left', 'right', 'tab'):
         #    self.widget.keypress(size, key)
         if self.adding:
             if key == 'esc':
@@ -989,6 +1017,7 @@ class AccountDialog(Dialog):
         self.close()
         urwid.emit_signal(self, 'done', accountitem.account)
 
+
 class AccountItem(urwid.WidgetWrap):
     def __init__(self, num, account):
         self.num = num
@@ -1006,6 +1035,7 @@ class AccountItem(urwid.WidgetWrap):
     def keypress(self, size, key):
         return key
 
+
 class SearchItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True):
         self.show = show
@@ -1022,6 +1052,7 @@ class SearchItem(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         return key
+
 
 class ShowWalker(urwid.SimpleListWalker):
     def _get_showitem(self, showid):
@@ -1066,10 +1097,12 @@ class ShowWalker(urwid.SimpleListWalker):
                 self.set_focus(i)
                 break
 
+
 class ShowItem(urwid.WidgetWrap):
     def __init__(self, show, has_progress=True, altname=None, eps=None):
         if has_progress:
-            self.episodes_str = urwid.Text("{0:3} / {1}".format(show['my_progress'], show['total'] or '?'))
+            self.episodes_str = urwid.Text(
+                "{0:3} / {1}".format(show['my_progress'], show['total'] or '?'))
         else:
             self.episodes_str = urwid.Text("-")
 
@@ -1122,13 +1155,15 @@ class ShowItem(urwid.WidgetWrap):
         if show['id'] == self.showid:
             # Update progress
             if self.has_progress:
-                self.episodes_str.set_text("{0:3} / {1}".format(show['my_progress'], show['total']))
+                self.episodes_str.set_text(
+                    "{0:3} / {1}".format(show['my_progress'], show['total']))
             self.score_str.set_text("{0:^5}".format(show['my_score']))
 
             # Update color
             self.highlight(show)
         else:
-            print("Warning: Tried to update a show with a different ID! (%d -> %d)" % (show['id'], self.showid))
+            print("Warning: Tried to update a show with a different ID! (%d -> %d)" %
+                  (show['id'], self.showid))
 
     def update_altname(self, altname):
         # Update title
@@ -1172,10 +1207,12 @@ class Asker(urwid.Edit):
 
         urwid.Edit.keypress(self, size, key)
 
+
 class QuestionAsker(Asker):
     def keypress(self, size, key):
         if key.lower() in 'yn':
             urwid.emit_signal(self, 'done', key.lower())
+
 
 def main():
     ui = Trackma_urwid()
@@ -1184,6 +1221,7 @@ def main():
     except utils.TrackmaFatal as e:
         ui.forget_account()
         print("Fatal error: %s" % e)
+
 
 if __name__ == '__main__':
     main()

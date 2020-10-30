@@ -30,6 +30,7 @@ PLAYING = 3
 PAUSED = 4
 IDLE = 5
 
+
 class PlexTracker(tracker.TrackerBase):
     name = 'Tracker (Plex)'
 
@@ -66,7 +67,7 @@ class PlexTracker(tracker.TrackerBase):
         mres = self._get_xml_info(meta_url, "Part", "file")
         name = urllib.parse.unquote(ntpath.basename(mres))
         xstate = self._get_sessions_info("Player", "state")
-        
+
         if xstate == "playing":
             state = PLAYING
         else:
@@ -103,21 +104,21 @@ class PlexTracker(tracker.TrackerBase):
 
                 try:
                     xuser = self._get_sessions_info("User", "title")
-                    
+
                     player = self.playing_file()
                     (state, show_tuple) = self._get_playing_show(player[0])
-                    
+
                     if self.token:
                         if self.config['plex_user'] == xuser:
                             self.update_show_if_needed(state, show_tuple)
-                            
+
                             if player[1] == PAUSED:
                                 self.pause_timer()
                             elif player[1] == PLAYING:
                                 self.resume_timer()
                     else:
                         self.update_show_if_needed(state, show_tuple)
-                        
+
                         if player[1] == PAUSED:
                             self.pause_timer()
                         elif player[1] == PLAYING:
@@ -125,7 +126,8 @@ class PlexTracker(tracker.TrackerBase):
                 except IndexError:
                     pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
-                self.msg.warn(self.name, "Claimed Plex Media Server, login in the settings and restart trackma.")
+                self.msg.warn(
+                    self.name, "Claimed Plex Media Server, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
                 self.msg.warn(self.name, "Plex Media Server is not running.")
 
@@ -142,12 +144,14 @@ class PlexTracker(tracker.TrackerBase):
         if not (username and password):
             return ''
 
-        body = bytes('user[login]=%s&user[password]=%s' % (username, password), "utf-8")
+        body = bytes('user[login]=%s&user[password]=%s' %
+                     (username, password), "utf-8")
         headers = {'X-Plex-Client-Identifier': uuid,
-                'X-Plex-Product': "Trackma",
-                'X-Plex-Version': utils.VERSION}
+                   'X-Plex-Product': "Trackma",
+                   'X-Plex-Version': utils.VERSION}
 
-        req = urllib.request.Request('https://plex.tv/users/sign_in.xml', body, headers=headers)
+        req = urllib.request.Request(
+            'https://plex.tv/users/sign_in.xml', body, headers=headers)
         response = urllib.request.urlopen(req)
         data = response.read().decode("utf-8")
 
@@ -161,16 +165,17 @@ class PlexTracker(tracker.TrackerBase):
             uop = urllib.request.urlopen(url)
         except urllib.request.URLError:
             uop = urllib.request.urlopen(url+self.token)
-        
+
         doc = xdmd.parse(uop)
         elem = doc.getElementsByTagName(tag)
         res = elem[0].getAttribute(attr)
-        
+
         # if there's more than one session and there's a token lookup the matching user
         if len(elem) > 1 and self.token:
             for e in elem:
                 etag = e.getElementsByTagName("User")
-                xuser = etag[0].getAttribute("title") if etag else e.getAttribute("title")
+                xuser = etag[0].getAttribute(
+                    "title") if etag else e.getAttribute("title")
 
                 if xuser == self.config['plex_user']:
                     res = e.getAttribute(attr)

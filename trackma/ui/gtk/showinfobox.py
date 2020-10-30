@@ -49,7 +49,7 @@ class ShowInfoBox(Gtk.Box):
 
         self.data_label = Gtk.Label('')
         self.data_label.set_line_wrap(True)
-        self.data_label.set_property('selectable',True)
+        self.data_label.set_property('selectable', True)
 
         if isinstance(orientation, Gtk.Orientation):
             self.data_container.set_orientation(orientation)

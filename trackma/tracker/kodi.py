@@ -30,13 +30,15 @@ AUTH_REQUIRED = 3
 PLAYING = 4
 PAUSED = 5
 
+
 class KodiTracker(tracker.TrackerBase):
     name = 'Tracker (Kodi)'
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         self.config = config
 
-        self.host_port = "{}:{}".format(self.config['kodi_host'], self.config['kodi_port'])
+        self.host_port = "{}:{}".format(
+            self.config['kodi_host'], self.config['kodi_port'])
         self.status_log = [None, None]
         self.headers = {'content-type': 'application/json'}
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
@@ -67,9 +69,10 @@ class KodiTracker(tracker.TrackerBase):
         if self._get_kodi_status() == IDLE:
             return None
 
-        name = self._get_rpc_info("Player.GetItem", { "playerid": 1 })['item']['label']
+        name = self._get_rpc_info("Player.GetItem", {"playerid": 1})[
+            'item']['label']
         rstate = self._get_player_props("speed")
-        
+
         if rstate > 0:
             state = PLAYING
         else:
@@ -85,7 +88,7 @@ class KodiTracker(tracker.TrackerBase):
 
         time = self._get_player_props("totaltime")
         seconds = (time['hours']*3600)+(time['minutes']*60)+(time['seconds'])
-        
+
         return round(seconds*0.80)
 
     def _get_rpc_info(self, method, params={}):
@@ -97,14 +100,18 @@ class KodiTracker(tracker.TrackerBase):
             "jsonrpc": "2.0",
             "id": 0
         }
-        
+
         if not self.config['kodi_user'] == '':
-            req = urllib.request.Request(url, json.dumps(body).encode(), headers=self.headers)
-            b64 = base64.b64encode(bytes("{}:{}".format(self.config['kodi_user'], self.config['kodi_passwd']),'ascii'))
-            req.add_header("Authorization", "Basic {}".format(b64.decode('utf-8')))
+            req = urllib.request.Request(url, json.dumps(
+                body).encode(), headers=self.headers)
+            b64 = base64.b64encode(bytes("{}:{}".format(
+                self.config['kodi_user'], self.config['kodi_passwd']), 'ascii'))
+            req.add_header("Authorization",
+                           "Basic {}".format(b64.decode('utf-8')))
         else:
-            req = urllib.request.Request(url, json.dumps(body).encode(), headers=self.headers)
-            
+            req = urllib.request.Request(url, json.dumps(
+                body).encode(), headers=self.headers)
+
         response = urllib.request.urlopen(req)
         data = json.loads(response.read().decode())
 
@@ -120,34 +127,35 @@ class KodiTracker(tracker.TrackerBase):
         info = self._get_rpc_info("Player.GetProperties", props)
 
         return info[prop]
-    
+
     def observe(self, config, watch_dirs):
         self.msg.info(self.name, "Using Kodi.")
 
         while self.active:
             self.status_log.append(self._get_kodi_status())
-            
+
             if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
-                    self.msg.info(self.name, "Reconnected to Kodi.")
+                self.msg.info(self.name, "Reconnected to Kodi.")
 
             if self.status_log[-1] == ACTIVE:
                 if self.config['kodi_obey_update_wait_s']:
                     self.wait_s = config['tracker_update_wait_s']
                 else:
                     self.wait_s = self._timer_from_file()
-                    
+
                 player = self._playing_file()
                 (state, show_tuple) = self._get_playing_show(player[0])
-                
+
                 self.update_show_if_needed(state, show_tuple)
-                
+
                 if player[1] == PAUSED:
                     self.pause_timer()
                 elif player[1] == PLAYING:
                     self.resume_timer()
 
             elif self.status_log[-1] == AUTH_REQUIRED:
-                self.msg.warn(self.name, "Authentication needed by Kodi, login in the settings and restart trackma.")
+                self.msg.warn(
+                    self.name, "Authentication needed by Kodi, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING:
                 self.msg.warn(self.name, "Kodi HTTP Server is not running.")
 

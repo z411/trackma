@@ -18,6 +18,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGridLayout, QPushButton, QDialogButtonBox)
 
+
 class ThemedColorPicker(QDialog):
     def __init__(self, parent=None, default=None):
         QDialog.__init__(self, parent)
@@ -35,7 +36,8 @@ class ThemedColorPicker(QDialog):
             col = 0
             for role in self.roles:
                 self.colors.append(QPushButton())
-                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor(QtGui.QPalette().color(group, role)).name())
+                self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor(
+                    QtGui.QPalette().color(group, role)).name())
                 self.colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.colors[-1].clicked.connect(self.s_select(group, role))
                 colorbox.addWidget(self.colors[-1], row, col, 1, 1)

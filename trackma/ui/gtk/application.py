@@ -14,12 +14,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from trackma import utils
+from trackma.ui.gtk.window import TrackmaWindow
+from gi.repository import GLib, Gio, Gtk
 from gi import require_version
 require_version('Gtk', '3.0')
-
-from gi.repository import GLib, Gio, Gtk
-from trackma.ui.gtk.window import TrackmaWindow
-from trackma import utils
 
 
 class TrackmaApplication(Gtk.Application):
@@ -34,7 +33,8 @@ class TrackmaApplication(Gtk.Application):
         self.debug = False
         self.window = None
         self.add_main_option(
-            "debug", ord("d"), GLib.OptionFlags.NONE, GLib.OptionArg.NONE, "Show debugging information", None
+            "debug", ord(
+                "d"), GLib.OptionFlags.NONE, GLib.OptionArg.NONE, "Show debugging information", None
         )
 
     def do_startup(self):

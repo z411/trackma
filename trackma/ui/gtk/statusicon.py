@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from trackma import utils
+from gi.repository import Gdk, Gtk, GObject
 from gi import require_version
 require_version('Gdk', '3.0')
-from gi.repository import Gdk, Gtk, GObject
-from trackma import utils
 
 
 class TrackmaStatusIcon(Gtk.StatusIcon):
@@ -42,8 +42,10 @@ class TrackmaStatusIcon(Gtk.StatusIcon):
         # Called when the tray icon is right-clicked
         menu = Gtk.Menu()
         mb_show = Gtk.MenuItem("Show/Hide")
-        mb_about = Gtk.ImageMenuItem('About', Gtk.Image.new_from_icon_name("help-about", Gtk.IconSize.MENU))
-        mb_quit = Gtk.ImageMenuItem('Quit', Gtk.Image.new_from_icon_name("application-exit", Gtk.IconSize.MENU))
+        mb_about = Gtk.ImageMenuItem(
+            'About', Gtk.Image.new_from_icon_name("help-about", Gtk.IconSize.MENU))
+        mb_quit = Gtk.ImageMenuItem('Quit', Gtk.Image.new_from_icon_name(
+            "application-exit", Gtk.IconSize.MENU))
 
         mb_show.connect("activate", self._tray_status_event)
         mb_about.connect("activate", self._on_mb_about)

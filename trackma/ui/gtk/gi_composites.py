@@ -246,7 +246,8 @@ class _GtkTemplate(object):
         # - Prefer the resource path first
 
         try:
-            template_bytes = Gio.resources_lookup_data(self.ui, Gio.ResourceLookupFlags.NONE)
+            template_bytes = Gio.resources_lookup_data(
+                self.ui, Gio.ResourceLookupFlags.NONE)
         except GLib.GError:
             ui = self.ui
             if isinstance(ui, (list, tuple)):
@@ -263,7 +264,7 @@ class _GtkTemplate(object):
 
 
 # Future shim support if this makes it into PyGI?
-#if hasattr(Gtk, 'GtkTemplate'):
+# if hasattr(Gtk, 'GtkTemplate'):
 #    GtkTemplate = lambda c: c
-#else:
+# else:
 GtkTemplate = _GtkTemplate

@@ -17,6 +17,7 @@
 import re
 from decimal import Decimal
 
+
 class AnimeInfoExtractor():
     """
     Extracts lots of information about anime from filename alone
@@ -25,6 +26,7 @@ class AnimeInfoExtractor():
     @note: Thanks for Tyris for providing easy way to extract data
     @note: Does more than what's needed, but that behaviour is well tested
     """
+
     def __init__(self, filename):
         self.originalFilename = filename
         self.resolution = ''
@@ -86,11 +88,12 @@ class AnimeInfoExtractor():
 
     def __extractSpecialTags(self, filename):
         tags = {'video': ['H264', 'H.264', 'x264', 'XviD', 'DivX', 'MP4'],
-            'audio': ['AC3', 'AAC', 'MP3', 'FLAC'],
-            'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV']}
+                'audio': ['AC3', 'AAC', 'MP3', 'FLAC'],
+                'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV']}
         for k, v in tags.items():
             for tag in v:
-                m = re.search('(?:[\(\[](?:|[^\)\]]*?[^0-9a-zA-Z\)\]]))(' + tag + ')(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+                m = re.search('(?:[\(\[](?:|[^\)\]]*?[^0-9a-zA-Z\)\]]))(' +
+                              tag + ')(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
                 if m:
                     if (k == 'video'):
                         self.videoType.append(tag)
@@ -98,7 +101,9 @@ class AnimeInfoExtractor():
                         self.audioType.append(tag)
                     elif (k == 'source'):
                         self.releaseSource.append(tag)
-                    filename = filename[:m.start(1)] + '###NO#SUBBER#HERE###' + filename[m.end(1):]  # remove the match
+                    # remove the match
+                    filename = filename[:m.start(
+                        1)] + '###NO#SUBBER#HERE###' + filename[m.end(1):]
         return filename
 
     def __extractVideoProfile(self, filename):
@@ -122,7 +127,8 @@ class AnimeInfoExtractor():
 
     def __extractResolution(self, filename):
         # Match 3 or 4 chars followed by p, i, or x and 3 or 4 more chars, surrounded by any non-alphanumberic chars
-        m = re.search('(?:[^0-9a-zA-Z])(\d{3,4}(?:p|i|x\d{3,4}))(?:[^0-9a-zA-Z]|$)', filename)
+        m = re.search(
+            '(?:[^0-9a-zA-Z])(\d{3,4}(?:p|i|x\d{3,4}))(?:[^0-9a-zA-Z]|$)', filename)
         if m:
             self.resolution = m.group(1)
             filename = filename[:m.start(1)] + filename[m.end(1):]
@@ -135,7 +141,8 @@ class AnimeInfoExtractor():
                 m = re.search('(?:\d{1,3})(HD|SD)(?:[^a-zA-Z])', filename)
                 if m:
                     self.resolution = m.group(1)
-                    filename = filename[:m.start(1)] + filename[m.end(1):]  # Super special case for HD/SD imediately after episode
+                    # Super special case for HD/SD imediately after episode
+                    filename = filename[:m.start(1)] + filename[m.end(1):]
         return filename
 
     def __extractHash(self, filename):
@@ -147,15 +154,19 @@ class AnimeInfoExtractor():
         return filename
 
     def __checkIfRemux(self, filename):
-        m = re.search('(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+        m = re.search('(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)',
+                      filename, flags=re.IGNORECASE)
         return True if m else False
 
     def __cleanUpBrackets(self, filename):
         # Can get rid of the brackets that won't contain subber
-        filename = re.sub('\((?:[^\)]*?)###NO#SUBBER#HERE##(?:.*?)\)', '', filename)
-        filename = re.sub('\[(?:[^\]]*?)###NO#SUBBER#HERE##(?:.*?)\]', '', filename)
+        filename = re.sub(
+            '\((?:[^\)]*?)###NO#SUBBER#HERE##(?:.*?)\)', '', filename)
+        filename = re.sub(
+            '\[(?:[^\]]*?)###NO#SUBBER#HERE##(?:.*?)\]', '', filename)
         # Strip any empty sets of brackets
-        filename = re.sub('(?:\[(?:[^0-9a-zA-Z]*?)\])|(?:\((?:[^0-9a-zA-Z]*?)\))', ' ', filename)
+        filename = re.sub(
+            '(?:\[(?:[^0-9a-zA-Z]*?)\])|(?:\((?:[^0-9a-zA-Z]*?)\))', ' ', filename)
         return filename
 
     def __extractSubber(self, filename, remux):
@@ -178,7 +189,8 @@ class AnimeInfoExtractor():
         # Add the remux string if this was a remux and its not found in the subber tag
         if remux and not 'remux' in self.subberTag.lower():
             # refind remux and remove it
-            m = re.search('(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+            m = re.search(
+                '(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
             if m:
                 filename = filename[:m.start(1)] + filename[m.end(1):]
             if self.subberTag:
@@ -189,16 +201,18 @@ class AnimeInfoExtractor():
 
     def __extractVersion(self, filename):
         # Extract the version number (limit at v7 since V8 is possible in a title...)
-        m = re.search('(?:[^a-zA-Z])v([0-7])(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+        m = re.search('(?:[^a-zA-Z])v([0-7])(?:[^0-9a-zA-Z]|$)',
+                      filename, flags=re.IGNORECASE)
         if m:
             self.version = int(m.group(1))
             filename = filename[:m.start(1) - 1] + filename[m.end(1):]
         return filename
 
     def __extractVolumeIfPack(self, filename, title_len):
-    # Check if this is a volume pack - only relevant for no extension
+        # Check if this is a volume pack - only relevant for no extension
         if not self.extension:
-            m = re.search('[^0-9a-zA-Z](?:vol(?:ume)?\.? ?)(\d{1,3})(?: ?- ?(?:vol(?:ume)?\.? ?)?(\d{1,3}))?(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+            m = re.search(
+                '[^0-9a-zA-Z](?:vol(?:ume)?\.? ?)(\d{1,3})(?: ?- ?(?:vol(?:ume)?\.? ?)?(\d{1,3}))?(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
             if m:
                 self.volumeStart = int(m.group(1))
                 if m.group(2):
@@ -219,7 +233,8 @@ class AnimeInfoExtractor():
 
     def __extractEpisodeNumbers(self, filename):
         # First check for concurrent episodes (with a + or &)
-        m = re.search('[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?s?(?: |\.)?)?(\d{1,4})[\+\&](\d{1,4})(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+        m = re.search(
+            '[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?s?(?: |\.)?)?(\d{1,4})[\+\&](\d{1,4})(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
         if m:
             start = int(m.group(1))
             end = int(m.group(2))
@@ -233,7 +248,8 @@ class AnimeInfoExtractor():
                 # no spaces allowed around the hyphen
                 ep_search_string = '[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?(?: |\.)?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)-(\d{1,4}(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)'
             else:
-                ep_search_string = '[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?(?: |\.)?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?) ?- ?(\d{1,4}(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)'  # probably a pack... so allow spaces around the hyphen
+                # probably a pack... so allow spaces around the hyphen
+                ep_search_string = '[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?(?: |\.)?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?) ?- ?(\d{1,4}(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)'
             m = re.search(ep_search_string, filename, flags=re.IGNORECASE)
             if m:
                 self.episodeStart = Decimal(m.group(1))
@@ -241,20 +257,23 @@ class AnimeInfoExtractor():
                 filename = filename[:m.start() + 1]
         if not self.episodeStart:
             # Check if there is an episode specifier
-            m = re.search('(?:[^0-9a-zA-Z])(E\.?|Ep(?:i|isode)?(?: |\.)?)(\d{1,}(?:\.\d{1})?)(?:[^\d]|$)', filename, flags=re.IGNORECASE)
+            m = re.search(
+                '(?:[^0-9a-zA-Z])(E\.?|Ep(?:i|isode)?(?: |\.)?)(\d{1,}(?:\.\d{1})?)(?:[^\d]|$)', filename, flags=re.IGNORECASE)
             if m:
                 self.episodeStart = Decimal(m.group(2))
                 filename = filename[:m.start() + 1]
         if not self.episodeStart:
             # Check any remaining lonely numbers as episode (towards the end has priority)
             # First try outside brackets
-            m = re.search('(?:.*)(?:[^0-9a-zA-Z\.])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)', filename)
+            m = re.search(
+                '(?:.*)(?:[^0-9a-zA-Z\.])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)', filename)
             if m:
                 self.episodeStart = Decimal(m.group(1))
                 filename = filename[:m.start(1)]
         if not self.episodeStart:
             # then allow brackets
-            m = re.search('(?:.*)(?:[^0-9a-zA-Z\.\[\(])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z\]\)]|$)', filename)
+            m = re.search(
+                '(?:.*)(?:[^0-9a-zA-Z\.\[\(])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z\]\)]|$)', filename)
             if m:
                 self.episodeStart = Decimal(m.group(1))
                 filename = filename[:m.start(1)]

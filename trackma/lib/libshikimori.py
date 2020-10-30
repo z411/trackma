@@ -23,6 +23,7 @@ import time
 from trackma.lib.lib import lib
 from trackma import utils
 
+
 class libshikimori(lib):
     """
     API class to communicate with Shikimori
@@ -35,7 +36,8 @@ class libshikimori(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Shikimori', 'shortname': 'shikimori', 'version': '1', 'merge': False }
+    api_info = {'name': 'Shikimori', 'shortname': 'shikimori',
+                'version': '1', 'merge': False}
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -85,7 +87,7 @@ class libshikimori(lib):
     default_mediatype = 'anime'
 
     # Supported signals for the data handler
-    signals = { 'show_info_changed': None, }
+    signals = {'show_info_changed': None, }
 
     url = "http://shikimori.org"
 
@@ -121,7 +123,7 @@ class libshikimori(lib):
                 'cancelled': utils.STATUS_CANCELLED,
             }
 
-        #handler=urllib.request.HTTPHandler(debuglevel=1)
+        # handler=urllib.request.HTTPHandler(debuglevel=1)
         #self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma/0.4')]
@@ -132,7 +134,7 @@ class libshikimori(lib):
         if post:
             post = urllib.parse.urlencode(post)
         if jsondata:
-            post = json.dumps(jsondata, separators=(',',':')).encode('utf-8')
+            post = json.dumps(jsondata, separators=(',', ':')).encode('utf-8')
 
         request = urllib.request.Request(self.url + url, post)
         request.get_method = lambda: method
@@ -140,10 +142,11 @@ class libshikimori(lib):
         if auth:
             request.add_header('Content-Type', 'application/json')
             request.add_header('X-User-Nickname', self.username)
-            request.add_header('X-User-Api-Access-Token', self._get_userconfig('access_token'))
+            request.add_header('X-User-Api-Access-Token',
+                               self._get_userconfig('access_token'))
 
         try:
-            response = self.opener.open(request, timeout = 10)
+            response = self.opener.open(request, timeout=10)
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
@@ -155,7 +158,7 @@ class libshikimori(lib):
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
         except ValueError:
-            pass # No JSON data
+            pass  # No JSON data
 
     def _request_access_token(self):
         self.msg.info(self.name, 'Requesting access token...')
@@ -197,11 +200,12 @@ class libshikimori(lib):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
 
-        data = self._request("GET", "/api/users/{}/{}_rates".format(self.userid, self.mediatype))
+        data = self._request(
+            "GET", "/api/users/{}/{}_rates".format(self.userid, self.mediatype))
 
         showlist = {}
 
-        #with open('list', 'w') as f:
+        # with open('list', 'w') as f:
         #    json.dump(data, f, indent=2)
 
         for item in data:
@@ -212,8 +216,8 @@ class libshikimori(lib):
                 'my_id': item['id'],
                 'title': item[self.mediatype]['name'],
                 'aliases': [item[self.mediatype]['russian']],
-                #'type': item[self.mediatype]['type'],
-                #'status': self.status_translate[item[self.mediatype][self.airing_str]],
+                # 'type': item[self.mediatype]['type'],
+                # 'status': self.status_translate[item[self.mediatype][self.airing_str]],
                 'my_id': item['id'],
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
@@ -242,7 +246,8 @@ class libshikimori(lib):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
 
-        data = self._request("DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
+        data = self._request(
+            "DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
 
     def search(self, criteria, method):
         self.check_credentials()
@@ -250,7 +255,8 @@ class libshikimori(lib):
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         param = {'q': criteria}
         try:
-            data = self._request("GET", "/api/{}s/search".format(self.mediatype), get=param)
+            data = self._request(
+                "GET", "/api/{}s/search".format(self.mediatype), get=param)
         except ValueError:
             # An empty document, without any JSON, is returned
             # when there are no results.
@@ -266,7 +272,7 @@ class libshikimori(lib):
                 'title': item['name'],
                 'aliases': [item['russian']],
                 'type': item.get('kind', ''),
-                #'status': item[self.airing_str],
+                # 'status': item[self.airing_str],
                 'status': 0,
                 'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
@@ -274,7 +280,7 @@ class libshikimori(lib):
                 'image_thumb': self.url + item['image']['preview'],
             })
 
-            showlist.append( show )
+            showlist.append(show)
 
         return showlist
 
@@ -283,8 +289,9 @@ class libshikimori(lib):
         infolist = []
 
         for show in itemlist:
-            data = self._request("GET", "/api/{}s/{}".format(self.mediatype, show['id']))
-            infolist.append( self._parse_info(data) )
+            data = self._request(
+                "GET", "/api/{}s/{}".format(self.mediatype, show['id']))
+            infolist.append(self._parse_info(data))
 
         self._emit_signal('show_info_changed', infolist)
         return infolist
@@ -340,4 +347,3 @@ class libshikimori(lib):
 
     def _c(self, s):
         return 0 if s is None else s
-
