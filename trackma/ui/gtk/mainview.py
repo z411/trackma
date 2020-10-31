@@ -100,8 +100,8 @@ class MainView(Gtk.Box):
         self.image_container_box.pack_start(self.image_box, False, False, 0)
 
         self.notebook.set_scrollable(True)
-        self.notebook.add_events(Gdk.EventMask.SCROLL_MASK |\
-            Gdk.EventMask.SMOOTH_SCROLL_MASK)
+        self.notebook.add_events(Gdk.EventMask.SCROLL_MASK |
+                                 Gdk.EventMask.SMOOTH_SCROLL_MASK)
         self.notebook.connect('scroll-event', self._notebook_handle_scroll)
 
         self.statusbar = Gtk.Statusbar()
@@ -211,9 +211,9 @@ class MainView(Gtk.Box):
         self.btn_episode_add.set_sensitive(can_update)
 
     def _notebook_handle_scroll(self, widget, event):
-        page    = self.notebook.get_current_page()
-        npage   = self.notebook.get_n_pages()
-        scroll  = event.get_scroll_deltas()[2]
+        page = self.notebook.get_current_page()
+        npage = self.notebook.get_n_pages()
+        scroll = event.get_scroll_deltas()[2]
 
         if scroll < 0 and page > 0:
             self.notebook.prev_page()
@@ -227,7 +227,7 @@ class MainView(Gtk.Box):
         statuses_nums = self._engine.mediainfo['statuses'].copy()
         statuses_names = self._engine.mediainfo['statuses_dict'].copy()
         statuses_nums.append(None)
-        statuses_names[None]='All'
+        statuses_names[None] = 'All'
         self.notebook.handler_block(self.notebook_switch_handler)
         # Clear notebook
         for i in range(self.notebook.get_n_pages()):
@@ -269,8 +269,8 @@ class MainView(Gtk.Box):
         library = self._engine.library()
         for show in self._engine.get_list():
             self._list.append(show,
-                             self._engine.altname(show['id']),
-                             library.get(show['id']))
+                              self._engine.altname(show['id']),
+                              library.get(show['id']))
 
         self._list.set_sort_column_id(1, Gtk.SortType.ASCENDING)
         for status in self._pages:
@@ -327,7 +327,7 @@ class MainView(Gtk.Box):
         if lists_too:
             self.notebook.set_sensitive(boolean)
 
-        if ( self._current_page and self._current_page.selected_show ) or not boolean:
+        if (self._current_page and self._current_page.selected_show) or not boolean:
             if self._engine.mediainfo['can_play']:
                 self.btn_play_next.set_sensitive(boolean)
 
@@ -572,7 +572,8 @@ class NotebookPage(Gtk.ScrolledWindow):
         self._selected_show = 0
         self._list = _list
         self._title = title
-        self._title_text = self._engine.mediainfo['statuses_dict'][status] if status in self._engine.mediainfo['statuses_dict'].keys() else 'All'
+        self._title_text = self._engine.mediainfo['statuses_dict'][status] if status in self._engine.mediainfo['statuses_dict'].keys(
+        ) else 'All'
         self._init_widgets(page_num, status, config)
 
     def _init_widgets(self, page_num, status, config):
@@ -581,7 +582,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         self.set_border_width(5)
 
         self._show_tree_view = ShowTreeView(
-                config['colors'],
+            config['colors'],
             config['visible_columns'],
             config['episodebar_style'])
         self._show_tree_view.set_model(
@@ -596,10 +597,12 @@ class NotebookPage(Gtk.ScrolledWindow):
             self._title_text,
             len(self._show_tree_view.props.model)
         ))
-        self._show_tree_view.get_selection().connect("changed", self._on_selection_changed)
+        self._show_tree_view.get_selection().connect(
+            "changed", self._on_selection_changed)
         self._show_tree_view.connect("row-activated", self._on_row_activated)
         self._show_tree_view.connect("column-toggled", self._on_column_toggled)
-        self._show_tree_view.connect("button-press-event", self._on_show_context_menu)
+        self._show_tree_view.connect(
+            "button-press-event", self._on_show_context_menu)
         self._show_tree_view.get_model().connect("row-inserted", self._update_title)
         self._show_tree_view.get_model().connect("row-deleted", self._update_title)
 
