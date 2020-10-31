@@ -81,7 +81,8 @@ class AccountsWindow(Gtk.Dialog):
         self.internal_box.set_border_width(0)
 
     def _add_separators(self):
-        self.accounts_listbox.set_header_func(self._accounts_listbox_header_func, None)
+        self.accounts_listbox.set_header_func(
+            self._accounts_listbox_header_func, None)
 
     @staticmethod
     def _accounts_listbox_header_func(row, before, _user_data):
@@ -228,7 +229,8 @@ class AccountsWindow(Gtk.Dialog):
         self.btn_cancel.hide()
 
         self.current = AccountsView.EDIT
-        self.accounts_stack.set_visible_child_full('new_account', Gtk.StackTransitionType.SLIDE_LEFT)
+        self.accounts_stack.set_visible_child_full(
+            'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_add_new(self):
         self.header_bar.set_title("Add account")
@@ -241,7 +243,8 @@ class AccountsWindow(Gtk.Dialog):
         self.username_entry.set_sensitive(True)
 
         self.current = AccountsView.NEW
-        self.accounts_stack.set_visible_child_full('new_account', Gtk.StackTransitionType.SLIDE_LEFT)
+        self.accounts_stack.set_visible_child_full(
+            'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_accounts_list(self):
         self.header_bar.set_title("Accounts")
@@ -252,13 +255,15 @@ class AccountsWindow(Gtk.Dialog):
         self.btn_cancel.show()
 
         self.current = AccountsView.LIST
-        self.accounts_stack.set_visible_child_full('accounts', Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.accounts_stack.set_visible_child_full(
+            'accounts', Gtk.StackTransitionType.SLIDE_RIGHT)
 
     def _populate_combobox(self):
         model_api = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
 
         for (libname, lib) in sorted(utils.available_libs.items()):
-            self.treeiters[libname] = model_api.append([libname, lib[0], self.pixbufs[libname]])
+            self.treeiters[libname] = model_api.append(
+                [libname, lib[0], self.pixbufs[libname]])
 
         self.accounts_combo.set_model(model_api)
 
@@ -336,7 +341,7 @@ class AccountsWindow(Gtk.Dialog):
         self.btn_edit_confirm.set_sensitive(sensitive)
 
     def _add_account(self):
-        username =  self.username_entry.get_text().strip()
+        username = self.username_entry.get_text().strip()
         password = self.password_entry.get_text()
         api = self._get_combo_active_api_name()
 
@@ -344,7 +349,7 @@ class AccountsWindow(Gtk.Dialog):
 
     def _edit_account(self):
         num = self.account_edit['account_id']
-        username =  self.account_edit['username']
+        username = self.account_edit['username']
         password = self.password_entry.get_text()
         api = self.account_edit['api']
 

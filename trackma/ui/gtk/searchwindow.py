@@ -91,7 +91,7 @@ class SearchWindow(Gtk.Window):
 
     @GtkTemplate.Callback
     def _on_search_entry_search_changed(self, search_entry):
-        search_text=search_entry.get_text().strip()
+        search_text = search_entry.get_text().strip()
         self.progress_spinner.start()
         if search_text == "":
             if self._search_thread:
@@ -110,12 +110,13 @@ class SearchWindow(Gtk.Window):
                                            text,
                                            self._search_finish_idle)
         self._search_thread.start()
+
     def _search_finish(self):
         self.headerbar.set_subtitle(
-            "%s result%s." % ( (len(self._entries),'s') \
-                if len(self._entries) > 0 \
-                else ('No', '')
-            )
+            "%s result%s." % ((len(self._entries), 's')
+                              if len(self._entries) > 0
+                              else ('No', '')
+                              )
         )
         self.progress_spinner.stop()
 

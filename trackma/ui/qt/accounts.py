@@ -14,15 +14,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-pyqt_version = 5
-
-from PyQt5 import QtCore, QtGui
+from trackma import utils
 from PyQt5.QtWidgets import (
     QDialog, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QTableWidget,
     QAbstractItemView, QCheckBox, QPushButton, QComboBox, QHeaderView,
     QMessageBox, QFormLayout, QLabel, QLineEdit, QDialogButtonBox)
-    
-from trackma import utils
+from PyQt5 import QtCore, QtGui
+pyqt_version = 5
+
 
 class AccountDialog(QDialog):
     selected = QtCore.pyqtSignal(int, bool)
@@ -59,9 +58,12 @@ class AccountDialog(QDialog):
         self.edit_btns.addItem('Update')
         self.edit_btns.addItem('Delete')
         self.edit_btns.addItem('Purge')
-        self.edit_btns.setItemData(1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
-        self.edit_btns.setItemData(2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
-        self.edit_btns.setItemData(3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
         self.edit_btns.activated.connect(self.s_edit)
@@ -112,7 +114,8 @@ class AccountDialog(QDialog):
                                          api=acct['api'])
             if result:
                 (username, password, api) = result
-                self.accountman.edit_account(selected_account_num, username, password, api)
+                self.accountman.edit_account(
+                    selected_account_num, username, password, api)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
@@ -120,7 +123,8 @@ class AccountDialog(QDialog):
     def delete(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.accountman.delete_account(selected_account_num)
@@ -131,7 +135,8 @@ class AccountDialog(QDialog):
     def purge(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.accountman.purge_account(selected_account_num)
@@ -158,9 +163,11 @@ class AccountDialog(QDialog):
         accounts = self.accountman.get_accounts()
         i = 0
         for k, account in accounts:
-            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2)
+            self.table.setRowHeight(i, QtGui.QFontMetrics(
+                self.table.font()).height() + 2)
             self.table.setItem(i, 0, AccountItem(k, account['username']))
-            self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons.get(account['api'])))
+            self.table.setItem(i, 1, AccountItem(
+                k, account['api'], self.icons.get(account['api'])))
 
             i += 1
 
@@ -172,7 +179,8 @@ class AccountDialog(QDialog):
     def select(self, checked):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            self.selected.emit(selected_account_num, self.remember_chk.isChecked())
+            self.selected.emit(selected_account_num,
+                               self.remember_chk.isChecked())
             self.close()
         except IndexError:
             self._error("Please select an account.")
@@ -183,6 +191,7 @@ class AccountDialog(QDialog):
 
     def _error(self, msg):
         QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
+
 
 class AccountItem(QTableWidgetItem):
     """
@@ -196,6 +205,7 @@ class AccountItem(QTableWidgetItem):
         self.num = num
         if icon:
             self.setIcon(icon)
+
 
 class AccountAddDialog(QDialog):
     def __init__(self, parent, icons, edit=False, username='', password='', api=''):
@@ -237,7 +247,8 @@ class AccountAddDialog(QDialog):
 
         if self.edit:
             self.username.setEnabled(False)
-            self.api.setCurrentIndex(self.api.findData(api, QtCore.Qt.UserRole))
+            self.api.setCurrentIndex(
+                self.api.findData(api, QtCore.Qt.UserRole))
             self.api.setEnabled(False)
 
         # Finish layouts
@@ -270,7 +281,7 @@ class AccountAddDialog(QDialog):
         if api[2] == utils.LOGIN_OAUTH:
             apiname = str(self.api.itemData(index))
             url = utils.available_libs[apiname][4]
-            self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
+            self.api_auth.setText("<a href=\"{}\">Request PIN</a>".format(url))
             self.api_auth.show()
 
             self.lbl_username.setText('Name:')
@@ -293,9 +304,9 @@ class AccountAddDialog(QDialog):
         if result == QDialog.Accepted:
             currentIndex = dialog.api.currentIndex()
             return (
-                    str(dialog.username.text()),
-                    str(dialog.password.text()),
-                    str(dialog.api.itemData(currentIndex))
-                   )
+                str(dialog.username.text()),
+                str(dialog.password.text()),
+                str(dialog.api.itemData(currentIndex))
+            )
         else:
             return None

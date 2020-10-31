@@ -77,18 +77,21 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self.set_title('Trackma')
 
         if self._config['remember_geometry']:
-            self.resize(self._config['last_width'], self._config['last_height'])
+            self.resize(self._config['last_width'],
+                        self._config['last_height'])
 
         if not self._main_view:
             self._main_view = MainView(self._config)
             self._main_view.connect('error', self._on_main_view_error)
-            self._main_view.connect('error-fatal', self._on_main_view_error_fatal)
+            self._main_view.connect(
+                'error-fatal', self._on_main_view_error_fatal)
             self._main_view.connect('show-action', self._on_show_action)
             self.add(self._main_view)
 
         self.connect('delete_event', self._on_delete_event)
 
-        builder = Gtk.Builder.new_from_file(os.path.join(gtk_dir, 'data/shortcuts.ui'))
+        builder = Gtk.Builder.new_from_file(
+            os.path.join(gtk_dir, 'data/shortcuts.ui'))
         help_overlay = builder.get_object('shortcuts-window')
         self.set_help_overlay(help_overlay)
 
@@ -96,7 +99,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         if TrackmaStatusIcon.is_tray_available():
             self.statusicon = TrackmaStatusIcon()
             self.statusicon.connect('hide-clicked', self._on_tray_hide_clicked)
-            self.statusicon.connect('about-clicked', self._on_tray_about_clicked)
+            self.statusicon.connect(
+                'about-clicked', self._on_tray_about_clicked)
             self.statusicon.connect('quit-clicked', self._on_tray_quit_clicked)
 
             if self._config['show_tray']:
@@ -154,7 +158,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._update_widgets(account)
 
     def _set_actions(self):
-        builder = Gtk.Builder.new_from_file(os.path.join(gtk_dir, 'data/app-menu.ui'))
+        builder = Gtk.Builder.new_from_file(
+            os.path.join(gtk_dir, 'data/app-menu.ui'))
         self.btn_appmenu.set_menu_model(builder.get_object('app-menu'))
 
         def add_action(name, callback):
@@ -198,7 +203,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             variant = GLib.Variant.new_string(mediatype)
             menu_item = Gio.MenuItem()
             menu_item.set_label(mediatype)
-            menu_item.set_action_and_target_value('win.change-mediatype', variant)
+            menu_item.set_action_and_target_value(
+                'win.change-mediatype', variant)
             menu.append_item(menu_item)
 
         self.btn_mediatype.set_menu_model(menu)
@@ -220,11 +226,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _on_change_mediatype(self, action, value):
         action.set_state(value)
         mediatype = value.get_string()
-        self._main_view.load_account_mediatype(None, mediatype, self.header_bar)
+        self._main_view.load_account_mediatype(
+            None, mediatype, self.header_bar)
 
     def _on_search(self, action, param):
         current_status = self._main_view.get_current_status()
-        win = SearchWindow(self._engine, self._config['colors'], current_status, transient_for=self)
+        win = SearchWindow(
+            self._engine, self._config['colors'], current_status, transient_for=self)
         win.connect('search-error', self._on_search_error)
         win.connect('destroy', self._on_modal_destroy)
         win.present()
@@ -234,14 +242,17 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         print(error_msg)
 
     def _on_synchronize(self, action, param):
-        threading.Thread(target=self._synchronization_task, args=(True, True)).start()
+        threading.Thread(target=self._synchronization_task,
+                         args=(True, True)).start()
 
     def _on_upload(self, action, param):
-        threading.Thread(target=self._synchronization_task, args=(True, False)).start()
+        threading.Thread(target=self._synchronization_task,
+                         args=(True, False)).start()
 
     def _on_download(self, action, param):
         def _download_lists():
-            threading.Thread(target=self._synchronization_task, args=(False, True)).start()
+            threading.Thread(target=self._synchronization_task,
+                             args=(False, True)).start()
 
         def _on_download_response(_dialog, response):
             _dialog.destroy()
@@ -341,7 +352,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._quit()
 
     def _on_preferences(self, _action, _param):
-        win = SettingsWindow(self._engine, self._config, self._configfile, transient_for=self)
+        win = SettingsWindow(self._engine, self._config,
+                             self._configfile, transient_for=self)
         win.connect('destroy', self._on_modal_destroy)
         win.present()
         self._modals.append(win)
@@ -353,7 +365,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_program_name("Trackma GTK")
         about.set_version(utils.VERSION)
         about.set_license_type(Gtk.License.GPL_3_0_ONLY)
-        about.set_comments("Trackma is an open source client for media tracking websites.\nThanks to all contributors.")
+        about.set_comments(
+            "Trackma is an open source client for media tracking websites.\nThanks to all contributors.")
         about.set_website("http://github.com/z411/trackma")
         about.set_copyright("© z411, et al.")
         about.set_authors(["See AUTHORS file"])
@@ -393,7 +406,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         # Thread safe
         # print("%s: %s" % (classname, msg))
         if msgtype == messenger.TYPE_WARN:
-            self._main_view.set_status_idle("%s warning: %s" % (classname, msg))
+            self._main_view.set_status_idle(
+                "%s warning: %s" % (classname, msg))
         elif msgtype != messenger.TYPE_DEBUG:
             self._main_view.set_status_idle("%s: %s" % (classname, msg))
         elif self._debug:
@@ -485,10 +499,12 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._remove_show(*data)
 
     def _play_next(self, show_id):
-        threading.Thread(target=self._play_task, args=[show_id, True, None]).start()
+        threading.Thread(target=self._play_task, args=[
+                         show_id, True, None]).start()
 
     def _play_episode(self, show_id, episode):
-        threading.Thread(target=self._play_task, args=[show_id, False, episode]).start()
+        threading.Thread(target=self._play_task, args=[
+                         show_id, False, episode]).start()
 
     def _play_task(self, show_id, playnext, episode):
         self._set_buttons_sensitive_idle(False)
@@ -607,11 +623,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         dialog.set_markup('Set the <b>alternate title</b> for the show.')
         entry = Gtk.Entry()
         entry.set_text(current_altname)
-        entry.connect("activate", altname_response, dialog, Gtk.ResponseType.OK)
+        entry.connect("activate", altname_response,
+                      dialog, Gtk.ResponseType.OK)
         hbox = Gtk.HBox()
         hbox.pack_start(Gtk.Label("Alternate Title:"), False, 5, 5)
         hbox.pack_end(entry, True, True, 0)
-        dialog.format_secondary_markup("Use this if the tracker is unable to find this show. Leave blank to disable.")
+        dialog.format_secondary_markup(
+            "Use this if the tracker is unable to find this show. Leave blank to disable.")
         dialog.vbox.pack_end(hbox, True, True, 0)
         dialog.show_all()
         retval = dialog.run()

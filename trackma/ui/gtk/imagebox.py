@@ -54,7 +54,8 @@ class ImageThread(threading.Thread):
 
     def _download_file(self):
         request = urllib.request.Request(self._url)
-        request.add_header("User-Agent", "TrackmaImage/{}".format(utils.VERSION))
+        request.add_header(
+            "User-Agent", "TrackmaImage/{}".format(utils.VERSION))
         return BytesIO(urllib.request.urlopen(request).read())
 
     def _save_image(self, img_bytes):
@@ -109,8 +110,10 @@ class ImageBox(Gtk.HBox):
             return
 
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
-        width, height = scale(pixbuf.get_width(), pixbuf.get_height(), self._width, self._height)
-        scaled_buf = pixbuf.scale_simple(width, height, GdkPixbuf.InterpType.BILINEAR)
+        width, height = scale(pixbuf.get_width(),
+                              pixbuf.get_height(), self._width, self._height)
+        scaled_buf = pixbuf.scale_simple(
+            width, height, GdkPixbuf.InterpType.BILINEAR)
 
         self._image.set_from_pixbuf(scaled_buf)
         self._image.show()
@@ -124,7 +127,8 @@ class ImageBox(Gtk.HBox):
             self._image_thread.stop()
 
         self.set_text("Loading...")
-        self._image_thread = ImageThread(url, filename, self._width, self._height, self.set_image)
+        self._image_thread = ImageThread(
+            url, filename, self._width, self._height, self.set_image)
         self._image_thread.start()
 
 

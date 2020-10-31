@@ -18,6 +18,7 @@ from PyQt5 import QtGui
 
 from trackma import utils
 
+
 class FilterBar():
     """
     Constants relating to filter bar settings can live here.
@@ -27,9 +28,11 @@ class FilterBar():
     PositionAboveLists = 1
     PositionBelowLists = 2
 
+
 def getIcon(icon_name):
     fallback = QtGui.QIcon(utils.DATADIR + '/qtui/{}.png'.format(icon_name))
     return QtGui.QIcon.fromTheme(icon_name, fallback)
+
 
 def getColor(colorString):
     # Takes a color string in either #RRGGBB format or group,role format (using QPalette int values)
@@ -42,4 +45,3 @@ def getColor(colorString):
         else:
             # Failsafe - return black
             return QtGui.QColor()
-

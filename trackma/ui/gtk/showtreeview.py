@@ -66,7 +66,8 @@ class ShowListStore(Gtk.ListStore):
             return None
 
     def append(self, show, altname=None, eps=None):
-        episodes_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
+        episodes_str = "{} / {}".format(show['my_progress'],
+                                        show['total'] or '?')
         if show['total'] and show['my_progress'] <= show['total']:
             progress = (float(show['my_progress']) / show['total']) * 100
         else:
@@ -86,10 +87,10 @@ class ShowListStore(Gtk.ListStore):
         else:
             available_eps = []
 
-        start_date      = self.format_date(show['start_date'])
-        end_date        = self.format_date(show['end_date'])
-        my_start_date   = self.format_date(show['my_start_date'])
-        my_finish_date  = self.format_date(show['my_finish_date'])
+        start_date = self.format_date(show['start_date'])
+        end_date = self.format_date(show['end_date'])
+        my_start_date = self.format_date(show['my_start_date'])
+        my_finish_date = self.format_date(show['my_finish_date'])
 
         row = [show['id'],
                title_str,
@@ -183,8 +184,8 @@ class ShowListFilter(Gtk.TreeModelFilter):
 
 
 class ShowTreeView(Gtk.TreeView):
-    __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST, \
-            GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
+    __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST,
+                                       GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN))}
 
     def __init__(self, colors, visible_columns, progress_style=1):
         Gtk.TreeView.__init__(self)
@@ -230,8 +231,8 @@ class ShowTreeView(Gtk.TreeView):
 
         #renderer_id = Gtk.CellRendererText()
         #self.cols['ID'].pack_start(renderer_id, False, True, 0)
-        #self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
-        #self.cols['ID'].set_expand(False)
+        # self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        # self.cols['ID'].set_expand(False)
         #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
@@ -240,7 +241,8 @@ class ShowTreeView(Gtk.TreeView):
         self.cols['Title'].set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
-        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9) # Using foreground-gdk does not work, possibly due to the timing of it being set
+        # Using foreground-gdk does not work, possibly due to the timing of it being set
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9)
         renderer_title.set_property('ellipsize', Pango.EllipsizeMode.END)
 
         renderer_progress = Gtk.CellRendererText()
@@ -286,7 +288,8 @@ class ShowTreeView(Gtk.TreeView):
 
                 item = Gtk.CheckMenuItem(name)
                 item.set_active(is_active)
-                item.connect('activate', self._header_menu_item, name, not is_active)
+                item.connect('activate', self._header_menu_item,
+                             name, not is_active)
                 menu.append(item)
                 item.show()
 
@@ -351,7 +354,8 @@ class ProgressCellRenderer(Gtk.CellRenderer):
     def do_render(self, cr, widget, background_area, cell_area, flags):
         (x, y, w, h) = self.do_get_size(widget, cell_area)
 
-        cr.set_source_rgb(*self.__get_color(self.colors['progress_bg'])) #set_source_rgb(0.9, 0.9, 0.9)
+        # set_source_rgb(0.9, 0.9, 0.9)
+        cr.set_source_rgb(*self.__get_color(self.colors['progress_bg']))
         cr.rectangle(x, y, w, h)
         cr.fill()
 
@@ -364,27 +368,36 @@ class ProgressCellRenderer(Gtk.CellRenderer):
             else:
                 mid = int(w / float(self.total) * self.subvalue)
 
-            cr.set_source_rgb(*self.__get_color(self.colors['progress_sub_bg'])) #set_source_rgb(0.7, 0.7, 0.7)
+            # set_source_rgb(0.7, 0.7, 0.7)
+            cr.set_source_rgb(
+                *self.__get_color(self.colors['progress_sub_bg']))
             cr.rectangle(x, y+h-self._subheight, mid, h-(h-self._subheight))
             cr.fill()
 
         if self.value:
             if self.value >= self.total:
-                cr.set_source_rgb(*self.__get_color(self.colors['progress_complete'])) #set_source_rgb(0.6, 0.8, 0.7)
+                # set_source_rgb(0.6, 0.8, 0.7)
+                cr.set_source_rgb(
+                    *self.__get_color(self.colors['progress_complete']))
                 cr.rectangle(x, y, w, h)
             else:
                 mid = int(w / float(self.total) * self.value)
-                cr.set_source_rgb(*self.__get_color(self.colors['progress_fg'])) #set_source_rgb(0.6, 0.7, 0.8)
+                # set_source_rgb(0.6, 0.7, 0.8)
+                cr.set_source_rgb(
+                    *self.__get_color(self.colors['progress_fg']))
                 cr.rectangle(x, y, mid, h)
             cr.fill()
 
         if self.eps:
-            cr.set_source_rgb(*self.__get_color(self.colors['progress_sub_fg'])) #set_source_rgb(0.4, 0.5, 0.6)
+            # set_source_rgb(0.4, 0.5, 0.6)
+            cr.set_source_rgb(
+                *self.__get_color(self.colors['progress_sub_fg']))
             for episode in self.eps:
                 if episode > 0 and episode <= self.total:
                     start = int(w / float(self.total) * (episode - 1))
                     finish = int(w / float(self.total) * episode)
-                    cr.rectangle(x+start, y+h-self._subheight, finish-start, h-(h-self._subheight))
+                    cr.rectangle(x+start, y+h-self._subheight,
+                                 finish-start, h-(h-self._subheight))
                     cr.fill()
 
     @staticmethod

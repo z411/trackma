@@ -26,6 +26,7 @@ import xml.etree.ElementTree as ET
 from trackma.lib.lib import lib
 from trackma import utils
 
+
 class libmal(lib):
     """
     API class to communicate with MyAnimeList
@@ -38,11 +39,12 @@ class libmal(lib):
     """
     name = 'libmal'
 
-    username = '' # TODO Must be filled by check_credentials
+    username = ''  # TODO Must be filled by check_credentials
     logged_in = False
     opener = None
 
-    api_info =  { 'name': 'MyAnimeList', 'shortname': 'mal', 'version': '', 'merge': False }
+    api_info = {'name': 'MyAnimeList',
+                'shortname': 'mal', 'version': '', 'merge': False}
 
     default_mediatype = 'anime'
     mediatypes = dict()
@@ -59,7 +61,7 @@ class libmal(lib):
         'status_start': 1,
         'status_finish': 2,
         'statuses':  [1, 2, 3, 4, 6],
-        'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
+        'statuses_dict': {1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch'},
         'score_max': 10,
         'score_step': 1,
     }
@@ -76,7 +78,7 @@ class libmal(lib):
         'status_start': 1,
         'status_finish': 2,
         'statuses': [1, 2, 3, 4, 6],
-        'statuses_dict': { 1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read' },
+        'statuses_dict': {1: 'Reading', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Read'},
         'score_max': 10,
         'score_step': 1,
     }
@@ -92,7 +94,9 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         token = '%s:%s' % (account['username'], account['password'])
-        auth_string = 'Basic ' + base64.b64encode(token.encode('utf-8')).decode('ascii').replace('\n', '')
+        auth_string = 'Basic ' + \
+            base64.b64encode(token.encode('utf-8')
+                             ).decode('ascii').replace('\n', '')
 
         self.username = self._get_userconfig('username')
         self.opener = urllib.request.build_opener()
@@ -111,14 +115,14 @@ class libmal(lib):
         try:
             request = urllib.request.Request(url)
             request.add_header('Accept-Encoding', 'gzip')
-            response = self.opener.open(request, timeout = 10)
+            response = self.opener.open(request, timeout=10)
         except urllib.request.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError(
-                        "Unauthorized. Please check if your username and password are correct."
-                        "\n\nPlease note that you might also be getting this error if you have "
-                        "non-alphanumeric characters in your password due to an upstream "
-                        "MAL bug (#138).")
+                    "Unauthorized. Please check if your username and password are correct."
+                    "\n\nPlease note that you might also be getting this error if you have "
+                    "non-alphanumeric characters in your password due to an upstream "
+                    "MAL bug (#138).")
             else:
                 raise utils.APIError("HTTP error %d: %s" % (e.code, e.reason))
         except urllib.request.URLError as e:
@@ -160,7 +164,8 @@ class libmal(lib):
 
         try:
             # Get an XML list from MyAnimeList API
-            data = self._request("https://myanimelist.net/malappinfo.php?u="+self.username+"&status=all&type="+self.mediatype)
+            data = self._request("https://myanimelist.net/malappinfo.php?u=" +
+                                 self.username+"&status=all&type="+self.mediatype)
 
             # Parse the XML data and load it into a dictionary
             # using the proper function (anime or manga)
@@ -173,7 +178,8 @@ class libmal(lib):
                 self.msg.info(self.name, 'Parsing manga list...')
                 return self._parse_manga(root)
             else:
-                raise utils.APIFatal('Attempted to parse unsupported media type.')
+                raise utils.APIFatal(
+                    'Attempted to parse unsupported media type.')
         except urllib.request.HTTPError as e:
             raise utils.APIError("Error getting list.")
         except IOError as e:
@@ -190,7 +196,8 @@ class libmal(lib):
         values = {'data': xml}
         data = urllib.parse.urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/add/" + str(item['id']) + ".xml", data.encode('utf-8'))
+            self.opener.open(self.url + self.mediatype + "list/add/" +
+                             str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
 
@@ -205,7 +212,8 @@ class libmal(lib):
         values = {'data': xml}
         data = urllib.parse.urlencode(values)
         try:
-            self.opener.open(self.url + self.mediatype + "list/update/" + str(item['id']) + ".xml", data.encode('utf-8'))
+            self.opener.open(self.url + self.mediatype + "list/update/" +
+                             str(item['id']) + ".xml", data.encode('utf-8'))
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
 
@@ -215,7 +223,8 @@ class libmal(lib):
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
 
         try:
-            self.opener.open(self.url + self.mediatype + "list/delete/" + str(item['id']) + ".xml")
+            self.opener.open(self.url + self.mediatype +
+                             "list/delete/" + str(item['id']) + ".xml")
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
 
@@ -225,7 +234,8 @@ class libmal(lib):
 
         # Send the urlencoded query to the search API
         query = urllib.parse.urlencode({'q': criteria})
-        data = self._request(self.url + self.mediatype + "/search.xml?" + query)
+        data = self._request(self.url + self.mediatype +
+                             "/search.xml?" + query)
 
         # Load the results into XML
         try:
@@ -249,15 +259,15 @@ class libmal(lib):
         # we handle statuses as integers, we need to convert them
         if self.mediatype == 'anime':
             status_translate = {'Currently Airing': utils.STATUS_AIRING,
-                    'Finished Airing': utils.STATUS_FINISHED,
-                    'Not yet aired': utils.STATUS_NOTYET}
+                                'Finished Airing': utils.STATUS_FINISHED,
+                                'Not yet aired': utils.STATUS_NOTYET}
             type_translate = {'TV': utils.TYPE_TV,
                               'Movie': utils.TYPE_MOVIE,
                               'OVA': utils.TYPE_OVA,
                               'Special': utils.TYPE_SP}
         elif self.mediatype == 'manga':
             status_translate = {'Publishing': utils.STATUS_AIRING,
-                    'Finished': utils.STATUS_AIRING}
+                                'Finished': utils.STATUS_AIRING}
 
         entries = list()
         for child in root.iter('entry'):
@@ -271,19 +281,20 @@ class libmal(lib):
                 'total':        int(child.find(episodes_str).text),
                 'image':        child.find('image').text,
                 'url':          "https://myanimelist.net/anime/%d" % showid,
-                'start_date':   self._str2date( child.find('start_date').text ),
-                'end_date':     self._str2date( child.find('end_date').text ),
+                'start_date':   self._str2date(child.find('start_date').text),
+                'end_date':     self._str2date(child.find('end_date').text),
                 'extra': [
                     ('English',  child.find('english').text),
                     ('Synonyms', child.find('synonyms').text),
-                    ('Synopsis', self._translate_synopsis(child.find('synopsis').text)),
+                    ('Synopsis', self._translate_synopsis(
+                        child.find('synopsis').text)),
                     (episodes_str.title(), child.find(episodes_str).text),
                     ('Type',     child.find('type').text),
                     ('Score',    child.find('score').text),
                     ('Status',   child.find('status').text),
                     ('Start date', child.find('start_date').text),
                     ('End date', child.find('end_date').text),
-                    ]
+                ]
             })
             entries.append(show)
 
@@ -306,12 +317,13 @@ class libmal(lib):
                     showid = info['id']
                     resultdict[showid] = info
 
-        itemids = [ show['id'] for show in itemlist ]
+        itemids = [show['id'] for show in itemlist]
 
         try:
-            reslist = [ resultdict[itemid] for itemid in itemids ]
+            reslist = [resultdict[itemid] for itemid in itemids]
         except KeyError:
-            raise utils.APIError('There was a problem getting the show details.')
+            raise utils.APIError(
+                'There was a problem getting the show details.')
 
         return reslist
 
@@ -327,7 +339,8 @@ class libmal(lib):
         for child in root.iter('anime'):
             show_id = int(child.find('series_animedb_id').text)
             if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
+                aliases = child.find(
+                    'series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
 
@@ -339,13 +352,13 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_watched_episodes').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
-                'my_start_date':  self._str2date( child.find('my_start_date').text ),
-                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
+                'my_start_date':  self._str2date(child.find('my_start_date').text),
+                'my_finish_date': self._str2date(child.find('my_finish_date').text),
                 'my_tags':         child.find('my_tags').text,
                 'total':     int(child.find('series_episodes').text),
                 'status':       int(child.find('series_status').text),
-                'start_date':   self._str2date( child.find('series_start').text ),
-                'end_date':     self._str2date( child.find('series_end').text ),
+                'start_date':   self._str2date(child.find('series_start').text),
+                'end_date':     self._str2date(child.find('series_end').text),
                 'image':        child.find('series_image').text,
                 'url':          "https://myanimelist.net/anime/%d" % show_id,
             })
@@ -358,7 +371,8 @@ class libmal(lib):
         for child in root.iter('manga'):
             manga_id = int(child.find('series_mangadb_id').text)
             if child.find('series_synonyms').text:
-                aliases = child.find('series_synonyms').text.lstrip('; ').split('; ')
+                aliases = child.find(
+                    'series_synonyms').text.lstrip('; ').split('; ')
             else:
                 aliases = []
 
@@ -370,12 +384,12 @@ class libmal(lib):
                 'my_progress':  int(child.find('my_read_chapters').text),
                 'my_status':    int(child.find('my_status').text),
                 'my_score':     int(child.find('my_score').text),
-                'my_start_date':  self._str2date( child.find('my_start_date').text ),
-                'my_finish_date': self._str2date( child.find('my_finish_date').text ),
+                'my_start_date':  self._str2date(child.find('my_start_date').text),
+                'my_finish_date': self._str2date(child.find('my_finish_date').text),
                 'total':     int(child.find('series_chapters').text),
                 'status':       int(child.find('series_status').text),
-                'start_date':   self._str2date( child.find('series_start').text ),
-                'end_date':     self._str2date( child.find('series_end').text ),
+                'start_date':   self._str2date(child.find('series_start').text),
+                'end_date':     self._str2date(child.find('series_end').text),
                 'image':        child.find('series_image').text,
                 'url':          "https://myanimelist.net/manga/%d" % manga_id,
             })
@@ -435,7 +449,7 @@ class libmal(lib):
             try:
                 return datetime.datetime.strptime(string, "%Y-%m-%d")
             except ValueError:
-                return None # Ignore date if it's invalid
+                return None  # Ignore date if it's invalid
         else:
             return None
 
@@ -665,10 +679,10 @@ class libmal(lib):
             "clubs":    u'\u2663',
             "hearts":   u'\u2665',
             "diams":    u'\u2666',
-            "quot":     u'\"'    ,
-            "amp":      u'&'     ,
-            "lt":       u'<'     ,
-            "gt":       u'>'     ,
+            "quot":     u'\"',
+            "amp":      u'&',
+            "lt":       u'<',
+            "gt":       u'>',
             "OElig":    u'\u0152',
             "oelig":    u'\u0153',
             "Scaron":   u'\u0160',
@@ -702,7 +716,8 @@ class libmal(lib):
         # http://stackoverflow.com/a/35591479/2016221
         magic = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
             "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" [\n'''
-        magic += ''.join("<!ENTITY %s '&#%d;'>\n" % (key, ord(value)) for key, value in ENTITIES.items())
+        magic += ''.join("<!ENTITY %s '&#%d;'>\n" % (key, ord(value))
+                         for key, value in ENTITIES.items())
         magic += '\n]>'
 
         # strip xml declaration since we're concatenating something before it

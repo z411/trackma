@@ -35,7 +35,7 @@ def parse_anime_relations(filename, api, mediatype, last=None):
     with open(filename) as f:
         import re
 
-        relations = {'meta':{}}
+        relations = {'meta': {}}
 
         id_pattern = "(\d+|[\?~])\|(\d+|[\?~])\|(\d+|[\?~])"
         ep_pattern = "(\d+)-?(\d+|\?)?"
@@ -69,8 +69,8 @@ def parse_anime_relations(filename, api, mediatype, last=None):
                 m = _re.match(line)
                 if m:
                     # Source
-                    src_id  = m.group(src_grp)
-                    
+                    src_id = m.group(src_grp)
+
                     # Handle unknown IDs
                     if src_id == '?':
                         continue
@@ -81,22 +81,24 @@ def parse_anime_relations(filename, api, mediatype, last=None):
                     if m.group(5) == '?':
                         src_eps = (int(m.group(4)), -1)
                     else:
-                        src_eps = (int(m.group(4)), int(m.group(5) or m.group(4)))
+                        src_eps = (int(m.group(4)), int(
+                            m.group(5) or m.group(4)))
 
                     # Destination
-                    dst_id  = m.group(dst_grp)
+                    dst_id = m.group(dst_grp)
 
                     # Handle ID repeaters
                     if dst_id == '~':
                         dst_id = src_id
                     else:
-                        dst_id  = int(dst_id)
+                        dst_id = int(dst_id)
 
                     # Handle infinite ranges
                     if m.group(10) == '?':
                         dst_eps = (int(m.group(9)), -1)
-                    else: 
-                        dst_eps = (int(m.group(9)), int(m.group(10) or m.group(9)))
+                    else:
+                        dst_eps = (int(m.group(9)), int(
+                            m.group(10) or m.group(9)))
 
                     if not src_id in relations:
                         relations[src_id] = []
@@ -105,5 +107,3 @@ def parse_anime_relations(filename, api, mediatype, last=None):
                     print("Not recognized. " + line)
 
         return relations
-
-

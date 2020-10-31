@@ -75,10 +75,10 @@ available_libs = {
     'anilist':  ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
                  "https://omaera.org/trackma/anilistv2",
                  "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
-                ),
+                 ),
     'kitsu':    ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
     'mal':      ('MyAnimeList',  DATADIR + '/mal.jpg',         LOGIN_PASSWD),
-    'shikimori':('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
+    'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
     'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
 
@@ -91,6 +91,7 @@ available_trackers = [
     ('kodi', 'Kodi'),
     ('win32', 'Win32'),
 ]
+
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -115,6 +116,7 @@ def parse_config(filename, default):
 
     return config
 
+
 def save_config(config_dict, filename):
     path = os.path.dirname(filename)
     if not os.path.isdir(path):
@@ -122,28 +124,35 @@ def save_config(config_dict, filename):
 
     with open(filename, 'wb') as configfile:
         configfile.write(json.dumps(config_dict, sort_keys=True,
-                  indent=4, separators=(',', ': ')).encode('utf-8'))
+                                    indent=4, separators=(',', ': ')).encode('utf-8'))
+
 
 def load_data(filename):
     with open(filename, 'rb') as datafile:
         return pickle.load(datafile, encoding='bytes')
 
+
 def save_data(data, filename):
     with open(filename, 'wb') as datafile:
         pickle.dump(data, datafile, protocol=2)
+
 
 def log_error(msg):
     with open(to_data_path('error.log'), 'a') as logfile:
         logfile.write(msg)
 
+
 def expand_path(path):
     return os.path.expanduser(path)
+
 
 def expand_paths(paths):
     return (expand_path(path) for path in paths)
 
+
 def is_media(filename):
     return os.path.splitext(filename)[1] in EXTENSIONS
+
 
 def regex_find_videos(subdirectory=''):
     if subdirectory:
@@ -154,31 +163,37 @@ def regex_find_videos(subdirectory=''):
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
             if is_media(filename):
-                yield ( os.path.join(root, filename), filename )
+                yield (os.path.join(root, filename), filename)
+
 
 def regex_rename_files(pattern, source_dir, dest_dir):
     in_path = os.path.expanduser(os.path.join('~', '.trackma', source_dir))
     out_path = os.path.expanduser(os.path.join('~', '.trackma', dest_dir))
     for filename in os.listdir(in_path):
         if re.match(pattern, filename):
-            in_file = os.path.join(in_path,filename)
-            out_file = os.path.join(out_path,filename)
+            in_file = os.path.join(in_path, filename)
+            out_file = os.path.join(out_path, filename)
             os.rename(in_file, out_file)
+
 
 def list_library(path):
     for root, dirs, names in os.walk(path, followlinks=True):
         for filename in names:
-            yield ( os.path.join(root, filename), filename )
+            yield (os.path.join(root, filename), filename)
+
 
 def make_dir(path):
     if not os.path.isdir(path):
         os.makedirs(path)
 
+
 def dir_exists(dirname):
     return os.path.isdir(dirname)
 
+
 def file_exists(filename):
     return os.path.isfile(filename)
+
 
 def try_files(filenames):
     for filename in filenames:
@@ -187,8 +202,10 @@ def try_files(filenames):
 
     return None
 
+
 def copy_file(src, dest):
     shutil.copy(src, dest)
+
 
 def to_config_path(*paths):
     if dir_exists(os.path.join(HOME, ".trackma")):
@@ -196,11 +213,13 @@ def to_config_path(*paths):
 
     return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.join(HOME, ".config")), "trackma", *paths)
 
+
 def to_data_path(*paths):
     if dir_exists(os.path.join(HOME, ".trackma")):
         return os.path.join(HOME, ".trackma", *paths)
 
     return os.path.join(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share")), "trackma", *paths)
+
 
 def to_cache_path(*paths):
     if dir_exists(os.path.join(HOME, ".trackma")):
@@ -208,8 +227,10 @@ def to_cache_path(*paths):
 
     return os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.join(HOME, ".cache")), "trackma", *paths)
 
+
 def change_permissions(filename, mode):
     os.chmod(filename, mode)
+
 
 def estimate_aired_episodes(show):
     """ Estimate how many episodes have passed since airing """
@@ -218,10 +239,11 @@ def estimate_aired_episodes(show):
         return show['total']
     elif show['status'] == STATUS_NOTYET:
         return 0
-    elif show['status'] == STATUS_AIRING:   # It's airing, so we make an estimate based on available information
-        if 'next_ep_number' in show: # Do we have the upcoming episode number?
+    # It's airing, so we make an estimate based on available information
+    elif show['status'] == STATUS_AIRING:
+        if 'next_ep_number' in show:  # Do we have the upcoming episode number?
             return show['next_ep_number']-1
-        elif show['start_date']: # Do we know when it started? Let's just assume 1 episode = 1 week
+        elif show['start_date']:  # Do we know when it started? Let's just assume 1 episode = 1 week
             days = (datetime.datetime.now() - show['start_date']).days
             if days <= 0:
                 return 0
@@ -231,6 +253,7 @@ def estimate_aired_episodes(show):
                 return show['total']
             return eps
     return 0
+
 
 def guess_show(show_title, tracker_list):
     """ Take a title and search for it fuzzily in the tracker list """
@@ -263,6 +286,7 @@ def guess_show(show_title, tracker_list):
     if highest_ratio[1] > 0.7:
         return playing_show
 
+
 def redirect_show(show_tuple, redirections, tracker_list):
     """ Use a redirection dictionary and return the new show ID and episode acordingly """
     if not redirections:
@@ -283,6 +307,7 @@ def redirect_show(show_tuple, redirections, tracker_list):
                     return (showlist[new_show_id], new_ep)
 
     return show_tuple
+
 
 def get_terminal_size(fd=1):
     """
@@ -307,6 +332,7 @@ def get_terminal_size(fd=1):
 
     return hw
 
+
 def show():
     return {
         'id':           0,
@@ -329,32 +355,42 @@ def show():
         'queued':       False,
     }
 
+
 class TrackmaError(Exception):
     pass
+
 
 class EngineError(TrackmaError):
     pass
 
+
 class DataError(TrackmaError):
     pass
+
 
 class APIError(TrackmaError):
     pass
 
+
 class AccountError(TrackmaError):
     pass
+
 
 class TrackmaFatal(Exception):
     pass
 
+
 class EngineFatal(TrackmaFatal):
     pass
+
 
 class DataFatal(TrackmaFatal):
     pass
 
+
 class APIFatal(TrackmaFatal):
     pass
+
 
 # Configuration defaults
 config_defaults = {
