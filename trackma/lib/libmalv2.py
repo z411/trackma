@@ -50,17 +50,16 @@ class libmalv2(lib):
         'can_play': True,
         'can_date': True,
         'date_next_ep': True,
-        'statuses_start': ['CURRENT', 'REPEATING'],
-        'statuses_finish': ['COMPLETED'],
-        'statuses_library': ['CURRENT', 'REPEATING', 'PAUSED', 'PLANNING'],
-        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses_start': ['watching'],
+        'statuses_finish': ['completed'],
+        'statuses_library': ['watching', 'on_hold', 'plan_to_watch'],
+        'statuses':  ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'],
         'statuses_dict': {
-            'CURRENT': 'Watching',
-            'COMPLETED': 'Completed',
-            'REPEATING': 'Rewatching',
-            'PAUSED': 'Paused',
-            'DROPPED': 'Dropped',
-            'PLANNING': 'Plan to Watch'
+            'watching': 'Watching',
+            'completed': 'Completed',
+            'on_hold': 'On hold',
+            'dropped': 'Dropped',
+            'plan_to_watch': 'Plan to Watch'
         },
         'score_max': 10,
         'score_step': 1,
@@ -91,14 +90,31 @@ class libmalv2(lib):
         'search_methods': [utils.SEARCH_METHOD_KW],
     }
     default_mediatype = 'anime'
+    
+    status_translate = {
+        'currently_airing': utils.STATUS_AIRING,
+        'finished_airing': utils.STATUS_FINISHED,
+        'not_yet_aired': utils.STATUS_NOTYET,
+    }
+    
+    season_translate = {
+        utils.SEASON_WINTER: 'winter',
+        utils.SEASON_SPRING: 'spring',
+        utils.SEASON_SUMMER: 'summer',
+        utils.SEASON_FALL: 'fall',
+    }
 
     # Supported signals for the data handler
     signals = {'show_info_changed': None, }
 
     auth_url = "https://myanimelist.net/v1/oauth2/token"
-    query_url = "https://graphql.anilist.co"
+    query_url = "https://api.myanimelist.net/v3"
     client_id = "32c510ab2f47a1048a8dd24de266dc0c"
     user_agent = 'Trackma/{}'.format(utils.VERSION)
+    
+    library_page_limit = 1000
+    search_page_limit = 100
+    season_page_limit = 500
 
     def __init__(self, messenger, account, userconfig):
         super(libmalv2, self).__init__(messenger, account, userconfig)
@@ -108,7 +124,12 @@ class libmalv2(lib):
         self.userid = self._get_userconfig('userid')
 
         self.opener = urllib.request.build_opener()
-        self.opener.addheaders = [('User-agent', self.user_agent)]
+        self.opener.addheaders = [
+            ('User-Agent',      self.user_agent),
+            ('Accept',          'application/json'),
+            ('Accept-Encoding', 'gzip'),
+            ('Accept-Charset',  'utf-8'),
+        ]
 
     def _request(self, method, url, get=None, post=None, auth=False):
         content_type = None
@@ -118,7 +139,9 @@ class libmalv2(lib):
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
             content_type = 'application/x-www-form-urlencoded'
+            self.msg.debug(self.name, "POST data: " + str(post))
 
+        self.msg.debug(self.name, "URL: " + url)
         request = urllib.request.Request(url, post)
         request.get_method = lambda: method
 
@@ -134,7 +157,12 @@ class libmalv2(lib):
         try:
             response = self.opener.open(request)
 
-            return response.read().decode('utf-8')
+            if response.info().get('content-encoding') == 'gzip':
+                response = gzip.GzipFile(fileobj=response).read().decode('utf-8')
+            else:
+                response = response.read().decode('utf-8')
+            
+            return json.loads(response)
         except urllib.request.HTTPError as e:
             raise utils.APIError("Connection error: %s" % e)
         except urllib.request.URLError as e:
@@ -162,8 +190,7 @@ class libmalv2(lib):
             params['code_verifier'] = self.code_verifier
             params['grant_type'] = 'authorization_code'
             
-        response = self._request('POST', self.auth_url, post=params)
-        data = json.loads(response)
+        data = self._request('POST', self.auth_url, post=params)
 
         timestamp = int(time.time())
 
@@ -192,6 +219,154 @@ class libmalv2(lib):
 
     def fetch_list(self):
         self.check_credentials()
-        self.msg.info(self.name, 'Downloading list...')
+        shows = {}
+        
+        fields = 'id,alternative_titles,title,main_picture,num_episodes,status'
+        listfields = 'num_watched_episodes,score,status,start_date,finish_date'
+        params = {
+            'fields': '%s,list_status{%s}' % (fields, listfields),
+            'limit': self.library_page_limit
+        }
+        
+        url = "{}/users/@me/animelist?{}".format(self.query_url, urllib.parse.urlencode(params))
+        i = 1
+        
+        while url:
+            self.msg.info(self.name, 'Downloading list (page %d)...' % i)
+            data = self._request('GET', url, auth=True)
+            for item in data['data']:
+                showid = item['node']['id']
+                shows[showid] = utils.show()
+                shows[showid].update({
+                    'id': showid,
+                    'title': item['node']['title'],
+                    'url': "https://myanimelist.net/anime/%d" % showid,
+                    'aliases': self._get_aliases(item['node']),
+                    'image': item['node']['main_picture']['large'],
+                    'image_thumb': item['node']['main_picture']['medium'],
+                    'total': item['node']['num_episodes'],
+                    'status': self._translate_status(item['node']['status']),
+                    'my_progress': item['list_status']['num_episodes_watched'],
+                    'my_score': item['list_status']['score'],
+                    'my_status': item['list_status']['status'],
+                    'my_start_date': self._str2date(item['list_status'].get('start_date')),
+                    'my_finish_date': self._str2date(item['list_status'].get('finish_date')),
+                })
+            
+            url = data['paging'].get('next')
+            i += 1
 
-        return {}
+        return shows
+
+    def add_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Adding item %s..." % item['title'])
+        self._update_entry(item)
+
+    def update_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Updating item %s..." % item['title'])
+        self._update_entry(item)
+    
+    def delete_show(self, item):
+        self.check_credentials()
+        self.msg.info(self.name, "Deleting item %s..." % item['title'])
+        data = self._request('DELETE', self.query_url + '/anime/%d/my_list_status' % item['id'], auth=True)
+    
+    def search(self, criteria, method):
+        self.check_credentials()
+        self.msg.info(self.name, "Searching for {}...".format(criteria))
+        
+        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,num_episodes,popularity,rating,start_date,status,studios,synopsis,title'
+        params = {'fields': fields}
+        
+        if method == utils.SEARCH_METHOD_KW:
+            params['q'] = criteria
+            params['limit'] = self.search_page_limit
+        elif method == utils.SEARCH_METHOD_SEASON:
+            season, season_year = criteria
+            params['start_season_season'] = self.season_translate[season]
+            params['start_season_year'] = season_year
+            params['limit'] = self.season_page_limit
+        
+        results = []
+        data = self._request('GET', self.query_url + '/anime', get=params, auth=True)
+        for item in data['data']:
+            results.append(self._parse_info(item['node']))
+        
+        return results
+        
+    def request_info(self, itemlist):
+        self.check_credentials()
+        infolist = []
+        
+        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,num_episodes,popularity,rating,start_date,status,studios,synopsis,title'
+        params = {'fields': fields}
+        for item in itemlist:
+            data = self._request('GET', self.query_url + '/anime/%d' % item['id'], get=params, auth=True)
+            infolist.append(self._parse_info(data))
+        
+        self._emit_signal('show_info_changed', infolist)
+        return infolist
+
+    def _update_entry(self, item):
+        values = {}
+        if 'my_progress' in item:
+            values['num_watched_episodes'] = item['my_progress']
+        if 'my_status' in item:
+            values['status'] = item['my_status']
+        if 'my_score' in item:
+            values['score'] = item['my_score']
+        if 'my_start_date' in item:
+            values['start_date'] = item['my_start_date']
+        if 'my_finish_date' in item:
+            values['finish_date'] = item['my_finish_date']
+
+        data = self._request('PATCH', self.query_url + '/anime/%d/my_list_status' % item['id'], post=values, auth=True)
+
+    def _get_aliases(self, item):
+        aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles']['synonyms']
+        
+        return aliases
+    
+    def _parse_info(self, item):
+        info = utils.show()
+        showid = item['id']
+        
+        info.update({
+            'id': showid,
+            'title': item['title'],
+            'url': "https://myanimelist.net/anime/%d" % showid,
+            'aliases': self._get_aliases(item),
+            'type': item['media_type'],
+            'status': self._translate_status(item['status']),
+            'image': item['main_picture']['large'],
+            'start_date': self._str2date(item.get('start_date')),
+            'end_date': self._str2date(item.get('end_date')),
+            'extra': [
+                ('English',         item['alternative_titles'].get('en')),
+                ('Japanese',        item['alternative_titles'].get('ja')),
+                ('Synonyms',        item['alternative_titles'].get('synonyms')),
+                ('Genres',          [s['name'] for s in item['genres']]),
+                ('Studios',         [s['name'] for s in item['studios']]),
+                ('Synopsis',        item.get('synopsis')),
+                ('Type',            item.get('media_type')),
+                ('Mean score',   item.get('mean')),
+                ('Status',          self._translate_status(item['status'])),
+            ]
+        })
+        
+        return info
+        
+    def _translate_status(self, orig_status):
+        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+
+    def _str2date(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%d")
+        except:
+            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            return None  # Ignore date if it's invalid
