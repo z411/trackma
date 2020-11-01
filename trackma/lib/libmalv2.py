@@ -318,9 +318,9 @@ class libmalv2(lib):
         if 'my_score' in item:
             values['score'] = item['my_score']
         if 'my_start_date' in item:
-            values['start_date'] = item['my_start_date']
+            values['start_date'] = item['my_start_date'] or ""
         if 'my_finish_date' in item:
-            values['finish_date'] = item['my_finish_date']
+            values['finish_date'] = item['my_finish_date'] or ""
 
         data = self._request('PATCH', self.query_url + '/anime/%d/my_list_status' % item['id'], post=values, auth=True)
 
