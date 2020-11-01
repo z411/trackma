@@ -31,7 +31,7 @@ class AccountManager:
                 utils.change_permissions(self.filename, 0o600)
             pickle.dump(self.accounts, f, protocol=2)
 
-    def add_account(self, username, password, api):
+    def add_account(self, username, password, api, extra={}):
         """
         Registers a new account with the specified
         *username*, *password*, and *api*.
@@ -52,6 +52,7 @@ class AccountManager:
         account = {'username': username,
                    'password': password,
                    'api': api,
+                   'extra': extra,
                    }
 
         nextnum = self.accounts['next']
@@ -59,7 +60,7 @@ class AccountManager:
         self.accounts['next'] += 1
         self._save()
 
-    def edit_account(self, num, username, password, api):
+    def edit_account(self, num, username, password, api, extra={}):
         """
         Updates data for account *num* with the specified
         *username*, *password*, and *api*.
@@ -77,6 +78,7 @@ class AccountManager:
         account = {'username': username,
                    'password': password,
                    'api': api,
+                   'extra': extra,
                    }
 
         self.accounts['accounts'][num].update(account)

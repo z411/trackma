@@ -976,20 +976,27 @@ class Trackma_accounts(AccountManager):
                 if selected_api[2] == utils.LOGIN_PASSWD:
                     username = input('Enter username: ')
                     password = getpass.getpass('Enter password (no echo): ')
-                elif selected_api[2] == utils.LOGIN_OAUTH:
+                elif selected_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
                     username = input('Enter account name: ')
+                    extra = {}
+                    
+                    auth_url = selected_api[3]
+                    if selected_api[2] == utils.LOGIN_OAUTH_PKCE:
+                        extra['code_verifier'] = utils.oauth_generate_pkce()
+                        auth_url = auth_url % extra['code_verifier']
+                    
                     print('OAuth Authentication')
                     print('--------------------')
                     print('This website requires OAuth authentication.')
                     print('Please go to the following URL with your browser,')
                     print('follow the steps and paste the given PIN code here.')
                     print()
-                    print(selected_api[3])
+                    print(auth_url)
                     print()
                     password = input('PIN: ')
 
                 try:
-                    self.add_account(username, password, api)
+                    self.add_account(username, password, api, extra)
                     print('Done.')
                 except utils.AccountError as e:
                     print('Error: %s' % e)
