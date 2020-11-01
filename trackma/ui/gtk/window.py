@@ -159,8 +159,13 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _set_actions(self):
         builder = Gtk.Builder.new_from_file(
-            os.path.join(gtk_dir, 'data/app-menu.ui'))
-        self.btn_appmenu.set_menu_model(builder.get_object('app-menu'))
+        os.path.join(gtk_dir, 'data/app-menu.ui'))
+        settings = Gtk.Settings.get_default()
+        if not settings.get_property("gtk-shell-shows-menubar"):
+            self.btn_appmenu.set_menu_model(builder.get_object('app-menu'))
+        else:
+            self.get_application().set_menubar(builder.get_object('menu-bar'))
+            self.btn_appmenu.set_property('visible', False)
 
         def add_action(name, callback):
             action = Gio.SimpleAction.new(name, None)
