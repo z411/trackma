@@ -16,6 +16,7 @@
 
 import os
 import re
+import time
 import shutil
 import copy
 import datetime
@@ -202,12 +203,30 @@ def file_exists(filename):
     return os.path.isfile(filename)
 
 
+def file_older_than(filename, mtime):
+    return os.path.getmtime(filename) < time.time() - mtime
+
+
 def try_files(filenames):
     for filename in filenames:
         if file_exists(filename):
             return filename
 
-    return None
+
+def sync_file(fname, sync_url):
+    if not sync_url:
+        return False
+
+    import urllib.request
+    import socket
+
+    try:
+        with urllib.request.urlopen(sync_url) as r, open(fname, 'wb') as f:
+            shutil.copyfileobj(r, f)
+    except socket.timeout:
+        return False
+
+    return True
 
 
 def copy_file(src, dest):
@@ -436,13 +455,17 @@ config_defaults = {
     'kodi_obey_update_wait_s': False,
     'kodi_user': '',
     'kodi_passwd': '',
+    'redirections_url': 'https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt',
+    'redirections_time': 1,
     'use_hooks': True,
 }
+
 userconfig_defaults = {
     'mediatype': '',
     'userid': 0,
     'username': '',
 }
+
 curses_defaults = {
     'show_help': True,
     'keymap': {

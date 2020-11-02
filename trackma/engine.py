@@ -30,7 +30,7 @@ from trackma import messenger
 from trackma import data
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
-
+from trackma.extras import redirections
 
 class Engine:
     """
@@ -251,24 +251,31 @@ class Engine:
         except utils.APIError as e:
             raise utils.APIFatal(str(e))
 
-        # Load redirection file if any
-        anime_relations_file = utils.try_files([
-            utils.to_config_path('anime-relations.txt'),
-            utils.DATADIR + '/anime-relations/anime-relations.txt',
-        ])
+        # Load redirection file if supported
+        api = self.api_info['shortname']
+        mediatype = self.data_handler.userconfig['mediatype']
+        if redirections.supports(api, mediatype):
+            if utils.file_exists(utils.to_config_path('anime-relations.txt')):
+                fname = utils.to_config_path('anime-relations.txt')
+                self.msg.debug(self.name, "Using user-provided redirection file.")
+            else:
+                fname = utils.to_data_path('anime-relations.txt')
+                if self.config['redirections_time'] and (
+                        not utils.file_exists(fname) or
+                        utils.file_older_than(fname, self.config['redirections_time'] * 86400)):
+                    self.msg.info(self.name, "Syncing redirection file...")
+                    self.msg.debug(self.name, "Syncing from: %s" % self.config['redirections_url'])
+                    utils.sync_file(fname, self.config['redirections_url'])
 
-        if anime_relations_file:
-            from trackma.extras import redirections
+            if not utils.file_exists(fname):
+                self.msg.debug(self.name, "Defaulting to repo provided redirections file.")
+                fname = utils.DATADIR + '/anime-relations/anime-relations.txt'
 
-            api = self.api_info['shortname']
-            mediatype = self.data_handler.userconfig['mediatype']
-
-            self.msg.info(
-                self.name, "Parsing redirection file (anime-relations.txt)...")
+            self.msg.info(self.name, "Parsing redirection file...")
             try:
-                self.redirections = redirections.parse_anime_relations(
-                    anime_relations_file, api, mediatype)
+                self.redirections = redirections.parse_anime_relations(fname, api)
             except Exception as e:
+                raise
                 self.msg.warn(self.name, "Error parsing anime-relations.txt!")
                 self.msg.debug(self.name, "{}".format(e))
 

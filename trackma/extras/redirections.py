@@ -14,8 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from trackma import utils
 
-def parse_anime_relations(filename, api, mediatype, last=None):
+SUPPORTED_APIS = ['mal', 'kitsu', 'anilist']
+SUPPORTED_MEDIATYPES = ['anime']
+
+def supports(api, mediatype):
+    return api in SUPPORTED_APIS and mediatype in SUPPORTED_MEDIATYPES
+
+def parse_anime_relations(filename, api, last=None):
     """
     Support for Taiga-style anime relations file.
     Thanks to erengy and all the contributors.
@@ -23,14 +30,7 @@ def parse_anime_relations(filename, api, mediatype, last=None):
 
     https://github.com/erengy/anime-relations
     """
-
-    apis = ['mal', 'kitsu', 'anilist']
-    mediatypes = ['anime']
-
-    if api not in apis or mediatype not in mediatypes:
-        return None
-
-    (src_grp, dst_grp) = (apis.index(api) + 1, apis.index(api) + 6)
+    (src_grp, dst_grp) = (SUPPORTED_APIS.index(api) + 1, SUPPORTED_APIS.index(api) + 6)
 
     with open(filename) as f:
         import re
