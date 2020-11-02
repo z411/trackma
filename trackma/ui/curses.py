@@ -883,7 +883,7 @@ class AddDialog(Dialog):
 class AccountDialog(Dialog):
     __metaclass__ = urwid.signals.MetaSignals
     signals = ['done']
-    adding_data = dict()
+    adding_data = {'username': None, 'password': None, 'api': None, 'apiname': None, 'extra': {}}
 
     def __init__(self, loop, manager, switch=False, width=50):
         self.switch = switch
@@ -964,9 +964,17 @@ class AccountDialog(Dialog):
 
     def do_add_password(self, data):
         self.adding_data['username'] = data
-        if self.adding_data['api'][2] == utils.LOGIN_OAUTH:
-            ask = Asker("Please go to the following URL and paste the PIN.\n"
-                        "{0}\nPIN: ".format(self.adding_data['api'][3]))
+        if self.adding_data['api'][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+            auth_url = self.adding_data['api'][3]
+            
+            if self.adding_data['api'][2] == utils.LOGIN_OAUTH_PKCE:
+                self.adding_data['extra'] = {'code_verifier': utils.oauth_generate_pkce()}
+                auth_url = auth_url % self.adding_data['extra']['code_verifier']
+            
+            import webbrowser
+            webbrowser.open_new_tab(auth_url)
+            
+            ask = Asker("Enter PIN: ".format(auth_url))
         else:
             ask = Asker("Password: ")
         self.frame.footer = ask
@@ -991,9 +999,10 @@ class AccountDialog(Dialog):
         username = self.adding_data['username']
         password = data
         api = self.adding_data['apiname']
+        extra = self.adding_data['extra']
 
         try:
-            self.manager.add_account(username, password, api)
+            self.manager.add_account(username, password, api, extra)
         except utils.AccountError as e:
             self.adding = False
             self.frame.footer = urwid.Text("Error: %s" % e)

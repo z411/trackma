@@ -69,6 +69,9 @@ class AccountsWindow(Gtk.Dialog):
         self.current = AccountsView.LIST
         self.manager = manager
         self.account_edit = None
+        
+        self.adding_allow = False
+        self.adding_extra = {}
 
         self._remove_border()
         self._add_separators()
@@ -274,16 +277,24 @@ class AccountsWindow(Gtk.Dialog):
         api = self._get_combo_active_api_name()
 
         if not api or utils.available_libs[api][2] == utils.LOGIN_OAUTH:
+            # We'll only allow adding the account if the user requests the PIN
+            self.adding_allow = False
             self._show_oauth_account()
         else:
+            self.adding_allow = True
             self._show_password_account()
 
     @GtkTemplate.Callback
     def _on_btn_pin_request_clicked(self, btn):
         api = self._get_combo_active_api_name()
-        url = utils.available_libs[api][4]
+        
+        auth_url = utils.available_libs[api][3]
+        if utils.available_libs[api][2] == utils.LOGIN_OAUTH_PKCE:
+            self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
+            auth_url = auth_url % self.adding_extra['code_verifier']
 
-        webbrowser.open(url, 2, True)
+        self.adding_allow = True
+        webbrowser.open(auth_url, 2, True)
 
     def _clear_new_account(self):
         self.accounts_combo.set_active_id(None)
@@ -326,6 +337,7 @@ class AccountsWindow(Gtk.Dialog):
 
     def _refresh_btn_new_confirm(self):
         sensitive = (
+            self.adding_allow and
             self._get_combo_active_api_name() and
             self.username_entry.get_text().strip() and
             self.password_entry.get_text()
@@ -345,7 +357,7 @@ class AccountsWindow(Gtk.Dialog):
         password = self.password_entry.get_text()
         api = self._get_combo_active_api_name()
 
-        self.manager.add_account(username, password, api)
+        self.manager.add_account(username, password, api, self.adding_extra)
 
     def _edit_account(self):
         num = self.account_edit['account_id']

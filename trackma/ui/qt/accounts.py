@@ -96,8 +96,8 @@ class AccountDialog(QDialog):
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
         if result:
-            (username, password, api) = result
-            self.accountman.add_account(username, password, api)
+            (username, password, api, extra) = result
+            self.accountman.add_account(username, password, api, extra)
             self.rebuild()
 
     def edit(self):
@@ -211,6 +211,10 @@ class AccountAddDialog(QDialog):
     def __init__(self, parent, icons, edit=False, username='', password='', api=''):
         QDialog.__init__(self, parent)
         self.edit = edit
+        
+        self.adding_allow = False
+        self.adding_api = None
+        self.adding_extra = {}
 
         # Build UI
         layout = QVBoxLayout()
@@ -224,10 +228,8 @@ class AccountAddDialog(QDialog):
         self.password = QLineEdit(password)
         self.api = QComboBox()
         self.api.currentIndexChanged.connect(self.s_refresh)
-        self.api_auth = QLabel('Request PIN')
-        self.api_auth.setTextFormat(QtCore.Qt.RichText)
-        self.api_auth.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-        self.api_auth.setOpenExternalLinks(True)
+        self.api_auth = QPushButton('Request PIN')
+        self.api_auth.clicked.connect(self.s_request_pin)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
 
@@ -267,7 +269,16 @@ class AccountAddDialog(QDialog):
             self._error('Please fill the password/PIN field.')
         else:
             self.accept()
-
+    
+    def s_request_pin(self):
+        auth_url = self.adding_api[3]
+        if self.adding_api[2] == utils.LOGIN_OAUTH_PKCE:
+            self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
+            auth_url = auth_url % self.adding_extra['code_verifier']
+        
+        self.adding_allow = True
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(auth_url))
+        
     def s_refresh(self, index):
         if not self.edit:
             self.username.setText("")
@@ -277,27 +288,25 @@ class AccountAddDialog(QDialog):
             apiname = self.api.itemData(index)
         else:
             apiname = str(self.api.itemData(index))
-        api = utils.available_libs[apiname]
-        if api[2] == utils.LOGIN_OAUTH:
-            apiname = str(self.api.itemData(index))
-            url = utils.available_libs[apiname][4]
-            self.api_auth.setText("<a href=\"{}\">Request PIN</a>".format(url))
-            self.api_auth.show()
-
+        self.adding_api = utils.available_libs[apiname]
+        if self.adding_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
             self.password.setEchoMode(QLineEdit.Normal)
+            self.api_auth.show()
+            self.adding_allow = False
         else:
             self.lbl_username.setText('Username:')
             self.lbl_password.setText('Password:')
             self.password.setEchoMode(QLineEdit.Password)
             self.api_auth.hide()
+            self.adding_allow = True
 
     def _error(self, msg):
         QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
 
     @staticmethod
-    def do(parent=None, icons=None, edit=False, username='', password='', api=''):
+    def do(parent=None, icons=None, edit=False, username='', password='', api='', extra={}):
         dialog = AccountAddDialog(parent, icons, edit, username, password, api)
         result = dialog.exec_()
 
@@ -306,7 +315,8 @@ class AccountAddDialog(QDialog):
             return (
                 str(dialog.username.text()),
                 str(dialog.password.text()),
-                str(dialog.api.itemData(currentIndex))
+                str(dialog.api.itemData(currentIndex)),
+                dialog.adding_extra,
             )
         else:
             return None
