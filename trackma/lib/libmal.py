@@ -72,16 +72,15 @@ class libmal(lib):
         'can_update': True,
         'can_play': False,
         'can_date': True,
-        'statuses_start': ['CURRENT', 'REPEATING'],
-        'statuses_finish': ['COMPLETED'],
-        'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
+        'statuses_start': ['reading'],
+        'statuses_finish': ['completed'],
+        'statuses':  ['reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'],
         'statuses_dict': {
-            'CURRENT': 'Reading',
-            'COMPLETED': 'Completed',
-            'REPEATING': 'Rereading',
-            'PAUSED': 'Paused',
-            'DROPPED': 'Dropped',
-            'PLANNING': 'Plan to Read'
+            'reading': 'Reading',
+            'completed': 'Completed',
+            'on_hold': 'On hold',
+            'dropped': 'Dropped',
+            'plan_to_read': 'Plan to Read'
         },
         'score_max': 10,
         'score_step': 1,
@@ -126,6 +125,13 @@ class libmal(lib):
         
         self.code_verifier = account['extra']['code_verifier']
         self.userid = self._get_userconfig('userid')
+        
+        if self.mediatype == 'manga':
+            self.total_str = "num_chapters"
+            self.watched_str = "num_chapters_read"
+        else:
+            self.total_str = "num_episodes"
+            self.watched_str = "num_episodes_watched"
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
@@ -225,14 +231,14 @@ class libmal(lib):
         self.check_credentials()
         shows = {}
         
-        fields = 'id,alternative_titles,title,main_picture,num_episodes,status'
-        listfields = 'num_watched_episodes,score,status,start_date,finish_date'
+        fields = 'id,alternative_titles,title,main_picture,' + self.total_str + ',status'
+        listfields = self.watched_str + ',score,status,start_date,finish_date'
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
             'limit': self.library_page_limit
         }
         
-        url = "{}/users/@me/animelist?{}".format(self.query_url, urllib.parse.urlencode(params))
+        url = "{}/users/@me/{}list?{}".format(self.query_url, self.mediatype, urllib.parse.urlencode(params))
         i = 1
         
         while url:
@@ -244,13 +250,13 @@ class libmal(lib):
                 shows[showid].update({
                     'id': showid,
                     'title': item['node']['title'],
-                    'url': "https://myanimelist.net/anime/%d" % showid,
+                    'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
                     'aliases': self._get_aliases(item['node']),
                     'image': item['node']['main_picture']['large'],
                     'image_thumb': item['node']['main_picture']['medium'],
-                    'total': item['node']['num_episodes'],
+                    'total': item['node'][self.total_str],
                     'status': self._translate_status(item['node']['status']),
-                    'my_progress': item['list_status']['num_episodes_watched'],
+                    'my_progress': item['list_status'][self.watched_str],
                     'my_score': item['list_status']['score'],
                     'my_status': item['list_status']['status'],
                     'my_start_date': self._str2date(item['list_status'].get('start_date')),
@@ -275,13 +281,13 @@ class libmal(lib):
     def delete_show(self, item):
         self.check_credentials()
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
-        data = self._request('DELETE', self.query_url + '/anime/%d/my_list_status' % item['id'], auth=True)
+        data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), auth=True)
     
     def search(self, criteria, method):
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         
-        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,num_episodes,popularity,rating,start_date,status,studios,synopsis,title'
+        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields}
         
         if method == utils.SEARCH_METHOD_KW:
@@ -294,7 +300,7 @@ class libmal(lib):
             params['limit'] = self.season_page_limit
         
         results = []
-        data = self._request('GET', self.query_url + '/anime', get=params, auth=True)
+        data = self._request('GET', self.query_url + '/' + self.mediatype, get=params, auth=True)
         for item in data['data']:
             results.append(self._parse_info(item['node']))
         
@@ -304,10 +310,10 @@ class libmal(lib):
         self.check_credentials()
         infolist = []
         
-        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,num_episodes,popularity,rating,start_date,status,studios,synopsis,title'
+        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields}
         for item in itemlist:
-            data = self._request('GET', self.query_url + '/anime/%d' % item['id'], get=params, auth=True)
+            data = self._request('GET', self.query_url + '/%s/%d' % (self.mediatype, item['id']), get=params, auth=True)
             infolist.append(self._parse_info(data))
         
         self._emit_signal('show_info_changed', infolist)
@@ -316,7 +322,7 @@ class libmal(lib):
     def _update_entry(self, item):
         values = {}
         if 'my_progress' in item:
-            values['num_watched_episodes'] = item['my_progress']
+            values[self.watched_str] = item['my_progress']
         if 'my_status' in item:
             values['status'] = item['my_status']
         if 'my_score' in item:
@@ -326,7 +332,7 @@ class libmal(lib):
         if 'my_finish_date' in item:
             values['finish_date'] = item['my_finish_date'] or ""
 
-        data = self._request('PATCH', self.query_url + '/anime/%d/my_list_status' % item['id'], post=values, auth=True)
+        data = self._request('PATCH', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), post=values, auth=True)
 
     def _get_aliases(self, item):
         aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles']['synonyms']
@@ -340,7 +346,7 @@ class libmal(lib):
         info.update({
             'id': showid,
             'title': item['title'],
-            'url': "https://myanimelist.net/anime/%d" % showid,
+            'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
             'type': item['media_type'],
             'status': self._translate_status(item['status']),
@@ -352,7 +358,6 @@ class libmal(lib):
                 ('Japanese',        item['alternative_titles'].get('ja')),
                 ('Synonyms',        item['alternative_titles'].get('synonyms')),
                 ('Genres',          [s['name'] for s in item['genres']]),
-                ('Studios',         [s['name'] for s in item['studios']]),
                 ('Synopsis',        item.get('synopsis')),
                 ('Type',            item.get('media_type')),
                 ('Mean score',   item.get('mean')),
