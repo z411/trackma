@@ -73,16 +73,15 @@ EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
 
 # Put the available APIs here
 available_libs = {
-    'anilist':  ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
+    'anilist':   ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
                  "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"
                  ),
-    'kitsu':    ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
-    'mal':      ('MyAnimeList',  DATADIR + '/mal.jpg',         LOGIN_PASSWD),
-    'malv2':    ('MyAnimeList (new)', DATADIR + '/mal.jpg',     LOGIN_OAUTH_PKCE,
+    'kitsu':     ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
+    'mal':       ('MyAnimeList',  DATADIR + '/mal.jpg',     LOGIN_OAUTH_PKCE,
                  "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s",
                  ),
     'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_PASSWD),
-    'vndb':     ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
+    'vndb':      ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
 }
 
 available_trackers = [
