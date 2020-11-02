@@ -275,7 +275,6 @@ class Engine:
             try:
                 self.redirections = redirections.parse_anime_relations(fname, api)
             except Exception as e:
-                raise
                 self.msg.warn(self.name, "Error parsing anime-relations.txt!")
                 self.msg.debug(self.name, "{}".format(e))
 
