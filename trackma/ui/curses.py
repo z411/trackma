@@ -409,7 +409,7 @@ class Trackma_urwid():
             self.error(e)
 
     def do_help(self):
-        helptext = "Trackma-curses "+utils.VERSION + \
+        helptext = "Trackma-curses " + utils.VERSION + \
             "  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
         helptext += "http://github.com/z411/trackma\n\n"
@@ -531,7 +531,7 @@ class Trackma_urwid():
                     linestr = line[1]
 
                 widgets.append(urwid.Padding(
-                    urwid.Text(linestr + "\n"), left=3))
+                    urwid.Text("{}\n".format(linestr)), left=3))
 
         self.view.body = urwid.Frame(urwid.ListBox(widgets), header=title)
         self.viewing_info = True
@@ -845,7 +845,7 @@ class AddDialog(Dialog):
 
         show = self.listwalker.get_focus()[0].show
 
-        #self.status("Getting show details...")
+        self.status("Getting show details...")
         details = self.engine.get_show_details(show)
 
         title = urwid.Text(('info_title', show['title']), 'center', 'any')
