@@ -967,6 +967,7 @@ class Trackma_accounts(AccountManager):
                 print("--- Add account ---")
                 import getpass
                 api = input('Enter API (%s): ' % available_libs)
+                extra = {}
                 try:
                     selected_api = utils.available_libs[api]
                 except KeyError:
@@ -978,7 +979,6 @@ class Trackma_accounts(AccountManager):
                     password = getpass.getpass('Enter password (no echo): ')
                 elif selected_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
                     username = input('Enter account name: ')
-                    extra = {}
                     
                     auth_url = selected_api[3]
                     if selected_api[2] == utils.LOGIN_OAUTH_PKCE:
