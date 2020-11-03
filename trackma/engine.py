@@ -175,7 +175,7 @@ class Engine:
         for module in self.hooks_available:
             method = getattr(module, signal, None)
             if method is not None:
-                self.msg.info(self.name, "Calling hook {}:{}...".format(
+                self.msg.debug(self.name, "Calling hook {}:{}...".format(
                     module.__name__, signal))
                 try:
                     method(self, *args)

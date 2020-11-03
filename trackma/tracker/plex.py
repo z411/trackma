@@ -124,7 +124,11 @@ class PlexTracker(tracker.TrackerBase):
                         elif player[1] == PLAYING:
                             self.resume_timer()
                 except IndexError:
-                    pass
+                    if self.status_log[-1] == IDLE:
+                        self.last_filename = None
+                        self.update_show_if_needed(0, None)
+                    else:
+                        pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
                 self.msg.warn(
                     self.name, "Claimed Plex Media Server, login in the settings and restart trackma.")
