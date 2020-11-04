@@ -105,7 +105,7 @@ class libmal(lib):
     signals = {'show_info_changed': None, }
 
     auth_url = "https://myanimelist.net/v1/oauth2/token"
-    query_url = "https://api.myanimelist.net/v3"
+    query_url = "https://api.myanimelist.net/v2"
     client_id = "32c510ab2f47a1048a8dd24de266dc0c"
     user_agent = 'Trackma/{}'.format(utils.VERSION)
     
@@ -128,10 +128,11 @@ class libmal(lib):
         
         if self.mediatype == 'manga':
             self.total_str = "num_chapters"
-            self.watched_str = "num_chapters_read"
+            self.watched_str = self.watched_send_str = "num_chapters_read"
         else:
             self.total_str = "num_episodes"
             self.watched_str = "num_episodes_watched"
+            self.watched_send_str = "num_watched_episodes" # Please fix this upstream...
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
@@ -151,7 +152,7 @@ class libmal(lib):
             content_type = 'application/x-www-form-urlencoded'
             self.msg.debug(self.name, "POST data: " + str(post))
 
-        self.msg.debug(self.name, "URL: " + url)
+        self.msg.debug(self.name, method + " URL: " + url)
         request = urllib.request.Request(url, post)
         request.get_method = lambda: method
 
@@ -322,7 +323,7 @@ class libmal(lib):
     def _update_entry(self, item):
         values = {}
         if 'my_progress' in item:
-            values[self.watched_str] = item['my_progress']
+            values[self.watched_send_str] = item['my_progress']
         if 'my_status' in item:
             values['status'] = item['my_status']
         if 'my_score' in item:
