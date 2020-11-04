@@ -24,6 +24,7 @@ import datetime
 from trackma.lib.lib import lib
 from trackma import utils
 
+
 class libanilist(lib):
     """
     API class to communicate with Anilist
@@ -36,7 +37,8 @@ class libanilist(lib):
     msg = None
     logged_in = False
 
-    api_info = { 'name': 'Anilist', 'shortname': 'anilist', 'version': '2.0', 'merge': False }
+    api_info = {'name': 'Anilist', 'shortname': 'anilist',
+                'version': '2.1', 'merge': False}
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -48,8 +50,9 @@ class libanilist(lib):
         'can_play': True,
         'can_date': True,
         'date_next_ep': True,
-        'status_start': 'CURRENT',
-        'status_finish': 'COMPLETED',
+        'statuses_start': ['CURRENT', 'REPEATING'],
+        'statuses_finish': ['COMPLETED'],
+        'statuses_library': ['CURRENT', 'REPEATING', 'PAUSED', 'PLANNING'],
         'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
             'CURRENT': 'Watching',
@@ -72,13 +75,13 @@ class libanilist(lib):
         'can_update': True,
         'can_play': False,
         'can_date': True,
-        'status_start': 'CURRENT',
-        'status_finish': 'COMPLETED',
+        'statuses_start': ['CURRENT', 'REPEATING'],
+        'statuses_finish': ['COMPLETED'],
         'statuses':  ['CURRENT', 'COMPLETED', 'REPEATING', 'PAUSED', 'DROPPED', 'PLANNING'],
         'statuses_dict': {
-            'CURRENT': 'Watching',
+            'CURRENT': 'Reading',
             'COMPLETED': 'Completed',
-            'REPEATING': 'Rewatching',
+            'REPEATING': 'Rereading',
             'PAUSED': 'Paused',
             'DROPPED': 'Dropped',
             'PLANNING': 'Plan to Read'
@@ -109,11 +112,12 @@ class libanilist(lib):
         'NOVEL': utils.TYPE_OTHER,
         'ONE_SHOT': utils.TYPE_OTHER,
     }
+
     status_translate = {
-            'RELEASING': utils.STATUS_AIRING,
-            'FINISHED': utils.STATUS_FINISHED,
-            'NOT_YET_RELEASED': utils.STATUS_NOTYET,
-            'CANCELLED': utils.STATUS_CANCELLED,
+        'RELEASING': utils.STATUS_AIRING,
+        'FINISHED': utils.STATUS_FINISHED,
+        'NOT_YET_RELEASED': utils.STATUS_NOTYET,
+        'CANCELLED': utils.STATUS_CANCELLED,
     }
 
     season_translate = {
@@ -122,9 +126,9 @@ class libanilist(lib):
         utils.SEASON_SUMMER: 'SUMMER',
         utils.SEASON_FALL: 'FALL',
     }
- 
+
     # Supported signals for the data handler
-    signals = { 'show_info_changed': None, }
+    signals = {'show_info_changed': None, }
 
     auth_url = "https://anilist.co/api/v2/"
     query_url = "https://graphql.anilist.co"
@@ -145,9 +149,10 @@ class libanilist(lib):
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes_watched"
-       
+
         # If we already know the scoreFormat of the cached list, apply it now
-        self.scoreformat = self._get_userconfig('scoreformat_' + self.mediatype)
+        self.scoreformat = self._get_userconfig(
+            'scoreformat_' + self.mediatype)
         if self.scoreformat:
             self._apply_scoreformat(self.scoreformat)
 
@@ -174,13 +179,15 @@ class libanilist(lib):
             ))
 
         try:
-            response = self.opener.open(request, timeout = 10)
+            response = self.opener.open(request, timeout=10)
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.HTTPError as e:
             if e.code == 400:
-                raise utils.APIError("Invalid request: %s" % e.read())
+                raise utils.APIError("Invalid HTTP request: %s" % e.read())
             else:
-                raise utils.APIError("Connection error: %s" % e.read())
+                raise utils.APIError("HTTP error status: %s" % e.read())
+        except urllib.error.URLError as e:
+            raise utils.APIError("HTTP connection error: %s" % e.reason)
         except socket.timeout:
             raise utils.APIError("Connection timed out.")
 
@@ -244,6 +251,7 @@ fragment mediaListEntry on MediaList {
   media {
     id
     title { userPreferred romaji english native }
+    synonyms
     coverImage { large medium }
     format
     status
@@ -266,7 +274,7 @@ fragment mediaListEntry on MediaList {
         # Handle different score formats provided by Anilist
         self.scoreformat = data['user']['mediaListOptions']['scoreFormat']
         self._apply_scoreformat(self.scoreformat)
-        
+
         self._set_userconfig('scoreformat_' + self.mediatype, self.scoreformat)
         self._emit_signal('userconfig_changed')
 
@@ -281,14 +289,13 @@ fragment mediaListEntry on MediaList {
                 show = utils.show()
                 media = item['media']
                 showid = media['id']
-                aliases = [a for a in (media['title']['romaji'], media['title']['english'], media['title']['native']) if a]
                 showdata = {
                     'my_id': item['id'],
                     'id': showid,
                     'title': media['title']['userPreferred'],
-                    'aliases': aliases,
-                    'type': self.type_translate[media['format']],
-                    'status': self.status_translate[media['status']],
+                    'aliases': self._get_aliases(media),
+                    'type': self._translate_type(media['format']),
+                    'status': self._translate_status(media['status']),
                     'my_progress': self._c(item['progress']),
                     'my_status': my_status,
                     'my_score': self._c(item['score']),
@@ -302,9 +309,10 @@ fragment mediaListEntry on MediaList {
                     'my_finish_date': self._dict2date(item['completedAt']),
                 }
                 if media['nextAiringEpisode']:
-                  showdata['next_ep_number'] = media['nextAiringEpisode']['episode']
-                  showdata['next_ep_time'] = self._int2date(media['nextAiringEpisode']['airingAt'])
-                show.update({k:v for k,v in showdata.items() if v})
+                    showdata['next_ep_number'] = media['nextAiringEpisode']['episode']
+                    showdata['next_ep_time'] = self._int2date(
+                        media['nextAiringEpisode']['airingAt'])
+                show.update({k: v for k, v in showdata.items() if v})
                 showlist[showid] = show
         return showlist
 
@@ -313,16 +321,18 @@ fragment mediaListEntry on MediaList {
         'mediaId': 'Int',                    # The id of the media the entry is of
         'status': 'MediaListStatus',         # The watching/reading status
         'scoreRaw': 'Int',                   # The score of the media in 100 point
-        'progress': 'Int',                   # The amount of episodes/chapters consumed by the user
+        # The amount of episodes/chapters consumed by the user
+        'progress': 'Int',
         'startedAt': 'FuzzyDateInput',       # When the entry was started by the user
         'completedAt': 'FuzzyDateInput',     # When the entry was completed by the user
     }
+
     def _update_entry(self, item):
         """
         New entries will lack a list entry id, while updates will include one.
         In the case of a new entry, we want to record the new id.
         """
-        values = { 'mediaId': item['id'] }
+        values = {'mediaId': item['id']}
         if 'my_id' in item and item['my_id']:
             values['id'] = item['my_id']
         if 'my_progress' in item:
@@ -336,9 +346,11 @@ fragment mediaListEntry on MediaList {
         if 'my_finish_date' in item:
             values['completedAt'] = self._date2dict(item['my_finish_date'])
 
-        vars_defn = ', '.join(['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
+        vars_defn = ', '.join(
+            ['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
         subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
-        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id}} }}'.format(vars_defn, subs_defn)
+        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id}} }}'.format(
+            vars_defn, subs_defn)
 
         data = self._request(query, values)['data']
         return data['SaveMediaListEntry']['id']
@@ -369,9 +381,10 @@ fragment mediaListEntry on MediaList {
             variables = {'query': urllib.parse.quote_plus(criteria)}
         elif method == utils.SEARCH_METHOD_SEASON:
             season, seasonYear = criteria
-            
+
             query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
-            variables = {'season': self.season_translate[season], 'seasonYear': seasonYear}
+            variables = {
+                'season': self.season_translate[season], 'seasonYear': seasonYear}
 
         query += '''
       id
@@ -441,15 +454,14 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
-        aliases = [a for a in (item['title']['romaji'], item['title']['english'], item['title']['native']) if a]
-        
+
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
-            'total': item[self.total_str],
-            'aliases': aliases,
-            'type': self.type_translate[item['format']],
-            'status': self.status_translate[item['status']],
+            'total': self._c(item[self.total_str]),
+            'aliases': self._get_aliases(item),
+            'type': self._translate_type(item['format']),
+            'status': self._translate_status(item['status']),
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
@@ -459,13 +471,14 @@ fragment mediaListEntry on MediaList {
                 ('English',         item['title'].get('english')),
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
-                ('Synonyms',        item['title'].get('synonyms')),
+                ('Synonyms',        item.get('synonyms')),
                 ('Genres',          item.get('genres')),
-                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
+                ('Studios',         [s['name']
+                                     for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
                 ('Type',            item.get('format')),
                 ('Average score',   item.get('averageScore')),
-                ('Status',          self.status_translate[item['status']]),
+                ('Status',          self._translate_status(item['status'])),
             ]
         })
         return info
@@ -473,6 +486,18 @@ fragment mediaListEntry on MediaList {
     def _apply_scoreformat(self, fmt):
         media = self.media_info()
         (media['score_max'], media['score_step']) = self.score_types[fmt]
+
+    def _get_aliases(self, item):
+        aliases = [a for a in (item['title']['romaji'], item['title']
+                               ['english'], item['title']['native']) if a] + item['synonyms']
+
+        return aliases
+
+    def _translate_type(self, orig_type):
+        return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
+
+    def _translate_status(self, orig_status):
+        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
 
     def _dict2date(self, item):
         if not item:
@@ -516,4 +541,3 @@ fragment mediaListEntry on MediaList {
             return 0
         else:
             return s
-

@@ -16,6 +16,7 @@
 
 from trackma import utils
 
+
 class lib():
     """
     Base interface for creating API implementations for Trackma.
@@ -27,7 +28,7 @@ class lib():
     version = 'dummy'
     msg = None
 
-    api_info = { 'name': 'BaseAPI', 'version': 'undefined', 'merge': False }
+    api_info = {'name': 'BaseAPI', 'version': 'undefined', 'merge': False}
     """
     api_info is a dictionary containing useful information about the API itself
     name: API name
@@ -48,8 +49,8 @@ class lib():
             'can_status': True,
             'can_update': True,
             'can_play': True,
-            'status_start': 1,
-            'status_finish': 2,
+            'statuses_start': [1],
+            'statuses_finish': [2],
             'statuses':  [1, 2, 3, 4, 6],
             'statuses_dict': { 1: 'Watching', 2: 'Completed', 3: 'On Hold', 4: 'Dropped', 6: 'Plan to Watch' },
         }
@@ -60,8 +61,8 @@ class lib():
 
     # Supported signals for the data handler
     signals = {
-            'show_info_changed': None,
-            'userconfig_changed': None,
+        'show_info_changed': None,
+        'userconfig_changed': None,
     }
 
     def __init__(self, messenger, account, userconfig):
@@ -76,7 +77,8 @@ class lib():
         if userconfig['mediatype'] in self.mediatypes:
             self.mediatype = userconfig['mediatype']
         else:
-            raise utils.APIFatal('Unsupported mediatype %s.' % userconfig['mediatype'])
+            raise utils.APIFatal('Unsupported mediatype %s.' %
+                                 userconfig['mediatype'])
 
         self.api_info['mediatype'] = self.mediatype
         self.api_info['supported_mediatypes'] = list(self.mediatypes.keys())
@@ -159,4 +161,3 @@ class lib():
 
     def set_message_handler(self, message_handler):
         self.msg = message_handler
-

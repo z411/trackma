@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from setuptools import setup, find_packages
 from trackma import utils
@@ -23,7 +23,7 @@ setup(
 
     install_requires=REQUIREMENTS,
     extras_require=EXTRA_REQUIREMENTS,
-    package_data={'trackma': ['data/*']},
+    package_data={'trackma': ['data/*', 'data/anime-relations/*.txt', 'ui/gtk/data/*']},
 
     author='z411',
     author_email='z411@krutt.org',
@@ -38,7 +38,7 @@ setup(
             'trackma-curses = trackma.ui.curses:main [curses]',
         ],
         'gui_scripts': [
-            'trackma-gtk = trackma.ui.gtkui:main [GTK]',
+            'trackma-gtk = trackma.ui.gtk.main:main [GTK]',
             'trackma-qt = trackma.ui.qt:main [Qt]',
             'trackma-qt4 = trackma.ui.qt.qt4ui:main [Qt]',
         ]

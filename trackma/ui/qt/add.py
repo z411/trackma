@@ -14,19 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-pyqt_version = 5
-
-from datetime import date
-
-from PyQt5 import QtCore, QtGui
+from trackma import utils
+from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
+from trackma.ui.qt.details import DetailsDialog
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
-    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter)
+    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter,
+    QMessageBox)
+from PyQt5 import QtCore, QtGui
+from datetime import date
+pyqt_version = 5
 
-from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
-
-from trackma import utils
 
 class AddDialog(QDialog):
     worker = None
@@ -41,10 +40,12 @@ class AddDialog(QDialog):
         self.current_status = current_status
         self.default = default
         if default:
-            self.setWindowTitle('Search/Add from Remote for new show: %s' % default)
+            self.setWindowTitle(
+                'Search/Add from Remote for new show: %s' % default)
 
         # Get available search methods and default to keyword search if not reported by the API
-        search_methods = self.worker.engine.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW])
+        search_methods = self.worker.engine.mediainfo.get(
+            'search_methods', [utils.SEARCH_METHOD_KW])
 
         layout = QVBoxLayout()
 
@@ -55,6 +56,7 @@ class AddDialog(QDialog):
             self.search_rad = QRadioButton('By keyword:')
             self.search_rad.setChecked(True)
             self.search_txt = QLineEdit()
+            self.search_txt.setClearButtonEnabled(True)
             self.search_txt.returnPressed.connect(self.s_search)
             if default:
                 self.search_txt.setText(default)
@@ -63,7 +65,7 @@ class AddDialog(QDialog):
             top_layout.addWidget(self.search_rad)
             top_layout.addWidget(self.search_txt)
         else:
-            filters_layout.setAlignment(QtCore.Qt.AlignRight)
+            top_layout.setAlignment(QtCore.Qt.AlignRight)
 
         top_layout.addWidget(self.search_btn)
 
@@ -97,8 +99,8 @@ class AddDialog(QDialog):
             filters_layout.setAlignment(QtCore.Qt.AlignRight)
 
         view_combo = QComboBox()
-        view_combo.addItem('Table view')
         view_combo.addItem('Card view')
+        view_combo.addItem('Table view')
         view_combo.currentIndexChanged.connect(self.s_change_view)
 
         filters_layout.addWidget(view_combo)
@@ -109,18 +111,21 @@ class AddDialog(QDialog):
         # Set up views
         tableview = AddTableDetailsView(None, self.worker)
         tableview.changed.connect(self.s_selected)
-        self.contents.addWidget(tableview)
 
         cardview = AddCardView(api_info=self.worker.engine.api_info)
         cardview.changed.connect(self.s_selected)
+        cardview.doubleClicked.connect(self.s_show_details)
+
         self.contents.addWidget(cardview)
+        self.contents.addWidget(tableview)
 
         # Use for testing
         #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
         bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
-        self.add_btn = bottom_buttons.addButton("Add", QDialogButtonBox.AcceptRole)
+        self.add_btn = bottom_buttons.addButton(
+            "Add", QDialogButtonBox.AcceptRole)
         self.add_btn.setEnabled(False)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
@@ -149,6 +154,11 @@ class AddDialog(QDialog):
         self.contents.currentWidget().setResults(self.results)
 
     # Slots
+    def s_show_details(self):
+        detailswindow = DetailsDialog(self, self.worker, self.selected_show)
+        detailswindow.setModal(True)
+        detailswindow.show()
+
     def s_change_view(self, item):
         self.contents.currentWidget().getModel().setResults(None)
         self.contents.setCurrentIndex(item)
@@ -161,7 +171,8 @@ class AddDialog(QDialog):
                 return
             method = utils.SEARCH_METHOD_KW
         elif self.season_rad.isChecked():
-            criteria = (self.season_combo.itemData(self.season_combo.currentIndex()), self.season_year.value())
+            criteria = (self.season_combo.itemData(
+                self.season_combo.currentIndex()), self.season_year.value())
             method = utils.SEARCH_METHOD_SEASON
 
         self.contents.currentWidget().clearSelection()
@@ -178,7 +189,8 @@ class AddDialog(QDialog):
 
     def s_add(self):
         if self.selected_show:
-            self.worker_call('add_show', self.r_added, self.selected_show, self.current_status)
+            self.worker_call('add_show', self.r_added,
+                             self.selected_show, self.current_status)
 
     # Worker responses
     def r_searched(self, result):
@@ -188,7 +200,7 @@ class AddDialog(QDialog):
             self.set_results(result['result'])
 
             """
-            if self.table.currentRow() is 0:  # Row number hasn't changed but the data probably has!
+            if self.table.currentRow() == 0:  # Row number hasn't changed but the data probably has!
                 self.s_show_selected(self.table.item(0, 0))
             self.table.setCurrentItem(self.table.item(0, 0))"""
         else:
@@ -198,3 +210,6 @@ class AddDialog(QDialog):
         if result['success']:
             if self.default:
                 self.accept()
+            else:
+                QMessageBox.information(
+                    self, 'Information', "Show added successfully")

@@ -18,7 +18,7 @@ Features
 Currently supported websites
 ----------------------------
 - [Anilist](https://anilist.co/) (Anime, Manga)
-- [Kitsu](https://kitsu.io/) (Anime, Manga)
+- [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
@@ -68,6 +68,7 @@ The following media recognition trackers are available and their requirements ar
 | inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
 | Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
 | Plex | Connects to Plex server. Enabled manually. | None |
+| MPRIS | Connects to running MPRIS capable media players. | dbus-python |
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional dependencies:
@@ -85,7 +86,7 @@ following command:
 
 Or download the source code and install:
 
-<pre># git clone https://github.com/z411/trackma.git
+<pre># git clone --recursive https://github.com/z411/trackma.git
 # cd trackma
 # sudo python3 setup.py install</pre>
 
@@ -104,7 +105,7 @@ Trackma also has user-provided packages for several distributions.
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
-- **Void Linux:** https://github.com/voidlinux/void-packages/blob/master/srcpkgs/trackma/template
+- **Void Linux:** https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template
 
 A user from the community also is providing a Docker image:
 
@@ -113,7 +114,7 @@ A user from the community also is providing a Docker image:
 Configuration
 -------------
 
-A configuration file will be created in `~/.trackma/config.json`, make sure to fill in the directory
+A configuration file will be created in `~/.config/trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
 https://github.com/z411/trackma/wiki/Configuration-File
@@ -143,6 +144,4 @@ Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
-Trackma was originally written by z411 <z411@krutt.org>
-For other authors see AUTHORS file
-GTK icon designed by shuuichi
+Trackma was originally written by z411 <z411@omaera.org>. For other contributors see AUTHORS file. GTK icon designed by shuuichi.

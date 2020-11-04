@@ -20,6 +20,8 @@ import os
 import subprocess
 
 from trackma.tracker import tracker
+from trackma import utils
+
 
 class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
@@ -28,30 +30,31 @@ class PollingTracker(tracker.TrackerBase):
         for path in watch_dirs:
             # TODO: We'll run lsof once for each directory for now.
             try:
-                lsof = subprocess.Popen(['lsof', '+w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
+                lsof = subprocess.Popen(
+                    ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
             except OSError:
-                self.msg.warn(self.name, "Couldn't execute lsof. Disabling tracker.")
+                self.msg.warn(
+                    self.name, "Couldn't execute lsof. Disabling tracker.")
                 self.disable()
                 return None
 
             output = lsof.communicate()[0].decode('utf-8')
-            fileregex = re.compile("n(.*(\.mkv|\.mp4|\.avi))")
 
             for line in output.splitlines():
-                match = fileregex.match(line)
-                if match is not None:
-                    return os.path.basename(match.group(1))
+                if line[0] == 'n' and utils.is_media(line):
+                    return os.path.basename(line[1:])
 
         return None
 
-    def observe(self, watch_dirs, interval):
-        self.msg.info(self.name, "pyinotify not available; using polling (slow).")
+    def observe(self, config, watch_dirs):
+        self.msg.info(
+            self.name, "pyinotify not available; using polling (slow).")
         while self.active:
             # This runs the tracker and update the playing show if necessary
-            filename = self.get_playing_file(watch_dirs, self.process_name)
+            filename = self.get_playing_file(
+                watch_dirs, config['tracker_process'])
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
             # Wait for the interval before running check again
-            time.sleep(interval)
-
+            time.sleep(config['tracker_interval'])

@@ -7,6 +7,7 @@ from trackma import utils
 
 import datetime
 
+
 class ShowListModel(QtCore.QAbstractTableModel):
     """
     Main model used in the main window to show
@@ -26,8 +27,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
     COL_MY_STATUS = 11
 
     columns = ['ID', 'Title', 'Progress', 'Score',
-                'Percent', 'Next Episode', 'Start date', 'End date',
-                'My start', 'My finish', 'Tags', 'Status']
+               'Percent', 'Next Episode', 'Start date', 'End date',
+               'My start', 'My finish', 'Tags', 'Status']
 
     editable_columns = [COL_MY_PROGRESS, COL_MY_SCORE]
 
@@ -86,7 +87,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
         if self.mediainfo.get('date_next_ep'):
             if 'next_ep_time' in show:
                 delta = show['next_ep_time'] - datetime.datetime.utcnow()
-                self.next_ep[row] = "%i days, %02d hrs." % (delta.days, delta.seconds/3600)
+                self.next_ep[row] = "%i days, %02d hrs." % (
+                    delta.days, delta.seconds/3600)
             elif row in self.next_ep:
                 del self.next_ep[row]
 
@@ -100,7 +102,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
         if aired_eps or library_eps:
             self.eps[row] = (aired_eps, library_eps)
         elif row in self.eps:
-            del eps[row]
+            del self.eps[row]
 
     def setShowList(self, showlist, altnames, library):
         self.beginResetModel()
@@ -117,8 +119,10 @@ class ShowListModel(QtCore.QAbstractTableModel):
         for row, show in enumerate(self.showlist):
             self.id_map[show['id']] = row
             self._calculate_color(row, show)
-            self._calculate_next_ep(row, show)
-            self._calculate_eps(row, show)
+
+            if self.mediainfo.get('can_play'):
+                self._calculate_next_ep(row, show)
+                self._calculate_eps(row, show)
 
         self.endResetModel()
 
@@ -134,7 +138,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 self.playing.discard(showid)
 
         self._calculate_color(row, show)
-        self.dataChanged.emit(self.index(row, 0), self.index(row, len(self.columns)-1))
+        self.dataChanged.emit(self.index(
+            row, 0), self.index(row, len(self.columns)-1))
 
     def rowCount(self, parent):
         if self.showlist:
@@ -177,16 +182,17 @@ class ShowListModel(QtCore.QAbstractTableModel):
             elif column == ShowListModel.COL_MY_SCORE:
                 return show['my_score']
             elif column == ShowListModel.COL_PERCENT:
-                #return "{:.0%}".format(show['my_progress'] / 100)
-                if not self.mediainfo.get('can_play'):
-                    return None
-
-                if show['total'] > 0:
+                # return "{:.0%}".format(show['my_progress'] / 100)
+                if show['total']:
                     total = show['total']
                 else:
-                    total = (int(show['my_progress']/12)+1)*12 # Round up to the next cour
+                    total = (int(show['my_progress']/12)+1) * \
+                        12  # Round up to the next cour
 
-                return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
+                if row in self.eps:
+                    return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
+                else:
+                    return (show['my_progress'], total, None, None)
             elif column == ShowListModel.COL_NEXT_EP:
                 return self.next_ep.get(row, '-')
             elif column == ShowListModel.COL_START_DATE:
@@ -199,6 +205,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return self._date(show['my_finish_date'])
             elif column == ShowListModel.COL_MY_TAGS:
                 return show.get('my_tags', '-')
+            elif column == ShowListModel.COL_MY_STATUS:
+                return self.mediainfo['statuses_dict'][show['my_status']]
         elif role == QtCore.Qt.BackgroundRole:
             return self.colors.get(row)
         elif role == QtCore.Qt.DecorationRole:
@@ -215,7 +223,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                     if aired_eps:
                         tooltip += "Aired (estimated): %d<br>" % aired_eps
                     if library_eps:
-                        tooltip += "Latest available: %d<br>" % max(library_eps)
+                        tooltip += "Latest available: %d<br>" % max(
+                            library_eps)
                 tooltip += "Total: %d" % show['total']
 
                 return tooltip
@@ -224,7 +233,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return (show['my_progress'], show['total'], 0, 1)
             elif column == ShowListModel.COL_MY_SCORE:
                 if isinstance(self.mediainfo['score_step'], float):
-                    decimals = len(str(self.mediainfo['score_step']).split('.')[1])
+                    decimals = len(
+                        str(self.mediainfo['score_step']).split('.')[1])
                 else:
                     decimals = 0
 
@@ -235,6 +245,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             return super().flags(index) | QtCore.Qt.ItemIsEditable
 
         return super().flags(index)
+
 
 class AddTableModel(QtCore.QAbstractTableModel):
     columns = ["Name", "Type", "Total"]
@@ -303,7 +314,8 @@ class AddListModel(QtCore.QAbstractListModel):
 
     def gotThumb(self, iid, thumb):
         iid = int(iid)
-        self.thumbs[iid] = thumb.scaled(100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
+        self.thumbs[iid] = thumb.scaled(
+            100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
         self.dataChanged.emit(self.index(iid), self.index(iid))
 
@@ -320,10 +332,12 @@ class AddListModel(QtCore.QAbstractListModel):
         if self.results:
             for row, item in enumerate(self.results):
                 if item.get('image'):
-                    filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], item['id']))
+                    filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (
+                        self.api_info['shortname'], self.api_info['mediatype'], item['id']))
 
                     if self.pool.exists(filename):
-                        self.thumbs[row] = self.pool.getThumb(filename).scaled(100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
+                        self.thumbs[row] = self.pool.getThumb(filename).scaled(
+                            100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
                     else:
                         self.pool.queueDownload(row, item['image'], filename)
 
@@ -465,6 +479,7 @@ class AddListProxy(QtCore.QSortFilterProxyModel):
 
         return leftData['type'] < rightData['type']
 
+
 class ShowListProxy(QtCore.QSortFilterProxyModel):
     filter_columns = None
     filter_status = None
@@ -488,7 +503,7 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
             for col in range(self.sourceModel().columnCount(source_parent)):
                 index = self.sourceModel().index(source_row, col)
                 if (col in self.filter_columns and
-                    self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.DisplayRole))):
+                        self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.DisplayRole))):
                     return False
 
-        return super(ShowListProxy, self).filterAcceptsRow( source_row, source_parent)
+        return super(ShowListProxy, self).filterAcceptsRow(source_row, source_parent)

@@ -14,20 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-pyqt_version = 5
-
-from PyQt5 import QtCore
+from trackma import utils
+from trackma.ui.qt.util import getIcon, getColor, FilterBar
+from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
+from trackma.ui.qt.delegates import ShowsTableDelegate
 from PyQt5.QtWidgets import (
     QDialog, QGridLayout, QListWidget, QListWidgetItem, QAbstractItemView,
     QWidget, QVBoxLayout, QGroupBox, QFormLayout, QCheckBox, QRadioButton,
     QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget, QSplitter,
-    QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog)
+    QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog, QScrollArea)
+from PyQt5 import QtCore
+pyqt_version = 5
 
-from trackma.ui.qt.delegates import ShowsTableDelegate
-from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
-from trackma.ui.qt.util import getIcon, getColor, FilterBar
-
-from trackma import utils
 
 class SettingsDialog(QDialog):
     worker = None
@@ -48,13 +46,18 @@ class SettingsDialog(QDialog):
 
         # Categories
         self.category_list = QListWidget()
-        category_media = QListWidgetItem(getIcon('media-playback-start'), 'Media', self.category_list)
-        category_sync = QListWidgetItem(getIcon('view-refresh'), 'Sync', self.category_list)
-        category_ui = QListWidgetItem(getIcon('window-new'), 'User Interface', self.category_list)
-        category_theme = QListWidgetItem(getIcon('applications-graphics'), 'Theme', self.category_list)
+        category_media = QListWidgetItem(
+            getIcon('media-playback-start'), 'Media', self.category_list)
+        category_sync = QListWidgetItem(
+            getIcon('view-refresh'), 'Sync', self.category_list)
+        category_ui = QListWidgetItem(
+            getIcon('window-new'), 'User Interface', self.category_list)
+        category_theme = QListWidgetItem(
+            getIcon('applications-graphics'), 'Theme', self.category_list)
         self.category_list.setSelectionMode(QAbstractItemView.SingleSelection)
         self.category_list.setCurrentRow(0)
-        self.category_list.setMaximumWidth(self.category_list.sizeHintForColumn(0) + 15)
+        self.category_list.setMaximumWidth(
+            self.category_list.sizeHintForColumn(0) + 15)
         self.category_list.setFocus()
         self.category_list.currentItemChanged.connect(self.s_switch_page)
 
@@ -69,10 +72,12 @@ class SettingsDialog(QDialog):
         g_media_layout = QFormLayout()
         self.tracker_enabled = QCheckBox()
         self.tracker_enabled.toggled.connect(self.tracker_type_change)
-        self.tracker_type_local = QRadioButton('Local')
-        self.tracker_type_local.toggled.connect(self.tracker_type_change)
-        self.tracker_type_plex = QRadioButton('Plex media server')
-        self.tracker_type_plex.toggled.connect(self.tracker_type_change)
+
+        self.tracker_type = QComboBox()
+        for (n, label) in utils.available_trackers:
+            self.tracker_type.addItem(label, n)
+        self.tracker_type.currentIndexChanged.connect(self.tracker_type_change)
+
         self.tracker_interval = QSpinBox()
         self.tracker_interval.setRange(5, 1000)
         self.tracker_interval.setMaximumWidth(60)
@@ -83,16 +88,23 @@ class SettingsDialog(QDialog):
         self.tracker_update_close = QCheckBox()
         self.tracker_update_prompt = QCheckBox()
         self.tracker_not_found_prompt = QCheckBox()
+        self.tracker_ignore_not_next = QCheckBox()
 
         g_media_layout.addRow('Enable tracker', self.tracker_enabled)
-        g_media_layout.addRow(self.tracker_type_local)
-        g_media_layout.addRow(self.tracker_type_plex)
-        g_media_layout.addRow('Tracker interval (seconds)', self.tracker_interval)
+        g_media_layout.addRow('Tracker type', self.tracker_type)
+        g_media_layout.addRow(
+            'Tracker interval (seconds)', self.tracker_interval)
         g_media_layout.addRow('Process name (regex)', self.tracker_process)
-        g_media_layout.addRow('Wait before updating (seconds)', self.tracker_update_wait)
-        g_media_layout.addRow('Wait until the player is closed', self.tracker_update_close)
-        g_media_layout.addRow('Ask before updating', self.tracker_update_prompt)
-        g_media_layout.addRow('Ask to add new shows', self.tracker_not_found_prompt)
+        g_media_layout.addRow(
+            'Wait before updating (seconds)', self.tracker_update_wait)
+        g_media_layout.addRow(
+            'Wait until the player is closed', self.tracker_update_close)
+        g_media_layout.addRow('Ask before updating',
+                              self.tracker_update_prompt)
+        g_media_layout.addRow('Ask to add new shows',
+                              self.tracker_not_found_prompt)
+        g_media_layout.addRow('Ignore if not next episode',
+                              self.tracker_ignore_not_next)
 
         g_media.setLayout(g_media_layout)
 
@@ -107,16 +119,53 @@ class SettingsDialog(QDialog):
         self.plex_obey_wait = QCheckBox()
 
         g_plex_layout = QGridLayout()
-        g_plex_layout.addWidget(QLabel('Host and Port'),                   0, 0, 1, 1)
-        g_plex_layout.addWidget(self.plex_host,                            0, 1, 1, 1)
-        g_plex_layout.addWidget(self.plex_port,                            0, 2, 1, 2)
-        g_plex_layout.addWidget(QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
-        g_plex_layout.addWidget(self.plex_obey_wait,                       1, 2, 1, 1)
-        g_plex_layout.addWidget(QLabel('myPlex login (claimed server)'),   2, 0, 1, 1)
-        g_plex_layout.addWidget(self.plex_user,                            2, 1, 1, 1)
-        g_plex_layout.addWidget(self.plex_passw,                           2, 2, 1, 2)
+        g_plex_layout.addWidget(
+            QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_host,
+                                0, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_port,
+                                0, 2, 1, 2)
+        g_plex_layout.addWidget(
+            QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_obey_wait,
+                                1, 2, 1, 1)
+        g_plex_layout.addWidget(
+            QLabel('myPlex login (claimed server)'),   2, 0, 1, 1)
+        g_plex_layout.addWidget(self.plex_user,
+                                2, 1, 1, 1)
+        g_plex_layout.addWidget(self.plex_passw,
+                                2, 2, 1, 2)
 
         g_plex.setLayout(g_plex_layout)
+
+        # Group: Kodi settings
+        g_kodi = QGroupBox('Kodi')
+        g_kodi.setFlat(True)
+        self.kodi_host = QLineEdit()
+        self.kodi_port = QLineEdit()
+        self.kodi_user = QLineEdit()
+        self.kodi_passw = QLineEdit()
+        self.kodi_passw.setEchoMode(QLineEdit.Password)
+        self.kodi_obey_wait = QCheckBox()
+
+        g_kodi_layout = QGridLayout()
+        g_kodi_layout.addWidget(
+            QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_host,
+                                0, 1, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_port,
+                                0, 2, 1, 2)
+        g_kodi_layout.addWidget(
+            QLabel('Use "wait before updating" time'), 1, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_obey_wait,
+                                1, 2, 1, 1)
+        g_kodi_layout.addWidget(QLabel('Kodi login'),   2, 0, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_user,
+                                2, 1, 1, 1)
+        g_kodi_layout.addWidget(self.kodi_passw,
+                                2, 2, 1, 2)
+
+        g_kodi.setLayout(g_kodi_layout)
 
         # Group: Library
         g_playnext = QGroupBox('Library')
@@ -140,26 +189,38 @@ class SettingsDialog(QDialog):
         self.scan_whole_list = QCheckBox()
         self.library_full_path = QCheckBox()
 
-
         g_playnext_layout = QGridLayout()
-        g_playnext_layout.addWidget(QLabel('Player'),                    0, 0, 1, 1)
-        g_playnext_layout.addWidget(self.player,                         0, 1, 1, 1)
-        g_playnext_layout.addWidget(self.player_browse,                  0, 2, 1, 1)
-        g_playnext_layout.addWidget(lbl_searchdirs,                      1, 0, 1, 1)
-        g_playnext_layout.addWidget(self.searchdirs,                     1, 1, 1, 1)
-        g_playnext_layout.addLayout(self.searchdirs_buttons,             1, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Rescan Library at startup'), 2, 0, 1, 2)
-        g_playnext_layout.addWidget(self.library_autoscan,               2, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Scan through whole list'),   3, 0, 1, 2)
-        g_playnext_layout.addWidget(self.scan_whole_list,                3, 2, 1, 1)
-        g_playnext_layout.addWidget(QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
-        g_playnext_layout.addWidget(self.library_full_path,              4, 2, 1, 1)
+        g_playnext_layout.addWidget(
+            QLabel('Player'),                    0, 0, 1, 1)
+        g_playnext_layout.addWidget(self.player,
+                                    0, 1, 1, 1)
+        g_playnext_layout.addWidget(
+            self.player_browse,                  0, 2, 1, 1)
+        g_playnext_layout.addWidget(
+            lbl_searchdirs,                      1, 0, 1, 1)
+        g_playnext_layout.addWidget(
+            self.searchdirs,                     1, 1, 1, 1)
+        g_playnext_layout.addLayout(
+            self.searchdirs_buttons,             1, 2, 1, 1)
+        g_playnext_layout.addWidget(
+            QLabel('Rescan Library at startup'), 2, 0, 1, 2)
+        g_playnext_layout.addWidget(
+            self.library_autoscan,               2, 2, 1, 1)
+        g_playnext_layout.addWidget(
+            QLabel('Scan through whole list'),   3, 0, 1, 2)
+        g_playnext_layout.addWidget(
+            self.scan_whole_list,                3, 2, 1, 1)
+        g_playnext_layout.addWidget(
+            QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
+        g_playnext_layout.addWidget(
+            self.library_full_path,              4, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
         # Media form
         page_media_layout.addWidget(g_media)
         page_media_layout.addWidget(g_plex)
+        page_media_layout.addWidget(g_kodi)
         page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
 
@@ -215,8 +276,10 @@ class SettingsDialog(QDialog):
         g_extra.setFlat(True)
         self.auto_status_change = QCheckBox('Change status automatically')
         self.auto_status_change.toggled.connect(self.s_auto_status_change)
-        self.auto_status_change_if_scored = QCheckBox('Change status automatically only if scored')
-        self.auto_date_change = QCheckBox('Change start and finish dates automatically')
+        self.auto_status_change_if_scored = QCheckBox(
+            'Change status automatically only if scored')
+        self.auto_date_change = QCheckBox(
+            'Change start and finish dates automatically')
         g_extra_layout = QVBoxLayout()
         g_extra_layout.addWidget(self.auto_status_change)
         g_extra_layout.addWidget(self.auto_status_change_if_scored)
@@ -242,7 +305,8 @@ class SettingsDialog(QDialog):
         self.close_to_tray = QCheckBox('Close to tray')
         self.start_in_tray = QCheckBox('Start minimized to tray')
         self.tray_api_icon = QCheckBox('Use API icon as tray icon')
-        self.notifications = QCheckBox('Show notification when tracker detects new media')
+        self.notifications = QCheckBox(
+            'Show notification when tracker detects new media')
         g_icon_layout = QVBoxLayout()
         g_icon_layout.addWidget(self.tray_icon)
         g_icon_layout.addWidget(self.close_to_tray)
@@ -256,7 +320,8 @@ class SettingsDialog(QDialog):
         g_window.setFlat(True)
         self.remember_geometry = QCheckBox('Remember window size and position')
         self.remember_columns = QCheckBox('Remember column layouts and widths')
-        self.columns_per_api = QCheckBox('Use different visible columns per API')
+        self.columns_per_api = QCheckBox(
+            'Use different visible columns per API')
         g_window_layout = QVBoxLayout()
         g_window_layout.addWidget(self.remember_geometry)
         g_window_layout.addWidget(self.remember_columns)
@@ -334,9 +399,11 @@ class SettingsDialog(QDialog):
                 self.color_buttons.append(QPushButton())
                 # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
                 self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
-                self.color_buttons[-1].clicked.connect(self.s_color_picker(key, False))
+                self.color_buttons[-1].clicked.connect(
+                    self.s_color_picker(key, False))
                 self.syscolor_buttons.append(QPushButton('System Colors'))
-                self.syscolor_buttons[-1].clicked.connect(self.s_color_picker(key, True))
+                self.syscolor_buttons[-1].clicked.connect(
+                    self.s_color_picker(key, True))
                 page_layout.addWidget(QLabel(label),             col, 0, 1, 1)
                 page_layout.addWidget(self.color_buttons[-1],    col, 1, 1, 1)
                 page_layout.addWidget(self.syscolor_buttons[-1], col, 2, 1, 1)
@@ -353,11 +420,13 @@ class SettingsDialog(QDialog):
 
         # Content
         self.contents = QStackedWidget()
-        self.contents.addWidget(page_media)
-        self.contents.addWidget(page_sync)
-        self.contents.addWidget(page_ui)
-        self.contents.addWidget(page_theme)
-        if pyqt_version is not 5:
+        for page in (page_media, page_sync, page_ui, page_theme):
+            scrollable_page = QScrollArea()
+            scrollable_page.setWidgetResizable(True)
+            scrollable_page.setWidget(page)
+            self.contents.addWidget(scrollable_page)
+
+        if pyqt_version != 5:
             self.contents.layout().setMargin(0)
 
         # Bottom buttons
@@ -386,39 +455,48 @@ class SettingsDialog(QDialog):
 
     def _load(self):
         engine = self.worker.engine
-        tracker_type = engine.get_config('tracker_type')
+        tracker_type = self.tracker_type.findData(
+            engine.get_config('tracker_type'))
         autoretrieve = engine.get_config('autoretrieve')
         autosend = engine.get_config('autosend')
 
         self.tracker_enabled.setChecked(engine.get_config('tracker_enabled'))
+        self.tracker_type.setCurrentIndex(max(0, tracker_type))
         self.tracker_interval.setValue(engine.get_config('tracker_interval'))
         self.tracker_process.setText(engine.get_config('tracker_process'))
-        self.tracker_update_wait.setValue(engine.get_config('tracker_update_wait_s'))
-        self.tracker_update_close.setChecked(engine.get_config('tracker_update_close'))
-        self.tracker_update_prompt.setChecked(engine.get_config('tracker_update_prompt'))
-        self.tracker_not_found_prompt.setChecked(engine.get_config('tracker_not_found_prompt'))
+        self.tracker_update_wait.setValue(
+            engine.get_config('tracker_update_wait_s'))
+        self.tracker_update_close.setChecked(
+            engine.get_config('tracker_update_close'))
+        self.tracker_update_prompt.setChecked(
+            engine.get_config('tracker_update_prompt'))
+        self.tracker_not_found_prompt.setChecked(
+            engine.get_config('tracker_not_found_prompt'))
+        self.tracker_ignore_not_next.setChecked(
+            engine.get_config('tracker_ignore_not_next'))
 
         self.player.setText(engine.get_config('player'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
-        self.library_full_path.setChecked(engine.get_config('library_full_path'))
+        self.library_full_path.setChecked(
+            engine.get_config('library_full_path'))
+
         self.plex_host.setText(engine.get_config('plex_host'))
         self.plex_port.setText(engine.get_config('plex_port'))
-        self.plex_obey_wait.setChecked(engine.get_config('plex_obey_update_wait_s'))
+        self.plex_obey_wait.setChecked(
+            engine.get_config('plex_obey_update_wait_s'))
         self.plex_user.setText(engine.get_config('plex_user'))
         self.plex_passw.setText(engine.get_config('plex_passwd'))
 
+        self.kodi_host.setText(engine.get_config('kodi_host'))
+        self.kodi_port.setText(engine.get_config('kodi_port'))
+        self.kodi_obey_wait.setChecked(
+            engine.get_config('kodi_obey_update_wait_s'))
+        self.kodi_user.setText(engine.get_config('kodi_user'))
+        self.kodi_passw.setText(engine.get_config('kodi_passwd'))
+
         for path in engine.get_config('searchdir'):
             self._add_dir(path)
-
-        if tracker_type == 'local':
-            self.tracker_type_local.setChecked(True)
-            self.plex_host.setEnabled(False)
-            self.plex_port.setEnabled(False)
-            self.plex_obey_wait.setEnabled(False)
-        elif tracker_type == 'plex':
-            self.tracker_type_plex.setChecked(True)
-            self.tracker_process.setEnabled(False)
 
         if autoretrieve == 'always':
             self.autoretrieve_always.setChecked(True)
@@ -427,7 +505,8 @@ class SettingsDialog(QDialog):
         else:
             self.autoretrieve_off.setChecked(True)
 
-        self.autoretrieve_days_n.setValue(engine.get_config('autoretrieve_days'))
+        self.autoretrieve_days_n.setValue(
+            engine.get_config('autoretrieve_days'))
 
         if autosend == 'always':
             self.autosend_always.setChecked(True)
@@ -442,8 +521,10 @@ class SettingsDialog(QDialog):
         self.autosend_size_n.setValue(engine.get_config('autosend_size'))
 
         self.autosend_at_exit.setChecked(engine.get_config('autosend_at_exit'))
-        self.auto_status_change.setChecked(engine.get_config('auto_status_change'))
-        self.auto_status_change_if_scored.setChecked(engine.get_config('auto_status_change_if_scored'))
+        self.auto_status_change.setChecked(
+            engine.get_config('auto_status_change'))
+        self.auto_status_change_if_scored.setChecked(
+            engine.get_config('auto_status_change_if_scored'))
         self.auto_date_change.setChecked(engine.get_config('auto_date_change'))
 
         self.tray_icon.setChecked(self.config['show_tray'])
@@ -454,10 +535,12 @@ class SettingsDialog(QDialog):
         self.remember_geometry.setChecked(self.config['remember_geometry'])
         self.remember_columns.setChecked(self.config['remember_columns'])
         self.columns_per_api.setChecked(self.config['columns_per_api'])
-        self.filter_bar_position.setCurrentIndex(self.filter_bar_position.findData(self.config['filter_bar_position']))
+        self.filter_bar_position.setCurrentIndex(
+            self.filter_bar_position.findData(self.config['filter_bar_position']))
         self.inline_edit.setChecked(self.config['inline_edit'])
 
-        self.ep_bar_style.setCurrentIndex(self.ep_bar_style.findData(self.config['episodebar_style']))
+        self.ep_bar_style.setCurrentIndex(
+            self.ep_bar_style.findData(self.config['episodebar_style']))
         self.ep_bar_text.setChecked(self.config['episodebar_text'])
 
         self.autoretrieve_days_n.setEnabled(self.autoretrieve_days.isChecked())
@@ -469,33 +552,53 @@ class SettingsDialog(QDialog):
 
         self.color_values = self.config['colors'].copy()
 
+        self.tracker_type_change(None)
+
     def _save(self):
         engine = self.worker.engine
 
-        engine.set_config('tracker_enabled',       self.tracker_enabled.isChecked())
-        engine.set_config('tracker_interval',      self.tracker_interval.value())
-        engine.set_config('tracker_process',       str(self.tracker_process.text()))
-        engine.set_config('tracker_update_wait_s', self.tracker_update_wait.value())
-        engine.set_config('tracker_update_close',  self.tracker_update_close.isChecked())
-        engine.set_config('tracker_update_prompt', self.tracker_update_prompt.isChecked())
-        engine.set_config('tracker_not_found_prompt', self.tracker_not_found_prompt.isChecked())
+        engine.set_config('tracker_enabled',
+                          self.tracker_enabled.isChecked())
+        engine.set_config('tracker_type',          self.tracker_type.itemData(
+            self.tracker_type.currentIndex()))
+        engine.set_config('tracker_interval',
+                          self.tracker_interval.value())
+        engine.set_config('tracker_process',       str(
+            self.tracker_process.text()))
+        engine.set_config('tracker_update_wait_s',
+                          self.tracker_update_wait.value())
+        engine.set_config('tracker_update_close',
+                          self.tracker_update_close.isChecked())
+        engine.set_config('tracker_update_prompt',
+                          self.tracker_update_prompt.isChecked())
+        engine.set_config('tracker_not_found_prompt',
+                          self.tracker_not_found_prompt.isChecked())
+        engine.set_config('tracker_ignore_not_next',
+                          self.tracker_ignore_not_next.isChecked())
 
         engine.set_config('player',            self.player.text())
-        engine.set_config('library_autoscan',  self.library_autoscan.isChecked())
+        engine.set_config('library_autoscan',
+                          self.library_autoscan.isChecked())
         engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
-        engine.set_config('library_full_path', self.library_full_path.isChecked())
+        engine.set_config('library_full_path',
+                          self.library_full_path.isChecked())
+
         engine.set_config('plex_host',         self.plex_host.text())
         engine.set_config('plex_port',         self.plex_port.text())
-        engine.set_config('plex_obey_update_wait_s', self.plex_obey_wait.isChecked())
+        engine.set_config('plex_obey_update_wait_s',
+                          self.plex_obey_wait.isChecked())
         engine.set_config('plex_user',         self.plex_user.text())
         engine.set_config('plex_passwd',       self.plex_passw.text())
 
-        engine.set_config('searchdir',         [self.searchdirs.item(i).text() for i in range(self.searchdirs.count())])
+        engine.set_config('kodi_host',         self.kodi_host.text())
+        engine.set_config('kodi_port',         self.kodi_port.text())
+        engine.set_config('kodi_obey_update_wait_s',
+                          self.kodi_obey_wait.isChecked())
+        engine.set_config('kodi_user',         self.kodi_user.text())
+        engine.set_config('kodi_passwd',       self.kodi_passw.text())
 
-        if self.tracker_type_local.isChecked():
-            engine.set_config('tracker_type', 'local')
-        elif self.tracker_type_plex.isChecked():
-            engine.set_config('tracker_type', 'plex')
+        engine.set_config('searchdir',         [self.searchdirs.item(
+            i).text() for i in range(self.searchdirs.count())])
 
         if self.autoretrieve_always.isChecked():
             engine.set_config('autoretrieve', 'always')
@@ -504,7 +607,8 @@ class SettingsDialog(QDialog):
         else:
             engine.set_config('autoretrieve', 'off')
 
-        engine.set_config('autoretrieve_days',   self.autoretrieve_days_n.value())
+        engine.set_config('autoretrieve_days',
+                          self.autoretrieve_days_n.value())
 
         if self.autosend_always.isChecked():
             engine.set_config('autosend', 'always')
@@ -518,10 +622,14 @@ class SettingsDialog(QDialog):
         engine.set_config('autosend_minutes', self.autosend_minutes_n.value())
         engine.set_config('autosend_size',  self.autosend_size_n.value())
 
-        engine.set_config('autosend_at_exit',   self.autosend_at_exit.isChecked())
-        engine.set_config('auto_status_change', self.auto_status_change.isChecked())
-        engine.set_config('auto_status_change_if_scored', self.auto_status_change_if_scored.isChecked())
-        engine.set_config('auto_date_change',   self.auto_date_change.isChecked())
+        engine.set_config('autosend_at_exit',
+                          self.autosend_at_exit.isChecked())
+        engine.set_config('auto_status_change',
+                          self.auto_status_change.isChecked())
+        engine.set_config('auto_status_change_if_scored',
+                          self.auto_status_change_if_scored.isChecked())
+        engine.set_config('auto_date_change',
+                          self.auto_date_change.isChecked())
 
         engine.save_config()
 
@@ -533,10 +641,12 @@ class SettingsDialog(QDialog):
         self.config['remember_geometry'] = self.remember_geometry.isChecked()
         self.config['remember_columns'] = self.remember_columns.isChecked()
         self.config['columns_per_api'] = self.columns_per_api.isChecked()
-        self.config['filter_bar_position'] = self.filter_bar_position.itemData(self.filter_bar_position.currentIndex())
+        self.config['filter_bar_position'] = self.filter_bar_position.itemData(
+            self.filter_bar_position.currentIndex())
         self.config['inline_edit'] = self.inline_edit.isChecked()
 
-        self.config['episodebar_style'] = self.ep_bar_style.itemData(self.ep_bar_style.currentIndex())
+        self.config['episodebar_style'] = self.ep_bar_style.itemData(
+            self.ep_bar_style.currentIndex())
         self.config['episodebar_text'] = self.ep_bar_text.isChecked()
 
         self.config['colors'] = self.color_values
@@ -549,28 +659,42 @@ class SettingsDialog(QDialog):
         self._save()
         self.accept()
 
+    def switch_kodi_state(self, state):
+        self.kodi_host.setEnabled(state)
+        self.kodi_port.setEnabled(state)
+        self.kodi_user.setEnabled(state)
+        self.kodi_passw.setEnabled(state)
+        self.kodi_obey_wait.setEnabled(state)
+
+    def switch_plex_state(self, state):
+        self.plex_host.setEnabled(state)
+        self.plex_port.setEnabled(state)
+        self.plex_user.setEnabled(state)
+        self.plex_passw.setEnabled(state)
+        self.plex_obey_wait.setEnabled(state)
+
     def tracker_type_change(self, checked):
         if self.tracker_enabled.isChecked():
             self.tracker_interval.setEnabled(True)
             self.tracker_update_wait.setEnabled(True)
-            self.tracker_type_local.setEnabled(True)
-            self.tracker_type_plex.setEnabled(True)
-            if self.tracker_type_local.isChecked():
-                self.tracker_process.setEnabled(True)
-                self.plex_host.setEnabled(False)
-                self.plex_port.setEnabled(False)
-                self.plex_obey_wait.setEnabled(False)
-            elif self.tracker_type_plex.isChecked():
-                self.plex_host.setEnabled(True)
-                self.plex_port.setEnabled(True)
-                self.plex_obey_wait.setEnabled(True)
+            self.tracker_type.setEnabled(True)
+            if self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'plex':
+                self.switch_plex_state(True)
+                self.switch_kodi_state(False)
                 self.tracker_process.setEnabled(False)
+            elif self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'kodi':
+                self.switch_kodi_state(True)
+                self.switch_plex_state(False)
+                self.tracker_process.setEnabled(False)
+            else:
+                self.tracker_process.setEnabled(True)
+                self.switch_plex_state(False)
+                self.switch_kodi_state(False)
         else:
-            self.tracker_type_local.setEnabled(False)
-            self.tracker_type_plex.setEnabled(False)
-            self.plex_host.setEnabled(False)
-            self.plex_port.setEnabled(False)
-            self.plex_obey_wait.setEnabled(False)
+            self.tracker_type.setEnabled(False)
+            self.switch_plex_state(False)
+            self.switch_kodi_state(False)
+
             self.tracker_process.setEnabled(False)
             self.tracker_interval.setEnabled(False)
             self.tracker_update_wait.setEnabled(False)
@@ -600,13 +724,16 @@ class SettingsDialog(QDialog):
         self.auto_status_change_if_scored.setEnabled(checked)
 
     def s_player_browse(self):
-        if pyqt_version is 5:
-            self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable')[0])
+        if pyqt_version == 5:
+            self.player.setText(QFileDialog.getOpenFileName(
+                caption='Choose player executable')[0])
         else:
-            self.player.setText(QFileDialog.getOpenFileName(caption='Choose player executable'))
+            self.player.setText(QFileDialog.getOpenFileName(
+                caption='Choose player executable'))
 
     def s_searchdirs_add(self):
-        self._add_dir(QFileDialog.getExistingDirectory(caption='Choose media directory'))
+        self._add_dir(QFileDialog.getExistingDirectory(
+            caption='Choose media directory'))
 
     def s_searchdirs_remove(self):
         row = self.searchdirs.currentRow()
@@ -638,4 +765,5 @@ class SettingsDialog(QDialog):
 
     def update_colors(self):
         for ((key, label), color) in zip(self.colors['rows']+self.colors['progress'], self.color_buttons):
-            color.setStyleSheet('background-color: ' + getColor(self.color_values[key]).name())
+            color.setStyleSheet('background-color: ' +
+                                getColor(self.color_values[key]).name())

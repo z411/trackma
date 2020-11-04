@@ -14,41 +14,38 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-pyqt_version = 5
-
-import os
-import datetime
-import subprocess
-
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (
-            QApplication, QMainWindow, QFormLayout,
-            QGridLayout, QHBoxLayout, QVBoxLayout,
-            QAbstractItemView, QHeaderView, QListWidget,
-            QListWidgetItem, QTabBar, QTableWidget,
-            QTableWidgetItem, QFrame, QScrollArea,
-            QStackedWidget, QWidget, QCheckBox, QComboBox,
-            QDoubleSpinBox, QGroupBox, QLineEdit,
-            QPushButton, QRadioButton, QSpinBox,
-            QStyleOptionButton, QToolButton, QProgressBar,
-            QDialog, QColorDialog, QDialogButtonBox,
-            QFileDialog, QInputDialog, QMessageBox,
-            QAction, QActionGroup, QLabel, QMenu, QStyle,
-            QSystemTrayIcon, QStyleOptionProgressBar
-        )
-
-from trackma.ui.qt.add import AddDialog
-from trackma.ui.qt.accounts import AccountDialog
-from trackma.ui.qt.details import DetailsDialog
-from trackma.ui.qt.settings import SettingsDialog
-from trackma.ui.qt.rss import RSSDialog
-from trackma.ui.qt.widgets import ShowsTableView, ShowItem, ShowItemNum, ShowItemDate
-from trackma.ui.qt.workers import EngineWorker, ImageWorker
-from trackma.ui.qt.util import getIcon, FilterBar
-
-from trackma.accounts import AccountManager
-from trackma import messenger
 from trackma import utils
+from trackma import messenger
+from trackma.accounts import AccountManager
+from trackma.ui.qt.util import getIcon, FilterBar
+from trackma.ui.qt.workers import EngineWorker, ImageWorker
+from trackma.ui.qt.widgets import ShowsTableView
+from trackma.ui.qt.settings import SettingsDialog
+from trackma.ui.qt.details import DetailsDialog
+from trackma.ui.qt.accounts import AccountDialog
+from trackma.ui.qt.add import AddDialog
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QFormLayout,
+    QGridLayout, QHBoxLayout, QVBoxLayout,
+    QAbstractItemView, QHeaderView, QListWidget,
+    QListWidgetItem, QTabBar, QTableWidget,
+    QTableWidgetItem, QFrame, QScrollArea,
+    QStackedWidget, QWidget, QCheckBox, QComboBox,
+    QDoubleSpinBox, QGroupBox, QLineEdit,
+    QPushButton, QRadioButton, QSpinBox,
+    QStyleOptionButton, QToolButton, QProgressBar,
+    QDialog, QColorDialog, QDialogButtonBox,
+    QFileDialog, QInputDialog, QMessageBox,
+    QAction, QActionGroup, QLabel, QMenu, QStyle,
+    QSystemTrayIcon, QStyleOptionProgressBar
+)
+from PyQt5 import QtCore, QtGui
+import base64
+import subprocess
+import datetime
+import os
+import sys
+pyqt_version = 5
 
 
 class MainWindow(QMainWindow):
@@ -59,6 +56,7 @@ class MainWindow(QMainWindow):
     debug = False
     config = None
     tray = None
+    mediainfo = None
     accountman = None
     accountman_widget = None
     worker = None
@@ -78,7 +76,7 @@ class MainWindow(QMainWindow):
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
-        QApplication.setWindowIcon(QtGui.QIcon(utils.datadir + '/data/icon.png'))
+        QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
@@ -133,57 +131,68 @@ class MainWindow(QMainWindow):
         self.busy_timer.timeout.connect(self.s_busy)
 
         # Build menus
-        action_play_next = QAction(getIcon('media-playback-start'), 'Play &Next', self)
-        action_play_next.setStatusTip('Play the next unwatched episode.')
-        action_play_next.setShortcut('Ctrl+N')
-        action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_dialog = QAction('Play Episode...', self)
-        action_play_dialog.setStatusTip('Select an episode to play.')
-        action_play_dialog.triggered.connect(self.s_play_number)
-        action_details = QAction('Show &details...', self)
-        action_details.setStatusTip('Show detailed information about the selected show.')
-        action_details.triggered.connect(self.s_show_details)
-        action_altname = QAction('Change &alternate name...', self)
-        action_altname.setStatusTip('Set an alternate title for the tracker.')
-        action_altname.triggered.connect(self.s_altname)
+        self.action_play_next = QAction(
+            getIcon('media-playback-start'), 'Play &Next', self)
+        self.action_play_next.setStatusTip('Play the next unwatched episode.')
+        self.action_play_next.setShortcut('Ctrl+N')
+        self.action_play_next.triggered.connect(lambda: self.s_play(True))
+        self.action_play_dialog = QAction('Play Episode...', self)
+        self.action_play_dialog.setStatusTip('Select an episode to play.')
+        self.action_play_dialog.triggered.connect(self.s_play_number)
+        self.action_details = QAction('Show &details...', self)
+        self.action_details.setStatusTip(
+            'Show detailed information about the selected show.')
+        self.action_details.triggered.connect(self.s_show_details)
+        self.action_altname = QAction('Change &alternate name...', self)
+        self.action_altname.setStatusTip(
+            'Set an alternate title for the tracker.')
+        self.action_altname.triggered.connect(self.s_altname)
         action_play_random = QAction('Play &random show', self)
-        action_play_random.setStatusTip('Pick a random show with a new episode and play it.')
+        action_play_random.setStatusTip(
+            'Pick a random show with a new episode and play it.')
         action_play_random.setShortcut('Ctrl+R')
         action_play_random.triggered.connect(self.s_play_random)
-        action_add = QAction(getIcon('edit-find'), 'Search/Add from Remote', self)
-        action_add.setShortcut('Ctrl+A')
-        action_add.triggered.connect(self.s_add)
-        action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
-        action_delete.setStatusTip('Remove this show from your list.')
-        action_delete.triggered.connect(self.s_delete)
+        self.action_add = QAction(
+            getIcon('edit-find'), 'Search/Add from Remote', self)
+        self.action_add.setShortcut('Ctrl+A')
+        self.action_add.triggered.connect(self.s_add)
+        self.action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
+        self.action_delete.setStatusTip('Remove this show from your list.')
+        self.action_delete.setShortcut(QtCore.Qt.Key_Delete)
+        self.action_delete.triggered.connect(self.s_delete)
         action_rss = QAction(getIcon('edit-find'), 'RSS Feed', self)
-        #action_rss.setShortcut('Ctrl+R')
         action_rss.triggered.connect(self.s_rss)
         action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
         action_quit.setStatusTip('Exit Trackma.')
         action_quit.triggered.connect(self._exit)
 
-        action_sync = QAction('&Sync', self)
-        action_sync.setStatusTip('Send changes and then retrieve remote list')
-        action_sync.setShortcut('Ctrl+S')
-        action_sync.triggered.connect(lambda: self.s_send(True))
-        action_send = QAction('S&end changes', self)
-        action_send.setShortcut('Ctrl+E')
-        action_send.setStatusTip('Upload any changes made to the list immediately.')
-        action_send.triggered.connect(self.s_send)
-        action_retrieve = QAction('Re&download list', self)
-        action_retrieve.setShortcut('Ctrl+D')
-        action_retrieve.setStatusTip('Discard any changes made to the list and re-download it.')
-        action_retrieve.triggered.connect(self.s_retrieve)
-        action_scan_library = QAction('Rescan &Library', self)
+        self.action_sync = QAction('&Sync', self)
+        self.action_sync.setStatusTip(
+            'Send changes and then retrieve remote list')
+        self.action_sync.setShortcut('Ctrl+S')
+        self.action_sync.triggered.connect(lambda: self.s_send(True))
+        self.action_send = QAction('S&end changes', self)
+        self.action_send.setShortcut('Ctrl+E')
+        self.action_send.setStatusTip(
+            'Upload any changes made to the list immediately.')
+        self.action_send.triggered.connect(self.s_send)
+        self.action_retrieve = QAction('Re&download list', self)
+        self.action_retrieve.setShortcut('Ctrl+D')
+        self.action_retrieve.setStatusTip(
+            'Discard any changes made to the list and re-download it.')
+        self.action_retrieve.triggered.connect(self.s_retrieve)
+        action_scan_library = QAction('Rescan &Library (quick)', self)
+        action_scan_library.setShortcut('Ctrl+L')
         action_scan_library.triggered.connect(self.s_scan_library)
+        action_rescan_library = QAction('Rescan &Library (full)', self)
+        action_rescan_library.triggered.connect(self.s_rescan_library)
         action_open_folder = QAction('Open containing folder', self)
         action_open_folder.triggered.connect(self.s_open_folder)
 
-        action_reload = QAction('Switch &Account', self)
-        action_reload.setStatusTip('Switch to a different account.')
-        action_reload.triggered.connect(self.s_switch_account)
+        self.action_reload = QAction('Switch &Account', self)
+        self.action_reload.setStatusTip('Switch to a different account.')
+        self.action_reload.triggered.connect(self.s_switch_account)
         action_settings = QAction('&Settings...', self)
         action_settings.triggered.connect(self.s_settings)
 
@@ -194,15 +203,15 @@ class MainWindow(QMainWindow):
 
         menubar = self.menuBar()
         self.menu_show = menubar.addMenu('&Show')
-        self.menu_show.addAction(action_play_next)
-        self.menu_show.addAction(action_play_dialog)
-        self.menu_show.addAction(action_details)
-        self.menu_show.addAction(action_altname)
+        self.menu_show.addAction(self.action_play_next)
+        self.menu_show.addAction(self.action_play_dialog)
+        self.menu_show.addAction(self.action_details)
+        self.menu_show.addAction(self.action_altname)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_play_random)
         self.menu_show.addSeparator()
-        self.menu_show.addAction(action_add)
-        self.menu_show.addAction(action_delete)
+        self.menu_show.addAction(self.action_add)
+        self.menu_show.addAction(self.action_delete)
         self.menu_show.addSeparator()
         self.menu_show.addAction(action_rss)
         self.menu_show.addSeparator()
@@ -212,17 +221,15 @@ class MainWindow(QMainWindow):
 
         # Context menu for right click on list item
         self.menu_show_context = QMenu()
-        #self.menu_show_context.addAction(action_play_next)
-        #self.menu_show_context.addAction(action_play_dialog)
         self.menu_show_context.addMenu(self.menu_play)
-        self.menu_show_context.addAction(action_details)
+        self.menu_show_context.addAction(self.action_details)
         self.menu_show_context.addAction(action_open_folder)
-        self.menu_show_context.addAction(action_altname)
+        self.menu_show_context.addAction(self.action_altname)
         self.menu_show_context.addSeparator()
-        self.menu_show_context.addAction(action_delete)
+        self.menu_show_context.addAction(self.action_delete)
 
         # Make icons for viewed episodes
-        rect = QtCore.QSize(16,16)
+        rect = QtCore.QSize(16, 16)
         buffer = QtGui.QPixmap(rect)
         ep_icon_states = {'all': QStyle.State_On,
                           'part': QStyle.State_NoChange,
@@ -238,17 +245,19 @@ class MainWindow(QMainWindow):
             painter.end()
 
         menu_list = menubar.addMenu('&List')
-        menu_list.addAction(action_sync)
+        menu_list.addAction(self.action_sync)
         menu_list.addSeparator()
-        menu_list.addAction(action_send)
-        menu_list.addAction(action_retrieve)
+        menu_list.addAction(self.action_send)
+        menu_list.addAction(self.action_retrieve)
         menu_list.addSeparator()
         menu_list.addAction(action_scan_library)
+        menu_list.addAction(action_rescan_library)
         self.menu_mediatype = menubar.addMenu('&Mediatype')
-        self.mediatype_actiongroup = QActionGroup(self, exclusive=True)
+        self.mediatype_actiongroup = QActionGroup(self)
+        self.mediatype_actiongroup.setExclusive(True)
         self.mediatype_actiongroup.triggered.connect(self.s_mediatype)
         menu_options = menubar.addMenu('&Options')
-        menu_options.addAction(action_reload)
+        menu_options.addAction(self.action_reload)
         menu_options.addSeparator()
         menu_options.addAction(action_settings)
         menu_help = menubar.addMenu('&Help')
@@ -284,12 +293,14 @@ class MainWindow(QMainWindow):
 
         self.view = ShowsTableView(palette=self.config['colors'])
         self.view.context_menu = self.menu_show_context
-        self.view.horizontalHeader().customContextMenuRequested.connect(self.s_show_menu_columns)
+        self.view.horizontalHeader().customContextMenuRequested.connect(
+            self.s_show_menu_columns)
         self.view.horizontalHeader().sortIndicatorChanged.connect(self.s_update_sort)
         self.view.selectionModel().currentRowChanged.connect(self.s_show_selected)
-        self.view.itemDelegate().setBarStyle(self.config['episodebar_style'], self.config['episodebar_text'])
+        self.view.itemDelegate().setBarStyle(
+            self.config['episodebar_style'], self.config['episodebar_text'])
         self.view.middleClicked.connect(lambda: self.s_play(True))
-        self.view.activated.connect(self.s_show_details)
+        self.view.doubleClicked.connect(self.s_show_details)
         self._apply_view()
 
         self.view.model().sourceModel().progressChanged.connect(self.s_set_episode)
@@ -309,7 +320,7 @@ class MainWindow(QMainWindow):
                             'my_end': 9,
                             'tag': 10}
 
-        self.menu_columns_group = QActionGroup(self, exclusive=False)
+        self.menu_columns_group = QActionGroup(self)
         self.menu_columns_group.triggered.connect(self.s_toggle_column)
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
@@ -320,10 +331,6 @@ class MainWindow(QMainWindow):
 
             self.menu_columns_group.addAction(action)
             self.menu_columns.addAction(action)
-
-        if self.config['remember_columns'] and str(status) in self.config['columns_state']:
-            state = QtCore.QByteArray(base64.b64decode(self.config['columns_state'][str(status)]))
-            self.view.horizontalHeader().restoreState(state)
 
         # Create filter list
         self.show_filter = QLineEdit()
@@ -357,16 +364,19 @@ class MainWindow(QMainWindow):
         self.show_image.setFixedHeight(149)
         self.show_image.setMinimumWidth(100)
         self.show_image.setAlignment(QtCore.Qt.AlignCenter)
-        self.show_image.setStyleSheet("border: 1px solid #777;background-color:#999;text-align:center")
+        self.show_image.setStyleSheet(
+            "border: 1px solid #777;background-color:#999;text-align:center")
         show_progress_label = QLabel('Progress:')
         self.show_progress = QSpinBox()
         self.show_progress_bar = QProgressBar()
         self.show_progress_btn = QPushButton('Update')
-        self.show_progress_btn.setToolTip('Set number of episodes watched to the value entered above')
+        self.show_progress_btn.setToolTip(
+            'Set number of episodes watched to the value entered above')
         self.show_progress_btn.clicked.connect(self.s_set_episode)
         self.show_play_btn = QToolButton()
         self.show_play_btn.setIcon(getIcon('media-playback-start'))
-        self.show_play_btn.setToolTip('Play the next unwatched episode\nHold to play other episodes')
+        self.show_play_btn.setToolTip(
+            'Play the next unwatched episode\nHold to play other episodes')
         self.show_play_btn.clicked.connect(lambda: self.s_play(True))
         self.show_play_btn.setMenu(self.menu_play)
         self.show_inc_btn = QToolButton()
@@ -385,7 +395,8 @@ class MainWindow(QMainWindow):
         self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
         self.show_tags_btn = QPushButton('Edit Tags...')
-        self.show_tags_btn.setToolTip('Open a dialog to edit your tags for this show')
+        self.show_tags_btn.setToolTip(
+            'Open a dialog to edit your tags for this show')
         self.show_tags_btn.clicked.connect(self.s_set_tags)
         self.show_status = QComboBox()
         self.show_status.setToolTip('Change your watching status of this show')
@@ -463,6 +474,7 @@ class MainWindow(QMainWindow):
         self.worker.raised_error.connect(self.error)
         self.worker.raised_fatal.connect(self.fatal)
         self.worker.changed_show.connect(self.ws_changed_show)
+        self.worker.changed_show_status.connect(self.ws_changed_show_status)
         self.worker.changed_list.connect(self.ws_changed_list)
         self.worker.changed_queue.connect(self.ws_changed_queue)
         self.worker.tracker_state.connect(self.ws_tracker_state)
@@ -480,6 +492,9 @@ class MainWindow(QMainWindow):
         self.worker_call('start', self.r_engine_loaded, account)
 
     def reload(self, account=None, mediatype=None):
+        if self.config['remember_columns']:
+            self._store_columnstate()
+
         if account:
             self.account = account
 
@@ -488,7 +503,8 @@ class MainWindow(QMainWindow):
 
         self.menu_columns_group.setEnabled(False)
         for action in self.menu_columns_group.actions():
-            action.setChecked(action.text() in self.api_config['visible_columns'])
+            action.setChecked(
+                action.text() in self.api_config['visible_columns'])
         self.menu_columns_group.setEnabled(True)
 
         self.show()
@@ -498,7 +514,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
-            if pyqt_version is 5 and self.finish:
+            if pyqt_version == 5 and self.finish:
                 QApplication.instance().quit()
         elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
@@ -516,7 +532,8 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
 
     def fatal(self, msg):
-        QMessageBox.critical(self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
+        QMessageBox.critical(
+            self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
         self.accountman.set_default(None)
         self._busy()
         self.finish = False
@@ -527,7 +544,7 @@ class MainWindow(QMainWindow):
         self.worker.set_function(function, ret_function, *args, **kwargs)
         self.worker.start()
 
-    ### GUI Functions
+    # GUI Functions
     def _get_api_config(self, api):
         if self.config['columns_per_api']:
             if 'api' not in self.config:
@@ -561,39 +578,52 @@ class MainWindow(QMainWindow):
     def _store_columnstate(self):
         columns_state = {}
 
-        for status in self.statuses_nums:
-            state = self.show_lists[status].horizontalHeader().saveState()
-            columns_state[status] = base64.b64encode(state).decode('ascii')
+        state = self.view.horizontalHeader().saveState()
+        columns_state = base64.b64encode(state).decode('ascii')
 
         self.api_config['columns_state'] = columns_state
         self._save_config()
 
     def _enable_widgets(self, enable):
-        self.notebook.setEnabled(enable)
         self.view.setEnabled(enable)
-        self.menuBar().setEnabled(enable)
+        self._enable_show_widgets(bool(self.selected_show_id and enable))
 
-        if self.selected_show_id:
-            self.show_progress_btn.setEnabled(enable)
-            self.show_score_btn.setEnabled(enable)
-            if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
-                self.show_tags_btn.setEnabled(enable)
-            else:
-                self.show_tags_btn.setEnabled(False)
-            self.show_play_btn.setEnabled(enable)
-            self.show_inc_btn.setEnabled(enable)
-            self.show_dec_btn.setEnabled(enable)
-            self.show_status.setEnabled(enable)
+        self.action_add.setEnabled(enable)
+        self.action_sync.setEnabled(enable)
+        self.action_send.setEnabled(enable)
+        self.action_retrieve.setEnabled(enable)
+        self.action_reload.setEnabled(enable)
+
+    def _enable_show_widgets(self, enable):
+        self.show_progress.setEnabled(enable)
+        self.show_score.setEnabled(enable)
+        self.show_progress_btn.setEnabled(enable)
+        self.show_score_btn.setEnabled(enable)
+        self.show_tags_btn.setEnabled(
+            bool(self.mediainfo and self.mediainfo.get('can_tag') and enable))
+        self.show_inc_btn.setEnabled(enable)
+        self.show_dec_btn.setEnabled(enable)
+        self.show_play_btn.setEnabled(enable)
+        self.show_status.setEnabled(enable)
+        self.action_play_next.setEnabled(enable)
+        self.action_play_dialog.setEnabled(enable)
+        self.action_altname.setEnabled(enable)
+        self.action_delete.setEnabled(enable)
+        self.action_details.setEnabled(enable)
 
     def _update_queue_counter(self, queue):
         self.queue_text.setText("Unsynced items: %d" % queue)
 
-    def _update_tracker_info(self, state, timer):
+    def _update_tracker_info(self, status):
+        state = status['state']
+        timer = status['timer']
+        paused = status['paused']
+
         if state == utils.TRACKER_NOVIDEO:
             st = 'Listen'
         elif state == utils.TRACKER_PLAYING:
             (m, s) = divmod(timer, 60)
-            st = "+{0}:{1:02d}".format(m, s)
+            st = "+{0}:{1:02d}{2}".format(m, s, ' [P]' if paused else '')
         elif state == utils.TRACKER_UNRECOGNIZED:
             st = 'Unrecognized'
         elif state == utils.TRACKER_NOT_FOUND:
@@ -624,9 +654,10 @@ class MainWindow(QMainWindow):
             self.tray.show()
         if self.tray.isVisible():
             if self.config['tray_api_icon']:
-                self.tray.setIcon( QIcon( utils.available_libs[self.account['api']][1] ) )
+                self.tray.setIcon(QtGui.QIcon(
+                    utils.available_libs[self.account['api']][1]))
             else:
-                self.tray.setIcon( self.windowIcon() )
+                self.tray.setIcon(self.windowIcon())
 
     def _apply_filter_bar(self):
         self.list_box.removeWidget(self.filter_bar_box)
@@ -683,6 +714,30 @@ class MainWindow(QMainWindow):
         self.show_status.blockSignals(False)
         self.notebook.blockSignals(False)
 
+    def _recalculate_counts(self):
+        showlist = self.worker.engine.get_list()
+
+        self.counts = {status: 0 for status in self.mediainfo['statuses']}
+        self.counts['!ALL'] = 0
+
+        for show in showlist:
+            self.counts[show['my_status']] += 1
+            self.counts['!ALL'] += 1
+
+        self._update_counts()
+
+    def _update_counts(self):
+        for page in range(self.notebook.count()):
+            status = self.notebook.tabData(page)
+            if status is not None:
+                status_name = self.mediainfo['statuses_dict'][status]
+            else:
+                status_name = "All"
+                status = "!ALL"
+
+            self.notebook.setTabText(page, "{} ({})".format(
+                status_name, self.counts[status]))
+
     def _rebuild_view(self):
         """
         Using a full showlist, rebuilds main view
@@ -695,7 +750,8 @@ class MainWindow(QMainWindow):
         # Set allowed ranges (this will be reported by the engine later)
         decimal_places = 0
         if isinstance(self.mediainfo['score_step'], float):
-            decimal_places = len(str(self.mediainfo['score_step']).split('.')[1])
+            decimal_places = len(
+                str(self.mediainfo['score_step']).split('.')[1])
 
         self.show_score.setRange(0, self.mediainfo['score_max'])
         self.show_score.setDecimals(decimal_places)
@@ -703,21 +759,26 @@ class MainWindow(QMainWindow):
 
         # Get the new list and pass it to our model
         self.view.setSortingEnabled(False)
-        self.view.model().setFilterStatus(self.notebook.tabData(self.notebook.currentIndex()))
+        self.view.model().setFilterStatus(
+            self.notebook.tabData(self.notebook.currentIndex()))
         self.view.model().sourceModel().setMediaInfo(self.mediainfo)
         self.view.model().sourceModel().setShowList(showlist, altnames, library)
         self.view.resizeRowsToContents()
 
+        self.s_filter_changed()
+
+    def _init_view(self):
         # Set view options
         self.view.setSortingEnabled(True)
-        self.view.sortByColumn(self.config['sort_index'], self.config['sort_order'])
+        self.view.sortByColumn(
+            self.config['sort_index'], self.config['sort_order'])
 
         # Hide invisible columns
         for i, column in enumerate(self.view.model().sourceModel().columns):
             if column not in self.api_config['visible_columns']:
                 self.view.setColumnHidden(i, True)
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
             self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
@@ -726,32 +787,33 @@ class MainWindow(QMainWindow):
             self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
-        self.view.horizontalHeader().resizeSection(2, 70)
-        self.view.horizontalHeader().resizeSection(3, 55)
-        self.view.horizontalHeader().resizeSection(4, 100)
-
-        self.s_filter_changed()
+        # Recover column state
+        if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
+            state = QtCore.QByteArray(base64.b64decode(
+                self.api_config['columns_state']))
+            self.view.horizontalHeader().restoreState(state)
+        else:
+            self.view.horizontalHeader().resizeSection(2, 70)
+            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(4, 100)
 
     def _select_show(self, show):
+        # Stop any running image timer
+        if self.image_timer is not None:
+            self.image_timer.stop()
+
+        # Unselect show
         if not show:
-            # Unselect any show
             self.selected_show_id = None
 
             self.show_title.setText('Trackma-qt')
             self.show_image.setText('Trackma-qt')
             self.show_progress.setValue(0)
             self.show_score.setValue(0)
-            self.show_progress.setEnabled(False)
-            self.show_score.setEnabled(False)
             self.show_progress_bar.setValue(0)
             self.show_progress_bar.setFormat('?/?')
-            self.show_status.setEnabled(False)
-            self.show_progress_btn.setEnabled(False)
-            self.show_score_btn.setEnabled(False)
-            self.show_tags_btn.setEnabled(False)
-            self.show_play_btn.setEnabled(False)
-            self.show_inc_btn.setEnabled(False)
-            self.show_dec_btn.setEnabled(False)
+            self._enable_show_widgets(False)
+
             return
 
         # Block signals
@@ -763,29 +825,29 @@ class MainWindow(QMainWindow):
             self.show_progress_bar.setFormat('%v/%m')
             self.show_progress_bar.setMaximum(show['total'])
             # Regenerate Play Episode Menu
-            self.generate_episode_menus(self.menu_play, show['total'], show['my_progress'])
+            self.generate_episode_menus(
+                self.menu_play, show['total'], show['my_progress'])
         else:
-            self.show_progress.setMaximum(utils.estimate_aired_episodes(show) or 10000)
-            self.generate_episode_menus(self.menu_play, utils.estimate_aired_episodes(show),show['my_progress'])
-            self.show_progress_bar.setFormat('{}/?'.format(show['my_progress']))
+            self.show_progress.setMaximum(
+                utils.estimate_aired_episodes(show) or 10000)
+            self.generate_episode_menus(
+                self.menu_play, utils.estimate_aired_episodes(show), show['my_progress'])
+            self.show_progress_bar.setFormat(
+                '{}/?'.format(show['my_progress']))
 
         # Update information
-        self.show_title.setText(show['title'])
+        metrics = QtGui.QFontMetrics(self.show_title.font())
+        title = metrics.elidedText(
+            show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+        self.show_title.setText(title)
+
         self.show_progress.setValue(show['my_progress'])
-        self.show_status.setCurrentIndex(self.mediainfo['statuses'].index(show['my_status']))
+        self.show_status.setCurrentIndex(
+            self.mediainfo['statuses'].index(show['my_status']))
         self.show_score.setValue(show['my_score'])
 
         # Enable relevant buttons
-        self.show_progress.setEnabled(True)
-        self.show_score.setEnabled(True)
-        self.show_progress_btn.setEnabled(True)
-        self.show_score_btn.setEnabled(True)
-        if 'can_tag' in self.mediainfo and self.mediainfo.get('can_tag'):
-            self.show_tags_btn.setEnabled(True)
-        self.show_inc_btn.setEnabled(True)
-        self.show_dec_btn.setEnabled(True)
-        self.show_play_btn.setEnabled(True)
-        self.show_status.setEnabled(True)
+        self._enable_show_widgets(True)
 
         # Download image or use cache
         if show.get('image_thumb') or show.get('image'):
@@ -793,7 +855,8 @@ class MainWindow(QMainWindow):
                 self.image_worker.cancel()
 
             utils.make_dir(utils.to_cache_path())
-            filename = utils.to_cache_path("%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
+            filename = utils.to_cache_path("%s_%s_%s.jpg" % (
+                self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
@@ -806,10 +869,10 @@ class MainWindow(QMainWindow):
         else:
             self.show_image.setText('No image')
 
-        if show['total'] > 0:
-            self.show_progress_bar.setValue( show['my_progress'] )
+        if show['total']:
+            self.show_progress_bar.setValue(show['my_progress'])
         else:
-            self.show_progress_bar.setValue( 0 )
+            self.show_progress_bar.setValue(0)
 
         # Make it global
         self.selected_show_id = show['id']
@@ -819,16 +882,18 @@ class MainWindow(QMainWindow):
 
     def generate_episode_menus(self, menu, max_eps=1, watched_eps=0):
         bp_top = 5  # No more than this many submenus/episodes in the root menu
-        bp_mid = 10 # No more than this many submenus in submenus
-        bp_btm = 13 # No more than this many episodes in the submenus
+        bp_mid = 10  # No more than this many submenus in submenus
+        bp_btm = 13  # No more than this many episodes in the submenus
         # The number of episodes where we ditch the submenus entirely since Qt doesn't deserve this abuse
         breakpoint_no_menus = bp_top * bp_btm * bp_mid * bp_mid
 
         menu.clear()
         # Make basic actions
-        action_play_next = QAction(getIcon('media-skip-forward'), 'Play &Next Episode', self)
+        action_play_next = QAction(
+            getIcon('media-skip-forward'), 'Play &Next Episode', self)
         action_play_next.triggered.connect(lambda: self.s_play(True))
-        action_play_last = QAction(getIcon('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
+        action_play_last = QAction(
+            getIcon('view-refresh'), 'Play Last Watched Ep (#%d)' % watched_eps, self)
         action_play_last.triggered.connect(lambda: self.s_play(False))
         action_play_dialog = QAction('Play Episode...', self)
         action_play_dialog.setStatusTip('Select an episode to play.')
@@ -844,13 +909,13 @@ class MainWindow(QMainWindow):
 
         ep_actions = []
         for ep in range(1, max_eps+1):
-                action = QAction('Ep. %d' % ep, self)
-                action.triggered.connect(self.s_play_ep_number(action, ep))
-                if ep <= watched_eps:
-                    action.setIcon(self.ep_icons['all'])
-                else:
-                    action.setIcon(self.ep_icons['none'])
-                ep_actions.append(action)
+            action = QAction('Ep. %d' % ep, self)
+            action.triggered.connect(self.s_play_ep_number(action, ep))
+            if ep <= watched_eps:
+                action.setIcon(self.ep_icons['all'])
+            else:
+                action.setIcon(self.ep_icons['none'])
+            ep_actions.append(action)
 
         if max_eps <= bp_top:
             # Just put the eps in the root menu
@@ -859,41 +924,50 @@ class MainWindow(QMainWindow):
 
         else:
             # We need to go deeper. For now, put all the episodes into bottom-level submenus.
-            self.play_ep_submenus = [] # I don't like this scoping. If you find a way to transfer ownership of the submenu to the menu feel free to fix this.
-            current_actions = bp_btm + 1 # A bit hacky but avoids a special case for the first submenu
+            # I don't like this scoping. If you find a way to transfer ownership of the submenu to the menu feel free to fix this.
+            self.play_ep_submenus = []
+            # A bit hacky but avoids a special case for the first submenu
+            current_actions = bp_btm + 1
             for action in ep_actions:
                 if current_actions >= bp_btm:
                     current_actions = 0
                     l = len(self.play_ep_submenus)
-                    self.play_ep_submenus.append(QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
+                    self.play_ep_submenus.append(
+                        QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
                     if watched_eps > min((l+1)*bp_btm, max_eps):
                         self.play_ep_submenus[-1].setIcon(self.ep_icons['all'])
                     elif watched_eps > l*bp_btm:
-                        self.play_ep_submenus[-1].setIcon(self.ep_icons['part'])
+                        self.play_ep_submenus[-1].setIcon(
+                            self.ep_icons['part'])
                     else:
-                        self.play_ep_submenus[-1].setIcon(self.ep_icons['none'])
+                        self.play_ep_submenus[-1].setIcon(
+                            self.ep_icons['none'])
                 self.play_ep_submenus[-1].addAction(action)
                 current_actions += 1
 
             # Now to put the bottom level menus into other things
-            if len(self.play_ep_submenus) <= bp_top: # Straight into the root menu, easy!
+            if len(self.play_ep_submenus) <= bp_top:  # Straight into the root menu, easy!
                 for submenu in self.play_ep_submenus:
                     menu.addMenu(submenu)
-            else: # For now, put them into another level of submenus
+            else:  # For now, put them into another level of submenus
                 self.play_ep_sub2menus = []
                 current_menus = bp_mid + 1
                 for s in self.play_ep_submenus:
                     if current_menus >= bp_mid:
                         current_menus = 0
                         l = len(self.play_ep_sub2menus)
-                        self.play_ep_sub2menus.append(QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
+                        self.play_ep_sub2menus.append(QMenu(
+                            'Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
                     self.play_ep_sub2menus[-1].addMenu(s)
                     if watched_eps > min((l+1)*bp_btm*bp_mid, max_eps):
-                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['all'])
+                        self.play_ep_sub2menus[-1].setIcon(
+                            self.ep_icons['all'])
                     elif watched_eps > l*bp_btm*bp_mid:
-                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['part'])
+                        self.play_ep_sub2menus[-1].setIcon(
+                            self.ep_icons['part'])
                     else:
-                        self.play_ep_sub2menus[-1].setIcon(self.ep_icons['none'])
+                        self.play_ep_sub2menus[-1].setIcon(
+                            self.ep_icons['none'])
                     current_menus += 1
 
                 if len(self.play_ep_sub2menus) <= bp_top:
@@ -907,21 +981,25 @@ class MainWindow(QMainWindow):
                         if current_menus >= bp_mid:
                             current_menus = 0
                             l = len(self.play_ep_sub3menus)
-                            self.play_ep_sub3menus.append(QMenu('Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
+                            self.play_ep_sub3menus.append(QMenu(
+                                'Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
                         self.play_ep_sub3menus[-1].addMenu(s)
                         if watched_eps > min((l+1)*bp_btm*bp_mid*bp_mid, max_eps):
-                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['all'])
+                            self.play_ep_sub3menus[-1].setIcon(
+                                self.ep_icons['all'])
                         elif watched_eps > l*bp_btm*bp_mid*bp_mid:
-                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['part'])
+                            self.play_ep_sub3menus[-1].setIcon(
+                                self.ep_icons['part'])
                         else:
-                            self.play_ep_sub3menus[-1].setIcon(self.ep_icons['none'])
+                            self.play_ep_sub3menus[-1].setIcon(
+                                self.ep_icons['none'])
                         current_menus += 1
                     # No more levels, our sanity check earlier ensured that.
                     for submenu in self.play_ep_sub3menus:
                         menu.addMenu(submenu)
         return menu
 
-    ### Slots
+    # Slots
     def s_hide(self):
         if self.isVisible():
             self.was_maximized = self.isMaximized()
@@ -958,9 +1036,11 @@ class MainWindow(QMainWindow):
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         self.show_image.setText('Downloading...')
-        filename = utils.to_cache_path("%s_%s_%s.jpg" % (self.api_info['shortname'], self.api_info['mediatype'], show['id']))
+        filename = utils.to_cache_path("%s_%s_%s.jpg" % (
+            self.api_info['shortname'], self.api_info['mediatype'], show['id']))
 
-        self.image_worker = ImageWorker(show.get('image_thumb') or show['image'], filename, (100, 140))
+        self.image_worker = ImageWorker(
+            show.get('image_thumb') or show['image'], filename, (100, 140))
         self.image_worker.finished.connect(self.s_show_image)
         self.image_worker.start()
 
@@ -968,10 +1048,10 @@ class MainWindow(QMainWindow):
         # Change the filter of the main view to the specified status
         status = self.notebook.tabData(index)
         self.view.model().setFilterStatus(status)
-        self.view.resizeRowsToContents() # TODOMVC : Find a faster way
+        self.view.resizeRowsToContents()  # TODOMVC : Find a faster way
 
         self.s_show_selected(None)
-        self.s_filter_changed() # Refresh filter
+        self.s_filter_changed()  # Refresh filter
 
     def s_filter_changed(self):
         # TODOMVC DEPRECATED
@@ -986,12 +1066,13 @@ class MainWindow(QMainWindow):
             expr_list = []
             for expr in exprs:
                 if ':' in expr:
-                    expr_terms = expr.split(':',1)
+                    expr_terms = expr.split(':', 1)
                     if expr_terms[0] in self.column_keys:
                         col = self.column_keys[expr_terms[0]]
-                        sub_expr = expr_terms[1].replace('_', ' ').replace('+', ' ')
+                        sub_expr = expr_terms[1].replace(
+                            '_', ' ').replace('+', ' ')
                         expr_dict[col] = sub_expr
-                    else: # If it's not a field key, let it be a regular search term
+                    else:  # If it's not a field key, let it be a regular search term
                         expr_list.append(expr)
                 else:
                     expr_list.append(expr)
@@ -1003,29 +1084,34 @@ class MainWindow(QMainWindow):
 
     def s_plus_episode(self):
         self._busy(True)
-        self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()+1)
+        self.worker_call('set_episode', self.r_generic,
+                         self.selected_show_id, self.show_progress.value()+1)
 
     def s_rem_episode(self):
         if not self.show_progress.value() <= 0:
             self._busy(True)
-            self.worker_call('set_episode', self.r_generic, self.selected_show_id, self.show_progress.value()-1)
+            self.worker_call('set_episode', self.r_generic,
+                             self.selected_show_id, self.show_progress.value()-1)
 
     def s_set_episode(self, showid=None, ep=None):
         self._busy(True)
-        self.worker_call('set_episode', self.r_generic, showid or self.selected_show_id, ep or self.show_progress.value())
+        self.worker_call('set_episode', self.r_generic,
+                         showid or self.selected_show_id, ep or self.show_progress.value())
 
     def s_set_score(self, showid=None, score=None):
         self._busy(True)
 
-        if showid == None and score == None:
-            self.worker_call('set_score', self.r_generic, self.selected_show_id, self.show_score.value())
+        if score is None:
+            self.worker_call('set_score', self.r_generic,
+                             self.selected_show_id, self.show_score.value())
         else:
             self.worker_call('set_score', self.r_generic, showid, score)
 
     def s_set_status(self, index):
         if self.selected_show_id:
             self._busy(True)
-            self.worker_call('set_status', self.r_generic, self.selected_show_id, self.mediainfo['statuses'][index])
+            self.worker_call('set_status', self.r_generic,
+                             self.selected_show_id, self.mediainfo['statuses'][index])
 
     def s_set_tags(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -1034,8 +1120,8 @@ class MainWindow(QMainWindow):
         else:
             tags = ''
         tags, ok = QInputDialog.getText(self, 'Edit Tags',
-            'Enter desired tags (comma separated)',
-            text=tags)
+                                        'Enter desired tags (comma separated)',
+                                        text=tags)
         if ok:
             self.s_edit_tags(show, tags)
 
@@ -1047,7 +1133,7 @@ class MainWindow(QMainWindow):
         if self.selected_show_id:
             show = self.worker.engine.get_show_info(self.selected_show_id)
 
-            #episode = 0 # Engine plays next unwatched episode
+            # episode = 0 # Engine plays next unwatched episode
             if not play_next and not episode:
                 episode = self.show_progress.value()
 
@@ -1059,43 +1145,49 @@ class MainWindow(QMainWindow):
         self.worker_call('play_random', self.r_generic)
 
     def s_play_number(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        ep_default = 1
-        ep_min = 1
-        ep_max = utils.estimate_aired_episodes(show)
-        if not ep_max:
-            # If we don't know the total just allow anything
-            ep_max = show['total'] or 10000
+        if self.selected_show_id:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+            ep_default = 1
+            ep_min = 1
+            ep_max = utils.estimate_aired_episodes(show)
+            if not ep_max:
+                # If we don't know the total just allow anything
+                ep_max = show['total'] or 10000
 
-        episode, ok = QInputDialog.getInt(self, 'Play Episode',
-            'Enter an episode number of %s to play:' % show['title'],
-            ep_default, ep_min, ep_max)
+            episode, ok = QInputDialog.getInt(self, 'Play Episode',
+                                              'Enter an episode number of %s to play:' % show['title'],
+                                              ep_default, ep_min, ep_max)
 
-        if ok:
-            self.s_play(False, episode)
+            if ok:
+                self.s_play(False, episode)
 
     def s_play_ep_number(self, action, number):
         return lambda: [action.setIcon(self.ep_icons['part']), self.s_play(False, number)]
 
     def s_delete(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        reply = QMessageBox.question(self, 'Confirmation',
-            'Are you sure you want to delete %s?' % show['title'],
-            QMessageBox.Yes, QMessageBox.No)
+        if self.selected_show_id:
+            show = self.worker.engine.get_show_info(self.selected_show_id)
+            reply = QMessageBox.question(self, 'Confirmation',
+                                         'Are you sure you want to delete %s?' % show['title'],
+                                         QMessageBox.Yes, QMessageBox.No)
 
-        if reply == QMessageBox.Yes:
-            self.worker_call('delete_show', self.r_generic, show)
+            if reply == QMessageBox.Yes:
+                self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
-        self.worker_call('scan_library', self.r_library_scanned)
+        self.worker_call('scan_library', self.r_library_scanned, rescan=False)
+
+    def s_rescan_library(self):
+        self.worker_call('scan_library', self.r_library_scanned, rescan=True)
 
     def s_altname(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         current_altname = self.worker.engine.altname(self.selected_show_id)
 
         new_altname, ok = QInputDialog.getText(self, 'Alternative title',
-            'Set the new alternative title for %s (blank to remove):' % show['title'],
-            text=current_altname)
+                                               'Set the new alternative title for %s (blank to remove):' % show[
+                                                   'title'],
+                                               text=current_altname)
 
         if ok:
             self.worker.engine.altname(self.selected_show_id, str(new_altname))
@@ -1106,8 +1198,15 @@ class MainWindow(QMainWindow):
         try:
             filename = self.worker.engine.get_episode_path(show, 1)
             with open(os.devnull, 'wb') as DEVNULL:
-                subprocess.Popen(["/usr/bin/xdg-open",
-                    os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                if sys.platform == 'darwin':
+                    subprocess.Popen(["open",
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                elif sys.platform == 'win32':
+                    subprocess.Popen(["explorer",
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
+                else:
+                    subprocess.Popen(["/usr/bin/xdg-open",
+                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
             raise utils.EngineError("Could not open folder.")
@@ -1121,8 +1220,9 @@ class MainWindow(QMainWindow):
 
         if queue:
             reply = QMessageBox.question(self, 'Confirmation',
-                'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(queue),
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                                         'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(
+                                             queue),
+                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
 
             if reply == QMessageBox.Yes:
                 self.s_send(True)
@@ -1150,7 +1250,7 @@ class MainWindow(QMainWindow):
         self.accountman_widget.show()
 
     def s_show_image(self, filename):
-        self.show_image.setPixmap( QtGui.QPixmap( filename ) )
+        self.show_image.setPixmap(QtGui.QPixmap(filename))
 
     def s_show_details(self):
         if not self.selected_show_id:
@@ -1180,17 +1280,18 @@ class MainWindow(QMainWindow):
         self.reload(None, mediatype)
 
     def s_settings(self):
-        dialog = SettingsDialog(None, self.worker, self.config, self.configfile)
+        dialog = SettingsDialog(
+            None, self.worker, self.config, self.configfile)
         dialog.saved.connect(self._update_config)
         dialog.exec_()
 
     def s_about(self):
         QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
-            '<p><b>About Trackma-qt %s</b></p><p>Trackma is an open source client for media tracking websites.</p>'
-            '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
-            '<p>Thanks to all contributors. To see all contributors see AUTHORS file.</p>'
-            '<p>Copyright (C) z411 - Icon by shuuichi</p>'
-            '<p><a href="http://github.com/z411/trackma">http://github.com/z411/trackma</a></p>' % utils.VERSION)
+                          '<p><b>About Trackma-qt %s</b></p><p>Trackma is an open source client for media tracking websites.</p>'
+                          '<p>This program is licensed under the GPLv3, for more information read COPYING file.</p>'
+                          '<p>Thanks to all contributors. To see all contributors see AUTHORS file.</p>'
+                          '<p>Copyright (C) z411 - Icon by shuuichi</p>'
+                          '<p><a href="http://github.com/z411/trackma">http://github.com/z411/trackma</a></p>' % utils.VERSION)
 
     def s_about_qt(self):
         QMessageBox.aboutQt(self, 'About Qt')
@@ -1217,7 +1318,7 @@ class MainWindow(QMainWindow):
         if visible and self.view.columnWidth(index) < MIN_WIDTH:
             self.view.setColumnWidth(index, MIN_WIDTH)
 
-    ### Worker slots
+    # Worker slots
     def ws_changed_status(self, classname, msgtype, msg):
         if msgtype != messenger.TYPE_DEBUG:
             self.status('{}: {}'.format(classname, msg))
@@ -1227,8 +1328,9 @@ class MainWindow(QMainWindow):
     def ws_changed_show(self, show, is_playing=False, episode=None, altname=None):
         if show:
             if not self.view:
-                return # List not built yet; can be safely avoided
+                return  # List not built yet; can be safely avoided
 
+            # Update the view of the updated show
             self.view.model().sourceModel().update(show['id'], is_playing)
 
             if show['id'] == self.selected_show_id:
@@ -1236,42 +1338,59 @@ class MainWindow(QMainWindow):
 
             if is_playing and self.config['show_tray'] and self.config['notifications']:
                 if episode == (show['my_progress'] + 1):
-                    delay = self.worker.engine.get_config('tracker_update_wait_s')
-                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d seconds." % (show['title'], episode, delay))
+                    delay = self.worker.engine.get_config(
+                        'tracker_update_wait_s')
+                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d seconds." % (
+                        show['title'], episode, delay))
 
-    def ws_changed_list(self, show, old_status=None):
-        # Rebuild both new and old (if any) lists
-        self._rebuild_view()
+    def ws_changed_show_status(self, show, old_status=None):
+        # Update the view of the new show
+        self.view.model().sourceModel().update(show['id'])
+
+        # Update counts
+        self.counts[show['my_status']] += 1
+        self.counts[old_status] -= 1
+        self._update_counts()
 
         # Set notebook to the new page
-        self.notebook.setCurrentIndex( self.mediainfo['statuses'].index(show['my_status']) )
+        self.notebook.setCurrentIndex(
+            self.mediainfo['statuses'].index(show['my_status']))
         # Refresh filter
+        self.s_filter_changed()
+
+    def ws_changed_list(self, show):
+        self._rebuild_view()
+        self._recalculate_counts()
         self.s_filter_changed()
 
     def ws_changed_queue(self, queue):
         self._update_queue_counter(queue)
 
-    def ws_tracker_state(self, state, timer):
-        self._update_tracker_info(state, timer)
+    def ws_tracker_state(self, status):
+        self._update_tracker_info(status)
 
     def ws_prompt_update(self, show, episode):
         reply = QMessageBox.question(self, 'Message',
-            'Do you want to update %s to %d?' % (show['title'], episode),
-            QMessageBox.Yes, QMessageBox.No)
+                                     'Do you want to update %s to %d?' % (
+                                         show['title'], episode),
+                                     QMessageBox.Yes, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            self.worker_call('set_episode', self.r_generic, show['id'], episode)
+            self.worker_call('set_episode', self.r_generic,
+                             show['id'], episode)
 
-    def ws_prompt_add(self, show_title, episode):
+    def ws_prompt_add(self, show, episode):
         page = self.notebook.currentIndex()
-        current_status = self.statuses_nums[page]
+        current_status = self.mediainfo['statuses'][page]
 
-        addwindow = AddDialog(None, self.worker, current_status, default=show_title)
+        addwindow = AddDialog(
+            None, self.worker, current_status, default=show['title'])
         addwindow.setModal(True)
         if addwindow.exec_():
-            self.worker_call('set_episode', self.r_generic, addwindow.selected_show['id'], episode)
+            self.worker_call('set_episode', self.r_generic,
+                             addwindow.selected_show['id'], episode)
 
-    ### Responses from the engine thread
+    # Responses from the engine thread
     def r_generic(self):
         self._unbusy()
 
@@ -1306,18 +1425,25 @@ class MainWindow(QMainWindow):
                 self.menu_mediatype.addAction(action)
 
             # Show API info
-            self.api_icon.setPixmap(QtGui.QPixmap(utils.available_libs[self.account['api']][1]))
+            self.api_icon.setPixmap(QtGui.QPixmap(
+                utils.available_libs[self.account['api']][1]))
             if self.config['tray_api_icon']:
-                self.tray.setIcon(QIcon(utils.available_libs[self.account['api']][1]))
-            self.api_user.setText(self.worker.engine.get_userconfig('username'))
-            self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
+                self.tray.setIcon(QtGui.QIcon(
+                    utils.available_libs[self.account['api']][1]))
+            self.api_user.setText(
+                self.worker.engine.get_userconfig('username'))
+            self.setWindowTitle("Trackma-qt %s [%s (%s)]" % (
+                utils.VERSION, self.api_info['name'], self.api_info['mediatype']))
 
             # Show tracker info
             tracker_info = self.worker.engine.tracker_status()
             if tracker_info:
-                self._update_tracker_info(tracker_info['state'], tracker_info['timer'])
+                self._update_tracker_info(tracker_info)
 
+            # Build our main view and show total counts
             self._rebuild_view()
+            self._init_view()
+            self._recalculate_counts()
 
             self.s_show_selected(None)
 
@@ -1328,6 +1454,7 @@ class MainWindow(QMainWindow):
     def r_list_retrieved(self, result):
         if result['success']:
             self._rebuild_view()
+            self._recalculate_counts()
 
             self.status('Ready.')
 
@@ -1335,8 +1462,6 @@ class MainWindow(QMainWindow):
 
     def r_library_scanned(self, result):
         if result['success']:
-            status = self.worker.engine.mediainfo['status_start']
-
             self._rebuild_view()
 
             self.status('Ready.')

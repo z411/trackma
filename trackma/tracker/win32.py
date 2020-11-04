@@ -20,11 +20,12 @@ import re
 
 from trackma.tracker import tracker
 
+
 class Win32Tracker(tracker.TrackerBase):
     name = 'Tracker (win32)'
 
-    def __init__(self, messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt):
-        super().__init__(messenger, tracker_list, process_name, watch_dirs, interval, update_wait, update_close, not_found_prompt)
+    def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
+        super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
         self.winregex = re.compile("(\.mkv|\.mp4|\.avi)")
 
@@ -39,7 +40,7 @@ class Win32Tracker(tracker.TrackerBase):
         ctypes.windll.user32.GetClassNameW(hwnd, buff_class, 32)
         ctypes.windll.user32.GetWindowTextW(hwnd, buff_title, length + 1)
 
-        self.win32_hwnd_list.append( (buff_class.value, buff_title.value) )
+        self.win32_hwnd_list.append((buff_class.value, buff_title.value))
         return True
 
     def _get_playing_file_win32(self):
@@ -49,8 +50,10 @@ class Win32Tracker(tracker.TrackerBase):
         # Currently supporting MPC(-HC) and mpv
 
         self.win32_hwnd_list = []
-        self.EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
-        ctypes.windll.user32.EnumWindows(self.EnumWindowsProc(self._foreach_window), 0)
+        self.EnumWindowsProc = ctypes.WINFUNCTYPE(
+            ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+        ctypes.windll.user32.EnumWindows(
+            self.EnumWindowsProc(self._foreach_window), 0)
 
         for classname, title in self.win32_hwnd_list:
             if classname == 'MediaPlayerClassicW' and self.winregex.search(title) is not None:
@@ -60,7 +63,7 @@ class Win32Tracker(tracker.TrackerBase):
 
         return False
 
-    def observe(self, interval, watch_dirs):
+    def observe(self, config, watch_dirs):
         self.msg.info(self.name, "Using Win32.")
 
         while self.active:
@@ -71,4 +74,3 @@ class Win32Tracker(tracker.TrackerBase):
 
             # Wait for the interval before running check again
             time.sleep(1)
-

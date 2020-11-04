@@ -1,3 +1,37 @@
+v0.8.2
+- New: Implemented MPRIS tracker
+- New: Implemented support for Taiga-style anime-relations.txt file for proper detection of multiple seasons
+- Enhancement: Library now can scan statuses other than Watching
+- Enhancement: Now user set Alternate Titles take absolute priority over other titles
+- Enhancement: (Anilist) Support for Rewatching status
+- Enhancement: (Tracker) Implemented support for timer pausing for trackers that support it
+- Enhancement: (inotify Tracker) Tracker now detects if a player is already open when starting
+- Enhancement: (Plex tracker) Support for claimed servers
+- Enhancement: (Polling tracker) Disabled warnings
+- Enhancement: (GTK) Interface refactored and redone to utilize new GTK 3 features (WIP)
+- Enhancement: (Qt) Added options for Quick and Full library scan
+- Enhancement: (Qt) Only relevant buttons get disabled when the engine is busy
+- Bugfix: Fixed bug with search directories not getting home-expanded (~)
+- Bugfix: (Anilist) Show synonyms are now fetched (and used by the tracker) properly
+- Bugfix: (Anilist) Parsing unknown show formats and statuses
+- Bugfix: (CLI) Fixed crashes with some invalid commands
+- Bugfix: (Qt) Fixed Set Score button
+- Bugfix: (Qt) Fixed the saving of columns visibility and size
+- Bugfix: (Qt) Fixed aesthetic issues
+- Bugfix: (Qt/VNDB) Fixed Unknown status not working
+
+NOTE TO GIT USERS AND MAINTAINERS: Cloning Trackma now requires the --recursive flag.
+
+v0.8.1
+- New: (Qt) In-line score and episode editing (Can be disabled)
+- Enhancement: (Qt) Using proper MVC, helps performance and usability of lists and filters.
+- Enhancement: (Qt) A few shortcuts (Middle-click on list to play next episode, Del key as shortcut for delete show, Double click on card view to view details)
+- Enhancement: (Anilist) Retrieving and showing studio information
+- Enhancement: (curses) Quit key now gets you out of detail view instead of closing the application
+- Bugfix: (Anilist/Qt/GTK) Fixed crash when adding a show with undefined total episodes
+- Bugfix: (VNDB) Votes without a corresponding status get added to the Unknown list
+- Bugfix: (Qt) Fixed a few crashes when adding new shows
+
 v0.8
 - New: (Qt) Card view in search dialog
 - New: (Qt, Anilist) Search by season

@@ -31,6 +31,7 @@ from trackma import utils
 
 from trackma.ui.qt.util import overrides
 
+
 class ImageWorker(QtCore.QThread):
     """
     Image thread
@@ -96,12 +97,13 @@ class EngineWorker(QtCore.QThread):
 
     # Event handler signals
     changed_show = QtCore.pyqtSignal(dict)
-    changed_list = QtCore.pyqtSignal(dict, object)
+    changed_show_status = QtCore.pyqtSignal(dict, object)
+    changed_list = QtCore.pyqtSignal(dict)
     changed_queue = QtCore.pyqtSignal(int)
-    tracker_state = QtCore.pyqtSignal(int, int)
+    tracker_state = QtCore.pyqtSignal(dict)
     playing_show = QtCore.pyqtSignal(dict, bool, int)
     prompt_for_update = QtCore.pyqtSignal(dict, int)
-    prompt_for_add = QtCore.pyqtSignal(str, int)
+    prompt_for_add = QtCore.pyqtSignal(dict, int)
 
     def __init__(self):
         super(EngineWorker, self).__init__()
@@ -120,14 +122,17 @@ class EngineWorker(QtCore.QThread):
     def _changed_show(self, show, changes=None):
         self.changed_show.emit(show)
 
-    def _changed_list(self, show, old_status=None):
-        self.changed_list.emit(show, old_status)
+    def _changed_show_status(self, show, old_status=None):
+        self.changed_show_status.emit(show, old_status)
+
+    def _changed_list(self, show):
+        self.changed_list.emit(show)
 
     def _changed_queue(self, queue):
         self.changed_queue.emit(len(queue))
 
-    def _tracker_state(self, state, timer):
-        self.tracker_state.emit(state, timer)
+    def _tracker_state(self, status):
+        self.tracker_state.emit(status)
 
     def _playing_show(self, show, is_playing, episode):
         self.playing_show.emit(show, is_playing, episode)
@@ -135,8 +140,8 @@ class EngineWorker(QtCore.QThread):
     def _prompt_for_update(self, show, episode):
         self.prompt_for_update.emit(show, episode)
 
-    def _prompt_for_add(self, show_title, episode):
-        self.prompt_for_add.emit(show_title, episode)
+    def _prompt_for_add(self, show, episode):
+        self.prompt_for_add.emit(show, episode)
 
     # Callable functions
     def _start(self, account):
@@ -145,13 +150,14 @@ class EngineWorker(QtCore.QThread):
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
         self.engine.connect_signal('tags_changed', self._changed_show)
-        self.engine.connect_signal('status_changed', self._changed_list)
+        self.engine.connect_signal('status_changed', self._changed_show_status)
         self.engine.connect_signal('playing', self._playing_show)
         self.engine.connect_signal('show_added', self._changed_list)
         self.engine.connect_signal('show_deleted', self._changed_list)
         self.engine.connect_signal('show_synced', self._changed_show)
         self.engine.connect_signal('queue_changed', self._changed_queue)
-        self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+        self.engine.connect_signal(
+            'prompt_for_update', self._prompt_for_update)
         self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
         self.engine.connect_signal('tracker_state', self._tracker_state)
 
