@@ -216,13 +216,13 @@ def sync_file(fname, sync_url):
     if not sync_url:
         return False
 
-    import urllib.request
+    import urllib
     import socket
 
     try:
         with urllib.request.urlopen(sync_url) as r, open(fname, 'wb') as f:
             shutil.copyfileobj(r, f)
-    except socket.timeout:
+    except (socket.timeout, urllib.error.URLError):
         return False
 
     return True
