@@ -363,6 +363,7 @@ class libmal(lib):
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
             'type': self.type_translate[item['media_type']],
+            'total': item[self.total_str],
             'status': self._translate_status(item['status']),
             'image': item['main_picture']['large'],
             'start_date': self._str2date(item.get('start_date')),
