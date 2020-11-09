@@ -470,7 +470,7 @@ class Trackma_cmd(cmd.Cmd):
         Query the RSS feed and display items that might be of interest.
         """
         try:
-            items = self.engine.rss_list(True)
+            items = self.engine.rss_list(refresh=True)
 
             for item in items:
                 if item['status'] <= 3:

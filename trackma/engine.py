@@ -1025,9 +1025,9 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
-    def rss_list(self, refresh=False):
-        manager = rss.RSS(self.msg, self._get_tracker_list(self.mediainfo['status_start']), self.config)
-        return manager.get_sorted_results(refresh)
+    def rss_list(self, rss_url=None, refresh=False):
+        manager = rss.RSS(self.msg, self._get_tracker_list(self.mediainfo['statuses_start']))
+        return manager.get_sorted_results(rss_url or self.config['rss_url'], refresh)
 
     def rss_download(self, items):
         # TODO

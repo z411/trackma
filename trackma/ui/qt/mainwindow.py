@@ -24,6 +24,7 @@ from trackma.ui.qt.settings import SettingsDialog
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.accounts import AccountDialog
 from trackma.ui.qt.add import AddDialog
+from trackma.ui.qt.rss import RSSDialog
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QFormLayout,
     QGridLayout, QHBoxLayout, QVBoxLayout,

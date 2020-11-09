@@ -11,10 +11,9 @@ class RSS(object):
     results = {}
     name = 'RSS'
 
-    def __init__(self, messenger, showlist, config):
+    def __init__(self, messenger, showlist):
         self.msg = messenger
         self.showlist = showlist
-        self.config = config
 
         utils.make_dir(utils.to_cache_path())
         self.filename = utils.to_cache_path('rss.cache')
@@ -61,12 +60,12 @@ class RSS(object):
 
             yield item
 
-    def get_results(self, refresh):
+    def get_results(self, rss_url, refresh=False):
         if not refresh and self.results:
             return self.results
 
-        self.msg.info(self.name, "Downloading RSS feed...")
-        dom = self._download_feed(self.config['rss_url'])
+        self.msg.info(self.name, "Downloading RSS feed (%s)..." % rss_url)
+        dom = self._download_feed(rss_url)
         self.msg.info(self.name, "Parsing results...")
         items = self._parse_feed(dom)
 
@@ -117,9 +116,9 @@ class RSS(object):
         self._save()
         return self.results
 
-    def get_sorted_results(self, refresh):
+    def get_sorted_results(self, rss_url, refresh=False):
         from operator import itemgetter
-        d = self.get_results(refresh).values()
+        d = self.get_results(rss_url, refresh).values()
         return sorted(d, key=itemgetter('status'))
 
     def download(method, items):
