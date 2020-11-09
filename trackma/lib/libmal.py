@@ -87,6 +87,15 @@ class libmal(lib):
         'search_methods': [utils.SEARCH_METHOD_KW],
     }
     default_mediatype = 'anime'
+
+    type_translate = {
+        'tv': utils.TYPE_TV,
+        'movie': utils.TYPE_MOVIE,
+        'special': utils.TYPE_SP,
+        'ova': utils.TYPE_OVA,
+        'ona': utils.TYPE_OVA,
+        'music': utils.TYPE_OTHER,
+    }
     
     status_translate = {
         'currently_airing': utils.STATUS_AIRING,
@@ -292,19 +301,23 @@ class libmal(lib):
         params = {'fields': fields}
         
         if method == utils.SEARCH_METHOD_KW:
+            url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
         elif method == utils.SEARCH_METHOD_SEASON:
-            season, season_year = criteria
-            params['start_season_season'] = self.season_translate[season]
-            params['start_season_year'] = season_year
+            season, season_year = criteria            
+
+            url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])
             params['limit'] = self.season_page_limit
+        else:
+            raise utils.APIError("Invalid search method.")
         
         results = []
-        data = self._request('GET', self.query_url + '/' + self.mediatype, get=params, auth=True)
+        data = self._request('GET', self.query_url + url, get=params, auth=True)
         for item in data['data']:
             results.append(self._parse_info(item['node']))
         
+        self._emit_signal('show_info_changed', results)
         return results
         
     def request_info(self, itemlist):
@@ -349,7 +362,8 @@ class libmal(lib):
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
-            'type': item['media_type'],
+            'type': self.type_translate[item['media_type']],
+            'total': item[self.total_str],
             'status': self._translate_status(item['status']),
             'image': item['main_picture']['large'],
             'start_date': self._str2date(item.get('start_date')),
@@ -358,7 +372,6 @@ class libmal(lib):
                 ('English',         item['alternative_titles'].get('en')),
                 ('Japanese',        item['alternative_titles'].get('ja')),
                 ('Synonyms',        item['alternative_titles'].get('synonyms')),
-                ('Genres',          [s['name'] for s in item['genres']]),
                 ('Synopsis',        item.get('synopsis')),
                 ('Type',            item.get('media_type')),
                 ('Mean score',   item.get('mean')),
