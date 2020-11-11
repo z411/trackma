@@ -1067,6 +1067,9 @@ class Engine:
         if ttype == 'plex':
             from trackma.tracker.plex import PlexTracker
             return PlexTracker
+        if ttype == 'jellyfin':
+            from trackma.tracker.jellyfin import JellyfinTracker
+            return JellyfinTracker
         elif ttype == 'kodi':
             from trackma.tracker.kodi import KodiTracker
             return KodiTracker

@@ -64,6 +64,8 @@ class TrackerBase(object):
         self.timer_paused = None
         self.timer_offset = 0
 
+        self.view_offset = None
+
         tracker_args = (config, watch_dirs)
         tracker_t = threading.Thread(target=self.observe, args=tracker_args)
         tracker_t.daemon = True
@@ -95,6 +97,7 @@ class TrackerBase(object):
         return {
             'state': self.last_state,
             'timer': self.timer,
+            'viewOffset': self.view_offset,
             'paused': bool(self.timer_paused),
             'show': self.last_show_tuple,
             'filename': self.last_filename,
