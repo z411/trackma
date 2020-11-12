@@ -19,26 +19,27 @@ from trackma import utils
 
 
 class ShowListStore(Gtk.ListStore):
+    __cols = (
+        ( 'id', int ),
+        ( 'title', str ),
+        ( 'stat', int ),
+        ( 'score', float ),
+        ( 'stat-text', str ),
+        ( 'score-text', str ),
+        ( 'total-eps', int ),
+        ( 'subvalue', int ),
+        ( 'avail-eps', GObject.TYPE_PYOBJECT),
+        ( 'color', str ),
+        ( 'stat-pcent', int ),
+        ( 'start', str ),
+        ( 'end', str ),
+        ( 'my-start', str ),
+        ( 'my-end', str ),
+        ( 'status', str ),
+    )
+
     def __init__(self, decimals=0, colors=dict()):
-        Gtk.ListStore.__init__(
-            self,
-            int,  # ID
-            str,  # Title
-            int,  # Episodes
-            float,  # Score
-            str,  # Episodes_str
-            str,  # Score_str
-            int,  # Total
-            int,  # Subvalue
-            GObject.TYPE_PYOBJECT,  # Eps
-            str,  # Color
-            int,  # Progress%
-            str,  # start_date
-            str,  # end_date
-            str,  # my_start_date
-            str,  # my_finish_date
-            str   # status
-        )
+        super().__init__(*self.__class__.__columns__())
         self.colors = colors
         self.decimals = decimals
         self.set_sort_column_id(1, Gtk.SortType.ASCENDING)
@@ -52,6 +53,17 @@ class ShowListStore(Gtk.ListStore):
                 return '?'
         else:
             return '-'
+
+    @classmethod
+    def __columns__(cls):
+        return (k for i, k in cls.__cols)
+
+    @classmethod
+    def column(cls, key):
+        try:
+            return cls.__cols.index(next(i for i in cls.__cols if i[0] == key))
+        except ValueError:
+            return None
 
     def _get_color(self, show, eps):
         if show.get('queued'):
@@ -79,8 +91,6 @@ class ShowListStore(Gtk.ListStore):
 
         score_str = "%0.*f" % (self.decimals, show['my_score'])
         aired_eps = utils.estimate_aired_episodes(show)
-        if not aired_eps:
-            aired_eps = 0
 
         if eps:
             available_eps = eps.keys()
@@ -108,7 +118,7 @@ class ShowListStore(Gtk.ListStore):
                my_start_date,
                my_finish_date,
                show['my_status']]
-        Gtk.ListStore.append(self, row)
+        super().append(row)
 
     def update_or_append(self, show):
         for row in self:
@@ -171,8 +181,7 @@ class ShowListStore(Gtk.ListStore):
 
 class ShowListFilter(Gtk.TreeModelFilter):
     def __init__(self, status=None, *args, **kwargs):
-        Gtk.TreeModelFilter.__init__(
-            self,
+        super().__init__(
             *args,
             **kwargs
         )
@@ -181,6 +190,16 @@ class ShowListFilter(Gtk.TreeModelFilter):
 
     def status_filter(self, model, iter, data):
         return self._status is None or model[iter][15] == self._status
+
+    def get_value(self, obj, key = 'id'):
+        try:
+            if type(obj) == Gtk.TreePath:
+                obj = self.get_iter(obj)
+            if isinstance(key, (str,)):
+                key = self.props.child_model.column(key)
+            return super().get_value(obj, key)
+        except:
+            return None
 
 
 class ShowTreeView(Gtk.TreeView):
@@ -196,6 +215,8 @@ class ShowTreeView(Gtk.TreeView):
 
         self.set_enable_search(True)
         self.set_search_column(1)
+        self.set_property('has-tooltip', True)
+        self.connect('query-tooltip', self.show_tooltip)
 
         self.cols = dict()
         self.available_columns = (
@@ -298,6 +319,33 @@ class ShowTreeView(Gtk.TreeView):
 
         return False
 
+    @property
+    def filter(self):
+        return self.props.model.props.model
+
+    def show_tooltip(self, view, x, y, kbd, tip):
+        has_path, tx, ty, model, path, _iter = view.get_tooltip_context(x, y, kbd)
+        if has_path:
+            _, col, _, _ = view.get_path_at_pos(tx, ty)
+            renderer = next(k for i, k in enumerate(col.get_cells()) if i == 0)
+            lines = []
+
+            if col == self.cols['Percent']:
+                lines.append( "Watched: %d"%view.filter.get_value(path, 'stat') )
+                if view.filter.get_value(path, 'subvalue'):
+                    lines.append( "Aired (estimated): %d"%view.filter.get_value(path, 'subvalue') )
+
+                if len(view.filter.get_value(path, 'avail-eps'))>0:
+                    lines.append( "Available: %d"%max(view.filter.get_value(path, 'avail-eps')) )
+
+                lines.append("Total: %s"%(view.filter.get_value(path, 'total-eps') or '?'))
+
+            if len(lines):
+                tip.set_markup('\n'.join(lines))
+                self.set_tooltip_cell( tip, path, col, renderer)
+                return True
+        return False
+
     def _header_menu_item(self, w, column_name, visible):
         self.emit('column-toggled', column_name, visible)
 
@@ -315,7 +363,7 @@ class ShowTreeView(Gtk.TreeView):
 class ProgressCellRenderer(Gtk.CellRenderer):
     value = 0
     subvalue = 0
-    total = 0
+    _total = 0
     eps = []
     _subheight = 5
 
@@ -347,6 +395,12 @@ class ProgressCellRenderer(Gtk.CellRenderer):
 
     def do_set_property(self, pspec, value):
         setattr(self, pspec.name, value)
+    @property
+    def total(self):
+        return self._total if self._total > 0 else len(self.eps)
+    @total.setter
+    def total(self, value):
+        self._total = value
 
     def do_get_property(self, pspec):
         return getattr(self, pspec.name)
