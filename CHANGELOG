@@ -1,3 +1,21 @@
+v0.8.3
+- New: Support for MyAnimeList's new API
+- New: Implemented Kodi tracker
+- New: Implemented Jellyfin tracker
+- Enhancement: anime-relations redirection file now gets synced periodically
+- Enhancement: (GTK) Several visual enhancements
+- Enhancement: (Qt) Several visual and behavior fixes
+- Enhancement: (Tracker) Added config to enable/disable the ignoring of episodes (`tracker_ignore_not_next`)
+- Enhancement: Added Open Folder support for macOS and Windows
+- Bugfix: (Shikimori) Implemented new OAuth authentication method
+- Bugfix: (Curses) Avoid crashing UI when given bad regular expression
+- Bugfix: (Anilist) Avoid crash when an entry's format or status is unknown
+- Bugfix: (Twitter hook) Bugfixes and implementing new API
+- Bugfix: (inotify Tracker) Handling crash when a process isn't found on scan
+- Bugfix: (Kitsu) Fixed score decimals
+- Bugfix: (MPRIS) Fixed issue when metadata changed but status wasn't reported
+- Bugfix: Several minor fixes and cleanups
+
 v0.8.2
 - New: Implemented MPRIS tracker
 - New: Implemented support for Taiga-style anime-relations.txt file for proper detection of multiple seasons
