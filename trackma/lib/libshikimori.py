@@ -47,17 +47,17 @@ class libshikimori(lib):
         'can_status': True,
         'can_update': True,
         'can_play': True,
-        'statuses_start': [1, 9],
-        'statuses_finish': [2],
-        'statuses_library': [1, 3, 0],
-        'statuses':  [1, 2, 3, 9, 4, 0],
+        'statuses_start': ['watching', 'rewatching'],
+        'statuses_finish': ['completed'],
+        'statuses_library': ['watching', 'rewatching', 'planned'],
+        'statuses':  ['watching', 'completed', 'on_hold', 'rewatching', 'dropped', 'planned'],
         'statuses_dict': {
-            1: 'Watching',
-            2: 'Completed',
-            3: 'On-Hold',
-            9: 'Rewatching',
-            4: 'Dropped',
-            0: 'Plan to Watch'
+            'watching': 'Watching',
+            'completed': 'Completed',
+            'on_hold': 'On-Hold',
+            'rewatching': 'Rewatching',
+            'dropped': 'Dropped',
+            'planned': 'Plan to Watch'
         },
         'score_max': 10,
         'score_step': 1,
@@ -70,16 +70,16 @@ class libshikimori(lib):
         'can_status': True,
         'can_update': True,
         'can_play': False,
-        'statuses_start': [1, 9],
-        'statuses_finish': [2],
-        'statuses':  [1, 2, 3, 9, 4, 0],
+        'statuses_start': ['watching', 'rewatching'],
+        'statuses_finish': ['completed'],
+        'statuses':  ['watching', 'completed', 'on_hold', 'rewatching', 'dropped', 'planned'],
         'statuses_dict': {
-            1: 'Reading',
-            2: 'Completed',
-            3: 'On-Hold',
-            9: 'Rereading',
-            4: 'Dropped',
-            0: 'Plan to Read'
+            'watching': 'Reading',
+            'completed': 'Completed',
+            'on_hold': 'On-Hold',
+            'rewatching': 'Re-reading',
+            'dropped': 'Dropped',
+            'planned': 'Plan to Read'
         },
         'score_max': 10,
         'score_step': 1,
@@ -132,7 +132,7 @@ class libshikimori(lib):
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma')]
 
-    def _request(self, method, url, get=None, post=None, auth=False):
+    def _request(self, method, url, get=None, post=None, jsondata=None, auth=False):
         content_type = None
 
         if get:
@@ -140,6 +140,9 @@ class libshikimori(lib):
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
             content_type = 'application/x-www-form-urlencoded'
+        if jsondata:
+            post = json.dumps(jsondata).encode('utf-8')
+            content_type = 'application/json'
 
         request = urllib.request.Request(url, post)
         self.msg.debug(self.name, "URL: %s" % url)
