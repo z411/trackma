@@ -37,7 +37,7 @@ class libshikimori(lib):
     logged_in = False
 
     api_info = {'name': 'Shikimori', 'shortname': 'shikimori',
-                'version': '1', 'merge': False}
+                'version': 2, 'merge': False}
     mediatypes = dict()
     mediatypes['anime'] = {
         'has_progress': True,
@@ -89,18 +89,22 @@ class libshikimori(lib):
     # Supported signals for the data handler
     signals = {'show_info_changed': None, }
 
-    url = "http://shikimori.org"
+    url = "https://shikimori.org"
+    auth_url = "https://shikimori.org/oauth/token"
+    api_url = "https://shikimori.org/api"
+    
+    client_id = "Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro"
+    client_secret = "y7YmQx8n1l7eBRugUSiB7NfNJxaNBMvwppfxJLormXU"
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
         super(libshikimori, self).__init__(messenger, account, userconfig)
 
-        self.username = account['username']
-        self.password = account['password']
-        self.userid = userconfig['userid']
+        self.pin = account['password']
+        self.userid = self._get_userconfig('userid')
 
-        if not self.password:
-            raise utils.APIFatal("No password.")
+        if not self.pin:
+            raise utils.APIFatal("No PIN.")
 
         if self.mediatype == 'manga':
             self.total_str = "chapters"
@@ -126,58 +130,76 @@ class libshikimori(lib):
         # handler=urllib.request.HTTPHandler(debuglevel=1)
         #self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
-        self.opener.addheaders = [('User-agent', 'Trackma/0.4')]
+        self.opener.addheaders = [('User-agent', 'Trackma')]
 
-    def _request(self, method, url, get=None, post=None, jsondata=None, auth=False):
+    def _request(self, method, url, get=None, post=None, auth=False):
+        content_type = None
+
         if get:
-            url = "{}?{}".format(url, urllib.parse.urlencode(get))
+            url += "?%s" % urllib.parse.urlencode(get)
         if post:
-            post = urllib.parse.urlencode(post)
-        if jsondata:
-            post = json.dumps(jsondata, separators=(',', ':')).encode('utf-8')
+            post = urllib.parse.urlencode(post).encode('utf-8')
+            content_type = 'application/x-www-form-urlencoded'
 
-        request = urllib.request.Request(self.url + url, post)
+        request = urllib.request.Request(url, post)
+        self.msg.debug(self.name, "URL: %s" % url)
         request.get_method = lambda: method
 
+        if content_type:
+            request.add_header('Content-Type', content_type)
+
         if auth:
-            request.add_header('Content-Type', 'application/json')
-            request.add_header('X-User-Nickname', self.username)
-            request.add_header('X-User-Api-Access-Token',
-                               self._get_userconfig('access_token'))
+            request.add_header('Authorization', '{0} {1}'.format(
+                self._get_userconfig('token_type').capitalize(),
+                self._get_userconfig('access_token'),
+            ))
 
         try:
-            response = self.opener.open(request, timeout=10)
+            response = self.opener.open(request)
+            
             return json.loads(response.read().decode('utf-8'))
-        except urllib.request.HTTPError as e:
-            if e.code == 400:
-                raise utils.APIError("HTTP error code 400")
-            else:
-                raise utils.APIError("HTTP error code: %s" % e.read())
-        except urllib.error.URLError as e:
-            raise utils.APIError("HTTP connection error: %s" % e.reason)
+        except urllib.request.URLError as e:
+            raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
-            raise utils.APIError("Connection timed out.")
-        except ValueError:
-            pass  # No JSON data
+            raise utils.APIError("Operation timed out.")
 
-    def _request_access_token(self):
-        self.msg.info(self.name, 'Requesting access token...')
-        param = {
-            'nickname': self.username,
-            'password':  self.password,
+    def _request_access_token(self, refresh=False):
+        """
+        Requests or refreshes the access token through OAuth2
+        """
+        params = {
+            'client_id':     self.client_id,
+            'client_secret': self.client_secret,
+            'redirect_uri':  'urn:ietf:wg:oauth:2.0:oob',
         }
-        data = self._request("POST", "/api/access_token", get=param)
 
-        self._set_userconfig('access_token', data['api_access_token'])
+        if refresh:
+            self.msg.info(self.name, 'Refreshing access token...')
+
+            params['grant_type'] = 'refresh_token'
+            params['refresh_token'] = self._get_userconfig('refresh_token')
+        else:
+            self.msg.info(self.name, 'Requesting access token...')
+
+            params['code'] = self.pin
+            params['grant_type'] = 'authorization_code'
+            
+        data = self._request('POST', self.auth_url, post=params)
+
+        timestamp = int(time.time())
+
+        self._set_userconfig('access_token',  data['access_token'])
+        self._set_userconfig('token_type',    data['token_type'])
+        self._set_userconfig('expires',       timestamp + data['expires_in'])
+        self._set_userconfig('refresh_token', data['refresh_token'])
 
         self.logged_in = True
-        self._refresh_user_info()
         self._emit_signal('userconfig_changed')
 
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
 
-        data = self._request("GET", "/api/users/whoami", auth=True)
+        data = self._request("GET", self.api_url + "/users/whoami", auth=True)
 
         self._set_userconfig('userid', data['id'])
         self._set_userconfig('username', data['nickname'])
@@ -185,15 +207,18 @@ class libshikimori(lib):
         self.userid = data['id']
 
     def check_credentials(self):
-        """
-        Log into Shikimori. Ask for the request token if necessary.
-        """
         timestamp = int(time.time())
-
+        
         if not self._get_userconfig('access_token'):
-            self._request_access_token()
+            self._request_access_token(False)
+        elif (timestamp+60) > self._get_userconfig('expires'):
+            self._request_access_token(True)
         else:
             self.logged_in = True
+
+        if not self.userid:
+            self._refresh_user_info()
+
         return True
 
     def fetch_list(self):
@@ -201,12 +226,9 @@ class libshikimori(lib):
         self.msg.info(self.name, 'Downloading list...')
 
         data = self._request(
-            "GET", "/api/users/{}/{}_rates".format(self.userid, self.mediatype))
+            "GET", self.api_url + "/users/{}/{}_rates".format(self.userid, self.mediatype))
 
         showlist = {}
-
-        # with open('list', 'w') as f:
-        #    json.dump(data, f, indent=2)
 
         for item in data:
             show = utils.show()
@@ -247,7 +269,7 @@ class libshikimori(lib):
         self.msg.info(self.name, "Deleting item %s..." % item['title'])
 
         data = self._request(
-            "DELETE", "/api/user_rates/{}".format(item['my_id']), auth=True)
+            "DELETE", self.api_url + "/user_rates/{}".format(item['my_id']), auth=True)
 
     def search(self, criteria, method):
         self.check_credentials()
@@ -256,7 +278,7 @@ class libshikimori(lib):
         param = {'q': criteria}
         try:
             data = self._request(
-                "GET", "/api/{}s/search".format(self.mediatype), get=param)
+                "GET", self.api_url + "/{}s/search".format(self.mediatype), get=param)
         except ValueError:
             # An empty document, without any JSON, is returned
             # when there are no results.
@@ -290,7 +312,7 @@ class libshikimori(lib):
 
         for show in itemlist:
             data = self._request(
-                "GET", "/api/{}s/{}".format(self.mediatype, show['id']))
+                "GET", self.api_url + "/{}s/{}".format(self.mediatype, show['id']))
             infolist.append(self._parse_info(data))
 
         self._emit_signal('show_info_changed', infolist)
@@ -308,11 +330,11 @@ class libshikimori(lib):
                 'target_id': item['id'],
                 'target_type': self.mediatype.capitalize(),
             }
-            dest_url = "/api/user_rates"
+            dest_url = self.api_url + "/user_rates"
         else:
             #user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
             user_rate = {}
-            dest_url = "/api/user_rates/{}".format(item['my_id'])
+            dest_url = self.api_url + "/user_rates/{}".format(item['my_id'])
 
         if 'my_progress' in item:
             user_rate[self.watched_str] = item['my_progress']

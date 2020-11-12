@@ -87,6 +87,15 @@ class libmal(lib):
         'search_methods': [utils.SEARCH_METHOD_KW],
     }
     default_mediatype = 'anime'
+
+    type_translate = {
+        'tv': utils.TYPE_TV,
+        'movie': utils.TYPE_MOVIE,
+        'special': utils.TYPE_SP,
+        'ova': utils.TYPE_OVA,
+        'ona': utils.TYPE_OVA,
+        'music': utils.TYPE_OTHER,
+    }
     
     status_translate = {
         'currently_airing': utils.STATUS_AIRING,
@@ -105,7 +114,7 @@ class libmal(lib):
     signals = {'show_info_changed': None, }
 
     auth_url = "https://myanimelist.net/v1/oauth2/token"
-    query_url = "https://api.myanimelist.net/v3"
+    query_url = "https://api.myanimelist.net/v2"
     client_id = "32c510ab2f47a1048a8dd24de266dc0c"
     user_agent = 'Trackma/{}'.format(utils.VERSION)
     
@@ -128,10 +137,11 @@ class libmal(lib):
         
         if self.mediatype == 'manga':
             self.total_str = "num_chapters"
-            self.watched_str = "num_chapters_read"
+            self.watched_str = self.watched_send_str = "num_chapters_read"
         else:
             self.total_str = "num_episodes"
             self.watched_str = "num_episodes_watched"
+            self.watched_send_str = "num_watched_episodes" # Please fix this upstream...
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
@@ -151,7 +161,7 @@ class libmal(lib):
             content_type = 'application/x-www-form-urlencoded'
             self.msg.debug(self.name, "POST data: " + str(post))
 
-        self.msg.debug(self.name, "URL: " + url)
+        self.msg.debug(self.name, method + " URL: " + url)
         request = urllib.request.Request(url, post)
         request.get_method = lambda: method
 
@@ -291,19 +301,23 @@ class libmal(lib):
         params = {'fields': fields}
         
         if method == utils.SEARCH_METHOD_KW:
+            url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
         elif method == utils.SEARCH_METHOD_SEASON:
-            season, season_year = criteria
-            params['start_season_season'] = self.season_translate[season]
-            params['start_season_year'] = season_year
+            season, season_year = criteria            
+
+            url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])
             params['limit'] = self.season_page_limit
+        else:
+            raise utils.APIError("Invalid search method.")
         
         results = []
-        data = self._request('GET', self.query_url + '/' + self.mediatype, get=params, auth=True)
+        data = self._request('GET', self.query_url + url, get=params, auth=True)
         for item in data['data']:
             results.append(self._parse_info(item['node']))
         
+        self._emit_signal('show_info_changed', results)
         return results
         
     def request_info(self, itemlist):
@@ -322,7 +336,7 @@ class libmal(lib):
     def _update_entry(self, item):
         values = {}
         if 'my_progress' in item:
-            values[self.watched_str] = item['my_progress']
+            values[self.watched_send_str] = item['my_progress']
         if 'my_status' in item:
             values['status'] = item['my_status']
         if 'my_score' in item:
@@ -348,7 +362,8 @@ class libmal(lib):
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
-            'type': item['media_type'],
+            'type': self.type_translate[item['media_type']],
+            'total': item[self.total_str],
             'status': self._translate_status(item['status']),
             'image': item['main_picture']['large'],
             'start_date': self._str2date(item.get('start_date')),
@@ -357,7 +372,6 @@ class libmal(lib):
                 ('English',         item['alternative_titles'].get('en')),
                 ('Japanese',        item['alternative_titles'].get('ja')),
                 ('Synonyms',        item['alternative_titles'].get('synonyms')),
-                ('Genres',          [s['name'] for s in item['genres']]),
                 ('Synopsis',        item.get('synopsis')),
                 ('Type',            item.get('media_type')),
                 ('Mean score',   item.get('mean')),
