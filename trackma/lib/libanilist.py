@@ -101,6 +101,7 @@ class libanilist(lib):
     }
 
     type_translate = {
+        None: utils.TYPE_UNKNOWN,
         'TV': utils.TYPE_TV,
         'TV_SHORT': utils.TYPE_TV,
         'MOVIE': utils.TYPE_MOVIE,
@@ -114,6 +115,7 @@ class libanilist(lib):
     }
 
     status_translate = {
+        None: utils.STATUS_UNKNOWN,
         'RELEASING': utils.STATUS_AIRING,
         'FINISHED': utils.STATUS_FINISHED,
         'NOT_YET_RELEASED': utils.STATUS_NOTYET,
