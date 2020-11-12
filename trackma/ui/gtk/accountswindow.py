@@ -276,7 +276,7 @@ class AccountsWindow(Gtk.Dialog):
         self.password_entry.set_text("")
         api = self._get_combo_active_api_name()
 
-        if not api or utils.available_libs[api][2] == utils.LOGIN_OAUTH:
+        if not api or utils.available_libs[api][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
             # We'll only allow adding the account if the user requests the PIN
             self.adding_allow = False
             self._show_oauth_account()
