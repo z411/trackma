@@ -20,23 +20,23 @@ from trackma import utils
 
 class ShowListStore(Gtk.ListStore):
     __cols = (
-        ( 'id', int ),
-        ( 'title', str ),
-        ( 'stat', int ),
-        ( 'score', float ),
-        ( 'stat-text', str ),
-        ( 'score-text', str ),
-        ( 'total-eps', int ),
-        ( 'subvalue', int ),
-        ( 'avail-eps', GObject.TYPE_PYOBJECT),
-        ( 'color', str ),
-        ( 'stat-pcent', int ),
-        ( 'start', str ),
-        ( 'end', str ),
-        ( 'my-start', str ),
-        ( 'my-end', str ),
-        ( 'my-status', str ),
-        ( 'status', int ),
+        ('id', int),
+        ('title', str),
+        ('stat', int),
+        ('score', float),
+        ('stat-text', str),
+        ('score-text', str),
+        ('total-eps', int),
+        ('subvalue', int),
+        ('avail-eps', GObject.TYPE_PYOBJECT),
+        ('color', str),
+        ('stat-pcent', int),
+        ('start', str),
+        ('end', str),
+        ('my-start', str),
+        ('my-end', str),
+        ('my-status', str),
+        ('status', int),
     )
 
     def __init__(self, decimals=0, colors=dict()):
@@ -194,7 +194,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
     def status_filter(self, model, iter, data):
         return self._status is None or model[iter][15] == self._status
 
-    def get_value(self, obj, key = 'id'):
+    def get_value(self, obj, key='id'):
         try:
             if type(obj) == Gtk.TreePath:
                 obj = self.get_iter(obj)
@@ -327,25 +327,30 @@ class ShowTreeView(Gtk.TreeView):
         return self.props.model.props.model
 
     def show_tooltip(self, view, x, y, kbd, tip):
-        has_path, tx, ty, model, path, _iter = view.get_tooltip_context(x, y, kbd)
+        has_path, tx, ty, model, path, _iter = view.get_tooltip_context(
+            x, y, kbd)
         if has_path:
             _, col, _, _ = view.get_path_at_pos(tx, ty)
             renderer = next(k for i, k in enumerate(col.get_cells()) if i == 0)
             lines = []
 
             if col == self.cols['Percent']:
-                lines.append( "Watched: %d"%view.filter.get_value(path, 'stat') )
+                lines.append("Watched: %d" %
+                             view.filter.get_value(path, 'stat'))
                 if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.STATUS_NOTYET:
-                    lines.append( "Aired%s: %d"%( ' (estimated)' if view.filter.get_value(path, 'status') == utils.STATUS_AIRING else '', view.filter.get_value(path, 'subvalue') ) )
+                    lines.append("Aired%s: %d" % (' (estimated)' if view.filter.get_value(
+                        path, 'status') == utils.STATUS_AIRING else '', view.filter.get_value(path, 'subvalue')))
 
-                if len(view.filter.get_value(path, 'avail-eps'))>0:
-                    lines.append( "Available: %d"%max(view.filter.get_value(path, 'avail-eps')) )
+                if len(view.filter.get_value(path, 'avail-eps')) > 0:
+                    lines.append("Available: %d" %
+                                 max(view.filter.get_value(path, 'avail-eps')))
 
-                lines.append("Total: %s"%(view.filter.get_value(path, 'total-eps') or '?'))
+                lines.append("Total: %s" %
+                             (view.filter.get_value(path, 'total-eps') or '?'))
 
             if len(lines):
                 tip.set_markup('\n'.join(lines))
-                self.set_tooltip_cell( tip, path, col, renderer)
+                self.set_tooltip_cell(tip, path, col, renderer)
                 return True
         return False
 
@@ -398,9 +403,11 @@ class ProgressCellRenderer(Gtk.CellRenderer):
 
     def do_set_property(self, pspec, value):
         setattr(self, pspec.name, value)
+
     @property
     def total(self):
         return self._total if self._total > 0 else len(self.eps)
+
     @total.setter
     def total(self, value):
         self._total = value

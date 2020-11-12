@@ -188,10 +188,14 @@ class SettingsWindow(Gtk.Window):
         self.checkbox_plex_obey_wait.set_active(
             self.engine.get_config('plex_obey_update_wait_s'))
 
-        self.entry_jellyfin_host.set_text(self.engine.get_config('jellyfin_host'))
-        self.spin_jellyfin_port.set_value(int(self.engine.get_config('jellyfin_port')))
-        self.entry_jellyfin_username.set_text(self.engine.get_config('jellyfin_user'))
-        self.entry_jellyfin_apikey.set_text(self.engine.get_config('jellyfin_api_key'))
+        self.entry_jellyfin_host.set_text(
+            self.engine.get_config('jellyfin_host'))
+        self.spin_jellyfin_port.set_value(
+            int(self.engine.get_config('jellyfin_port')))
+        self.entry_jellyfin_username.set_text(
+            self.engine.get_config('jellyfin_user'))
+        self.entry_jellyfin_apikey.set_text(
+            self.engine.get_config('jellyfin_api_key'))
 
         self.spin_tracker_update_wait.set_value(
             self.engine.get_config('tracker_update_wait_s'))
@@ -378,7 +382,8 @@ class SettingsWindow(Gtk.Window):
             'plex_user', self.entry_plex_username.get_text())
         self.engine.set_config(
             'plex_passwd', self.entry_plex_password.get_text())
-        self.engine.set_config('jellyfin_host', self.entry_jellyfin_host.get_text())
+        self.engine.set_config(
+            'jellyfin_host', self.entry_jellyfin_host.get_text())
         self.engine.set_config('jellyfin_port', str(
             int(self.spin_jellyfin_port.get_value())))
         self.engine.set_config(
