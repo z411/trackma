@@ -12,7 +12,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
+# TODO: Add gui stuff for this
 
 import time
 import requests
@@ -36,6 +37,7 @@ class JellyfinTracker(tracker.TrackerBase):
         self.host_port = self.config['jellyfin_host']+":"+self.config['jellyfin_port']
         self.api_key = self.config['jellyfin_api_key']
         self.username = self.config['jellyfin_user']
+
         self.status_log = [None, None]
 
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
