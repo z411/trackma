@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 from trackma import utils
 
 try:
-    LONG_DESCRIPTION = open("README.rst").read()
+    LONG_DESCRIPTION = open("README.md").read()
 except IOError:
     LONG_DESCRIPTION = __doc__
 
@@ -29,6 +29,7 @@ setup(
     author_email='z411@krutt.org',
     description='Open multi-site list manager',
     long_description=LONG_DESCRIPTION,
+    long_description_content_type='text/markdown',
     url='https://github.com/z411/trackma',
     keywords='list manager, curses, gtk, qt, myanimelist, hummingbird, vndb',
     license="GPL-3",
