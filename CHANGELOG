@@ -1,3 +1,6 @@
+v0.8.4
+- Hotfix: (GTK) Fixed account screen for OAuth PKCE (MAL)
+
 v0.8.3
 - New: Support for MyAnimeList's new API
 - New: Implemented Kodi tracker
