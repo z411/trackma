@@ -68,6 +68,7 @@ The following media recognition trackers are available and their requirements ar
 | inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
 | Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
 | Plex | Connects to Plex server. Enabled manually. | None |
+| Kodi | Connects to Kodi server. Enabled manually. | None |
 | Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
 | MPRIS | Connects to running MPRIS capable media players. | dbus-python |
 | Win32 | Recognition for Windows platforms. | None |
