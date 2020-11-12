@@ -35,7 +35,8 @@ class ShowListStore(Gtk.ListStore):
         ( 'end', str ),
         ( 'my-start', str ),
         ( 'my-end', str ),
-        ( 'status', str ),
+        ( 'my-status', str ),
+        ( 'status', int ),
     )
 
     def __init__(self, decimals=0, colors=dict()):
@@ -117,7 +118,9 @@ class ShowListStore(Gtk.ListStore):
                end_date,
                my_start_date,
                my_finish_date,
-               show['my_status']]
+               show['my_status'],
+               show['status']
+               ]
         super().append(row)
 
     def update_or_append(self, show):
@@ -332,8 +335,8 @@ class ShowTreeView(Gtk.TreeView):
 
             if col == self.cols['Percent']:
                 lines.append( "Watched: %d"%view.filter.get_value(path, 'stat') )
-                if view.filter.get_value(path, 'subvalue'):
-                    lines.append( "Aired (estimated): %d"%view.filter.get_value(path, 'subvalue') )
+                if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.STATUS_NOTYET:
+                    lines.append( "Aired%s: %d"%( ' (estimated)' if view.filter.get_value(path, 'status') == utils.STATUS_AIRING else '', view.filter.get_value(path, 'subvalue') ) )
 
                 if len(view.filter.get_value(path, 'avail-eps'))>0:
                     lines.append( "Available: %d"%max(view.filter.get_value(path, 'avail-eps')) )
