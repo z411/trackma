@@ -110,6 +110,7 @@ class PlexTracker(tracker.TrackerBase):
 
                     if self.token:
                         if self.config['plex_user'] == xuser:
+                            self.view_offset = int(self._get_sessions_info("Video", "viewOffset"))
                             self.update_show_if_needed(state, show_tuple)
 
                             if player[1] == PAUSED:
