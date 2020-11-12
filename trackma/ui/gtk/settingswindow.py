@@ -66,6 +66,12 @@ class SettingsWindow(Gtk.Window):
     checkbox_plex_obey_wait = GtkTemplate.Child()
     spin_tracker_update_wait = GtkTemplate.Child()
 
+    radio_tracker_jellyfin = GtkTemplate.Child()
+    entry_jellyfin_host = GtkTemplate.Child()
+    spin_jellyfin_port = GtkTemplate.Child()
+    entry_jellyfin_username = GtkTemplate.Child()
+    entry_jellyfin_apikey = GtkTemplate.Child()
+
     checkbox_tracker_update_close = GtkTemplate.Child()
     checkbox_tracker_update_prompt = GtkTemplate.Child()
     checkbox_tracker_not_found_prompt = GtkTemplate.Child()
@@ -159,6 +165,8 @@ class SettingsWindow(Gtk.Window):
             self.radio_tracker_mpris.set_active(True)
         elif self.engine.get_config('tracker_type') == 'plex':
             self.radio_tracker_plex.set_active(True)
+        elif self.engine.get_config('tracker_type') == 'jellyfin':
+            self.radio_tracker_jellyfin.set_active(True)
 
         self.entry_player_process.set_text(
             self.engine.get_config('tracker_process'))
@@ -179,6 +187,11 @@ class SettingsWindow(Gtk.Window):
             self.engine.get_config('plex_passwd'))
         self.checkbox_plex_obey_wait.set_active(
             self.engine.get_config('plex_obey_update_wait_s'))
+
+        self.entry_jellyfin_host.set_text(self.engine.get_config('jellyfin_host'))
+        self.spin_jellyfin_port.set_value(int(self.engine.get_config('jellyfin_port')))
+        self.entry_jellyfin_username.set_text(self.engine.get_config('jellyfin_user'))
+        self.entry_jellyfin_apikey.set_text(self.engine.get_config('jellyfin_api_key'))
 
         self.spin_tracker_update_wait.set_value(
             self.engine.get_config('tracker_update_wait_s'))
@@ -274,12 +287,14 @@ class SettingsWindow(Gtk.Window):
         self.radio_tracker_local.set_sensitive(state)
         self.radio_tracker_mpris.set_sensitive(state)
         self.radio_tracker_plex.set_sensitive(state)
+        self.radio_tracker_jellyfin.set_sensitive(state)
 
         if state:
             self._set_tracker_radio_buttons()
         else:
             self._enable_local(state)
             self._enable_plex(state)
+            self._enable_jellyfin(state)
 
         self.checkbox_tracker_update_close.set_sensitive(state)
         self.checkbox_tracker_update_prompt.set_sensitive(state)
@@ -290,9 +305,11 @@ class SettingsWindow(Gtk.Window):
         if self.radio_tracker_local.get_active() or self.radio_tracker_mpris.get_active():
             self._enable_local(True)
             self._enable_plex(False)
+            self._enable_jellyfin(False)
         else:
             self._enable_local(False)
             self._enable_plex(True)
+            self._enable_jellyfin(True)
 
     def _enable_local(self, enable):
         self.entry_player_process.set_sensitive(enable)
@@ -307,6 +324,12 @@ class SettingsWindow(Gtk.Window):
         self.entry_plex_username.set_sensitive(enable)
         self.entry_plex_password.set_sensitive(enable)
         self.checkbox_plex_obey_wait.set_sensitive(enable)
+
+    def _enable_jellyfin(self, enable):
+        self.entry_jellyfin_host.set_sensitive(enable)
+        self.spin_jellyfin_port.set_sensitive(enable)
+        self.entry_jellyfin_username.set_sensitive(enable)
+        self.entry_jellyfin_apikey.set_sensitive(enable)
 
     def _load_directories(self, paths):
         if isinstance(paths, str):
@@ -355,6 +378,13 @@ class SettingsWindow(Gtk.Window):
             'plex_user', self.entry_plex_username.get_text())
         self.engine.set_config(
             'plex_passwd', self.entry_plex_password.get_text())
+        self.engine.set_config('jellyfin_host', self.entry_jellyfin_host.get_text())
+        self.engine.set_config('jellyfin_port', str(
+            int(self.spin_jellyfin_port.get_value())))
+        self.engine.set_config(
+            'jellyfin_user', self.entry_jellyfin_username.get_text())
+        self.engine.set_config(
+            'jellyfin_api_key', self.entry_jellyfin_apikey.get_text())
         self.engine.set_config(
             'tracker_enabled', self.switch_tracker.get_active())
         self.engine.set_config(
@@ -378,6 +408,8 @@ class SettingsWindow(Gtk.Window):
             self.engine.set_config('tracker_type', 'mpris')
         elif self.radio_tracker_plex.get_active():
             self.engine.set_config('tracker_type', 'plex')
+        elif self.radio_tracker_jellyfin.get_active():
+            self.engine.set_config('tracker_type', 'jellyfin')
 
         # Auto-retrieve
         if self.radiobutton_download_always.get_active():

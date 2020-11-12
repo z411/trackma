@@ -90,6 +90,7 @@ available_trackers = [
     ('polling', 'Polling (lsof)'),
     ('mpris', 'MPRIS'),
     ('plex', 'Plex Media Server'),
+    ('jellyfin', 'Jellyfin'),
     ('kodi', 'Kodi'),
     ('win32', 'Win32'),
 ]
@@ -449,6 +450,10 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'jellyfin_host': "localhost",
+    'jellyfin_port': "8096",
+    'jellyfin_api_key': '',
+    'jellyfin_user': '',
     'kodi_host': "localhost",
     'kodi_port': "8080",
     'kodi_obey_update_wait_s': False,

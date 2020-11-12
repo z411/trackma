@@ -138,6 +138,30 @@ class SettingsDialog(QDialog):
 
         g_plex.setLayout(g_plex_layout)
 
+        # Group: Jellyfin settings
+        g_jellyfin = QGroupBox('Jellyfin')
+        g_jellyfin.setFlat(True)
+        self.jellyfin_host = QLineEdit()
+        self.jellyfin_port = QLineEdit()
+        self.jellyfin_user = QLineEdit()
+        self.jellyfin_apikey = QLineEdit()
+
+        g_jellyfin_layout = QGridLayout()
+        g_jellyfin_layout.addWidget(
+            QLabel('Host and Port'),                   0, 0, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_host,
+                                0, 1, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_port,
+                                0, 2, 1, 2)
+        g_jellyfin_layout.addWidget(
+            QLabel('API and User'),                   1, 0, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_apikey,
+                                1, 1, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_user,
+                                1, 2, 1, 2)
+
+        g_jellyfin.setLayout(g_jellyfin_layout)
+
         # Group: Kodi settings
         g_kodi = QGroupBox('Kodi')
         g_kodi.setFlat(True)
@@ -220,6 +244,7 @@ class SettingsDialog(QDialog):
         # Media form
         page_media_layout.addWidget(g_media)
         page_media_layout.addWidget(g_plex)
+        page_media_layout.addWidget(g_jellyfin)
         page_media_layout.addWidget(g_kodi)
         page_media_layout.addWidget(g_playnext)
         page_media.setLayout(page_media_layout)
@@ -488,6 +513,11 @@ class SettingsDialog(QDialog):
         self.plex_user.setText(engine.get_config('plex_user'))
         self.plex_passw.setText(engine.get_config('plex_passwd'))
 
+        self.jellyfin_host.setText(engine.get_config('jellyfin_host'))
+        self.jellyfin_port.setText(engine.get_config('jellyfin_port'))
+        self.jellyfin_user.setText(engine.get_config('jellyfin_user'))
+        self.jellyfin_apikey.setText(engine.get_config('jellyfin_api_key'))
+
         self.kodi_host.setText(engine.get_config('kodi_host'))
         self.kodi_port.setText(engine.get_config('kodi_port'))
         self.kodi_obey_wait.setChecked(
@@ -590,6 +620,11 @@ class SettingsDialog(QDialog):
         engine.set_config('plex_user',         self.plex_user.text())
         engine.set_config('plex_passwd',       self.plex_passw.text())
 
+        engine.set_config('jellyfin_host',         self.jellyfin_host.text())
+        engine.set_config('jellyfin_port',         self.jellyfin_port.text())
+        engine.set_config('jellyfin_user',         self.jellyfin_user.text())
+        engine.set_config('jellyfin_apikey',       self.jellyfin_apikey.text())
+
         engine.set_config('kodi_host',         self.kodi_host.text())
         engine.set_config('kodi_port',         self.kodi_port.text())
         engine.set_config('kodi_obey_update_wait_s',
@@ -673,25 +708,40 @@ class SettingsDialog(QDialog):
         self.plex_passw.setEnabled(state)
         self.plex_obey_wait.setEnabled(state)
 
+    def switch_jellyfin_state(self, state):
+        self.jellyfin_host.setEnabled(state)
+        self.jellyfin_port.setEnabled(state)
+        self.jellyfin_user.setEnabled(state)
+        self.jellyfin_apikey.setEnabled(state)
+
     def tracker_type_change(self, checked):
         if self.tracker_enabled.isChecked():
             self.tracker_interval.setEnabled(True)
             self.tracker_update_wait.setEnabled(True)
             self.tracker_type.setEnabled(True)
             if self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'plex':
+                self.switch_jellyfin_state(False)
                 self.switch_plex_state(True)
                 self.switch_kodi_state(False)
                 self.tracker_process.setEnabled(False)
+            elif self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'jellyfin':
+                self.switch_jellyfin_state(True)
+                self.switch_kodi_state(False)
+                self.switch_plex_state(False)
+                self.tracker_process.setEnabled(False)
             elif self.tracker_type.itemData(self.tracker_type.currentIndex()) == 'kodi':
+                self.switch_jellyfin_state(False)
                 self.switch_kodi_state(True)
                 self.switch_plex_state(False)
                 self.tracker_process.setEnabled(False)
             else:
                 self.tracker_process.setEnabled(True)
+                self.switch_jellyfin_state(False)
                 self.switch_plex_state(False)
                 self.switch_kodi_state(False)
         else:
             self.tracker_type.setEnabled(False)
+            self.switch_jellyfin_state(False)
             self.switch_plex_state(False)
             self.switch_kodi_state(False)
 
