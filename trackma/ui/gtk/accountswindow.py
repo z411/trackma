@@ -69,7 +69,7 @@ class AccountsWindow(Gtk.Dialog):
         self.current = AccountsView.LIST
         self.manager = manager
         self.account_edit = None
-        
+
         self.adding_allow = False
         self.adding_extra = {}
 
@@ -287,7 +287,7 @@ class AccountsWindow(Gtk.Dialog):
     @GtkTemplate.Callback
     def _on_btn_pin_request_clicked(self, btn):
         api = self._get_combo_active_api_name()
-        
+
         auth_url = utils.available_libs[api][3]
         if utils.available_libs[api][2] == utils.LOGIN_OAUTH_PKCE:
             self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}

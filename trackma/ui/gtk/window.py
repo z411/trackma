@@ -159,7 +159,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _set_actions(self):
         builder = Gtk.Builder.new_from_file(
-        os.path.join(gtk_dir, 'data/app-menu.ui'))
+            os.path.join(gtk_dir, 'data/app-menu.ui'))
         settings = Gtk.Settings.get_default()
         if not settings.get_property("gtk-shell-shows-menubar"):
             self.btn_appmenu.set_menu_model(builder.get_object('app-menu'))
