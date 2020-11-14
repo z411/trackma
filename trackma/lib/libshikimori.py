@@ -367,16 +367,18 @@ class libshikimori(lib):
             'image': self.url + item['image']['original'],
             'url': self.url + item['url'],
             'extra': [
-                ('Description',     item.get('description')),
+                ('Description',     self._lc(item.get('description'))),
                 #('Genres',          item.get('genres')),
-                ('Type',            item.get('kind').capitalize()),
-                ('Average score',   item.get('score')),
-                ('Russian title',   item.get('russian')),
-                ('Japanese title',  item.get('japanese')[0]),
-                ('English title',   item.get('english')),
+                ('Type',            self._lc(item.get('kind').capitalize())),
+                ('Average score',   self._lc(item.get('score'))),
+                ('Russian title',   self._lc(item.get('russian'))),
+                ('Japanese title',  self._lc(item.get('japanese')[0])),
+                ('English title',   self._lc(item.get('english'))),
             ]
         })
         return info
 
-    def _c(self, s):
-        return 0 if s is None else s
+    def _lc(self, v):
+        if v == [None]:
+            return None
+        return v
