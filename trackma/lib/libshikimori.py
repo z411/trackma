@@ -95,6 +95,26 @@ class libshikimori(lib):
     
     client_id = "Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro"
     client_secret = "y7YmQx8n1l7eBRugUSiB7NfNJxaNBMvwppfxJLormXU"
+    
+    status_translate = {
+        'ongoing': utils.STATUS_AIRING,
+        'released': utils.STATUS_FINISHED,
+        'anons': utils.STATUS_NOTYET,
+        'cancelled': utils.STATUS_CANCELLED,
+    }
+    
+    type_translate = {
+        None: utils.TYPE_UNKNOWN,
+        'tv': utils.TYPE_TV,
+        'movie': utils.TYPE_MOVIE,
+        'ova': utils.TYPE_OVA,
+        'ona': utils.TYPE_OVA,
+        'special': utils.TYPE_SP,
+        'music': utils.TYPE_OTHER,
+        'tv_13': utils.TYPE_TV,
+        'tv_24': utils.TYPE_TV,
+        'tv_48': utils.TYPE_TV,
+    }
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
@@ -109,23 +129,10 @@ class libshikimori(lib):
         if self.mediatype == 'manga':
             self.total_str = "chapters"
             self.watched_str = "chapters"
-            self.airing_str = "publishing_status"
-            self.status_translate = {
-                'publishing': utils.STATUS_AIRING,
-                'finished': utils.STATUS_FINISHED,
-                'not yet published': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
-            }
+            
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes"
-            self.airing_str = "airing_status"
-            self.status_translate = {
-                'currently airing': utils.STATUS_AIRING,
-                'finished airing': utils.STATUS_FINISHED,
-                'not yet aired': utils.STATUS_NOTYET,
-                'cancelled': utils.STATUS_CANCELLED,
-            }
 
         # handler=urllib.request.HTTPHandler(debuglevel=1)
         #self.opener = urllib.request.build_opener(handler)
@@ -208,6 +215,7 @@ class libshikimori(lib):
         self._set_userconfig('username', data['nickname'])
 
         self.userid = data['id']
+        self._emit_signal('userconfig_changed')
 
     def check_credentials(self):
         timestamp = int(time.time())
@@ -228,11 +236,11 @@ class libshikimori(lib):
         self.check_credentials()
         self.msg.info(self.name, 'Downloading list...')
 
+        params = {'limit': 5000}
         data = self._request(
-            "GET", self.api_url + "/users/{}/{}_rates".format(self.userid, self.mediatype))
+            "GET", self.api_url + "/users/{}/{}_rates".format(self.userid, self.mediatype), get=params)
 
         showlist = {}
-
         for item in data:
             show = utils.show()
             showid = item[self.mediatype]['id']
@@ -241,8 +249,8 @@ class libshikimori(lib):
                 'my_id': item['id'],
                 'title': item[self.mediatype]['name'],
                 'aliases': [item[self.mediatype]['russian']],
-                # 'type': item[self.mediatype]['type'],
-                # 'status': self.status_translate[item[self.mediatype][self.airing_str]],
+                'type': self.type_translate[item[self.mediatype]['kind']],
+                'status': self.status_translate[item[self.mediatype]['status']],
                 'my_id': item['id'],
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
@@ -296,9 +304,8 @@ class libshikimori(lib):
                 'id': showid,
                 'title': item['name'],
                 'aliases': [item['russian']],
-                'type': item.get('kind', ''),
-                # 'status': item[self.airing_str],
-                'status': 0,
+                'type': self.type_translate[item['kind']],
+                'status': self.status_translate[item['status']],
                 'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
                 'image': self.url + item['image']['original'],
@@ -355,7 +362,8 @@ class libshikimori(lib):
         info.update({
             'id': item['id'],
             'title': item['name'],
-            'status': 0,
+            'type': self.type_translate[item['kind']],
+            'status': self.status_translate[item['status']],
             'image': self.url + item['image']['original'],
             'url': self.url + item['url'],
             'extra': [
