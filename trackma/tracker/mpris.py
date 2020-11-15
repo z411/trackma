@@ -63,6 +63,10 @@ class MPRISTracker(tracker.TrackerBase):
                 self.filenames[sender] = self._get_filename(metadata)
                 if not self.active_player:
                     self._handle_status(status, sender)
+
+                if not sender in self.view_offsets:
+                    GLib.timeout_add(500, self._update_view_offset, sender, properties)
+
             except dbus.exceptions.DBusException:
                 self._stopped(sender)
         else:
@@ -129,6 +133,22 @@ class MPRISTracker(tracker.TrackerBase):
             # Remove timer if any
             self.timing = False
 
+    def _update_view_offset(self, sender, properties):
+        try:
+            self.view_offsets[sender] = int(properties.Get(MPRISTracker.mpris_base + '.Player', 'Position'))
+            if self.view_offsets[sender]:
+                if self.is_active_player(sender):
+                    self.view_offset = self.view_offsets[sender]/1000
+
+        except dbus.exceptions.DBusException:
+            if sender in self.view_offsets:
+                del self.view_offsets[sender]
+            if self.is_active_player(sender):
+                self.view_offset = None
+            return False
+
+        return True
+
     def _on_update(self, name, properties, v, sender=None):
         # We can override the active player if it's not playing a valid show.
         if self.is_active_player(sender):
@@ -170,6 +190,7 @@ class MPRISTracker(tracker.TrackerBase):
         self.re_players = re.compile(config['tracker_process'])
         self.filenames = {}
         self.statuses = {}
+        self.view_offsets = {}
         self.timing = False
         self.active_player = None
         self.bus = dbus.SessionBus()
