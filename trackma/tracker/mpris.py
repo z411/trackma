@@ -30,27 +30,41 @@ class MPRISTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
     mpris_base = 'org.mpris.MediaPlayer2'
 
+    def _get_dbus_properties(self, name):
+        proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
+        return dbus.Interface(
+            proxy, dbus_interface='org.freedesktop.DBus.Properties')
+
+    def is_active_player(self, sender):
+        return not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING
+
     def _connect(self, name):
         # Add and connect new player
         if self.re_players.search(name):
+            try:
+                sender = self.bus.get_name_owner(name)
+            except dbus.exceptions.DBusException:
+                self.msg.error(self.name, "Bus was closed before access: {}".format(name))
+                return
+
             self.msg.info(
                 self.name, "Connecting to MPRIS player: {}".format(name))
             try:
-                proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
-                properties = dbus.Interface(
-                    proxy, dbus_interface='org.freedesktop.DBus.Properties')
+                properties = self._get_dbus_properties(name)
+
                 properties.connect_to_signal(
                     'PropertiesChanged', self._on_update, sender_keyword='sender')
                 metadata = properties.Get(
                     MPRISTracker.mpris_base + '.Player', 'Metadata')
+
                 status = properties.Get(
                     MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
-                sender = self.bus.get_name_owner(name)
+
                 self.filenames[sender] = self._get_filename(metadata)
                 if not self.active_player:
                     self._handle_status(status, sender)
             except dbus.exceptions.DBusException:
-                self._stopped(name)
+                self._stopped(sender)
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
@@ -117,7 +131,7 @@ class MPRISTracker(tracker.TrackerBase):
 
     def _on_update(self, name, properties, v, sender=None):
         # We can override the active player if it's not playing a valid show.
-        if not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING:
+        if self.is_active_player(sender):
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.
