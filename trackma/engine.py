@@ -74,10 +74,11 @@ class Engine:
                'tracker_state':     None,
                }
 
-    def __init__(self, account=None, message_handler=None, accountnum=None):
+    def __init__(self, account=None, message_handler=None, accountnum=None, start_process=None):
         self.msg = messenger.Messenger(message_handler)
 
         # Utility parameter to get the account from the account manager
+        self._start_process = start_process
         if accountnum:
             from trackma import accounts
             account = accounts.AccountManager().get_account(accountnum)
@@ -948,15 +949,18 @@ class Engine:
 
                 arg_list.append(filename)
 
+                if callable(self._start_process):
+                    self._start_process(arg_list)
+                    return endep
                 # Do a double fork on *nix to prevent zombie processes
-                if not sys.platform.startswith('win32'):
+                elif not sys.platform.startswith('win32'):
                     try:
                         pid = os.fork()
                         if pid > 0:
                             os.waitpid(pid, 0)
                             return endep
                     except OSError:
-                        sys.exit(1)
+                        return -1
 
                     os.setsid()
                     fd = os.open("/dev/null", os.O_RDWR)
