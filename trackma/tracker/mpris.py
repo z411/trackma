@@ -44,7 +44,7 @@ class MPRISTracker(tracker.TrackerBase):
             try:
                 sender = self.bus.get_name_owner(name)
             except dbus.exceptions.DBusException:
-                self.msg.error(self.name, "Bus was closed before access: {}".format(name))
+                self.msg.warn(self.name, "Bus was closed before access: {}".format(name))
                 return
 
             self.msg.info(
