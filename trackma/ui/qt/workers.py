@@ -142,8 +142,18 @@ class EngineWorker(QtCore.QThread):
         self.prompt_for_add.emit(show, episode)
 
     # Callable functions
+    def _launch_player(self, args):
+        if isinstance(args, (list,)) and len(args)>1:
+            #QtCore.QProcess.startDetached(args[0], args[1:])
+            process = QtCore.QProcess()
+            for attr in ['setStandardErrorFile', 'setStandardOutputFile']:
+                getattr(process, attr)(QtCore.QProcess.nullDevice())
+            process.setProgram(args[0])
+            process.setArguments(args[1:])
+            process.startDetached()
+
     def _start(self, account):
-        self.engine = Engine(account, self._messagehandler)
+        self.engine = Engine(account, self._messagehandler, start_process=self._launch_player)
 
         self.engine.connect_signal('episode_changed', self._changed_show)
         self.engine.connect_signal('score_changed', self._changed_show)
