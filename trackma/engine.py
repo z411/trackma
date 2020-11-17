@@ -786,9 +786,11 @@ class Engine:
             # on the user's list. Cache the information.
             # If it fails, cache it as None.
 
-            (show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename, tracker_list)
+            (show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename,
+                                                                                                   tracker_list)
             if show is None:
-                (show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename, tracker_list)
+                (show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename,
+                                                                                                   tracker_list)
                 if show is None:
                     self.msg.debug(self.name, "Not recognized, skipping: {}".format(fullpath))
                     library_cache[filename] = None
@@ -947,7 +949,8 @@ class Engine:
     def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""
         relative = fullpath[len(searchdir):]
-        return relative.replace(os.path.sep, " ")
+        # relative.replace(os.path.sep, " ")
+        return relative.strip(os.path.sep)
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""

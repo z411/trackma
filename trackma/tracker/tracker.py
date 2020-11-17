@@ -249,9 +249,12 @@ class TrackerBase(object):
 
             # Do a regex to the filename to get
             # the show title and episode number
-            (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename, self.list)
-            if not playing_show:
-                (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename, self.list)
+            (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_anitopy_anime_information(filename,
+                                                                                                           self.list)
+            if not playing_show or (show_ep_start == 1 and playing_show['my_progress'] > 1):
+                (playing_show, show_title, show_ep_start, show_ep_end) = utils.guess_aie_anime_information(filename,
+                                                                                                           self.list)
+
 
             if not show_title:
                 return (utils.TRACKER_UNRECOGNIZED, None)  # Format not recognized

@@ -253,7 +253,9 @@ def guess_show(show_title, tracker_list):
 
     playing_show = highest_ratio[0]
     if highest_ratio[1] > 0.7:
-        return playing_show
+        return (playing_show, highest_ratio[1])
+    else:
+        return (None, 0)
 
 def redirect_show(show_tuple, redirections, tracker_list):
     """ Use a redirection dictionary and return the new show ID and episode acordingly """
@@ -325,16 +327,38 @@ def get_anitopy_anime_information(filename):
     try:
         anime_information = anitopy.parse(filename)
         show_title = anime_information['anime_title']
-        (show_ep_start, show_ep_end) = int(anime_information['episode_number']), int(anime_information['episode_number'])
+        if "episode_number" in anime_information.keys():
+            (show_ep_start, show_ep_end) = int(anime_information['episode_number']), int(anime_information['episode_number'])
+        else:
+            (show_ep_start, show_ep_end) = (1, 1)
         return show_title, show_ep_start, show_ep_end
     except:
         return None, None, None
 
 def guess_anitopy_anime_information(filename, tracker_list):
     try:
-        (show_title, show_ep_start, show_ep_end) = get_anitopy_anime_information(filename)
-        show = guess_show(show_title, tracker_list)
-        return show, show_title, show_ep_start, show_ep_end
+        (folderName, file) = os.path.split(filename)
+        if len(folderName) == 0:
+            (show_title, show_ep_start, show_ep_end) = get_anitopy_anime_information(filename)
+            show = guess_show(show_title, tracker_list)
+            return show[0], show_title, show_ep_start, show_ep_end
+        else:
+            # Path included, search both
+            (folder_show_title, x, y) = get_anitopy_anime_information(folderName)
+            (show_title, show_ep_start, show_ep_end) = get_anitopy_anime_information(file)
+            if len(show_title) == 0 and len(folder_show_title) > 0 and show_ep_start > 0:
+                show_title = folder_show_title
+            elif len(show_title) > 0 and len(folder_show_title) > 0:
+                # attempt to guess both shows, and pick the better option
+                (folder_show, folderRatio) = guess_show(folder_show_title, tracker_list)
+                (show, ratio) = guess_show(show_title, tracker_list)
+                if folderRatio > ratio:
+                    return folder_show, folder_show_title, show_ep_start, show_ep_end
+                else:
+                    return show, show_title, show_ep_start, show_ep_end
+            else:
+                show = guess_show(show_title, tracker_list)
+                return show[0], show_title, show_ep_start, show_ep_end
     except:
         return None, None, None, None
 
@@ -349,9 +373,29 @@ def get_aie_anime_information(filename):
 
 def guess_aie_anime_information(filename, tracker_list):
     try:
-        (show_title, show_ep_start, show_ep_end) = get_aie_anime_information(filename)
-        show = guess_show(show_title, tracker_list)
-        return show, show_title, show_ep_start, show_ep_end
+       (folderName, file) = os.path.split(filename)
+       if folderName is None or len(folderName) == 0:
+           (show_title, show_ep_start, show_ep_end) = get_aie_anime_information(filename)
+           show = guess_show(show_title, tracker_list)
+           return show[0], show_title, show_ep_start, show_ep_end
+       else:
+            # Path included, search both
+           (folder_show_title, x, y) = get_aie_anime_information(folderName)
+           (show_title, show_ep_start, show_ep_end) = get_aie_anime_information(file)
+           if len(show_title) == 0 and len(folder_show_title) > 0 and show_ep_start > 0:
+               show_title = folder_show_title
+           elif len(show_title) > 0 and len(folder_show_title) > 0:
+               # attempt to guess both shows, and pick the better option
+               (folder_show, folderRatio) = guess_show(folder_show_title, tracker_list)
+               (show, ratio) = guess_show(show_title, tracker_list)
+               if folderRatio > ratio:
+                   return folder_show, folder_show_title, show_ep_start, show_ep_end
+               else:
+                   return show, show_title, show_ep_start, show_ep_end
+           else:
+               show = guess_show(show_title, tracker_list)
+               return show[0], show_title, show_ep_start, show_ep_end
+
     except:
         return None, None, None, None
 
