@@ -15,6 +15,7 @@
 #
 
 import os
+
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
@@ -48,6 +49,7 @@ class SettingsWindow(Gtk.Window):
     switch_tracker = GtkTemplate.Child()
 
     radio_tracker_local = GtkTemplate.Child()
+    radio_tracker_mpris = GtkTemplate.Child()
     entry_player_process = GtkTemplate.Child()
     btn_file_chooser_executable = GtkTemplate.Child()
     listbox_directories = GtkTemplate.Child()
@@ -63,6 +65,12 @@ class SettingsWindow(Gtk.Window):
     entry_plex_password = GtkTemplate.Child()
     checkbox_plex_obey_wait = GtkTemplate.Child()
     spin_tracker_update_wait = GtkTemplate.Child()
+
+    radio_tracker_jellyfin = GtkTemplate.Child()
+    entry_jellyfin_host = GtkTemplate.Child()
+    spin_jellyfin_port = GtkTemplate.Child()
+    entry_jellyfin_username = GtkTemplate.Child()
+    entry_jellyfin_apikey = GtkTemplate.Child()
 
     checkbox_tracker_update_close = GtkTemplate.Child()
     checkbox_tracker_update_prompt = GtkTemplate.Child()
@@ -126,42 +134,77 @@ class SettingsWindow(Gtk.Window):
             'progress_complete': self.colorbutton_progress_complete
         }
 
-        self.radiobutton_download_days.connect("toggled", self._button_toggled, self.spinbutton_download_days)
-        self.radiobutton_upload_minutes.connect("toggled", self._button_toggled, self.spinbutton_upload_minutes)
-        self.radiobutton_upload_size.connect("toggled", self._button_toggled, self.spinbutton_upload_size)
-        self.checkbox_auto_status_change.connect("toggled", self._button_toggled, self.checkbox_auto_status_change_if_scored)
-        self.checkbox_show_tray.connect("toggled", self._button_toggled, self.checkbox_close_to_tray)
-        self.checkbox_show_tray.connect("toggled", self._button_toggled, self.checkbox_start_in_tray)
-        self.checkbox_show_tray.connect("toggled", self._button_toggled, self.checkbox_tray_api_icon)
+        if os.sys.platform == 'linux':
+            self.radio_tracker_mpris.set_visible(True)
+
+        self.radiobutton_download_days.connect(
+            "toggled", self._button_toggled, self.spinbutton_download_days)
+        self.radiobutton_upload_minutes.connect(
+            "toggled", self._button_toggled, self.spinbutton_upload_minutes)
+        self.radiobutton_upload_size.connect(
+            "toggled", self._button_toggled, self.spinbutton_upload_size)
+        self.checkbox_auto_status_change.connect(
+            "toggled", self._button_toggled, self.checkbox_auto_status_change_if_scored)
+        self.checkbox_show_tray.connect(
+            "toggled", self._button_toggled, self.checkbox_close_to_tray)
+        self.checkbox_show_tray.connect(
+            "toggled", self._button_toggled, self.checkbox_start_in_tray)
+        self.checkbox_show_tray.connect(
+            "toggled", self._button_toggled, self.checkbox_tray_api_icon)
 
         self._load_config()
 
     def _load_config(self):
         """Engine Configuration"""
-        self.switch_tracker.set_active(self.engine.get_config('tracker_enabled'))
+        self.switch_tracker.set_active(
+            self.engine.get_config('tracker_enabled'))
 
         if self.engine.get_config('tracker_type') == 'local':
             self.radio_tracker_local.set_active(True)
+        elif self.engine.get_config('tracker_type') == 'mpris':
+            self.radio_tracker_mpris.set_active(True)
         elif self.engine.get_config('tracker_type') == 'plex':
             self.radio_tracker_plex.set_active(True)
+        elif self.engine.get_config('tracker_type') == 'jellyfin':
+            self.radio_tracker_jellyfin.set_active(True)
 
-        self.entry_player_process.set_text(self.engine.get_config('tracker_process'))
-        self.btn_file_chooser_executable.set_filename(self.engine.get_config('player'))
-        self.checkbox_library_startup.set_active(self.engine.get_config('library_autoscan'))
-        self.checkbox_library_entire_list.set_active(self.engine.get_config('scan_whole_list'))
-        self.checkbox_library_full_path.set_active(self.engine.get_config('library_full_path'))
+        self.entry_player_process.set_text(
+            self.engine.get_config('tracker_process'))
+        self.btn_file_chooser_executable.set_filename(
+            self.engine.get_config('player'))
+        self.checkbox_library_startup.set_active(
+            self.engine.get_config('library_autoscan'))
+        self.checkbox_library_entire_list.set_active(
+            self.engine.get_config('scan_whole_list'))
+        self.checkbox_library_full_path.set_active(
+            self.engine.get_config('library_full_path'))
         self._load_directories(self.engine.get_config('searchdir'))
 
         self.entry_plex_host.set_text(self.engine.get_config('plex_host'))
         self.spin_plex_port.set_value(int(self.engine.get_config('plex_port')))
         self.entry_plex_username.set_text(self.engine.get_config('plex_user'))
-        self.entry_plex_password.set_text(self.engine.get_config('plex_passwd'))
-        self.checkbox_plex_obey_wait.set_active(self.engine.get_config('plex_obey_update_wait_s'))
+        self.entry_plex_password.set_text(
+            self.engine.get_config('plex_passwd'))
+        self.checkbox_plex_obey_wait.set_active(
+            self.engine.get_config('plex_obey_update_wait_s'))
 
-        self.spin_tracker_update_wait.set_value(self.engine.get_config('tracker_update_wait_s'))
-        self.checkbox_tracker_update_close.set_active(self.engine.get_config('tracker_update_close'))
-        self.checkbox_tracker_update_prompt.set_active(self.engine.get_config('tracker_update_prompt'))
-        self.checkbox_tracker_not_found_prompt.set_active(self.engine.get_config('tracker_not_found_prompt'))
+        self.entry_jellyfin_host.set_text(
+            self.engine.get_config('jellyfin_host'))
+        self.spin_jellyfin_port.set_value(
+            int(self.engine.get_config('jellyfin_port')))
+        self.entry_jellyfin_username.set_text(
+            self.engine.get_config('jellyfin_user'))
+        self.entry_jellyfin_apikey.set_text(
+            self.engine.get_config('jellyfin_api_key'))
+
+        self.spin_tracker_update_wait.set_value(
+            self.engine.get_config('tracker_update_wait_s'))
+        self.checkbox_tracker_update_close.set_active(
+            self.engine.get_config('tracker_update_close'))
+        self.checkbox_tracker_update_prompt.set_active(
+            self.engine.get_config('tracker_update_prompt'))
+        self.checkbox_tracker_not_found_prompt.set_active(
+            self.engine.get_config('tracker_not_found_prompt'))
 
         if self.engine.get_config('autoretrieve') == 'always':
             self.radiobutton_download_always.set_active(True)
@@ -179,15 +222,22 @@ class SettingsWindow(Gtk.Window):
         else:
             self.radiobutton_upload_off.set_active(True)
 
-        self.checkbox_upload_exit.set_active(self.engine.get_config('autosend_at_exit'))
+        self.checkbox_upload_exit.set_active(
+            self.engine.get_config('autosend_at_exit'))
 
-        self.spinbutton_download_days.set_value(self.engine.get_config('autoretrieve_days'))
-        self.spinbutton_upload_minutes.set_value(self.engine.get_config('autosend_minutes'))
-        self.spinbutton_upload_size.set_value(self.engine.get_config('autosend_size'))
+        self.spinbutton_download_days.set_value(
+            self.engine.get_config('autoretrieve_days'))
+        self.spinbutton_upload_minutes.set_value(
+            self.engine.get_config('autosend_minutes'))
+        self.spinbutton_upload_size.set_value(
+            self.engine.get_config('autosend_size'))
 
-        self.checkbox_auto_status_change.set_active(self.engine.get_config('auto_status_change'))
-        self.checkbox_auto_status_change_if_scored.set_active(self.engine.get_config('auto_status_change_if_scored'))
-        self.checkbox_auto_date_change.set_active(self.engine.get_config('auto_date_change'))
+        self.checkbox_auto_status_change.set_active(
+            self.engine.get_config('auto_status_change'))
+        self.checkbox_auto_status_change_if_scored.set_active(
+            self.engine.get_config('auto_status_change_if_scored'))
+        self.checkbox_auto_date_change.set_active(
+            self.engine.get_config('auto_date_change'))
 
         self.checkbox_show_tray.set_active(self.config['show_tray'])
         self.checkbox_close_to_tray.set_active(self.config['close_to_tray'])
@@ -195,24 +245,34 @@ class SettingsWindow(Gtk.Window):
         self.checkbox_tray_api_icon.set_active(self.config['tray_api_icon'])
 
         """GTK Interface configuration"""
-        self.checkbox_remember_geometry.set_active(self.config['remember_geometry'])
-        self.checkbox_classic_progress.set_active(not self.config['episodebar_style'])
+        self.checkbox_remember_geometry.set_active(
+            self.config['remember_geometry'])
+        self.checkbox_classic_progress.set_active(
+            not self.config['episodebar_style'])
 
         for color_key, color_button in self._color_buttons.items():
             color = getColor(self.config['colors'][color_key])
             color_button.set_color(color)
 
         self._set_tracker_radio_buttons()
-        self._button_toggled(self.radiobutton_download_days, self.spinbutton_download_days)
-        self._button_toggled(self.radiobutton_upload_minutes, self.spinbutton_upload_minutes)
-        self._button_toggled(self.radiobutton_upload_size, self.spinbutton_upload_size)
-        self._button_toggled(self.checkbox_auto_status_change, self.checkbox_auto_status_change_if_scored)
-        self._button_toggled(self.checkbox_show_tray, self.checkbox_close_to_tray)
-        self._button_toggled(self.checkbox_show_tray, self.checkbox_start_in_tray)
-        self._button_toggled(self.checkbox_show_tray, self.checkbox_tray_api_icon)
+        self._button_toggled(self.radiobutton_download_days,
+                             self.spinbutton_download_days)
+        self._button_toggled(self.radiobutton_upload_minutes,
+                             self.spinbutton_upload_minutes)
+        self._button_toggled(self.radiobutton_upload_size,
+                             self.spinbutton_upload_size)
+        self._button_toggled(self.checkbox_auto_status_change,
+                             self.checkbox_auto_status_change_if_scored)
+        self._button_toggled(self.checkbox_show_tray,
+                             self.checkbox_close_to_tray)
+        self._button_toggled(self.checkbox_show_tray,
+                             self.checkbox_start_in_tray)
+        self._button_toggled(self.checkbox_show_tray,
+                             self.checkbox_tray_api_icon)
 
         if not TrackmaStatusIcon.is_tray_available():
-            self.checkbox_show_tray.set_label('Show tray icon (Not supported in this environment)')
+            self.checkbox_show_tray.set_label(
+                'Show tray icon (Not supported in this environment)')
             self.checkbox_show_tray.set_sensitive(False)
             self.checkbox_close_to_tray.set_sensitive(False)
             self.checkbox_start_in_tray.set_sensitive(False)
@@ -229,33 +289,31 @@ class SettingsWindow(Gtk.Window):
     @GtkTemplate.Callback
     def _on_switch_tracker_state_set(self, switch, state):
         self.radio_tracker_local.set_sensitive(state)
+        self.radio_tracker_mpris.set_sensitive(state)
         self.radio_tracker_plex.set_sensitive(state)
+        self.radio_tracker_jellyfin.set_sensitive(state)
 
         if state:
             self._set_tracker_radio_buttons()
         else:
             self._enable_local(state)
             self._enable_plex(state)
+            self._enable_jellyfin(state)
 
         self.checkbox_tracker_update_close.set_sensitive(state)
         self.checkbox_tracker_update_prompt.set_sensitive(state)
         self.checkbox_tracker_not_found_prompt.set_sensitive(state)
 
     @GtkTemplate.Callback
-    def _on_radio_tracker_local_toggled(self, radio_button):
-        self._set_tracker_radio_buttons()
-
-    @GtkTemplate.Callback
-    def _on_radio_tracker_plex_toggled(self, radio_button):
-        self._set_tracker_radio_buttons()
-
-    def _set_tracker_radio_buttons(self):
-        if self.radio_tracker_local.get_active():
+    def _set_tracker_radio_buttons(self, radio_button=None):
+        if self.radio_tracker_local.get_active() or self.radio_tracker_mpris.get_active():
             self._enable_local(True)
             self._enable_plex(False)
+            self._enable_jellyfin(False)
         else:
             self._enable_local(False)
             self._enable_plex(True)
+            self._enable_jellyfin(True)
 
     def _enable_local(self, enable):
         self.entry_player_process.set_sensitive(enable)
@@ -270,6 +328,12 @@ class SettingsWindow(Gtk.Window):
         self.entry_plex_username.set_sensitive(enable)
         self.entry_plex_password.set_sensitive(enable)
         self.checkbox_plex_obey_wait.set_sensitive(enable)
+
+    def _enable_jellyfin(self, enable):
+        self.entry_jellyfin_host.set_sensitive(enable)
+        self.spin_jellyfin_port.set_sensitive(enable)
+        self.entry_jellyfin_username.set_sensitive(enable)
+        self.entry_jellyfin_apikey.set_sensitive(enable)
 
     def _load_directories(self, paths):
         if isinstance(paths, str):
@@ -287,8 +351,8 @@ class SettingsWindow(Gtk.Window):
         chooser_dialog = Gtk.FileChooserDialog('Select a directory',
                                                self.get_parent_window(),
                                                Gtk.FileChooserAction.OPEN,
-                                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+                                               ("_Cancel", Gtk.ResponseType.CANCEL,
+                                                "_Open", Gtk.ResponseType.OK))
         chooser_dialog.set_default_response(Gtk.ResponseType.OK)
         chooser_dialog.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
 
@@ -299,8 +363,10 @@ class SettingsWindow(Gtk.Window):
 
     def save_config(self):
         """Engine Configuration"""
-        self.engine.set_config('player', self.btn_file_chooser_executable.get_filename() or '')
-        self.engine.set_config('tracker_process', self.entry_player_process.get_text())
+        self.engine.set_config(
+            'player', self.btn_file_chooser_executable.get_filename() or '')
+        self.engine.set_config(
+            'tracker_process', self.entry_player_process.get_text())
         self.engine.set_config('library_autoscan',
                                self.checkbox_library_startup.get_active())
         self.engine.set_config('scan_whole_list',
@@ -308,24 +374,47 @@ class SettingsWindow(Gtk.Window):
         self.engine.set_config('library_full_path',
                                self.checkbox_library_full_path.get_active())
         self.engine.set_config('plex_host', self.entry_plex_host.get_text())
-        self.engine.set_config('plex_port', str(int(self.spin_plex_port.get_value())))
-        self.engine.set_config('plex_obey_update_wait_s', self.checkbox_plex_obey_wait.get_active())
-        self.engine.set_config('plex_user', self.entry_plex_username.get_text())
-        self.engine.set_config('plex_passwd', self.entry_plex_password.get_text())
-        self.engine.set_config('tracker_enabled', self.switch_tracker.get_active())
-        self.engine.set_config('autosend_at_exit', self.checkbox_upload_exit.get_active())
-        self.engine.set_config('tracker_update_wait_s', self.spin_tracker_update_wait.get_value())
-        self.engine.set_config('tracker_update_close', self.checkbox_tracker_update_close.get_active())
-        self.engine.set_config('tracker_update_prompt', self.checkbox_tracker_update_prompt.get_active())
-        self.engine.set_config('tracker_not_found_prompt', self.checkbox_tracker_not_found_prompt.get_active())
+        self.engine.set_config('plex_port', str(
+            int(self.spin_plex_port.get_value())))
+        self.engine.set_config('plex_obey_update_wait_s',
+                               self.checkbox_plex_obey_wait.get_active())
+        self.engine.set_config(
+            'plex_user', self.entry_plex_username.get_text())
+        self.engine.set_config(
+            'plex_passwd', self.entry_plex_password.get_text())
+        self.engine.set_config(
+            'jellyfin_host', self.entry_jellyfin_host.get_text())
+        self.engine.set_config('jellyfin_port', str(
+            int(self.spin_jellyfin_port.get_value())))
+        self.engine.set_config(
+            'jellyfin_user', self.entry_jellyfin_username.get_text())
+        self.engine.set_config(
+            'jellyfin_api_key', self.entry_jellyfin_apikey.get_text())
+        self.engine.set_config(
+            'tracker_enabled', self.switch_tracker.get_active())
+        self.engine.set_config(
+            'autosend_at_exit', self.checkbox_upload_exit.get_active())
+        self.engine.set_config('tracker_update_wait_s',
+                               self.spin_tracker_update_wait.get_value())
+        self.engine.set_config('tracker_update_close',
+                               self.checkbox_tracker_update_close.get_active())
+        self.engine.set_config('tracker_update_prompt',
+                               self.checkbox_tracker_update_prompt.get_active())
+        self.engine.set_config('tracker_not_found_prompt',
+                               self.checkbox_tracker_not_found_prompt.get_active())
 
-        self.engine.set_config('searchdir', [row.directory for row in self.listbox_directories.get_children()])
+        self.engine.set_config(
+            'searchdir', [row.directory for row in self.listbox_directories.get_children()])
 
         # Tracker type
         if self.radio_tracker_local.get_active():
             self.engine.set_config('tracker_type', 'local')
+        elif self.radio_tracker_mpris.get_active():
+            self.engine.set_config('tracker_type', 'mpris')
         elif self.radio_tracker_plex.get_active():
             self.engine.set_config('tracker_type', 'plex')
+        elif self.radio_tracker_jellyfin.get_active():
+            self.engine.set_config('tracker_type', 'jellyfin')
 
         # Auto-retrieve
         if self.radiobutton_download_always.get_active():
@@ -345,13 +434,19 @@ class SettingsWindow(Gtk.Window):
         else:
             self.engine.set_config('autosend', 'off')
 
-        self.engine.set_config('autoretrieve_days', self.spinbutton_download_days.get_value_as_int())
-        self.engine.set_config('autosend_minutes', self.spinbutton_upload_minutes.get_value_as_int())
-        self.engine.set_config('autosend_size', self.spinbutton_upload_size.get_value_as_int())
+        self.engine.set_config(
+            'autoretrieve_days', self.spinbutton_download_days.get_value_as_int())
+        self.engine.set_config(
+            'autosend_minutes', self.spinbutton_upload_minutes.get_value_as_int())
+        self.engine.set_config(
+            'autosend_size', self.spinbutton_upload_size.get_value_as_int())
 
-        self.engine.set_config('auto_status_change', self.checkbox_auto_status_change.get_active())
-        self.engine.set_config('auto_status_change_if_scored', self.checkbox_auto_status_change_if_scored.get_active())
-        self.engine.set_config('auto_date_change', self.checkbox_auto_date_change.get_active())
+        self.engine.set_config('auto_status_change',
+                               self.checkbox_auto_status_change.get_active())
+        self.engine.set_config('auto_status_change_if_scored',
+                               self.checkbox_auto_status_change_if_scored.get_active())
+        self.engine.set_config(
+            'auto_date_change', self.checkbox_auto_date_change.get_active())
         self.engine.save_config()
 
         """GTK Interface configuration"""
@@ -367,10 +462,12 @@ class SettingsWindow(Gtk.Window):
             self.config['tray_api_icon'] = False
 
         self.config['remember_geometry'] = self.checkbox_remember_geometry.get_active()
-        self.config['episodebar_style'] = int(not self.checkbox_classic_progress.get_active())
+        self.config['episodebar_style'] = int(
+            not self.checkbox_classic_progress.get_active())
 
         """Update Colors"""
-        self.config['colors'] = {key: reprColor(col.get_color()) for key, col in self._color_buttons.items()}
+        self.config['colors'] = {key: reprColor(
+            col.get_color()) for key, col in self._color_buttons.items()}
 
         utils.save_config(self.config, self.configfile)
 
@@ -395,8 +492,8 @@ class DirectoryRow(Gtk.ListBoxRow):
 
         self.set_activatable(False)
         self.set_margin_bottom(5)
-        self.set_margin_left(16)
-        self.set_margin_right(16)
+        self.set_margin_start(16)
+        self.set_margin_end(16)
         self.set_margin_top(5)
 
         self.add(box)

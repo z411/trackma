@@ -18,21 +18,208 @@ from gi.repository import Gtk, Gdk, Pango, GObject
 from trackma import utils
 
 
-class ShowTreeView(Gtk.TreeView):
-    __gsignals__ = {'column-toggled': (GObject.SIGNAL_RUN_LAST, \
-            GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN) )}
+class ShowListStore(Gtk.ListStore):
+    __cols = (
+        ('id', int),
+        ('title', str),
+        ('stat', int),
+        ('score', float),
+        ('stat-text', str),
+        ('score-text', str),
+        ('total-eps', int),
+        ('subvalue', int),
+        ('avail-eps', GObject.TYPE_PYOBJECT),
+        ('color', str),
+        ('stat-pcent', int),
+        ('start', str),
+        ('end', str),
+        ('my-start', str),
+        ('my-end', str),
+        ('my-status', str),
+        ('status', int),
+    )
 
-    def __init__(self, status, colors, visible_columns, progress_style=1, decimals=0):
+    def __init__(self, decimals=0, colors=dict()):
+        super().__init__(*self.__class__.__columns__())
+        self.colors = colors
+        self.decimals = decimals
+        self.set_sort_column_id(1, Gtk.SortType.ASCENDING)
+
+    @staticmethod
+    def format_date(date):
+        if date:
+            try:
+                return date.strftime('%Y-%m-%d')
+            except ValueError:
+                return '?'
+        else:
+            return '-'
+
+    @classmethod
+    def __columns__(cls):
+        return (k for i, k in cls.__cols)
+
+    @classmethod
+    def column(cls, key):
+        try:
+            return cls.__cols.index(next(i for i in cls.__cols if i[0] == key))
+        except ValueError:
+            return None
+
+    def _get_color(self, show, eps):
+        if show.get('queued'):
+            return self.colors['is_queued']
+        elif eps and max(eps) > show['my_progress']:
+            return self.colors['new_episode']
+        elif show['status'] == utils.STATUS_AIRING:
+            return self.colors['is_airing']
+        elif show['status'] == utils.STATUS_NOTYET:
+            return self.colors['not_aired']
+        else:
+            return None
+
+    def append(self, show, altname=None, eps=None):
+        episodes_str = "{} / {}".format(show['my_progress'],
+                                        show['total'] or '?')
+        if show['total'] and show['my_progress'] <= show['total']:
+            progress = (float(show['my_progress']) / show['total']) * 100
+        else:
+            progress = 0
+
+        title_str = show['title']
+        if altname:
+            title_str += " [%s]" % altname
+
+        score_str = "%0.*f" % (self.decimals, show['my_score'])
+        aired_eps = utils.estimate_aired_episodes(show)
+
+        if eps:
+            available_eps = eps.keys()
+        else:
+            available_eps = []
+
+        start_date = self.format_date(show['start_date'])
+        end_date = self.format_date(show['end_date'])
+        my_start_date = self.format_date(show['my_start_date'])
+        my_finish_date = self.format_date(show['my_finish_date'])
+
+        row = [show['id'],
+               title_str,
+               show['my_progress'],
+               show['my_score'],
+               episodes_str,
+               score_str,
+               show['total'],
+               aired_eps,
+               available_eps,
+               self._get_color(show, available_eps),
+               progress,
+               start_date,
+               end_date,
+               my_start_date,
+               my_finish_date,
+               show['my_status'],
+               show['status']
+               ]
+        super().append(row)
+
+    def update_or_append(self, show):
+        for row in self:
+            if int(row[0]) == show['id']:
+                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+                row[2] = show['my_progress']
+                row[4] = episodes_str
+                score_str = "%0.*f" % (self.decimals, show['my_score'])
+                row[3] = show['my_score']
+                row[5] = score_str
+                row[9] = self._get_color(show, row[8])
+                row[15] = show['my_status']
+                return
+        self.append(show)
+
+    def update(self, show):
+        for row in self:
+            if int(row[0]) == show['id']:
+                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
+                row[2] = show['my_progress']
+                row[4] = episodes_str
+
+                score_str = "%0.*f" % (self.decimals, show['my_score'])
+
+                row[3] = show['my_score']
+                row[5] = score_str
+                row[9] = self._get_color(show, row[8])
+                row[15] = show['my_status']
+                return
+
+        # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
+
+    def update_title(self, show, altname=None):
+        for row in self:
+            if int(row[0]) == show['id']:
+                if altname:
+                    title_str = "%s [%s]" % (show['title'], altname)
+                else:
+                    title_str = show['title']
+
+                row[1] = title_str
+                return
+
+    def remove(self, show=None, id=None):
+        for row in self:
+            if int(row[0]) == (show['id'] if show is not None else id):
+                Gtk.ListStore.remove(self, row.iter)
+                return
+
+    def playing(self, show, is_playing):
+        # Change the color if the show is currently playing
+        for row in self:
+            if int(row[0]) == show['id']:
+                if is_playing:
+                    row[9] = self.colors['is_playing']
+                else:
+                    row[9] = self._get_color(show, row[8])
+                return
+
+
+class ShowListFilter(Gtk.TreeModelFilter):
+    def __init__(self, status=None, *args, **kwargs):
+        super().__init__(
+            *args,
+            **kwargs
+        )
+        self.set_visible_func(self.status_filter)
+        self._status = status
+
+    def status_filter(self, model, iter, data):
+        return self._status is None or model[iter][15] == self._status
+
+    def get_value(self, obj, key='id'):
+        try:
+            if type(obj) == Gtk.TreePath:
+                obj = self.get_iter(obj)
+            if isinstance(key, (str,)):
+                key = self.props.child_model.column(key)
+            return super().get_value(obj, key)
+        except:
+            return None
+
+
+class ShowTreeView(Gtk.TreeView):
+    __gsignals__ = {'column-toggled': (GObject.SignalFlags.RUN_LAST,
+                                       GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN))}
+
+    def __init__(self, colors, visible_columns, progress_style=1):
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
         self.visible_columns = visible_columns
-        self.decimals = decimals
-        self.status_filter = status
         self.progress_style = progress_style
 
         self.set_enable_search(True)
         self.set_search_column(1)
+        self.set_property('has-tooltip', True)
+        self.connect('query-tooltip', self.show_tooltip)
 
         self.cols = dict()
         self.available_columns = (
@@ -68,8 +255,8 @@ class ShowTreeView(Gtk.TreeView):
 
         #renderer_id = Gtk.CellRendererText()
         #self.cols['ID'].pack_start(renderer_id, False, True, 0)
-        #self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
-        #self.cols['ID'].set_expand(False)
+        # self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        # self.cols['ID'].set_expand(False)
         #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
@@ -78,7 +265,8 @@ class ShowTreeView(Gtk.TreeView):
         self.cols['Title'].set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         self.cols['Title'].set_expand(True)
         self.cols['Title'].add_attribute(renderer_title, 'text', 1)
-        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9) # Using foreground-gdk does not work, possibly due to the timing of it being set
+        # Using foreground-gdk does not work, possibly due to the timing of it being set
+        self.cols['Title'].add_attribute(renderer_title, 'foreground', 9)
         renderer_title.set_property('ellipsize', Pango.EllipsizeMode.END)
 
         renderer_progress = Gtk.CellRendererText()
@@ -116,24 +304,6 @@ class ShowTreeView(Gtk.TreeView):
         self.cols['My end'].pack_start(renderer, False)
         self.cols['My end'].add_attribute(renderer, 'text', 14)
 
-        self.store = Gtk.ListStore(
-            int,                   # ID
-            str,                   # Title
-            int,                   # Episodes
-            float,                 # Score
-            str,                   # Episodes_str
-            str,                   # Score_str
-            int,                   # Total
-            int,                   # Subvalue
-            GObject.TYPE_PYOBJECT, # Eps
-            str,                   # Color
-            int,                   # Progress%
-            str,                   # start_date
-            str,                   # end_date
-            str,                   # my_start_date
-            str)                   # my_finish_date
-        self.set_model(self.store)
-
     def _header_button_press(self, button, event):
         if event.button == 3:
             menu = Gtk.Menu()
@@ -142,7 +312,8 @@ class ShowTreeView(Gtk.TreeView):
 
                 item = Gtk.CheckMenuItem(name)
                 item.set_active(is_active)
-                item.connect('activate', self._header_menu_item, name, not is_active)
+                item.connect('activate', self._header_menu_item,
+                             name, not is_active)
                 menu.append(item)
                 item.show()
 
@@ -151,121 +322,44 @@ class ShowTreeView(Gtk.TreeView):
 
         return False
 
+    @property
+    def filter(self):
+        return self.props.model.props.model
+
+    def show_tooltip(self, view, x, y, kbd, tip):
+        has_path, tx, ty, model, path, _iter = view.get_tooltip_context(
+            x, y, kbd)
+        if has_path:
+            _, col, _, _ = view.get_path_at_pos(tx, ty)
+            renderer = next(k for i, k in enumerate(col.get_cells()) if i == 0)
+            lines = []
+
+            if col == self.cols['Percent']:
+                lines.append("Watched: %d" %
+                             view.filter.get_value(path, 'stat'))
+                if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.STATUS_NOTYET:
+                    lines.append("Aired%s: %d" % (' (estimated)' if view.filter.get_value(
+                        path, 'status') == utils.STATUS_AIRING else '', view.filter.get_value(path, 'subvalue')))
+
+                if len(view.filter.get_value(path, 'avail-eps')) > 0:
+                    lines.append("Available: %d" %
+                                 max(view.filter.get_value(path, 'avail-eps')))
+
+                lines.append("Total: %s" %
+                             (view.filter.get_value(path, 'total-eps') or '?'))
+
+            if len(lines):
+                tip.set_markup('\n'.join(lines))
+                self.set_tooltip_cell(tip, path, col, renderer)
+                return True
+        return False
+
     def _header_menu_item(self, w, column_name, visible):
         self.emit('column-toggled', column_name, visible)
 
-    def _format_date(self, date):
-        if date:
-            try:
-                return date.strftime('%Y-%m-%d')
-            except ValueError:
-                return '?'
-        else:
-            return '-'
-
-    def _get_color(self, show, eps):
-        if show.get('queued'):
-            return self.colors['is_queued']
-        elif eps and max(eps) > show['my_progress']:
-            return self.colors['new_episode']
-        elif show['status'] == utils.STATUS_AIRING:
-            return self.colors['is_airing']
-        elif show['status'] == utils.STATUS_NOTYET:
-            return self.colors['not_aired']
-        else:
-            return None
-
-    def append_start(self):
-        self.freeze_child_notify()
-        self.store.clear()
-
-    def append(self, show, altname=None, eps=None):
-        episodes_str = "{} / {}".format(show['my_progress'], show['total'] or '?')
-        if show['total'] and show['my_progress'] <= show['total']:
-            progress = (float(show['my_progress']) / show['total']) * 100
-        else:
-            progress = 0
-
-        title_str = show['title']
-        if altname:
-            title_str += " [%s]" % altname
-
-        score_str = "%0.*f" % (self.decimals, show['my_score'])
-        aired_eps = utils.estimate_aired_episodes(show)
-        if not aired_eps:
-            aired_eps = 0
-
-        if eps:
-            available_eps = eps.keys()
-        else:
-            available_eps = []
-
-        start_date =     self._format_date(show['start_date'])
-        end_date =       self._format_date(show['end_date'])
-        my_start_date =  self._format_date(show['my_start_date'])
-        my_finish_date = self._format_date(show['my_finish_date'])
-
-        row = [show['id'],
-               title_str,
-               show['my_progress'],
-               show['my_score'],
-               episodes_str,
-               score_str,
-               show['total'],
-               aired_eps,
-               available_eps,
-               self._get_color(show, available_eps),
-               progress,
-               start_date,
-               end_date,
-               my_start_date,
-               my_finish_date]
-        self.store.append(row)
-
-    def append_finish(self):
-        self.thaw_child_notify()
-        self.store.set_sort_column_id(1, Gtk.SortType.ASCENDING)
-
-    def update(self, show):
-        for row in self.store:
-            if int(row[0]) == show['id']:
-                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
-                row[2] = show['my_progress']
-                row[4] = episodes_str
-
-                score_str = "%0.*f" % (self.decimals, show['my_score'])
-
-                row[3] = show['my_score']
-                row[5] = score_str
-                row[9] = self._get_color(show, row[8])
-                return
-
-        #print("Warning: Show ID not found in ShowView (%d)" % show['id'])
-
-    def update_title(self, show, altname=None):
-        for row in self.store:
-            if int(row[0]) == show['id']:
-                if altname:
-                    title_str = "%s [%s]" % (show['title'], altname)
-                else:
-                    title_str = show['title']
-
-                row[1] = title_str
-                return
-
-    def playing(self, show, is_playing):
-        # Change the color if the show is currently playing
-        for row in self.store:
-            if int(row[0]) == show['id']:
-                if is_playing:
-                    row[9] = self.colors['is_playing']
-                else:
-                    row[9] = self._get_color(show, row[8])
-                return
-
     def select(self, show):
         """Select specified row or first if not found"""
-        for row in self.store:
+        for row in self.get_model():
             if int(row[0]) == show['id']:
                 selection = self.get_selection()
                 selection.select_iter(row.iter)
@@ -277,26 +371,26 @@ class ShowTreeView(Gtk.TreeView):
 class ProgressCellRenderer(Gtk.CellRenderer):
     value = 0
     subvalue = 0
-    total = 0
+    _total = 0
     eps = []
     _subheight = 5
 
     __gproperties__ = {
         "value": (GObject.TYPE_INT, "Value",
                   "Progress percentage", 0, 1000, 0,
-                  GObject.PARAM_READWRITE),
+                  GObject.ParamFlags.READWRITE),
 
         "subvalue": (GObject.TYPE_INT, "Subvalue",
                      "Sub percentage", 0, 1000, 0,
-                     GObject.PARAM_READWRITE),
+                     GObject.ParamFlags.READWRITE),
 
         "total": (GObject.TYPE_INT, "Total",
                   "Total percentage", 0, 1000, 0,
-                  GObject.PARAM_READWRITE),
+                  GObject.ParamFlags.READWRITE),
 
         "eps": (GObject.TYPE_PYOBJECT, "Episodes",
                 "Available episodes",
-                GObject.PARAM_READWRITE),
+                GObject.ParamFlags.READWRITE),
     }
 
     def __init__(self, colors):
@@ -310,13 +404,22 @@ class ProgressCellRenderer(Gtk.CellRenderer):
     def do_set_property(self, pspec, value):
         setattr(self, pspec.name, value)
 
+    @property
+    def total(self):
+        return self._total if self._total > 0 else len(self.eps)
+
+    @total.setter
+    def total(self, value):
+        self._total = value
+
     def do_get_property(self, pspec):
         return getattr(self, pspec.name)
 
     def do_render(self, cr, widget, background_area, cell_area, flags):
         (x, y, w, h) = self.do_get_size(widget, cell_area)
 
-        cr.set_source_rgb(*self.__getColor(self.colors['progress_bg'])) #set_source_rgb(0.9, 0.9, 0.9)
+        # set_source_rgb(0.9, 0.9, 0.9)
+        cr.set_source_rgb(*self.__get_color(self.colors['progress_bg']))
         cr.rectangle(x, y, w, h)
         cr.fill()
 
@@ -329,39 +432,49 @@ class ProgressCellRenderer(Gtk.CellRenderer):
             else:
                 mid = int(w / float(self.total) * self.subvalue)
 
-            cr.set_source_rgb(*self.__getColor(self.colors['progress_sub_bg'])) #set_source_rgb(0.7, 0.7, 0.7)
+            # set_source_rgb(0.7, 0.7, 0.7)
+            cr.set_source_rgb(
+                *self.__get_color(self.colors['progress_sub_bg']))
             cr.rectangle(x, y+h-self._subheight, mid, h-(h-self._subheight))
             cr.fill()
 
         if self.value:
             if self.value >= self.total:
-                cr.set_source_rgb(*self.__getColor(self.colors['progress_complete'])) #set_source_rgb(0.6, 0.8, 0.7)
+                # set_source_rgb(0.6, 0.8, 0.7)
+                cr.set_source_rgb(
+                    *self.__get_color(self.colors['progress_complete']))
                 cr.rectangle(x, y, w, h)
             else:
                 mid = int(w / float(self.total) * self.value)
-                cr.set_source_rgb(*self.__getColor(self.colors['progress_fg'])) #set_source_rgb(0.6, 0.7, 0.8)
+                # set_source_rgb(0.6, 0.7, 0.8)
+                cr.set_source_rgb(
+                    *self.__get_color(self.colors['progress_fg']))
                 cr.rectangle(x, y, mid, h)
             cr.fill()
 
         if self.eps:
-            cr.set_source_rgb(*self.__getColor(self.colors['progress_sub_fg'])) #set_source_rgb(0.4, 0.5, 0.6)
+            # set_source_rgb(0.4, 0.5, 0.6)
+            cr.set_source_rgb(
+                *self.__get_color(self.colors['progress_sub_fg']))
             for episode in self.eps:
                 if episode > 0 and episode <= self.total:
                     start = int(w / float(self.total) * (episode - 1))
                     finish = int(w / float(self.total) * episode)
-                    cr.rectangle(x+start, y+h-self._subheight, finish-start, h-(h-self._subheight))
+                    cr.rectangle(x+start, y+h-self._subheight,
+                                 finish-start, h-(h-self._subheight))
                     cr.fill()
 
-    def do_get_size(self, widget, cell_area):
-        if cell_area == None:
-            return (0, 0, 0, 0)
+    @staticmethod
+    def do_get_size(widget, cell_area):
+        if cell_area is None:
+            return 0, 0, 0, 0
         x = cell_area.x
         y = cell_area.y
         w = cell_area.width
         h = cell_area.height
-        return (x, y, w, h)
+        return x, y, w, h
 
-    def __getColor(self, colorString):
-        color = Gdk.color_parse(colorString)
+    @staticmethod
+    def __get_color(color_string):
+        color = Gdk.color_parse(color_string)
         return color.red_float, color.green_float, color.blue_float
-

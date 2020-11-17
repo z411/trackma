@@ -68,6 +68,8 @@ The following media recognition trackers are available and their requirements ar
 | inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
 | Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
 | Plex | Connects to Plex server. Enabled manually. | None |
+| Kodi | Connects to Kodi server. Enabled manually. | None |
+| Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
 | MPRIS | Connects to running MPRIS capable media players. | dbus-python |
 | Win32 | Recognition for Windows platforms. | None |
 
@@ -105,7 +107,7 @@ Trackma also has user-provided packages for several distributions.
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
-- **Void Linux:** https://github.com/voidlinux/void-packages/blob/master/srcpkgs/trackma/template
+- **Void Linux:** https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template
 
 A user from the community also is providing a Docker image:
 

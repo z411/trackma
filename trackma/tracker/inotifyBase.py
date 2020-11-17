@@ -21,6 +21,7 @@ import time
 from trackma.tracker import tracker
 from trackma import utils
 
+
 class inotifyBase(tracker.TrackerBase):
     open_file = (None, None, None)
 
@@ -39,13 +40,16 @@ class inotifyBase(tracker.TrackerBase):
         time.sleep(0.01)
 
         for p in os.listdir("/proc/"):
-            if not p.isdigit(): continue
+            if not p.isdigit():
+                continue
 
             # Get process name
-            with open('/proc/%s/cmdline' % p, 'rb') as f:
-                cmdline = f.read()
-                pname = cmdline.partition(b'\x00')[0]
-
+            try:
+                with open('/proc/%s/cmdline' % p, 'rb') as f:
+                    cmdline = f.read()
+                    pname = cmdline.partition(b'\x00')[0]
+            except FileNotFoundError:
+                continue
             # It's not one of our players
             if not self.re_players.search(pname):
                 continue
@@ -72,7 +76,8 @@ class inotifyBase(tracker.TrackerBase):
 
         time.sleep(0.01)
         for p in os.listdir("/proc/"):
-            if not p.isdigit(): continue
+            if not p.isdigit():
+                continue
             d = "/proc/%s/fd/" % p
             try:
                 for fd in os.listdir(d):
@@ -82,13 +87,15 @@ class inotifyBase(tracker.TrackerBase):
                         with open('/proc/%s/cmdline' % p, 'rb') as f:
                             cmdline = f.read()
                             pname = cmdline.partition(b'\x00')[0]
-                        self.msg.debug(self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
+                        self.msg.debug(
+                            self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
 
                         # Check if it's our process
                         if self.re_players.search(pname):
                             return p, fd
                         else:
-                            self.msg.debug(self.name, "Not read by player ({})".format(pname))
+                            self.msg.debug(
+                                self.name, "Not read by player ({})".format(pname))
             except OSError:
                 pass
 
@@ -98,7 +105,8 @@ class inotifyBase(tracker.TrackerBase):
     def _closed_handle(self, pid, fd):
         """ Check if this pid has closed this handle (or never opened it) """
         d = "/proc/%s/fd/%s" % (pid, fd)
-        time.sleep(0.01) # TODO : If we don't wait the filehandle will still be there
+        # TODO : If we don't wait the filehandle will still be there
+        time.sleep(0.01)
         return not os.path.islink(d)
 
     def _proc_open(self, path, name):
@@ -115,7 +123,8 @@ class inotifyBase(tracker.TrackerBase):
                 (state, show_tuple) = self._get_playing_show(pathname)
             else:
                 (state, show_tuple) = self._get_playing_show(name)
-            self.msg.debug(self.name, "Got status: {} {}".format(state, show_tuple))
+            self.msg.debug(
+                self.name, "Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
         else:
             self.msg.debug(self.name, "Not played by player, ignoring.")
@@ -139,4 +148,3 @@ class inotifyBase(tracker.TrackerBase):
 
         (state, show_tuple) = self._get_playing_show(None)
         self.update_show_if_needed(state, show_tuple)
-
