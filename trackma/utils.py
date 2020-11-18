@@ -37,6 +37,50 @@ class Login(Enum):
     OAUTH = auto()
     OAUTH_PKCE = auto()
 
+class BaseEum(Enum):
+    @classmethod
+    def find(cls, name):
+        try:
+            return cls(name)
+        except ValueError:
+            pass
+        try:
+            return cls[name.upper().replace(' ', '_')]
+        except KeyError:
+            pass
+        return cls.UNKNOWN
+
+    @classmethod
+    def from_int(cls, index):
+        try:
+            return list(cls.__members__.values())[index]
+        except IndexError:
+            return cls.UNKNOWN
+
+    def __int__(self):
+        try:
+            return list(self.__class__.__members__.values()).index(self)
+        except IndexError:
+            return list(self.__class__.__members__.values()).index(self.__class__.UNKNOWN)
+
+    def __lt__(self, other):
+        return int(self) < int(other)
+
+    def __le__(self, other):
+        return int(self) <= int(other)
+
+    def __gt__(self, other):
+        return int(self) > int(other)
+
+    def __ge__(self, other):
+        return int(self) >= int(other)
+
+    def __add__(self, other):
+        if isinstance(other, str):
+            return str(self) + other
+        else:
+            return super().__add__(other)
+
 STATUS_UNKNOWN = 0
 STATUS_AIRING = 1
 STATUS_FINISHED = 2
