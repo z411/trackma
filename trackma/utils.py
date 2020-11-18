@@ -73,8 +73,12 @@ class Season(Enum):
     SUMMER = auto()
     FALL = auto()
 
-SEARCH_METHOD_KW = 1
-SEARCH_METHOD_SEASON = 2
+class SearchMethod(Enum):
+    KEYWORD = auto()
+    SEASON = auto()
+
+    #aliases
+    KW = KEYWORD
 
 HOME = os.path.expanduser("~")
 EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')

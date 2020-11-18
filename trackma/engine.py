@@ -488,13 +488,13 @@ class Engine:
 
         return None
 
-    def search(self, criteria, method=utils.SEARCH_METHOD_KW):
+    def search(self, criteria, method=utils.SearchMethod.KW):
         """
         Request a remote list of shows matching the criteria
         and returns it as a list of show dictionaries.
         This is useful to add a show.
         """
-        if method not in self.mediainfo.get('search_methods', [utils.SEARCH_METHOD_KW]):
+        if method not in self.mediainfo.get('search_methods', [utils.SearchMethod.KW]):
             raise utils.EngineError(
                 'Search method not supported by API or mediatype.')
 

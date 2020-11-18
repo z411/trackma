@@ -61,7 +61,7 @@ class libmal(lib):
         },
         'score_max': 10,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
+        'search_methods': [utils.SearchMethod.KW, utils.SearchMethod.SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -84,7 +84,7 @@ class libmal(lib):
         },
         'score_max': 10,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW],
+        'search_methods': [utils.SearchMethod.KW],
     }
     default_mediatype = 'anime'
 
@@ -301,11 +301,11 @@ class libmal(lib):
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields}
         
-        if method == utils.SEARCH_METHOD_KW:
+        if method == utils.SearchMethod.KW:
             url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
-        elif method == utils.SEARCH_METHOD_SEASON:
+        elif method == utils.SearchMethod.SEASON:
             season, season_year = criteria            
 
             url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])

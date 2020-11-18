@@ -45,14 +45,14 @@ class AddDialog(QDialog):
 
         # Get available search methods and default to keyword search if not reported by the API
         search_methods = self.worker.engine.mediainfo.get(
-            'search_methods', [utils.SEARCH_METHOD_KW])
+            'search_methods', [utils.SearchMethod.KW])
 
         layout = QVBoxLayout()
 
         # Create top layout
         top_layout = QHBoxLayout()
 
-        if utils.SEARCH_METHOD_KW in search_methods:
+        if utils.SearchMethod.KW in search_methods:
             self.search_rad = QRadioButton('By keyword:')
             self.search_rad.setChecked(True)
             self.search_txt = QLineEdit()
@@ -72,7 +72,7 @@ class AddDialog(QDialog):
         # Create filter line
         filters_layout = QHBoxLayout()
 
-        if utils.SEARCH_METHOD_SEASON in search_methods:
+        if utils.SearchMethod.SEASON in search_methods:
             self.season_rad = QRadioButton('By season:')
             self.season_combo = QComboBox()
             self.season_combo.addItem('Winter', utils.Season.WINTER)
@@ -137,7 +137,7 @@ class AddDialog(QDialog):
         layout.addWidget(bottom_buttons)
         self.setLayout(layout)
 
-        if utils.SEARCH_METHOD_SEASON in search_methods:
+        if utils.SearchMethod.SEASON in search_methods:
             self.search_txt.setFocus()
 
     def worker_call(self, function, ret_function, *args, **kwargs):
@@ -169,11 +169,11 @@ class AddDialog(QDialog):
             criteria = self.search_txt.text().strip()
             if not criteria:
                 return
-            method = utils.SEARCH_METHOD_KW
+            method = utils.SearchMethod.KW
         elif self.season_rad.isChecked():
             criteria = (self.season_combo.itemData(
                 self.season_combo.currentIndex()), self.season_year.value())
-            method = utils.SEARCH_METHOD_SEASON
+            method = utils.SearchMethod.SEASON
 
         self.contents.currentWidget().clearSelection()
         self.selected_show = None

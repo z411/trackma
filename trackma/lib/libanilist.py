@@ -64,7 +64,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
+        'search_methods': [utils.SearchMethod.KW, utils.SearchMethod.SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -88,7 +88,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW],
+        'search_methods': [utils.SearchMethod.KW],
     }
     default_mediatype = 'anime'
 
@@ -378,10 +378,10 @@ fragment mediaListEntry on MediaList {
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 
-        if method == utils.SEARCH_METHOD_KW:
+        if method == utils.SearchMethod.KW:
             query = "query ($query: String, $type: MediaType) { Page { media(search: $query, type: $type) {"
             variables = {'query': urllib.parse.quote_plus(criteria)}
-        elif method == utils.SEARCH_METHOD_SEASON:
+        elif method == utils.SearchMethod.SEASON:
             season, seasonYear = criteria
 
             query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
