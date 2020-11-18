@@ -706,15 +706,15 @@ class Trackma_urwid():
         timer = status['timer']
         paused = status['paused']
 
-        if state == utils.TRACKER_NOVIDEO:
+        if state == utils.Tracker.NOVIDEO:
             st = 'LISTEN'
-        elif state == utils.TRACKER_PLAYING:
+        elif state == utils.Tracker.PLAYING:
             st = '{}{}'.format('#' if paused else '+', timer)
-        elif state == utils.TRACKER_UNRECOGNIZED:
+        elif state == utils.Tracker.UNRECOGNIZED:
             st = 'UNRECOG'
-        elif state == utils.TRACKER_NOT_FOUND:
+        elif state == utils.Tracker.NOT_FOUND:
             st = 'NOTFOUN'
-        elif state == utils.TRACKER_IGNORED:
+        elif state == utils.Tracker.IGNORED:
             st = 'IGNORE'
         else:
             st = '???'

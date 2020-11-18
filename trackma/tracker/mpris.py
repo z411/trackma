@@ -30,7 +30,7 @@ class MPRISTracker(tracker.TrackerBase):
     mpris_base = 'org.mpris.MediaPlayer2'
 
     def is_active_player(self, sender):
-        return not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING
+        return not self.active_player or self.active_player == sender or self.last_state != utils.Tracker.PLAYING
 
     def _connect(self, name):
         # Add and connect new player
@@ -107,7 +107,7 @@ class MPRISTracker(tracker.TrackerBase):
                 state, self.last_state))
 
             # We can override the active player if this player is playing a valid show.
-            if not self.active_player or self.last_state == utils.TRACKER_PLAYING:
+            if not self.active_player or self.last_state == utils.Tracker.PLAYING:
                 self.msg.debug(self.name, "({}) Setting active player: {}".format(
                     self.last_state, sender))
                 self.active_player = sender

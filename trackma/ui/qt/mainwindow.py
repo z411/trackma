@@ -615,16 +615,16 @@ class MainWindow(QMainWindow):
         timer = status['timer']
         paused = status['paused']
 
-        if state == utils.TRACKER_NOVIDEO:
+        if state == utils.Tracker.NOVIDEO:
             st = 'Listen'
-        elif state == utils.TRACKER_PLAYING:
+        elif state == utils.Tracker.PLAYING:
             (m, s) = divmod(timer, 60)
             st = "+{0}:{1:02d}{2}".format(m, s, ' [P]' if paused else '')
-        elif state == utils.TRACKER_UNRECOGNIZED:
+        elif state == utils.Tracker.UNRECOGNIZED:
             st = 'Unrecognized'
-        elif state == utils.TRACKER_NOT_FOUND:
+        elif state == utils.Tracker.NOT_FOUND:
             st = 'Not found'
-        elif state == utils.TRACKER_IGNORED:
+        elif state == utils.Tracker.IGNORED:
             st = 'Ignored'
         else:
             st = '???'

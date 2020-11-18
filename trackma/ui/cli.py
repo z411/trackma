@@ -477,15 +477,15 @@ class Trackma_cmd(cmd.Cmd):
             print("- Tracker status -")
 
             if info:
-                if info['state'] == utils.TRACKER_NOVIDEO:
+                if info['state'] == utils.Tracker.NOVIDEO:
                     state = 'No video'
-                elif info['state'] == utils.TRACKER_PLAYING:
+                elif info['state'] == utils.Tracker.PLAYING:
                     state = 'Playing'
-                elif info['state'] == utils.TRACKER_UNRECOGNIZED:
+                elif info['state'] == utils.Tracker.UNRECOGNIZED:
                     state = 'Unrecognized'
-                elif info['state'] == utils.TRACKER_NOT_FOUND:
+                elif info['state'] == utils.Tracker.NOT_FOUND:
                     state = 'Not found'
-                elif info['state'] == utils.TRACKER_IGNORED:
+                elif info['state'] == utils.Tracker.IGNORED:
                     state = 'Ignored'
                 else:
                     state = 'N/A'
