@@ -106,14 +106,23 @@ class Status(BaseEum):
 
 class Type(BaseEum):
     UNKNOWN = "Unknown"
+    OTHER = "Other"
+
+    # anime
     TV = "TV"
     MOVIE = "Movie"
     OVA = "OVA"
     SPECIAL = "Special"
-    OTHER = "Other"
+
+    # manga
+    MANGA       = "Manga"
+    NOVEL       = "Novel"
+    ONE_SHOT    = "One Shot"
 
     #aliases
     SP = SPECIAL
+    MUSIC = OTHER
+    ONA = OVA
 
 class Tracker(Enum):
     NOVIDEO = auto()
