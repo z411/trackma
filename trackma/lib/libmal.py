@@ -89,13 +89,12 @@ class libmal(lib):
     default_mediatype = 'anime'
 
     type_translate = {
-        'tv': utils.TYPE_TV,
-        'movie': utils.TYPE_MOVIE,
-        'special': utils.TYPE_SP,
-        'ova': utils.TYPE_OVA,
-        'ona': utils.TYPE_OVA,
-        'music': utils.TYPE_OTHER,
-        'unknown': utils.TYPE_OTHER,
+        'tv': utils.Type.TV,
+        'movie': utils.Type.MOVIE,
+        'special': utils.Type.SP,
+        'ova': utils.Type.OVA,
+        'ona': utils.Type.OVA,
+        'music': utils.Type.OTHER,
     }
     
     status_translate = {

@@ -92,28 +92,28 @@ class libshikimori(lib):
     url = "https://shikimori.org"
     auth_url = "https://shikimori.org/oauth/token"
     api_url = "https://shikimori.org/api"
-    
+
     client_id = "Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro"
     client_secret = "y7YmQx8n1l7eBRugUSiB7NfNJxaNBMvwppfxJLormXU"
-    
+
     status_translate = {
         'ongoing': utils.Status.AIRING,
         'released': utils.Status.FINISHED,
         'anons': utils.Status.NOTYET,
         'cancelled': utils.Status.CANCELLED,
     }
-    
+
     type_translate = {
-        None: utils.TYPE_UNKNOWN,
-        'tv': utils.TYPE_TV,
-        'movie': utils.TYPE_MOVIE,
-        'ova': utils.TYPE_OVA,
-        'ona': utils.TYPE_OVA,
-        'special': utils.TYPE_SP,
-        'music': utils.TYPE_OTHER,
-        'tv_13': utils.TYPE_TV,
-        'tv_24': utils.TYPE_TV,
-        'tv_48': utils.TYPE_TV,
+        None: utils.Type.UNKNOWN,
+        'tv': utils.Type.TV,
+        'movie': utils.Type.MOVIE,
+        'ova': utils.Type.OVA,
+        'ona': utils.Type.OVA,
+        'special': utils.Type.SP,
+        'music': utils.Type.OTHER,
+        'tv_13': utils.Type.TV,
+        'tv_24': utils.Type.TV,
+        'tv_48': utils.Type.TV,
     }
 
     def __init__(self, messenger, account, userconfig):
@@ -129,7 +129,7 @@ class libshikimori(lib):
         if self.mediatype == 'manga':
             self.total_str = "chapters"
             self.watched_str = "chapters"
-            
+
         else:
             self.total_str = "episodes"
             self.watched_str = "episodes"
@@ -166,7 +166,7 @@ class libshikimori(lib):
 
         try:
             response = self.opener.open(request)
-            
+
             return json.loads(response.read().decode('utf-8'))
         except urllib.request.URLError as e:
             raise utils.APIError("URL error: %s" % e)
@@ -193,7 +193,7 @@ class libshikimori(lib):
 
             params['code'] = self.pin
             params['grant_type'] = 'authorization_code'
-            
+
         data = self._request('POST', self.auth_url, post=params)
 
         timestamp = int(time.time())
@@ -219,7 +219,7 @@ class libshikimori(lib):
 
     def check_credentials(self):
         timestamp = int(time.time())
-        
+
         if not self._get_userconfig('access_token'):
             self._request_access_token(False)
         elif (timestamp+60) > self._get_userconfig('expires'):

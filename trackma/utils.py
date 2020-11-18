@@ -81,6 +81,12 @@ class BaseEum(Enum):
         else:
             return super().__add__(other)
 
+    def __str__(self):
+        if isinstance(self.value, (str,)):
+            return self.value
+        else:
+            return self.name.replace('_',' ')
+
 class Status(BaseEum):
     UNKNOWN = 'Unknown'
     AIRING = 'Airing'
@@ -98,12 +104,16 @@ class Status(BaseEum):
     NOT_YET_RELEASED = NOTYET
     NOT_YET_PUBLISHED = NOTYET
 
-TYPE_UNKNOWN = 0
-TYPE_TV = 1
-TYPE_MOVIE = 2
-TYPE_OVA = 3
-TYPE_SP = 4
-TYPE_OTHER = 100
+class Type(BaseEum):
+    UNKNOWN = "Unknown"
+    TV = "TV"
+    MOVIE = "Movie"
+    OVA = "OVA"
+    SPECIAL = "Special"
+    OTHER = "Other"
+
+    #aliases
+    SP = SPECIAL
 
 class Tracker(Enum):
     NOVIDEO = auto()

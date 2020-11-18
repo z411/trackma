@@ -551,6 +551,7 @@ class libkitsu(lib):
             # For now I'm just picking the romaji title in these cases.
             'title':       attr['titles'].get('en_jp') or attr.get('canonicalTitle') or attr['titles'].get('en'),
             'total':       total or 0,
+            'type':        utils.Type.find(attr['subtype']),
             'image':       attr['posterImage'] and attr['posterImage']['small'],
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),
