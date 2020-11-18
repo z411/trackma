@@ -99,9 +99,9 @@ class libmal(lib):
     }
     
     status_translate = {
-        'currently_airing': utils.STATUS_AIRING,
-        'finished_airing': utils.STATUS_FINISHED,
-        'not_yet_aired': utils.STATUS_NOTYET,
+        'currently_airing': utils.Status.AIRING,
+        'finished_airing': utils.Status.FINISHED,
+        'not_yet_aired': utils.Status.NOTYET,
     }
     
     season_translate = {
@@ -383,7 +383,7 @@ class libmal(lib):
         return info
         
     def _translate_status(self, orig_status):
-        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+        return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
     def _str2date(self, string):
         if string is None:

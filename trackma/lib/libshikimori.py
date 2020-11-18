@@ -97,10 +97,10 @@ class libshikimori(lib):
     client_secret = "y7YmQx8n1l7eBRugUSiB7NfNJxaNBMvwppfxJLormXU"
     
     status_translate = {
-        'ongoing': utils.STATUS_AIRING,
-        'released': utils.STATUS_FINISHED,
-        'anons': utils.STATUS_NOTYET,
-        'cancelled': utils.STATUS_CANCELLED,
+        'ongoing': utils.Status.AIRING,
+        'released': utils.Status.FINISHED,
+        'anons': utils.Status.NOTYET,
+        'cancelled': utils.Status.CANCELLED,
     }
     
     type_translate = {

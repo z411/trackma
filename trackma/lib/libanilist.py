@@ -115,11 +115,11 @@ class libanilist(lib):
     }
 
     status_translate = {
-        None: utils.STATUS_UNKNOWN,
-        'RELEASING': utils.STATUS_AIRING,
-        'FINISHED': utils.STATUS_FINISHED,
-        'NOT_YET_RELEASED': utils.STATUS_NOTYET,
-        'CANCELLED': utils.STATUS_CANCELLED,
+        None: utils.Status.UNKNOWN,
+        'RELEASING': utils.Status.AIRING,
+        'FINISHED': utils.Status.FINISHED,
+        'NOT_YET_RELEASED': utils.Status.NOTYET,
+        'CANCELLED': utils.Status.CANCELLED,
     }
 
     season_translate = {
@@ -499,7 +499,7 @@ fragment mediaListEntry on MediaList {
         return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
 
     def _translate_status(self, orig_status):
-        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+        return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
     def _dict2date(self, item):
         if not item:

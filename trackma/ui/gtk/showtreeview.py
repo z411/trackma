@@ -71,9 +71,9 @@ class ShowListStore(Gtk.ListStore):
             return self.colors['is_queued']
         elif eps and max(eps) > show['my_progress']:
             return self.colors['new_episode']
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             return self.colors['is_airing']
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             return self.colors['not_aired']
         else:
             return None
@@ -334,9 +334,9 @@ class ShowTreeView(Gtk.TreeView):
             if col == self.cols['Percent']:
                 lines.append("Watched: %d" %
                              view.filter.get_value(path, 'stat'))
-                if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.STATUS_NOTYET:
+                if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.Status.NOTYET:
                     lines.append("Aired%s: %d" % (' (estimated)' if view.filter.get_value(
-                        path, 'status') == utils.STATUS_AIRING else '', view.filter.get_value(path, 'subvalue')))
+                        path, 'status') == utils.Status.AIRING else '', view.filter.get_value(path, 'subvalue')))
 
                 if len(view.filter.get_value(path, 'avail-eps')) > 0:
                     lines.append("Available: %d" %

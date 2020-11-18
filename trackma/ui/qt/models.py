@@ -71,9 +71,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
             color = 'is_queued'
         elif self.library.get(show['id']) and max(self.library.get(show['id'])) > show['my_progress']:
             color = 'new_episode'
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             color = 'is_airing'
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             color = 'not_aired'
         else:
             color = None

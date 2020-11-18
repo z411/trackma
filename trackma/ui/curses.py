@@ -1148,9 +1148,9 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_updated'
         elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             self.color = 'item_airing'
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             self.color = 'item_notaired'
         else:
             self.color = 'body'

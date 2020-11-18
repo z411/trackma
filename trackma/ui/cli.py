@@ -383,7 +383,7 @@ class Trackma_cmd(cmd.Cmd):
 
         for line in details['extra']:
             if line[0] == 'Status':
-                print(f"{line[0]}: {utils.STATUS_DICT[line[1]]}")
+                print(f"{line[0]}: {utils.Status.DICT[line[1]]}")
             else:
                 print("%s: %s" % line)
 
@@ -927,7 +927,7 @@ class Trackma_cmd(cmd.Cmd):
                 title_str) > max_title_length else title_str
 
             # Color title according to status
-            if show['status'] == utils.STATUS_AIRING:
+            if show['status'] == utils.Status.AIRING:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
             else:
                 colored_title = title_str

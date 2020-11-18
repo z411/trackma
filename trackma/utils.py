@@ -81,21 +81,22 @@ class BaseEum(Enum):
         else:
             return super().__add__(other)
 
-STATUS_UNKNOWN = 0
-STATUS_AIRING = 1
-STATUS_FINISHED = 2
-STATUS_NOTYET = 3
-STATUS_CANCELLED = 4
-STATUS_OTHER = 100
+class Status(BaseEum):
+    UNKNOWN = 'Unknown'
+    AIRING = 'Airing'
+    FINISHED = 'Finished'
+    NOTYET = 'Not yet aired'
+    CANCELLED = 'Cancelled'
+    OTHER = 'Other'
 
-STATUS_DICT = {
-    STATUS_UNKNOWN: 'Unknown',
-    STATUS_AIRING: 'Airing',
-    STATUS_FINISHED: 'Finished',
-    STATUS_NOTYET: 'Not yet aired',
-    STATUS_CANCELLED: 'Cancelled',
-    STATUS_OTHER: 'Other',
-}
+    #aliases
+    RELEASING = AIRING
+    PUBLISHING = AIRING
+    CURRENTLY_AIRING = AIRING
+    FINISHED_AIRING = FINISHED
+    NOT_YET_AIRED = NOTYET
+    NOT_YET_RELEASED = NOTYET
+    NOT_YET_PUBLISHED = NOTYET
 
 TYPE_UNKNOWN = 0
 TYPE_TV = 1
@@ -316,12 +317,12 @@ def change_permissions(filename, mode):
 def estimate_aired_episodes(show):
     """ Estimate how many episodes have passed since airing """
 
-    if show['status'] == STATUS_FINISHED:
+    if show['status'] == Status.FINISHED:
         return show['total']
-    elif show['status'] == STATUS_NOTYET:
+    elif show['status'] == Status.NOTYET:
         return 0
     # It's airing, so we make an estimate based on available information
-    elif show['status'] == STATUS_AIRING:
+    elif show['status'] == Status.AIRING:
         if 'next_ep_number' in show:  # Do we have the upcoming episode number?
             return show['next_ep_number']-1
         elif show['start_date']:  # Do we know when it started? Let's just assume 1 episode = 1 week
