@@ -75,10 +75,10 @@ class AddDialog(QDialog):
         if utils.SEARCH_METHOD_SEASON in search_methods:
             self.season_rad = QRadioButton('By season:')
             self.season_combo = QComboBox()
-            self.season_combo.addItem('Winter', utils.SEASON_WINTER)
-            self.season_combo.addItem('Spring', utils.SEASON_SPRING)
-            self.season_combo.addItem('Summer', utils.SEASON_SUMMER)
-            self.season_combo.addItem('Fall', utils.SEASON_FALL)
+            self.season_combo.addItem('Winter', utils.Season.WINTER)
+            self.season_combo.addItem('Spring', utils.Season.SPRING)
+            self.season_combo.addItem('Summer', utils.Season.SUMMER)
+            self.season_combo.addItem('Fall', utils.Season.FALL)
 
             self.season_year = QSpinBox()
 

@@ -123,10 +123,10 @@ class libanilist(lib):
     }
 
     season_translate = {
-        utils.SEASON_WINTER: 'WINTER',
-        utils.SEASON_SPRING: 'SPRING',
-        utils.SEASON_SUMMER: 'SUMMER',
-        utils.SEASON_FALL: 'FALL',
+        utils.Season.WINTER: 'WINTER',
+        utils.Season.SPRING: 'SPRING',
+        utils.Season.SUMMER: 'SUMMER',
+        utils.Season.FALL: 'FALL',
     }
 
     # Supported signals for the data handler

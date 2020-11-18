@@ -105,10 +105,10 @@ class libmal(lib):
     }
     
     season_translate = {
-        utils.SEASON_WINTER: 'winter',
-        utils.SEASON_SPRING: 'spring',
-        utils.SEASON_SUMMER: 'summer',
-        utils.SEASON_FALL: 'fall',
+        utils.Season.WINTER: 'winter',
+        utils.Season.SPRING: 'spring',
+        utils.Season.SUMMER: 'summer',
+        utils.Season.FALL: 'fall',
     }
 
     # Supported signals for the data handler

@@ -67,10 +67,11 @@ class Tracker(Enum):
     NOT_FOUND = auto()
     IGNORED = auto()
 
-SEASON_WINTER = 1
-SEASON_SPRING = 2
-SEASON_SUMMER = 3
-SEASON_FALL = 4
+class Season(Enum):
+    WINTER = auto()
+    SPRING = auto()
+    SUMMER = auto()
+    FALL = auto()
 
 SEARCH_METHOD_KW = 1
 SEARCH_METHOD_SEASON = 2
