@@ -272,7 +272,7 @@ class AccountAddDialog(QDialog):
     
     def s_request_pin(self):
         auth_url = self.adding_api[3]
-        if self.adding_api[2] == utils.LOGIN_OAUTH_PKCE:
+        if self.adding_api[2] == utils.Login.OAUTH_PKCE:
             self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
             auth_url = auth_url % self.adding_extra['code_verifier']
         
@@ -289,7 +289,7 @@ class AccountAddDialog(QDialog):
         else:
             apiname = str(self.api.itemData(index))
         self.adding_api = utils.available_libs[apiname]
-        if self.adding_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+        if self.adding_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
             self.password.setEchoMode(QLineEdit.Normal)

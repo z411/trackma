@@ -212,7 +212,7 @@ class AccountsWindow(Gtk.Dialog):
         self.set_title("Edit account")
         self._clear_new_account()
 
-        if utils.available_libs[self.account_edit['api']][2] == utils.LOGIN_OAUTH:
+        if utils.available_libs[self.account_edit['api']][2] == utils.Login.OAUTH:
             self._show_oauth_account()
         else:
             self._show_password_account()
@@ -275,7 +275,7 @@ class AccountsWindow(Gtk.Dialog):
         self.password_entry.set_text("")
         api = self._get_combo_active_api_name()
 
-        if not api or utils.available_libs[api][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+        if not api or utils.available_libs[api][2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             # We'll only allow adding the account if the user requests the PIN
             self.adding_allow = False
             self._show_oauth_account()
@@ -288,7 +288,7 @@ class AccountsWindow(Gtk.Dialog):
         api = self._get_combo_active_api_name()
 
         auth_url = utils.available_libs[api][3]
-        if utils.available_libs[api][2] == utils.LOGIN_OAUTH_PKCE:
+        if utils.available_libs[api][2] == utils.Login.OAUTH_PKCE:
             self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
             auth_url = auth_url % self.adding_extra['code_verifier']
 

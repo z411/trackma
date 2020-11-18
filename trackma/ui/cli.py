@@ -976,14 +976,14 @@ class Trackma_accounts(AccountManager):
                     print("Invalid API.")
                     continue
 
-                if selected_api[2] == utils.LOGIN_PASSWD:
+                if selected_api[2] == utils.Login.PASSWD:
                     username = input('Enter username: ')
                     password = getpass.getpass('Enter password (no echo): ')
-                elif selected_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+                elif selected_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
                     username = input('Enter account name: ')
                     
                     auth_url = selected_api[3]
-                    if selected_api[2] == utils.LOGIN_OAUTH_PKCE:
+                    if selected_api[2] == utils.Login.OAUTH_PKCE:
                         extra['code_verifier'] = utils.oauth_generate_pkce()
                         auth_url = auth_url % extra['code_verifier']
                     

@@ -957,7 +957,7 @@ class AccountDialog(Dialog):
             self.frame.set_focus('body')
             return
 
-        if api[2] == utils.LOGIN_OAUTH:
+        if api[2] == utils.Login.OAUTH:
             ask = Asker("Account name: ")
         else:
             ask = Asker("Username: ")
@@ -966,10 +966,10 @@ class AccountDialog(Dialog):
 
     def do_add_password(self, data):
         self.adding_data['username'] = data
-        if self.adding_data['api'][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+        if self.adding_data['api'][2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             auth_url = self.adding_data['api'][3]
             
-            if self.adding_data['api'][2] == utils.LOGIN_OAUTH_PKCE:
+            if self.adding_data['api'][2] == utils.Login.OAUTH_PKCE:
                 self.adding_data['extra'] = {'code_verifier': utils.oauth_generate_pkce()}
                 auth_url = auth_url % self.adding_data['extra']['code_verifier']
             
