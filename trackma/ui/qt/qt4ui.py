@@ -14,9 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import trackma.ui.qt
 import os
 os.environ['PYQT4'] = 'True'
-import trackma.ui.qt
 
 if __name__ == '__main__':
     trackma.ui.qt.main()

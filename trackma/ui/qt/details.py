@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QDialogButtonBox
 
 from trackma.ui.qt.widgets import DetailsWidget
 
+
 class DetailsDialog(QDialog):
     def __init__(self, parent, worker, show):
         QDialog.__init__(self, parent)

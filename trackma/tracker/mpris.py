@@ -25,6 +25,7 @@ from gi.repository import GLib
 from trackma.tracker import tracker
 from trackma import utils
 
+
 class MPRISTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
     mpris_base = 'org.mpris.MediaPlayer2'
@@ -32,25 +33,29 @@ class MPRISTracker(tracker.TrackerBase):
     def _connect(self, name):
         # Add and connect new player
         if self.re_players.search(name):
-            self.msg.info(self.name, "Connecting to MPRIS player: {}".format(name))
-
-            proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
-            properties = dbus.Interface(proxy, dbus_interface='org.freedesktop.DBus.Properties')
-            properties.connect_to_signal('PropertiesChanged', self._on_update, sender_keyword='sender')
-
-            metadata = properties.Get(MPRISTracker.mpris_base + '.Player', 'Metadata')
-            status   = properties.Get(MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
-
-            sender = self.bus.get_name_owner(name)
-            self.filenames[sender] = self._get_filename(metadata)
-        
-            if not self.active_player:
-                self._handle_status(status, sender)
+            self.msg.info(
+                self.name, "Connecting to MPRIS player: {}".format(name))
+            try:
+                proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
+                properties = dbus.Interface(
+                    proxy, dbus_interface='org.freedesktop.DBus.Properties')
+                properties.connect_to_signal(
+                    'PropertiesChanged', self._on_update, sender_keyword='sender')
+                metadata = properties.Get(
+                    MPRISTracker.mpris_base + '.Player', 'Metadata')
+                status = properties.Get(
+                    MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
+                sender = self.bus.get_name_owner(name)
+                self.filenames[sender] = self._get_filename(metadata)
+                if not self.active_player:
+                    self._handle_status(status, sender)
+            except dbus.exceptions.DBusException:
+                self._stopped(name)
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
 
     def _get_filename(self, metadata):
-        if 'xesam:title' in metadata:
+        if 'xesam:title' in metadata and len(metadata['xesam:title']) > 5:
             return metadata['xesam:title']
         elif 'xesam:url' in metadata:
             # TODO : Support for full path
@@ -79,11 +84,13 @@ class MPRISTracker(tracker.TrackerBase):
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
-            self.msg.debug(self.name, "New tracker status: {} ({})".format(state, self.last_state))
-            
+            self.msg.debug(self.name, "New tracker status: {} ({})".format(
+                state, self.last_state))
+
             # We can override the active player if this player is playing a valid show.
             if not self.active_player or self.last_state == utils.TRACKER_PLAYING:
-                self.msg.debug(self.name, "({}) Setting active player: {}".format(self.last_state, sender))
+                self.msg.debug(self.name, "({}) Setting active player: {}".format(
+                    self.last_state, sender))
                 self.active_player = sender
 
                 if not self.timing:
@@ -92,13 +99,14 @@ class MPRISTracker(tracker.TrackerBase):
 
                     self._pass_timer()
                     GLib.timeout_add_seconds(1, self._pass_timer)
-       
+
     def _stopped(self, sender):
         self.filenames[sender] = None
 
         if sender == self.active_player:
             # Active player got closed!
-            self.msg.debug(self.name, "Clearing active player: {}".format(sender))
+            self.msg.debug(
+                self.name, "Clearing active player: {}".format(sender))
             self.active_player = None
 
             (state, show_tuple) = self._get_playing_show(None)
@@ -113,7 +121,8 @@ class MPRISTracker(tracker.TrackerBase):
             if 'Metadata' in properties:
                 # Player is playing a new video. We pass the title
                 # to the tracker and start our playing timer.
-                self.filenames[sender] = self._get_filename(properties['Metadata'])
+                self.filenames[sender] = self._get_filename(
+                    properties['Metadata'])
 
                 if 'PlaybackStatus' not in properties:
                     # Query the player status if we don't have it
@@ -123,8 +132,9 @@ class MPRISTracker(tracker.TrackerBase):
                 status = properties['PlaybackStatus']
                 self._handle_status(status, sender)
         else:
-            self.msg.debug(self.name, "Got signal from an inactive player, ignoring.")
- 
+            self.msg.debug(
+                self.name, "Got signal from an inactive player, ignoring.")
+
     def _new_name(self, name, old, new):
         if name.startswith(MPRISTracker.mpris_base):
             if new:
@@ -156,8 +166,10 @@ class MPRISTracker(tracker.TrackerBase):
                 self._connect(name)
 
         # Connect signal for any new players that could appear
-        names = self.bus.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-        names.connect_to_signal('NameOwnerChanged', self._new_name, dbus_interface='org.freedesktop.DBus')
+        names = self.bus.get_object(
+            'org.freedesktop.DBus', '/org/freedesktop/DBus')
+        names.connect_to_signal(
+            'NameOwnerChanged', self._new_name, dbus_interface='org.freedesktop.DBus')
 
         # Run GLib loop
         loop = GLib.MainLoop()

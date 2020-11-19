@@ -1,3 +1,4 @@
+from trackma.ui.qt.util import getColor
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle, QDoubleSpinBox, QStyleOptionProgressBar
 
@@ -8,7 +9,6 @@ MIN_HEIGHT = 200
 COLUMN_A = 100
 COLUMN_B = 290
 
-from trackma.ui.qt.util import getColor
 
 class AddListDelegate(QStyledItemDelegate):
     """ This is the delegate that handles the rendering of cards
@@ -30,7 +30,8 @@ class AddListDelegate(QStyledItemDelegate):
                 return v
 
     def paint(self, painter, option, index):
-        outerRect = option.rect - QtCore.QMargins(MARGIN, MARGIN, MARGIN, MARGIN)
+        outerRect = option.rect - \
+            QtCore.QMargins(MARGIN, MARGIN, MARGIN, MARGIN)
 
         data = index.data()
         thumb = index.data(QtCore.Qt.DecorationRole)
@@ -45,7 +46,8 @@ class AddListDelegate(QStyledItemDelegate):
         painter.drawRect(outerRect)
 
         # Prepare to draw inside
-        baseRect = outerRect - QtCore.QMargins(PADDING, PADDING, PADDING, PADDING)
+        baseRect = outerRect - \
+            QtCore.QMargins(PADDING, PADDING, PADDING, PADDING)
         painter.setPen(QtCore.Qt.NoPen)
 
         # Draw thumbnail (if any)
@@ -56,7 +58,7 @@ class AddListDelegate(QStyledItemDelegate):
         textRect = baseRect.adjusted(COLUMN_A+5, 0, 0, 0)
         textRect.setHeight(self.fh + 5)
         painter.setBrush(QtGui.QBrush(color))
-        painter.drawRect(textRect);
+        painter.drawRect(textRect)
 
         # Set our font to bold
         bfont = QtGui.QFont(self.font)
@@ -94,27 +96,31 @@ class AddListDelegate(QStyledItemDelegate):
             d_end = '?'
 
         dataRect.translate(0, self.fh + 10)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop, "{} to {}".format(d_from, d_end))
+        painter.drawText(dataRect, QtCore.Qt.AlignTop,
+                         "{} to {}".format(d_from, d_end))
         dataRect.translate(0, self.fh + 5)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop, str(data.get('total') or '?'))
+        painter.drawText(dataRect, QtCore.Qt.AlignTop,
+                         str(data.get('total') or '?'))
 
         # Draw synopsis
         textRect.translate(0, self.fh + 5)
         textRect.setBottomRight(baseRect.bottomRight())
 
         if 'extra' in data:
-            painter.drawText(textRect, QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self._get_extra(data['extra'], 'Synopsis'))
+            painter.drawText(textRect, QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self._get_extra(
+                data['extra'], 'Synopsis'))
 
         # Draw select box
         if option.state & QStyle.State_Selected:
             painter.setCompositionMode(QtGui.QPainter.CompositionMode_Overlay)
-            #painter.setOpacity(0.5)
+            # painter.setOpacity(0.5)
             painter.fillRect(outerRect, option.palette.highlight())
 
         painter.restore()
 
     def sizeHint(self, option, index):
         return QtCore.QSize(WIDTH, min(MIN_HEIGHT, self.fh*10+15))
+
 
 class ShowsTableDelegate(QStyledItemDelegate):
     """
@@ -167,30 +173,36 @@ class ShowsTableDelegate(QStyledItemDelegate):
                 self.paintSubValue(painter, rect, subvalue, maximum)
                 if value > 0:
                     if value >= maximum:
-                        painter.setBrush(getColor(self.colors['progress_complete']))
+                        painter.setBrush(
+                            getColor(self.colors['progress_complete']))
                         mid = rect.width()
                     else:
                         painter.setBrush(getColor(self.colors['progress_fg']))
                         mid = int(rect.width() / float(maximum) * value)
-                    progressRect = QtCore.QRect(rect.x(), rect.y(), mid, rect.height())
+                    progressRect = QtCore.QRect(
+                        rect.x(), rect.y(), mid, rect.height())
                     painter.drawRect(progressRect)
                 self.paintEpisodes(painter, rect, episodes, maximum)
 
             elif self._bar_style is self.BarStyleHybrid:
-                painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+                painter.setCompositionMode(
+                    QtGui.QPainter.CompositionMode_Source)
                 painter.fillRect(rect, QtCore.Qt.transparent)
-                painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+                painter.setCompositionMode(
+                    QtGui.QPainter.CompositionMode_SourceOver)
                 prog_options = QStyleOptionProgressBar()
                 prog_options.maximum = maximum
                 prog_options.progress = value
                 prog_options.rect = rect
                 prog_options.text = '%d%%' % (value*100/maximum)
                 option.widget.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
-                painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
+                painter.setCompositionMode(
+                    QtGui.QPainter.CompositionMode_SourceAtop)
                 painter.setPen(QtCore.Qt.transparent)
                 self.paintSubValue(painter, rect, subvalue, maximum)
                 self.paintEpisodes(painter, rect, episodes, maximum)
-                painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+                painter.setCompositionMode(
+                    QtGui.QPainter.CompositionMode_SourceOver)
                 if self._show_text:
                     option.widget.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
 
@@ -230,7 +242,7 @@ class ShowsTableDelegate(QStyledItemDelegate):
         self._show_text = show_text
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), QtGui.QFontMetrics(option.font).height() + 2);
+        return QtCore.QSize(option.rect.width(), QtGui.QFontMetrics(option.font).height() + 2)
 
     def createEditor(self, parent, option, index):
         editor = QDoubleSpinBox(parent)
@@ -239,7 +251,8 @@ class ShowsTableDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor, index):
-        (value, maximum, decimals,step) = index.model().data(index, QtCore.Qt.EditRole)
+        (value, maximum, decimals, step) = index.model().data(
+            index, QtCore.Qt.EditRole)
 
         editor.setMaximum(maximum or 999)
         editor.setDecimals(decimals or 0)
@@ -254,5 +267,4 @@ class ShowsTableDelegate(QStyledItemDelegate):
         new_value = editor.value()
 
         if new_value != old_value:
-            model.setData(index, new_value, QtCore.Qt.EditRole);
-
+            model.setData(index, new_value, QtCore.Qt.EditRole)

@@ -14,15 +14,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-pyqt_version = 5
-
-from PyQt5 import QtCore, QtGui
+from trackma import utils
 from PyQt5.QtWidgets import (
     QDialog, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QTableWidget,
     QAbstractItemView, QCheckBox, QPushButton, QComboBox, QHeaderView,
     QMessageBox, QFormLayout, QLabel, QLineEdit, QDialogButtonBox)
-    
-from trackma import utils
+from PyQt5 import QtCore, QtGui
+pyqt_version = 5
+
 
 class AccountDialog(QDialog):
     selected = QtCore.pyqtSignal(int, bool)
@@ -59,9 +58,12 @@ class AccountDialog(QDialog):
         self.edit_btns.addItem('Update')
         self.edit_btns.addItem('Delete')
         self.edit_btns.addItem('Purge')
-        self.edit_btns.setItemData(1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
-        self.edit_btns.setItemData(2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
-        self.edit_btns.setItemData(3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
+        self.edit_btns.setItemData(
+            3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
         self.edit_btns.activated.connect(self.s_edit)
@@ -94,8 +96,8 @@ class AccountDialog(QDialog):
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
         if result:
-            (username, password, api) = result
-            self.accountman.add_account(username, password, api)
+            (username, password, api, extra) = result
+            self.accountman.add_account(username, password, api, extra)
             self.rebuild()
 
     def edit(self):
@@ -112,7 +114,8 @@ class AccountDialog(QDialog):
                                          api=acct['api'])
             if result:
                 (username, password, api) = result
-                self.accountman.edit_account(selected_account_num, username, password, api)
+                self.accountman.edit_account(
+                    selected_account_num, username, password, api)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
@@ -120,7 +123,8 @@ class AccountDialog(QDialog):
     def delete(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.accountman.delete_account(selected_account_num)
@@ -131,7 +135,8 @@ class AccountDialog(QDialog):
     def purge(self):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
+            reply = QMessageBox.question(
+                self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.accountman.purge_account(selected_account_num)
@@ -140,11 +145,11 @@ class AccountDialog(QDialog):
             self._error("Please select an account.")
 
     def s_edit(self, index):
-        if   index is 1:
+        if index == 1:
             self.edit()
-        elif index is 2:
+        elif index == 2:
             self.delete()
-        elif index is 3:
+        elif index == 3:
             self.purge()
 
     def rebuild(self):
@@ -158,13 +163,15 @@ class AccountDialog(QDialog):
         accounts = self.accountman.get_accounts()
         i = 0
         for k, account in accounts:
-            self.table.setRowHeight(i, QtGui.QFontMetrics(self.table.font()).height() + 2)
+            self.table.setRowHeight(i, QtGui.QFontMetrics(
+                self.table.font()).height() + 2)
             self.table.setItem(i, 0, AccountItem(k, account['username']))
-            self.table.setItem(i, 1, AccountItem(k, account['api'], self.icons.get(account['api'])))
+            self.table.setItem(i, 1, AccountItem(
+                k, account['api'], self.icons.get(account['api'])))
 
             i += 1
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
@@ -172,7 +179,8 @@ class AccountDialog(QDialog):
     def select(self, checked):
         try:
             selected_account_num = self.table.selectedItems()[0].num
-            self.selected.emit(selected_account_num, self.remember_chk.isChecked())
+            self.selected.emit(selected_account_num,
+                               self.remember_chk.isChecked())
             self.close()
         except IndexError:
             self._error("Please select an account.")
@@ -183,6 +191,7 @@ class AccountDialog(QDialog):
 
     def _error(self, msg):
         QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
+
 
 class AccountItem(QTableWidgetItem):
     """
@@ -197,10 +206,15 @@ class AccountItem(QTableWidgetItem):
         if icon:
             self.setIcon(icon)
 
+
 class AccountAddDialog(QDialog):
     def __init__(self, parent, icons, edit=False, username='', password='', api=''):
         QDialog.__init__(self, parent)
         self.edit = edit
+        
+        self.adding_allow = False
+        self.adding_api = None
+        self.adding_extra = {}
 
         # Build UI
         layout = QVBoxLayout()
@@ -214,10 +228,8 @@ class AccountAddDialog(QDialog):
         self.password = QLineEdit(password)
         self.api = QComboBox()
         self.api.currentIndexChanged.connect(self.s_refresh)
-        self.api_auth = QLabel('Request PIN')
-        self.api_auth.setTextFormat(QtCore.Qt.RichText)
-        self.api_auth.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-        self.api_auth.setOpenExternalLinks(True)
+        self.api_auth = QPushButton('Request PIN')
+        self.api_auth.clicked.connect(self.s_request_pin)
         pin_layout.addWidget(self.password)
         pin_layout.addWidget(self.api_auth)
 
@@ -237,7 +249,8 @@ class AccountAddDialog(QDialog):
 
         if self.edit:
             self.username.setEnabled(False)
-            self.api.setCurrentIndex(self.api.findData(api, QtCore.Qt.UserRole))
+            self.api.setCurrentIndex(
+                self.api.findData(api, QtCore.Qt.UserRole))
             self.api.setEnabled(False)
 
         # Finish layouts
@@ -247,55 +260,63 @@ class AccountAddDialog(QDialog):
         self.setLayout(layout)
 
     def validate(self):
-        if len(self.username.text()) is 0:
-            if len(self.password.text()) is 0:
+        if len(self.username.text()) == 0:
+            if len(self.password.text()) == 0:
                 self._error('Please fill the credentials fields.')
             else:
                 self._error('Please fill the username field.')
-        elif len(self.password.text()) is 0:
+        elif len(self.password.text()) == 0:
             self._error('Please fill the password/PIN field.')
         else:
             self.accept()
-
+    
+    def s_request_pin(self):
+        auth_url = self.adding_api[3]
+        if self.adding_api[2] == utils.LOGIN_OAUTH_PKCE:
+            self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
+            auth_url = auth_url % self.adding_extra['code_verifier']
+        
+        self.adding_allow = True
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(auth_url))
+        
     def s_refresh(self, index):
         if not self.edit:
             self.username.setText("")
             self.password.setText("")
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             apiname = self.api.itemData(index)
         else:
             apiname = str(self.api.itemData(index))
-        api = utils.available_libs[apiname]
-        if api[2] == utils.LOGIN_OAUTH:
-            apiname = str(self.api.itemData(index))
-            url = utils.available_libs[apiname][4]
-            self.api_auth.setText( "<a href=\"{}\">Request PIN</a>".format(url) )
-            self.api_auth.show()
-
+        self.adding_api = utils.available_libs[apiname]
+        if self.adding_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
             self.password.setEchoMode(QLineEdit.Normal)
+            self.api_auth.show()
+            self.adding_allow = False
         else:
             self.lbl_username.setText('Username:')
             self.lbl_password.setText('Password:')
             self.password.setEchoMode(QLineEdit.Password)
             self.api_auth.hide()
+            self.adding_allow = True
 
     def _error(self, msg):
         QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
 
     @staticmethod
-    def do(parent=None, icons=None, edit=False, username='', password='', api=''):
+    def do(parent=None, icons=None, edit=False, username='', password='', api='', extra={}):
         dialog = AccountAddDialog(parent, icons, edit, username, password, api)
         result = dialog.exec_()
 
         if result == QDialog.Accepted:
             currentIndex = dialog.api.currentIndex()
             return (
-                    str(dialog.username.text()),
-                    str(dialog.password.text()),
-                    str(dialog.api.itemData(currentIndex))
-                   )
+                str(dialog.username.text()),
+                str(dialog.password.text()),
+                str(dialog.api.itemData(currentIndex)),
+                dialog.adding_extra,
+            )
         else:
             return None

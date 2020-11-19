@@ -17,6 +17,7 @@
 import os
 import webbrowser
 from enum import Enum
+
 from gi.repository import Gtk, GdkPixbuf, GObject
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.gi_composites import GtkTemplate
@@ -35,10 +36,8 @@ class AccountsWindow(Gtk.Dialog):
     __gtype_name__ = 'AccountsWindow'
 
     __gsignals__ = {
-        'account-cancel': (GObject.SIGNAL_RUN_FIRST, None,
-                           ()),
-        'account-open': (GObject.SIGNAL_RUN_FIRST, None,
-                         (int, bool))
+        'account-cancel': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'account-open': (GObject.SignalFlags.RUN_FIRST, None, (int, bool))
     }
 
     header_bar = GtkTemplate.Child()
@@ -61,7 +60,7 @@ class AccountsWindow(Gtk.Dialog):
     btn_pin_request = GtkTemplate.Child()
 
     def __init__(self, manager, **kwargs):
-        Gtk.Window.__init__(self, **kwargs)
+        super().__init__(self, **kwargs)
         self.init_template()
 
         self.accounts = []
@@ -70,6 +69,9 @@ class AccountsWindow(Gtk.Dialog):
         self.current = AccountsView.LIST
         self.manager = manager
         self.account_edit = None
+
+        self.adding_allow = False
+        self.adding_extra = {}
 
         self._remove_border()
         self._add_separators()
@@ -82,9 +84,11 @@ class AccountsWindow(Gtk.Dialog):
         self.internal_box.set_border_width(0)
 
     def _add_separators(self):
-        self.accounts_listbox.set_header_func(self._accounts_listbox_header_func, None)
+        self.accounts_listbox.set_header_func(
+            self._accounts_listbox_header_func, None)
 
-    def _accounts_listbox_header_func(self, row, before, user_data):
+    @staticmethod
+    def _accounts_listbox_header_func(row, before, _user_data):
         if before is None:
             row.set_header(None)
             return
@@ -228,7 +232,8 @@ class AccountsWindow(Gtk.Dialog):
         self.btn_cancel.hide()
 
         self.current = AccountsView.EDIT
-        self.accounts_stack.set_visible_child_full('new_account', Gtk.StackTransitionType.SLIDE_LEFT)
+        self.accounts_stack.set_visible_child_full(
+            'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_add_new(self):
         self.header_bar.set_title("Add account")
@@ -241,7 +246,8 @@ class AccountsWindow(Gtk.Dialog):
         self.username_entry.set_sensitive(True)
 
         self.current = AccountsView.NEW
-        self.accounts_stack.set_visible_child_full('new_account', Gtk.StackTransitionType.SLIDE_LEFT)
+        self.accounts_stack.set_visible_child_full(
+            'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_accounts_list(self):
         self.header_bar.set_title("Accounts")
@@ -252,13 +258,15 @@ class AccountsWindow(Gtk.Dialog):
         self.btn_cancel.show()
 
         self.current = AccountsView.LIST
-        self.accounts_stack.set_visible_child_full('accounts', Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.accounts_stack.set_visible_child_full(
+            'accounts', Gtk.StackTransitionType.SLIDE_RIGHT)
 
     def _populate_combobox(self):
         model_api = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf)
 
         for (libname, lib) in sorted(utils.available_libs.items()):
-            self.treeiters[libname] = model_api.append([libname, lib[0], self.pixbufs[libname]])
+            self.treeiters[libname] = model_api.append(
+                [libname, lib[0], self.pixbufs[libname]])
 
         self.accounts_combo.set_model(model_api)
 
@@ -268,17 +276,25 @@ class AccountsWindow(Gtk.Dialog):
         self.password_entry.set_text("")
         api = self._get_combo_active_api_name()
 
-        if not api or utils.available_libs[api][2] == utils.LOGIN_OAUTH:
+        if not api or utils.available_libs[api][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+            # We'll only allow adding the account if the user requests the PIN
+            self.adding_allow = False
             self._show_oauth_account()
         else:
+            self.adding_allow = True
             self._show_password_account()
 
     @GtkTemplate.Callback
     def _on_btn_pin_request_clicked(self, btn):
         api = self._get_combo_active_api_name()
-        url = utils.available_libs[api][4]
 
-        webbrowser.open(url, 2, True)
+        auth_url = utils.available_libs[api][3]
+        if utils.available_libs[api][2] == utils.LOGIN_OAUTH_PKCE:
+            self.adding_extra = {'code_verifier': utils.oauth_generate_pkce()}
+            auth_url = auth_url % self.adding_extra['code_verifier']
+
+        self.adding_allow = True
+        webbrowser.open(auth_url, 2, True)
 
     def _clear_new_account(self):
         self.accounts_combo.set_active_id(None)
@@ -320,27 +336,32 @@ class AccountsWindow(Gtk.Dialog):
             self._refresh_btn_edit_confirm()
 
     def _refresh_btn_new_confirm(self):
-        sensitive = (self._get_combo_active_api_name() and
-                     self.username_entry.get_text().strip() and
-                     self.password_entry.get_text())
+        sensitive = (
+            self.adding_allow and
+            self._get_combo_active_api_name() and
+            self.username_entry.get_text().strip() and
+            self.password_entry.get_text()
+        )
 
         self.btn_new_confirm.set_sensitive(sensitive)
 
     def _refresh_btn_edit_confirm(self):
-        sensitive = (self.password_entry.get_text() and
-                     not self.account_edit['password'] == self.password_entry.get_text())
+        sensitive = (
+            self.password_entry.get_text() and
+            not self.account_edit['password'] == self.password_entry.get_text()
+        )
         self.btn_edit_confirm.set_sensitive(sensitive)
 
     def _add_account(self):
-        username =  self.username_entry.get_text().strip()
+        username = self.username_entry.get_text().strip()
         password = self.password_entry.get_text()
         api = self._get_combo_active_api_name()
 
-        self.manager.add_account(username, password, api)
+        self.manager.add_account(username, password, api, self.adding_extra)
 
     def _edit_account(self):
         num = self.account_edit['account_id']
-        username =  self.account_edit['username']
+        username = self.account_edit['username']
         password = self.password_entry.get_text()
         api = self.account_edit['api']
 
