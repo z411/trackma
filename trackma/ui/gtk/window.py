@@ -504,43 +504,29 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._remove_show(*data)
 
     def _play_next(self, show_id):
-        threading.Thread(target=self._play_task, args=[
-                         show_id, True, None]).start()
-
-    def _play_episode(self, show_id, episode):
-        threading.Thread(target=self._play_task, args=[
-                         show_id, False, episode]).start()
-
-    def _play_task(self, show_id, playnext, episode):
-        self._set_buttons_sensitive_idle(False)
-
         show = self._engine.get_show_info(show_id)
         try:
-            if playnext:
-                self._engine.play_episode(show)
-            else:
-                if not episode:
-                    episode = self.show_ep_num.get_value_as_int()
-                self._engine.play_episode(show, episode)
+            args = self._engine.play_episode(show)
+            utils.spawn_process(args)
         except utils.TrackmaError as e:
-            self._error_dialog_idle(e)
+            self._error_dialog(e)
 
-        self._main_view.set_status_idle("Ready.")
-        self._set_buttons_sensitive_idle(True)
+    def _play_episode(self, show_id, episode):
+        show = self._engine.get_show_info(show_id)
+        try:
+            if not episode:
+                episode = self.show_ep_num.get_value_as_int()
+            args = self._engine.play_episode(show, episode)
+            utils.spawn_process(args)
+        except utils.TrackmaError as e:
+            self._error_dialog(e)
 
     def _play_random(self):
-        threading.Thread(target=self._play_random_task).start()
-
-    def _play_random_task(self):
-        self._set_buttons_sensitive_idle(False)
-
         try:
-            self._engine.play_random()
+            args = self._engine.play_random()
+            utils.spawn_process(args)
         except utils.TrackmaError as e:
-            self._error_dialog_idle(e)
-
-        self._main_view.set_status_idle("Ready.")
-        self._set_buttons_sensitive_idle(True)
+            self._error_dialog(e)
 
     def _episode_add(self, show_id):
         show = self._engine.get_show_info(show_id)

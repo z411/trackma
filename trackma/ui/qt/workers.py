@@ -141,7 +141,6 @@ class EngineWorker(QtCore.QThread):
     def _prompt_for_add(self, show, episode):
         self.prompt_for_add.emit(show, episode)
 
-    # Callable functions
     def _start(self, account):
         self.engine = Engine(account, self._messagehandler)
 

@@ -391,7 +391,8 @@ class Trackma_urwid():
 
     def do_play_random(self):
         try:
-            self.engine.play_random()
+            args = self.engine.play_random()
+            utils.spawn_process(args)
         except utils.TrackmaError as e:
             self.error(e)
             return
@@ -654,7 +655,8 @@ class Trackma_urwid():
             show = self.engine.get_show_info(item.showid)
 
             try:
-                self.engine.play_episode(show, data)
+                args = self.engine.play_episode(show, data)
+                utils.spawn_process(args)
             except utils.TrackmaError as e:
                 self.error(e)
                 return
