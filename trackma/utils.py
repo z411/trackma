@@ -15,6 +15,8 @@
 #
 
 import os
+import subprocess
+import sys
 import re
 import time
 import shutil
@@ -333,6 +335,38 @@ def redirect_show(show_tuple, redirections, tracker_list):
                     return (showlist[new_show_id], new_ep)
 
     return show_tuple
+
+
+def spawn_process(arg_list):
+    """
+    Helper generic function to spawn a subprocess.
+    Does a double fork on *nix to prevent zombie processes.
+    """
+    
+    if not sys.platform.startswith('win32'):
+        try:
+            pid = os.fork()
+            if pid > 0:
+                os.waitpid(pid, 0)
+                return 0
+        except OSError:
+            return -1
+
+        os.setsid()
+        fd = os.open("/dev/null", os.O_RDWR)
+        os.dup2(fd, 0)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
+        try:
+            pid = os.fork()
+            if pid > 0:
+                sys.exit(0)
+        except OSError:
+            sys.exit(1)
+        os.execv(arg_list[0], arg_list)
+    else:
+        subprocess.Popen(
+            arg_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def get_terminal_size(fd=1):

@@ -1134,11 +1134,11 @@ class MainWindow(QMainWindow):
                 episode = self.show_progress.value()
 
             self._busy(True)
-            self.worker_call('play_episode', self.r_generic, show, episode)
+            self.worker_call('play_episode', self.r_play_episode, show, episode)
 
     def s_play_random(self):
         self._busy(True)
-        self.worker_call('play_random', self.r_generic)
+        self.worker_call('play_random', self.r_play_episode)
 
     def s_play_number(self):
         if self.selected_show_id:
@@ -1464,3 +1464,17 @@ class MainWindow(QMainWindow):
             self.close()
             if not self.finish:
                 self.s_switch_account()
+
+    def r_play_episode(self, result):
+        if result['success']:
+            args = result['result']
+            if len(args) > 1:
+                #QtCore.QProcess.startDetached(args[0], args[1:])
+                process = QtCore.QProcess()
+                for attr in ['setStandardErrorFile', 'setStandardOutputFile']:
+                    getattr(process, attr)(QtCore.QProcess.nullDevice())
+                process.setProgram(args[0])
+                process.setArguments(args[1:])
+                process.startDetached()
+
+        self._unbusy()

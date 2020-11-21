@@ -461,7 +461,8 @@ class Trackma_cmd(cmd.Cmd):
         Starts the media player with a random new episode.
         """
         try:
-            self.engine.play_random()
+            args = self.engine.play_random()
+            utils.spawn_process(args)
         except utils.TrackmaError as e:
             self.display_error(e)
 
@@ -520,7 +521,8 @@ class Trackma_cmd(cmd.Cmd):
             if len(args) > 1:
                 episode = args[1]
 
-            self.engine.play_episode(show, episode)
+            args = self.engine.play_episode(show, episode)
+            utils.spawn_process(args)
         except utils.TrackmaError as e:
             self.display_error(e)
 

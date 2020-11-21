@@ -74,11 +74,10 @@ class Engine:
                'tracker_state':     None,
                }
 
-    def __init__(self, account=None, message_handler=None, accountnum=None, start_process=None):
+    def __init__(self, account=None, message_handler=None, accountnum=None):
         self.msg = messenger.Messenger(message_handler)
 
         # Utility parameter to get the account from the account manager
-        self._start_process = start_process
         if accountnum:
             from trackma import accounts
             account = accounts.AccountManager().get_account(accountnum)
@@ -889,7 +888,7 @@ class Engine:
     def play_random(self):
         """
         This function will pick a random show that has a new episode to watch
-        and play it.
+        and return the arguments to play it.
         """
         library = self.library()
         newep = []
@@ -905,15 +904,14 @@ class Engine:
             raise utils.EngineError('No new episodes found to pick from.')
 
         show = random.choice(newep)
-        ep = self.play_episode(show)
-        return (show, ep)
+        return self.play_episode(show)
 
     def play_episode(self, show, playep=0):
         """
         Does a local search in the hard disk (in the folder specified by the config file)
         for the specified episode (**playep**) for the specified **show**.
 
-        If no **playep** is specified, the next episode of the show will be played.
+        If no **playep** is specified, the next episode of the show will be returned.
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
@@ -941,43 +939,14 @@ class Engine:
 
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
-                arg_list = shlex.split(self.config['player'])
+                args = shlex.split(self.config['player'])
 
-                if len(arg_list) > 0 and shutil.which(arg_list[0]) == None:
+                if len(args) > 0 and shutil.which(args[0]) == None:
                     raise utils.EngineError(
                         'Player not found, check your config.json')
 
-                arg_list.append(filename)
-
-                if callable(self._start_process):
-                    self._start_process(arg_list)
-                    return endep
-                # Do a double fork on *nix to prevent zombie processes
-                elif not sys.platform.startswith('win32'):
-                    try:
-                        pid = os.fork()
-                        if pid > 0:
-                            os.waitpid(pid, 0)
-                            return endep
-                    except OSError:
-                        return -1
-
-                    os.setsid()
-                    fd = os.open("/dev/null", os.O_RDWR)
-                    os.dup2(fd, 0)
-                    os.dup2(fd, 1)
-                    os.dup2(fd, 2)
-                    try:
-                        pid = os.fork()
-                        if pid > 0:
-                            sys.exit(0)
-                    except OSError:
-                        sys.exit(1)
-                    os.execv(arg_list[0], arg_list)
-                else:
-                    subprocess.Popen(
-                        arg_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    return endep
+                args.append(filename)
+                return args
             else:
                 raise utils.EngineError('Episode file not found.')
 
