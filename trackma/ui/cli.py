@@ -29,6 +29,7 @@ import shlex
 import textwrap
 import re
 import argparse
+import signal
 from operator import itemgetter  # Used for sorting list
 
 from trackma.engine import Engine
@@ -1065,6 +1066,7 @@ def main():
     # Boot Trackma CLI
     main_cmd = Trackma_cmd(args.account, args.debug,
                            interactive=args.cmd is None)
+    signal.signal(signal.SIGCLD, signal.SIG_IGN)
     try:
         main_cmd.start()
         if args.cmd:

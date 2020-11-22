@@ -17,6 +17,7 @@
 import sys
 import os
 import subprocess
+import signal
 
 try:
     import urwid
@@ -1226,6 +1227,7 @@ class QuestionAsker(Asker):
 
 
 def main():
+    signal.signal(signal.SIGCLD, signal.SIG_IGN)
     ui = Trackma_urwid()
     try:
         ui.run()
