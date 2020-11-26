@@ -18,8 +18,7 @@ import os
 import re
 import urllib.parse
 
-import dbus
-import dbus.mainloop.glib
+from pydbus import SessionBus
 from gi.repository import GLib
 
 from trackma.tracker import tracker
@@ -30,11 +29,6 @@ class MPRISTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
     mpris_base = 'org.mpris.MediaPlayer2'
 
-    def _get_dbus_properties(self, name):
-        proxy = self.bus.get_object(name, '/org/mpris/MediaPlayer2')
-        return dbus.Interface(
-            proxy, dbus_interface='org.freedesktop.DBus.Properties')
-
     def is_active_player(self, sender):
         return not self.active_player or self.active_player == sender or self.last_state != utils.TRACKER_PLAYING
 
@@ -42,18 +36,22 @@ class MPRISTracker(tracker.TrackerBase):
         # Add and connect new player
         if self.re_players.search(name):
             try:
-                sender = self.bus.get_name_owner(name)
-            except dbus.exceptions.DBusException:
-                self.msg.warn(self.name, "Bus was closed before access: {}".format(name))
+                sender = self.bus.GetNameOwner(name)
+            except GLib.Error:
+                self.msg.warn(
+                    self.name, "Bus was closed before access: {}".format(name))
                 return
 
             self.msg.info(
                 self.name, "Connecting to MPRIS player: {}".format(name))
             try:
-                properties = self._get_dbus_properties(name)
+                proxy = self.session.get(name, '/org/mpris/MediaPlayer2')
+                properties = proxy['org.freedesktop.DBus.Properties']
 
-                properties.connect_to_signal(
-                    'PropertiesChanged', self._on_update, sender_keyword='sender')
+                # properties.connect(
+                # 'PropertiesChanged', self._on_update, sender_keyword='sender')
+                proxy.PropertiesChanged.connect(
+                    lambda x, props, y: self._on_update(sender, props))
                 metadata = properties.Get(
                     MPRISTracker.mpris_base + '.Player', 'Metadata')
 
@@ -65,9 +63,12 @@ class MPRISTracker(tracker.TrackerBase):
                     self._handle_status(status, sender)
 
                 if not sender in self.view_offsets:
-                    GLib.timeout_add(500, self._update_view_offset, sender, properties)
+                    GLib.timeout_add(
+                        100, self._update_view_offset, sender, properties)
 
-            except dbus.exceptions.DBusException:
+                self._update_view_offset(sender, properties)
+
+            except GLib.Error:
                 self._stopped(sender)
         else:
             self.msg.info(self.name, "Unknown player: {}".format(name))
@@ -126,6 +127,7 @@ class MPRISTracker(tracker.TrackerBase):
             self.msg.debug(
                 self.name, "Clearing active player: {}".format(sender))
             self.active_player = None
+            self.view_offset = None
 
             (state, show_tuple) = self._get_playing_show(None)
             self.update_show_if_needed(state, show_tuple)
@@ -133,23 +135,21 @@ class MPRISTracker(tracker.TrackerBase):
             # Remove timer if any
             self.timing = False
 
+        if sender in self.view_offsets:
+            del self.view_offsets[sender]
+
     def _update_view_offset(self, sender, properties):
         try:
-            self.view_offsets[sender] = int(properties.Get(MPRISTracker.mpris_base + '.Player', 'Position'))
+            self.view_offsets[sender] = int(properties.Get(
+                MPRISTracker.mpris_base + '.Player', 'Position'))/1000
             if self.view_offsets[sender]:
                 if self.is_active_player(sender):
-                    self.view_offset = self.view_offsets[sender]/1000
-
-        except dbus.exceptions.DBusException:
-            if sender in self.view_offsets:
-                del self.view_offsets[sender]
-            if self.is_active_player(sender):
-                self.view_offset = None
+                    self.view_offset = self.view_offsets[sender]
+            return True
+        except GLib.Error:
             return False
 
-        return True
-
-    def _on_update(self, name, properties, v, sender=None):
+    def _on_update(self, sender, properties):
         # We can override the active player if it's not playing a valid show.
         if self.is_active_player(sender):
             if 'Metadata' in properties:
@@ -165,6 +165,7 @@ class MPRISTracker(tracker.TrackerBase):
             if 'PlaybackStatus' in properties:
                 status = properties['PlaybackStatus']
                 self._handle_status(status, sender)
+
         else:
             self.msg.debug(
                 self.name, "Got signal from an inactive player, ignoring.")
@@ -185,26 +186,22 @@ class MPRISTracker(tracker.TrackerBase):
     def observe(self, config, watch_dirs):
         self.msg.info(self.name, "Using MPRIS.")
 
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
         self.re_players = re.compile(config['tracker_process'])
         self.filenames = {}
         self.statuses = {}
         self.view_offsets = {}
         self.timing = False
         self.active_player = None
-        self.bus = dbus.SessionBus()
+        self.session = SessionBus()
+        self.bus = self.session.get('.DBus')
 
         # Look for already running players and conect them
-        for name in self.bus.list_names():
+        for name in self.bus.ListNames():
             if name.startswith(MPRISTracker.mpris_base):
                 self._connect(name)
 
         # Connect signal for any new players that could appear
-        names = self.bus.get_object(
-            'org.freedesktop.DBus', '/org/freedesktop/DBus')
-        names.connect_to_signal(
-            'NameOwnerChanged', self._new_name, dbus_interface='org.freedesktop.DBus')
+        self.bus.NameOwnerChanged.connect(self._new_name)
 
         # Run GLib loop
         loop = GLib.MainLoop()
