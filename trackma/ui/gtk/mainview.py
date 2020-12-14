@@ -74,6 +74,7 @@ class MainView(Gtk.Box):
         self._current_page = None
         self.statusbox_handler = None
         self.notebook_switch_handler = None
+        self._hovering_over_tabs = None
         self._pages = {}
         self._page_handler_ids = {}
 
@@ -101,7 +102,11 @@ class MainView(Gtk.Box):
         self.notebook.set_scrollable(True)
         self.notebook.add_events(Gdk.EventMask.SCROLL_MASK |
                                  Gdk.EventMask.SMOOTH_SCROLL_MASK)
-        self.notebook.connect('scroll-event', self._notebook_handle_scroll)
+        self.notebook.connect('scroll-event', self._notebook_handle_events)
+        self.notebook.connect('enter-notify-event',
+                              self._notebook_handle_events)
+        self.notebook.connect('leave-notify-event',
+                              self._notebook_handle_events)
 
         self.statusbar = Gtk.Statusbar()
         self.statusbar.push(0, 'Trackma GTK ' + utils.VERSION)
@@ -209,18 +214,18 @@ class MainView(Gtk.Box):
         self.entry_done.set_sensitive(can_update)
         self.btn_episode_add.set_sensitive(can_update)
 
-    def _notebook_handle_scroll(self, widget, event):
-        page = self.notebook.get_current_page()
-        npage = self.notebook.get_n_pages()
-        scroll = event.get_scroll_deltas()[2]
-
-        if scroll < 0 and page > 0:
-            self.notebook.prev_page()
-        elif scroll > 0 and page < npage:
-            self.notebook.next_page()
-        else:
-            return False
-        return True
+    def _notebook_handle_events(self, widget, event):
+        if event.type in (Gdk.EventType.LEAVE_NOTIFY, Gdk.EventType.ENTER_NOTIFY):
+            self._hovering_over_tabs = event.type == Gdk.EventType.ENTER_NOTIFY
+        elif self._hovering_over_tabs and event.type == Gdk.EventType.SCROLL:
+            page = self.notebook.get_current_page()
+            npage = self.notebook.get_n_pages() - 1
+            if event.delta_y < 0 and page > 0:
+                self.notebook.prev_page()
+            elif event.delta_y > 0 and page < npage:
+                self.notebook.next_page()
+            return event.delta_y < 0 and page > 0 or event.delta_y > 0 and page < npage
+        return False
 
     def _create_notebook_pages(self):
         statuses_nums = self._engine.mediainfo['statuses'].copy()
