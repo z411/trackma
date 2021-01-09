@@ -280,12 +280,12 @@ class SettingsWindow(Gtk.Window):
     def _button_toggled(self, widget, spin):
         spin.set_sensitive(widget.get_active())
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_save_clicked(self, btn):
         self.save_config()
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_switch_tracker_state_set(self, switch, state):
         self.radio_tracker_local.set_sensitive(state)
         self.radio_tracker_mpris.set_sensitive(state)
@@ -303,7 +303,7 @@ class SettingsWindow(Gtk.Window):
         self.checkbox_tracker_update_prompt.set_sensitive(state)
         self.checkbox_tracker_not_found_prompt.set_sensitive(state)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _set_tracker_radio_buttons(self, radio_button=None):
         if self.radio_tracker_local.get_active() or self.radio_tracker_mpris.get_active():
             self._enable_local(True)
@@ -345,7 +345,7 @@ class SettingsWindow(Gtk.Window):
         row = DirectoryRow(path)
         self.listbox_directories.add(row)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_add_directory_clicked(self, btn):
         chooser_dialog = Gtk.FileChooserDialog('Select a directory',
                                                self.get_parent_window(),

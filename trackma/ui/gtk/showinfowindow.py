@@ -40,11 +40,11 @@ class ShowInfoWindow(Gtk.Dialog):
 
         self.info_container.pack_start(info_box, True, True, 0)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_dialog_close(self, widget):
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_website_clicked(self, btn):
         if self._show['url']:
             Gtk.show_uri(None, self._show['url'], Gdk.CURRENT_TIME)

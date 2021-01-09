@@ -88,7 +88,7 @@ class SearchWindow(Gtk.Window):
         self.search_paned.set_position(400)
         self.set_size_request(450, 350)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_search_entry_search_changed(self, search_entry):
         search_text = search_entry.get_text().strip()
         self.progress_spinner.start()
@@ -134,7 +134,7 @@ class SearchWindow(Gtk.Window):
         if error:
             self.emit('search-error', error)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_add_show_clicked(self, btn):
         show = self._get_full_selected_show()
 

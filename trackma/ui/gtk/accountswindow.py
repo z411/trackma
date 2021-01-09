@@ -145,60 +145,60 @@ class AccountsWindow(Gtk.Dialog):
         else:
             self.accounts_frame.show()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_dialog_close(self, dialog):
         self.emit('account-cancel')
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_cancel_clicked(self, btn):
         self.emit('account-cancel')
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_row_selected(self, list_box, row):
         reveal = row is not None
         self.revealer_action_bar.set_reveal_child(reveal)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_row_activated(self, list_box, row):
         acc_num = row.get_account_id()
         remember = self.remember_switch.get_active()
         self.emit('account-open', acc_num, remember)
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_edit_clicked(self, btn):
         self._show_edit()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_open_clicked(self, btn):
         acc_num = self.accounts_listbox.get_selected_row().get_account_id()
         remember = self.remember_switch.get_active()
         self.emit('account-open', acc_num, remember)
         self.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_delete_clicked(self, btn):
         row = self.accounts_listbox.get_selected_row()
         self.manager.delete_account(row.get_account_id())
         row.destroy()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_add_clicked(self, btn):
         self._show_add_new()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_new_cancel_clicked(self, btn):
         self._show_accounts_list()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_new_confirm_clicked(self, btn):
         self._add_account()
         self._refresh_list()
         self._show_accounts_list()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_edit_confirm_clicked(self, btn):
         self._edit_account()
         self._refresh_list()
@@ -269,7 +269,7 @@ class AccountsWindow(Gtk.Dialog):
 
         self.accounts_combo.set_model(model_api)
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_accounts_combo_changed(self, combo):
         self.username_entry.set_text("")
         self.password_entry.set_text("")
@@ -283,7 +283,7 @@ class AccountsWindow(Gtk.Dialog):
             self.adding_allow = True
             self._show_password_account()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_btn_pin_request_clicked(self, btn):
         api = self._get_combo_active_api_name()
 
@@ -320,14 +320,14 @@ class AccountsWindow(Gtk.Dialog):
 
         return self.accounts_combo.get_model().get(apiiter, 0)[0]
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_username_entry_changed(self, entry):
         if self.current == AccountsView.NEW:
             self._refresh_btn_new_confirm()
         elif self.current == AccountsView.EDIT:
             self._refresh_btn_edit_confirm()
 
-    @Gtk.Template.Callback
+    @Gtk.Template.Callback()
     def _on_password_entry_changed(self, entry):
         if self.current == AccountsView.NEW:
             self._refresh_btn_new_confirm()
