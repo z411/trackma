@@ -967,6 +967,8 @@ class Engine:
                 self.data_handler.altname_set(showid, newname)
                 self.msg.info(
                     self.name, 'Changed alternate name to %s.' % newname)
+            # Update the tracker with the new altname
+            self._update_tracker()
         else:
             return self.data_handler.altname_get(showid)
 
