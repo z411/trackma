@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from gi import require_version  # nopep8
+require_version('Gtk', '3.0')  # nopep8
 
 from trackma import utils
 from trackma.ui.gtk.window import TrackmaWindow
 from gi.repository import GLib, Gio, Gtk
-from gi import require_version
-require_version('Gtk', '3.0')
 
 
 class TrackmaApplication(Gtk.Application):

@@ -20,7 +20,6 @@ import threading
 
 from gi.repository import GLib, Gtk, Gdk, GObject
 from trackma.ui.gtk import gtk_dir
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showtreeview import ShowTreeView, ShowListStore, ShowListFilter
@@ -28,7 +27,7 @@ from trackma import utils
 from trackma import messenger
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/mainview.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/mainview.ui'))
 class MainView(Gtk.Box):
 
     __gtype_name__ = 'MainView'
@@ -42,23 +41,23 @@ class MainView(Gtk.Box):
                         (int, object)),
     }
 
-    image_container_box = GtkTemplate.Child()
-    top_box = GtkTemplate.Child()
-    show_title = GtkTemplate.Child()
-    api_icon = GtkTemplate.Child()
-    api_user = GtkTemplate.Child()
-    btn_episode_remove = GtkTemplate.Child()
-    btn_episode_show_entry = GtkTemplate.Child()
-    entry_popover = GtkTemplate.Child()
-    entry_episode = GtkTemplate.Child()
-    entry_done = GtkTemplate.Child()
-    btn_episode_add = GtkTemplate.Child()
-    btn_play_next = GtkTemplate.Child()
-    spinbtn_score = GtkTemplate.Child()
-    btn_score_set = GtkTemplate.Child()
-    statusbox = GtkTemplate.Child()
-    statusmodel = GtkTemplate.Child()
-    notebook = GtkTemplate.Child()
+    image_container_box = Gtk.Template.Child()
+    top_box = Gtk.Template.Child()
+    show_title = Gtk.Template.Child()
+    api_icon = Gtk.Template.Child()
+    api_user = Gtk.Template.Child()
+    btn_episode_remove = Gtk.Template.Child()
+    btn_episode_show_entry = Gtk.Template.Child()
+    entry_popover = Gtk.Template.Child()
+    entry_episode = Gtk.Template.Child()
+    entry_done = Gtk.Template.Child()
+    btn_episode_add = Gtk.Template.Child()
+    btn_play_next = Gtk.Template.Child()
+    spinbtn_score = Gtk.Template.Child()
+    btn_score_set = Gtk.Template.Child()
+    statusbox = Gtk.Template.Child()
+    statusmodel = Gtk.Template.Child()
+    notebook = Gtk.Template.Child()
 
     def __init__(self, config, debug=False):
         Gtk.Box.__init__(self)

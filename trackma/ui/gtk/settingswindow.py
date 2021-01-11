@@ -19,7 +19,6 @@ import os
 from gi.repository import Gtk, Gdk, GObject, Pango
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma import utils
 
 
@@ -40,78 +39,78 @@ def getColor(colorString):
     return Gdk.color_parse("#000000")
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/settingswindow.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/settingswindow.ui'))
 class SettingsWindow(Gtk.Window):
 
     __gtype_name__ = 'SettingsWindow'
 
-    btn_save = GtkTemplate.Child()
-    switch_tracker = GtkTemplate.Child()
+    btn_save = Gtk.Template.Child()
+    switch_tracker = Gtk.Template.Child()
 
-    radio_tracker_local = GtkTemplate.Child()
-    radio_tracker_mpris = GtkTemplate.Child()
-    entry_player_process = GtkTemplate.Child()
-    btn_file_chooser_executable = GtkTemplate.Child()
-    listbox_directories = GtkTemplate.Child()
-    btn_add_directory = GtkTemplate.Child()
-    checkbox_library_startup = GtkTemplate.Child()
-    checkbox_library_entire_list = GtkTemplate.Child()
-    checkbox_library_full_path = GtkTemplate.Child()
+    radio_tracker_local = Gtk.Template.Child()
+    radio_tracker_mpris = Gtk.Template.Child()
+    entry_player_process = Gtk.Template.Child()
+    btn_file_chooser_executable = Gtk.Template.Child()
+    listbox_directories = Gtk.Template.Child()
+    btn_add_directory = Gtk.Template.Child()
+    checkbox_library_startup = Gtk.Template.Child()
+    checkbox_library_entire_list = Gtk.Template.Child()
+    checkbox_library_full_path = Gtk.Template.Child()
 
-    radio_tracker_plex = GtkTemplate.Child()
-    entry_plex_host = GtkTemplate.Child()
-    spin_plex_port = GtkTemplate.Child()
-    entry_plex_username = GtkTemplate.Child()
-    entry_plex_password = GtkTemplate.Child()
-    checkbox_plex_obey_wait = GtkTemplate.Child()
-    spin_tracker_update_wait = GtkTemplate.Child()
+    radio_tracker_plex = Gtk.Template.Child()
+    entry_plex_host = Gtk.Template.Child()
+    spin_plex_port = Gtk.Template.Child()
+    entry_plex_username = Gtk.Template.Child()
+    entry_plex_password = Gtk.Template.Child()
+    checkbox_plex_obey_wait = Gtk.Template.Child()
+    spin_tracker_update_wait = Gtk.Template.Child()
 
-    radio_tracker_jellyfin = GtkTemplate.Child()
-    entry_jellyfin_host = GtkTemplate.Child()
-    spin_jellyfin_port = GtkTemplate.Child()
-    entry_jellyfin_username = GtkTemplate.Child()
-    entry_jellyfin_apikey = GtkTemplate.Child()
+    radio_tracker_jellyfin = Gtk.Template.Child()
+    entry_jellyfin_host = Gtk.Template.Child()
+    spin_jellyfin_port = Gtk.Template.Child()
+    entry_jellyfin_username = Gtk.Template.Child()
+    entry_jellyfin_apikey = Gtk.Template.Child()
 
-    checkbox_tracker_update_close = GtkTemplate.Child()
-    checkbox_tracker_update_prompt = GtkTemplate.Child()
-    checkbox_tracker_not_found_prompt = GtkTemplate.Child()
+    checkbox_tracker_update_close = Gtk.Template.Child()
+    checkbox_tracker_update_prompt = Gtk.Template.Child()
+    checkbox_tracker_not_found_prompt = Gtk.Template.Child()
 
-    radiobutton_download_days = GtkTemplate.Child()
-    radiobutton_download_always = GtkTemplate.Child()
-    radiobutton_download_off = GtkTemplate.Child()
+    radiobutton_download_days = Gtk.Template.Child()
+    radiobutton_download_always = Gtk.Template.Child()
+    radiobutton_download_off = Gtk.Template.Child()
 
-    radiobutton_upload_minutes = GtkTemplate.Child()
-    radiobutton_upload_size = GtkTemplate.Child()
-    radiobutton_upload_always = GtkTemplate.Child()
-    radiobutton_upload_off = GtkTemplate.Child()
-    checkbox_upload_exit = GtkTemplate.Child()
+    radiobutton_upload_minutes = Gtk.Template.Child()
+    radiobutton_upload_size = Gtk.Template.Child()
+    radiobutton_upload_always = Gtk.Template.Child()
+    radiobutton_upload_off = Gtk.Template.Child()
+    checkbox_upload_exit = Gtk.Template.Child()
 
-    spinbutton_download_days = GtkTemplate.Child()
-    spinbutton_upload_minutes = GtkTemplate.Child()
-    spinbutton_upload_size = GtkTemplate.Child()
+    spinbutton_download_days = Gtk.Template.Child()
+    spinbutton_upload_minutes = Gtk.Template.Child()
+    spinbutton_upload_size = Gtk.Template.Child()
 
-    checkbox_auto_status_change = GtkTemplate.Child()
-    checkbox_auto_status_change_if_scored = GtkTemplate.Child()
-    checkbox_auto_date_change = GtkTemplate.Child()
+    checkbox_auto_status_change = Gtk.Template.Child()
+    checkbox_auto_status_change_if_scored = Gtk.Template.Child()
+    checkbox_auto_date_change = Gtk.Template.Child()
 
-    checkbox_show_tray = GtkTemplate.Child()
-    checkbox_close_to_tray = GtkTemplate.Child()
-    checkbox_start_in_tray = GtkTemplate.Child()
-    checkbox_tray_api_icon = GtkTemplate.Child()
-    checkbox_remember_geometry = GtkTemplate.Child()
-    checkbox_classic_progress = GtkTemplate.Child()
+    checkbox_show_tray = Gtk.Template.Child()
+    checkbox_close_to_tray = Gtk.Template.Child()
+    checkbox_start_in_tray = Gtk.Template.Child()
+    checkbox_tray_api_icon = Gtk.Template.Child()
+    checkbox_remember_geometry = Gtk.Template.Child()
+    checkbox_classic_progress = Gtk.Template.Child()
 
-    colorbutton_rows_playing = GtkTemplate.Child()
-    colorbutton_rows_queued = GtkTemplate.Child()
-    colorbutton_rows_new_episode = GtkTemplate.Child()
-    colorbutton_rows_is_airing = GtkTemplate.Child()
-    colorbutton_rows_not_aired = GtkTemplate.Child()
+    colorbutton_rows_playing = Gtk.Template.Child()
+    colorbutton_rows_queued = Gtk.Template.Child()
+    colorbutton_rows_new_episode = Gtk.Template.Child()
+    colorbutton_rows_is_airing = Gtk.Template.Child()
+    colorbutton_rows_not_aired = Gtk.Template.Child()
 
-    colorbutton_progress_bg = GtkTemplate.Child()
-    colorbutton_progress_fg = GtkTemplate.Child()
-    colorbutton_progress_sub_bg = GtkTemplate.Child()
-    colorbutton_progress_sub_fg = GtkTemplate.Child()
-    colorbutton_progress_complete = GtkTemplate.Child()
+    colorbutton_progress_bg = Gtk.Template.Child()
+    colorbutton_progress_fg = Gtk.Template.Child()
+    colorbutton_progress_sub_bg = Gtk.Template.Child()
+    colorbutton_progress_sub_fg = Gtk.Template.Child()
+    colorbutton_progress_complete = Gtk.Template.Child()
 
     def __init__(self, engine, config, configfile, transient_for=None):
         Gtk.Window.__init__(self, transient_for=transient_for)
@@ -281,12 +280,12 @@ class SettingsWindow(Gtk.Window):
     def _button_toggled(self, widget, spin):
         spin.set_sensitive(widget.get_active())
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_btn_save_clicked(self, btn):
         self.save_config()
         self.destroy()
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_switch_tracker_state_set(self, switch, state):
         self.radio_tracker_local.set_sensitive(state)
         self.radio_tracker_mpris.set_sensitive(state)
@@ -304,7 +303,7 @@ class SettingsWindow(Gtk.Window):
         self.checkbox_tracker_update_prompt.set_sensitive(state)
         self.checkbox_tracker_not_found_prompt.set_sensitive(state)
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _set_tracker_radio_buttons(self, radio_button=None):
         if self.radio_tracker_local.get_active() or self.radio_tracker_mpris.get_active():
             self._enable_local(True)
@@ -346,7 +345,7 @@ class SettingsWindow(Gtk.Window):
         row = DirectoryRow(path)
         self.listbox_directories.add(row)
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_btn_add_directory_clicked(self, btn):
         chooser_dialog = Gtk.FileChooserDialog('Select a directory',
                                                self.get_parent_window(),

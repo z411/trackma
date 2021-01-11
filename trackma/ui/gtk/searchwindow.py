@@ -19,7 +19,6 @@ import threading
 
 from gi.repository import GLib, Gtk, GObject
 from trackma.ui.gtk import gtk_dir
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.showinfobox import ShowInfoBox
 from trackma import utils
 
@@ -48,7 +47,7 @@ class SearchThread(threading.Thread):
         self._stop_request.set()
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/searchwindow.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/searchwindow.ui'))
 class SearchWindow(Gtk.Window):
     __gtype_name__ = 'SearchWindow'
 
@@ -57,12 +56,12 @@ class SearchWindow(Gtk.Window):
                          (str,))
     }
 
-    btn_add_show = GtkTemplate.Child()
-    search_paned = GtkTemplate.Child()
-    shows_viewport = GtkTemplate.Child()
-    show_info_container = GtkTemplate.Child()
-    progress_spinner = GtkTemplate.Child()
-    headerbar = GtkTemplate.Child()
+    btn_add_show = Gtk.Template.Child()
+    search_paned = Gtk.Template.Child()
+    shows_viewport = Gtk.Template.Child()
+    show_info_container = Gtk.Template.Child()
+    progress_spinner = Gtk.Template.Child()
+    headerbar = Gtk.Template.Child()
 
     def __init__(self, engine, colors, current_status, transient_for=None):
         Gtk.Window.__init__(self, transient_for=transient_for)
@@ -89,7 +88,7 @@ class SearchWindow(Gtk.Window):
         self.search_paned.set_position(400)
         self.set_size_request(450, 350)
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_search_entry_search_changed(self, search_entry):
         search_text = search_entry.get_text().strip()
         self.progress_spinner.start()
@@ -135,7 +134,7 @@ class SearchWindow(Gtk.Window):
         if error:
             self.emit('search-error', error)
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_btn_add_show_clicked(self, btn):
         show = self._get_full_selected_show()
 

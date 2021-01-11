@@ -18,15 +18,14 @@ import os
 
 from gi.repository import Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.showinfobox import ShowInfoBox
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/showinfowindow.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/showinfowindow.ui'))
 class ShowInfoWindow(Gtk.Dialog):
     __gtype_name__ = 'ShowInfoWindow'
 
-    info_container = GtkTemplate.Child()
+    info_container = Gtk.Template.Child()
 
     def __init__(self, engine, show_data, transient_for=None):
         Gtk.Dialog.__init__(self, transient_for=transient_for)
@@ -41,11 +40,11 @@ class ShowInfoWindow(Gtk.Dialog):
 
         self.info_container.pack_start(info_box, True, True, 0)
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_dialog_close(self, widget):
         self.destroy()
 
-    @GtkTemplate.Callback
+    @Gtk.Template.Callback()
     def _on_btn_website_clicked(self, btn):
         if self._show['url']:
             Gtk.show_uri(None, self._show['url'], Gdk.CURRENT_TIME)

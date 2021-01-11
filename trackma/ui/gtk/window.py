@@ -21,7 +21,6 @@ import threading
 
 from gi.repository import GLib, Gio, Gtk, Gdk
 from trackma.ui.gtk import gtk_dir
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.accountswindow import AccountsWindow
 from trackma.ui.gtk.mainview import MainView
 from trackma.ui.gtk.searchwindow import SearchWindow
@@ -35,13 +34,13 @@ from trackma import messenger
 from trackma import utils
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/window.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/window.ui'))
 class TrackmaWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'TrackmaWindow'
 
-    btn_appmenu = GtkTemplate.Child()
-    btn_mediatype = GtkTemplate.Child()
-    header_bar = GtkTemplate.Child()
+    btn_appmenu = Gtk.Template.Child()
+    btn_mediatype = Gtk.Template.Child()
+    header_bar = Gtk.Template.Child()
 
     def __init__(self, app, debug=False):
         Gtk.ApplicationWindow.__init__(self, application=app)
