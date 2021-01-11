@@ -52,7 +52,20 @@ class libkitsu(lib):
         'version': 'v0.3',
         'merge': True
     }
-
+    status_translate = {
+        'tba': utils.STATUS_UNKNOWN,
+        'finished': utils.STATUS_FINISHED,
+        'current': utils.STATUS_AIRING,
+        'upcoming': utils.STATUS_NOTYET,
+        'unreleased': utils.STATUS_NOTYET
+    }
+    type_translate = {
+        'ONA': utils.TYPE_OVA,
+        'OVA': utils.TYPE_OVA,
+        'TV': utils.TYPE_SP,
+        'movie': utils.TYPE_MOVIE,
+        'music': utils.TYPE_OTHER
+    }
     default_mediatype = 'anime'
     default_statuses = ['current', 'completed',
                         'on_hold', 'dropped', 'planned']
@@ -118,10 +131,6 @@ class libkitsu(lib):
     # TODO : These values are previsional.
     _client_id = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
-
-    status_translate = {'Currently Airing': utils.STATUS_AIRING,
-                        'Finished Airing': utils.STATUS_FINISHED,
-                        'Not Yet Aired': utils.STATUS_NOTYET}
 
     def __init__(self, messenger, account, userconfig):
         """Initializes the useragent through credentials."""
@@ -277,7 +286,26 @@ class libkitsu(lib):
                 # "include": self.mediatype, # TODO : This returns a 500 for some reason.
                 "include": "media",
                 # TODO : List for manga should be different
-                "fields[anime]": "id,slug,canonicalTitle,titles,episodeCount,synopsis,subtype,posterImage,startDate,endDate",
+                "fields[anime]": ','.join([
+                    'id',
+                    'slug',
+                    'canonicalTitle',
+                    'titles',
+                    'episodeCount' if self.mediatype in ['anime','drama'] else 'chapterCount',
+                    'description',
+                    'status',
+                    'nsfw',
+                    'tba',
+                    'subtype',
+                    'posterImage',
+                    'startDate',
+                    'endDate',
+                    'abbreviatedTitles',
+                    'averageRating',
+                    'popularityRank',
+                    'ratingRank',
+                    'ageRating'
+                ]),
                 "page[limit]": "250",
             }
 
@@ -521,11 +549,18 @@ class libkitsu(lib):
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
+            'type':        self.type_translate.get(attr['subtype'],utils.TYPE_UNKNOWN),
+            'status':      self.status_translate.get(attr['status'],utils.STATUS_UNKNOWN),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
-                ('Synopsis', attr['synopsis']),
+                ('Synopsis', attr['description']),
                 ('Type',     attr['subtype']),
+                ('Titles',  list(filter(None, attr['titles'].values())) ),
+                ('Average Rating', attr['averageRating'] or '?'),
+                ('Popularity Rank', attr['popularityRank']),
+                ('Rating Rank', attr['ratingRank']),
+                ('Age Rating', attr['ageRating']),
             ]
         })
 
@@ -533,9 +568,10 @@ class libkitsu(lib):
         if total == 1:
             info['end_date'] = info['start_date']
 
-        # WORKAROUND: Since there's no way to get the formal status,
-        # use the helper function to guess it.
-        info['status'] = self._guess_status(
-            info['start_date'], info['end_date'])
+        if attr['status'] in ['upcoming', 'unreleased']:
+            info['extra'].append(('Expected Release', attr['tba'] or '?'))
+
+        if attr['nsfw']:
+            info['extra'].append(('Not Safe for Work', None))
 
         return info
