@@ -32,12 +32,14 @@ VERSION = '0.8.4'
 
 DATADIR = os.path.dirname(__file__) + '/data'
 
+
 class Login(Enum):
     PASSWD = auto()
     OAUTH = auto()
     OAUTH_PKCE = auto()
 
-class BaseEum(Enum):
+
+class BaseEnum(Enum):
     @classmethod
     def find(cls, name):
         try:
@@ -85,9 +87,10 @@ class BaseEum(Enum):
         if isinstance(self.value, (str,)):
             return self.value
         else:
-            return self.name.replace('_',' ')
+            return self.name.replace('_', ' ')
 
-class Status(BaseEum):
+
+class Status(BaseEnum):
     UNKNOWN = 'Unknown'
     AIRING = 'Airing'
     FINISHED = 'Finished'
@@ -95,7 +98,7 @@ class Status(BaseEum):
     CANCELLED = 'Cancelled'
     OTHER = 'Other'
 
-    #aliases
+    # aliases
     RELEASING = AIRING
     PUBLISHING = AIRING
     CURRENTLY_AIRING = AIRING
@@ -104,7 +107,8 @@ class Status(BaseEum):
     NOT_YET_RELEASED = NOTYET
     NOT_YET_PUBLISHED = NOTYET
 
-class Type(BaseEum):
+
+class Type(BaseEnum):
     UNKNOWN = "Unknown"
     OTHER = "Other"
 
@@ -115,14 +119,15 @@ class Type(BaseEum):
     SPECIAL = "Special"
 
     # manga
-    MANGA       = "Manga"
-    NOVEL       = "Novel"
-    ONE_SHOT    = "One Shot"
+    MANGA = "Manga"
+    NOVEL = "Novel"
+    ONE_SHOT = "One Shot"
 
-    #aliases
+    # aliases
     SP = SPECIAL
     MUSIC = OTHER
     ONA = OVA
+
 
 class Tracker(Enum):
     NOVIDEO = auto()
@@ -131,18 +136,21 @@ class Tracker(Enum):
     NOT_FOUND = auto()
     IGNORED = auto()
 
+
 class Season(Enum):
     WINTER = auto()
     SPRING = auto()
     SUMMER = auto()
     FALL = auto()
 
+
 class SearchMethod(Enum):
     KEYWORD = auto()
     SEASON = auto()
 
-    #aliases
+    # aliases
     KW = KEYWORD
+
 
 HOME = os.path.expanduser("~")
 EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
@@ -150,10 +158,10 @@ EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
 # Put the available APIs here
 available_libs = {
     'anilist':   ('Anilist',      DATADIR + '/anilist.jpg',     Login.OAUTH,
-                 "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"),
+                  "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"),
     'kitsu':     ('Kitsu',        DATADIR + '/kitsu.png',       Login.PASSWD),
     'mal':       ('MyAnimeList',  DATADIR + '/mal.jpg',     Login.OAUTH_PKCE,
-                 "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s"),
+                  "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s"),
     'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   Login.OAUTH,
                   "https://shikimori.org/oauth/authorize?client_id=Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro&redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&response_type=code&scope=user_rates"),
     'vndb':      ('VNDB',         DATADIR + '/vndb.jpg',        Login.PASSWD),
@@ -170,11 +178,13 @@ available_trackers = [
     ('win32', 'Win32'),
 ]
 
+
 def oauth_generate_pkce() -> str:
     import secrets
 
     token = secrets.token_urlsafe(100)
     return token[:128]
+
 
 def parse_config(filename, default):
     config = copy.copy(default)
@@ -415,7 +425,7 @@ def spawn_process(arg_list):
     Helper generic function to spawn a subprocess.
     Does a double fork on *nix to prevent zombie processes.
     """
-    
+
     if not sys.platform.startswith('win32'):
         try:
             pid = os.fork()
