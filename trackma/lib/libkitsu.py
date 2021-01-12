@@ -52,20 +52,6 @@ class libkitsu(lib):
         'version': 'v0.3',
         'merge': True
     }
-    status_translate = {
-        'tba': utils.STATUS_UNKNOWN,
-        'finished': utils.STATUS_FINISHED,
-        'current': utils.STATUS_AIRING,
-        'upcoming': utils.STATUS_NOTYET,
-        'unreleased': utils.STATUS_NOTYET
-    }
-    type_translate = {
-        'ONA': utils.TYPE_OVA,
-        'OVA': utils.TYPE_OVA,
-        'TV': utils.TYPE_SP,
-        'movie': utils.TYPE_MOVIE,
-        'music': utils.TYPE_OTHER
-    }
     default_mediatype = 'anime'
     default_statuses = ['current', 'completed',
                         'on_hold', 'dropped', 'planned']
@@ -550,8 +536,8 @@ class libkitsu(lib):
             'type':        utils.Type.find(attr['subtype']),
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
-            'type':        self.type_translate.get(attr['subtype'],utils.TYPE_UNKNOWN),
-            'status':      self.status_translate.get(attr['status'],utils.STATUS_UNKNOWN),
+            'type':        utils.Type.find(attr['subtype']),
+            'status':      utils.Status.find(attr['status']),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
