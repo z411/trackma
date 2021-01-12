@@ -139,10 +139,10 @@ class Tracker(Enum):
 
 
 class Season(Enum):
-    WINTER = auto()
-    SPRING = auto()
-    SUMMER = auto()
-    FALL = auto()
+    WINTER = 'Winter'
+    SPRING = 'Spring'
+    SUMMER = 'Summer'
+    FALL = 'Fall'
 
 
 class SearchMethod(Enum):
