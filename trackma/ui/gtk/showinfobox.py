@@ -17,22 +17,20 @@
 import html
 import os
 import threading
-from gi import require_version
-require_version('Gtk', '3.0')
+
 from gi.repository import Gtk, GObject
 from trackma.ui.gtk import gtk_dir
-from trackma.ui.gtk.gi_composites import GtkTemplate
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma import utils
 
 
-@GtkTemplate(ui=os.path.join(gtk_dir, 'data/showinfobox.ui'))
+@Gtk.Template.from_file(os.path.join(gtk_dir, 'data/showinfobox.ui'))
 class ShowInfoBox(Gtk.Box):
     __gtype_name__ = 'ShowInfoBox'
 
-    label_title = GtkTemplate.Child()
-    data_container = GtkTemplate.Child()
-    image_container = GtkTemplate.Child()
+    label_title = Gtk.Template.Child()
+    data_container = Gtk.Template.Child()
+    image_container = Gtk.Template.Child()
 
     def __init__(self, engine, orientation=Gtk.Orientation.HORIZONTAL):
         Gtk.Box.__init__(self)
@@ -50,7 +48,7 @@ class ShowInfoBox(Gtk.Box):
 
         self.data_label = Gtk.Label('')
         self.data_label.set_line_wrap(True)
-        self.data_label.set_property('selectable',True)
+        self.data_label.set_property('selectable', True)
 
         if isinstance(orientation, Gtk.Orientation):
             self.data_container.set_orientation(orientation)

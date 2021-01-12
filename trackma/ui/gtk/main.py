@@ -23,7 +23,7 @@ from trackma import utils
 def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    print("Trackma-gtk v{}".format(utils.VERSION))
+    print("Trackma GTK v{}".format(utils.VERSION))
     app = TrackmaApplication()
     sys.exit(app.run(sys.argv))
 

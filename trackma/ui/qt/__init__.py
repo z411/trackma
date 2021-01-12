@@ -15,13 +15,15 @@
 #
 
 
+from trackma.ui.qt.mainwindow import MainWindow
+from trackma import messenger
+from trackma import utils
 import sys
 import os
 
 debug = False
 force_qt4 = False
 
-from trackma import utils
 
 print("Trackma-qt v{}".format(utils.VERSION))
 
@@ -47,7 +49,7 @@ if not force_qt4:
     except ImportError:
         print("Couldn't import Qt5 dependencies. "
               "Make sure you installed the PyQt5 package.")
-              
+
 if 'PYQT5' not in os.environ:
     try:
         import sip
@@ -58,8 +60,6 @@ if 'PYQT5' not in os.environ:
               "Make sure you installed the PyQt4 package.")
         sys.exit(-1)
 
-from trackma import messenger
-from trackma.ui.qt.mainwindow import MainWindow
 
 try:
     from PIL import Image
@@ -81,7 +81,9 @@ def main():
         mainwindow = MainWindow(debug)
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
-        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
+        QMessageBox.critical(None, 'Fatal Error',
+                             "{0}".format(e), QMessageBox.Ok)
+
 
 if __name__ == '__main__':
     main()

@@ -46,15 +46,29 @@ class libkitsu(lib):
     auth = ''
     logged_in = False
 
-    api_info =  {
+    api_info = {
         'name': 'Kitsu',
         'shortname': 'kitsu',
         'version': 'v0.3',
         'merge': True
     }
-
+    status_translate = {
+        'tba': utils.STATUS_UNKNOWN,
+        'finished': utils.STATUS_FINISHED,
+        'current': utils.STATUS_AIRING,
+        'upcoming': utils.STATUS_NOTYET,
+        'unreleased': utils.STATUS_NOTYET
+    }
+    type_translate = {
+        'ONA': utils.TYPE_OVA,
+        'OVA': utils.TYPE_OVA,
+        'TV': utils.TYPE_SP,
+        'movie': utils.TYPE_MOVIE,
+        'music': utils.TYPE_OTHER
+    }
     default_mediatype = 'anime'
-    default_statuses = ['current', 'completed', 'on_hold', 'dropped', 'planned']
+    default_statuses = ['current', 'completed',
+                        'on_hold', 'dropped', 'planned']
     default_statuses_dict = {
         'current': 'Watching',
         'completed': 'Completed',
@@ -111,11 +125,11 @@ class libkitsu(lib):
         'score_step': 0.25,
     }
 
-    url    = 'https://kitsu.io/api'
+    url = 'https://kitsu.io/api'
     prefix = 'https://kitsu.io/api/edge'
 
     # TODO : These values are previsional.
-    _client_id     = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
+    _client_id = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
 
     def __init__(self, messenger, account, userconfig):
@@ -201,16 +215,17 @@ class libkitsu(lib):
         if refresh:
             self.msg.info(self.name, 'Refreshing access token...')
 
-            params['grant_type']    = 'refresh_token'
+            params['grant_type'] = 'refresh_token'
             params['refresh_token'] = self._get_userconfig('refresh_token')
         else:
             self.msg.info(self.name, 'Requesting access token...')
 
             params['grant_type'] = 'password'
-            params['username']   = self.username
-            params['password']   = self.password
+            params['username'] = self.username
+            params['password'] = self.password
 
-        response = self._request('POST', self.url + '/oauth/token', post=params)
+        response = self._request(
+            'POST', self.url + '/oauth/token', post=params)
         data = json.loads(response)
 
         timestamp = int(time.time())
@@ -227,9 +242,10 @@ class libkitsu(lib):
     def _refresh_user_info(self):
         self.msg.info(self.name, 'Refreshing user details...')
         params = {
-                "filter[self]": 'true',
+            "filter[self]": 'true',
         }
-        data = self._request('GET', self.prefix + "/users", get=params, auth=True)
+        data = self._request('GET', self.prefix +
+                             "/users", get=params, auth=True)
         json_data = json.loads(data)
         user = json_data['data'][0]
 
@@ -267,14 +283,34 @@ class libkitsu(lib):
             params = {
                 "filter[user_id]": self._get_userconfig('userid'),
                 "filter[kind]": self.mediatype,
-                #"include": self.mediatype, # TODO : This returns a 500 for some reason.
+                # "include": self.mediatype, # TODO : This returns a 500 for some reason.
                 "include": "media",
                 # TODO : List for manga should be different
-                "fields[anime]": "id,slug,canonicalTitle,titles,episodeCount,synopsis,subtype,posterImage,startDate,endDate",
+                "fields[anime]": ','.join([
+                    'id',
+                    'slug',
+                    'canonicalTitle',
+                    'titles',
+                    'episodeCount' if self.mediatype in ['anime','drama'] else 'chapterCount',
+                    'description',
+                    'status',
+                    'nsfw',
+                    'tba',
+                    'subtype',
+                    'posterImage',
+                    'startDate',
+                    'endDate',
+                    'abbreviatedTitles',
+                    'averageRating',
+                    'popularityRank',
+                    'ratingRank',
+                    'ageRating'
+                ]),
                 "page[limit]": "250",
             }
 
-            url = "{}/library-entries?{}".format(self.prefix, urllib.parse.urlencode(params))
+            url = "{}/library-entries?{}".format(
+                self.prefix, urllib.parse.urlencode(params))
             i = 1
 
             while url:
@@ -284,7 +320,7 @@ class libkitsu(lib):
                 data_json = json.loads(data)
 
                 #print(json.dumps(data_json, sort_keys=True, indent=2))
-                #return []
+                # return []
 
                 entries = data_json['data']
                 links = data_json['links']
@@ -320,22 +356,24 @@ class libkitsu(lib):
 
             return showlist
         except urllib.request.HTTPError as e:
-            raise utils.APIError("Error getting list (HTTPError): %s" % e.read())
+            raise utils.APIError(
+                "Error getting list (HTTPError): %s" % e.read())
         except urllib.error.URLError as e:
-            raise utils.APIError("Error getting list (URLError): %s" % e.reason)
+            raise utils.APIError(
+                "Error getting list (URLError): %s" % e.reason)
 
     def merge(self, show, info):
-        show['title']   = info['title']
+        show['title'] = info['title']
         show['aliases'] = info['aliases']
-        show['url']     = info['url']
-        show['total']   = info['total']
-        show['image']   = info['image']
+        show['url'] = info['url']
+        show['total'] = info['total']
+        show['image'] = info['image']
 
         show['image_thumb'] = info['image_thumb']
 
         show['start_date'] = info['start_date']
-        show['end_date']   = info['end_date']
-        show['status']     = info['status']
+        show['end_date'] = info['end_date']
+        show['status'] = info['status']
 
     def request_info(self, item_list):
         print("These are missing: " + repr(item_list))
@@ -350,7 +388,8 @@ class libkitsu(lib):
         data = self._build_data(item)
 
         try:
-            data = self._request('POST', self.prefix + "/library-entries", body=data, auth=True)
+            data = self._request('POST', self.prefix +
+                                 "/library-entries", body=data, auth=True)
 
             data_json = json.loads(data)
             return int(data_json['data']['id'])
@@ -367,7 +406,8 @@ class libkitsu(lib):
         data = self._build_data(item)
 
         try:
-            self._request('PATCH', self.prefix + "/library-entries/%s" % item['my_id'], body=data, auth=True)
+            self._request('PATCH', self.prefix + "/library-entries/%s" %
+                          item['my_id'], body=data, auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
         except urllib.error.URLError as e:
@@ -379,7 +419,8 @@ class libkitsu(lib):
         self.msg.info(self.name, "Deleting show %s..." % item['title'])
 
         try:
-            self._request('DELETE', self.prefix + "/library-entries/%s" % item['my_id'], auth=True)
+            self._request('DELETE', self.prefix +
+                          "/library-entries/%s" % item['my_id'], auth=True)
         except urllib.request.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
         except urllib.error.URLError as e:
@@ -389,12 +430,13 @@ class libkitsu(lib):
         self.msg.info(self.name, "Searching for %s..." % query)
 
         values = {
-                  "filter[text]": query,
-                  "page[limit]": 20,
-                 }
+            "filter[text]": query,
+            "page[limit]": 20,
+        }
 
         try:
-            data = self._request('GET', self.prefix + "/" + self.mediatype, get=values)
+            data = self._request('GET', self.prefix +
+                                 "/" + self.mediatype, get=values)
             shows = json.loads(data)
 
             infolist = []
@@ -422,16 +464,16 @@ class libkitsu(lib):
                     'data': {
                         'type': self.mediatype,
                         'id': item['id'],
-                        }
-                    },
+                    }
+                },
                 'user': {
                     'data': {
                         'type': 'users',
                         'id': self._get_userconfig('userid'),
-                        }
-                    },
-                }
+                    }
+                },
             }
+        }
         }
 
         # Update necessary keys
@@ -442,7 +484,8 @@ class libkitsu(lib):
         if 'my_status' in item:
             values['data']['attributes']['status'] = item['my_status']
         if 'my_score' in item:
-            values['data']['attributes']['ratingTwenty'] = int(item['my_score']*4) or None
+            values['data']['attributes']['ratingTwenty'] = int(
+                item['my_score']*4) or None
 
         return json.dumps(values)
 
@@ -454,7 +497,7 @@ class libkitsu(lib):
             return datetime.datetime.strptime(string, "%Y-%m-%d")
         except:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
-            return None # Ignore date if it's invalid
+            return None  # Ignore date if it's invalid
 
     def _iso2date(self, string):
         if string is None:
@@ -464,7 +507,7 @@ class libkitsu(lib):
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
         except:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
-            return None # Ignore date if it's invalid            
+            return None  # Ignore date if it's invalid
 
     def _guess_status(self, start_date, end_date):
         # Try to guess show status by checking start and end dates
@@ -494,7 +537,7 @@ class libkitsu(lib):
         elif media['type'] == 'manga':
             total = attr['chapterCount']
         elif media['type'] == 'drama':
-            total = attr['episodeCount'] # TODO Unconfirmed
+            total = attr['episodeCount']  # TODO Unconfirmed
 
         info.update({
             'id': int(media['id']),
@@ -507,11 +550,18 @@ class libkitsu(lib):
             'type':        utils.Type.find(attr['subtype']),
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
+            'type':        self.type_translate.get(attr['subtype'],utils.TYPE_UNKNOWN),
+            'status':      self.status_translate.get(attr['status'],utils.STATUS_UNKNOWN),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
-                ('Synopsis', attr['synopsis']),
+                ('Synopsis', attr['description']),
                 ('Type',     attr['subtype']),
+                ('Titles',  list(filter(None, attr['titles'].values())) ),
+                ('Average Rating', attr['averageRating'] or '?'),
+                ('Popularity Rank', attr['popularityRank']),
+                ('Rating Rank', attr['ratingRank']),
+                ('Age Rating', attr['ageRating']),
             ]
         })
 
@@ -519,8 +569,10 @@ class libkitsu(lib):
         if total == 1:
             info['end_date'] = info['start_date']
 
-        # WORKAROUND: Since there's no way to get the formal status,
-        # use the helper function to guess it.
-        info['status'] = self._guess_status(info['start_date'], info['end_date'])
+        if attr['status'] in ['upcoming', 'unreleased']:
+            info['extra'].append(('Expected Release', attr['tba'] or '?'))
+
+        if attr['nsfw']:
+            info['extra'].append(('Not Safe for Work', None))
 
         return info

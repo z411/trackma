@@ -32,6 +32,7 @@ from trackma import utils
 
 pyqt_version = 5
 
+
 class DetailsWidget(QWidget):
     def __init__(self, parent, worker):
         self.worker = worker
@@ -46,24 +47,24 @@ class DetailsWidget(QWidget):
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
-        self.show_title.setAlignment( QtCore.Qt.AlignCenter )
+        self.show_title.setAlignment(QtCore.Qt.AlignCenter)
         self.show_title.setFont(show_title_font)
 
         info_area = QWidget()
         info_layout = QGridLayout()
 
         self.show_image = QLabel()
-        self.show_image.setAlignment( QtCore.Qt.AlignTop )
+        self.show_image.setAlignment(QtCore.Qt.AlignTop)
         self.show_info = QLabel()
         self.show_info.setWordWrap(True)
-        self.show_info.setAlignment( QtCore.Qt.AlignTop )
+        self.show_info.setAlignment(QtCore.Qt.AlignTop)
         self.show_description = QLabel()
         self.show_description.setWordWrap(True)
-        self.show_description.setAlignment( QtCore.Qt.AlignTop )
+        self.show_description.setAlignment(QtCore.Qt.AlignTop)
 
-        info_layout.addWidget( self.show_image,        0,0,1,1 )
-        info_layout.addWidget( self.show_info,         1,0,1,1 )
-        info_layout.addWidget( self.show_description,  0,1,2,1 )
+        info_layout.addWidget(self.show_image,        0, 0, 1, 1)
+        info_layout.addWidget(self.show_info,         1, 0, 1, 1)
+        info_layout.addWidget(self.show_description,  0, 1, 2, 1)
 
         info_area.setLayout(info_layout)
 
@@ -84,11 +85,13 @@ class DetailsWidget(QWidget):
 
     def load(self, show):
         metrics = QtGui.QFontMetrics(self.show_title.font())
-        title = metrics.elidedText(show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+        title = metrics.elidedText(
+            show['title'], QtCore.Qt.ElideRight, self.show_title.width())
 
-        self.show_title.setText( "<a href=\"%s\">%s</a>" % (show['url'], title) )
+        self.show_title.setText("<a href=\"%s\">%s</a>" % (show['url'], title))
         self.show_title.setTextFormat(QtCore.Qt.RichText)
-        self.show_title.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        self.show_title.setTextInteractionFlags(
+            QtCore.Qt.TextBrowserInteraction)
         self.show_title.setOpenExternalLinks(True)
 
         # Load show info
@@ -98,20 +101,22 @@ class DetailsWidget(QWidget):
 
         # Load show image
         if show.get('image'):
-            filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (api_info['shortname'], api_info['mediatype'], show['id']))
+            filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (
+                api_info['shortname'], api_info['mediatype'], show['id']))
 
             if os.path.isfile(filename):
                 self.s_show_image(filename)
             else:
                 self.show_image.setText('Downloading...')
-                self.image_worker = ImageWorker(show['image'], filename, (200, 280))
+                self.image_worker = ImageWorker(
+                    show['image'], filename, (200, 280))
                 self.image_worker.finished.connect(self.s_show_image)
                 self.image_worker.start()
         else:
             self.show_image.setText('No image')
 
     def s_show_image(self, filename):
-        self.show_image.setPixmap( QtGui.QPixmap( filename ) )
+        self.show_image.setPixmap(QtGui.QPixmap(filename))
 
     def r_details_loaded(self, result):
         if result['success']:
@@ -119,26 +124,33 @@ class DetailsWidget(QWidget):
 
             info_strings = []
             description_strings = []
-            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'} # This might come down to personal preference
+            # This might come down to personal preference
+            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'}
 
             for line in details['extra']:
                 if line[0] and line[1]:
                     if line[0] in description_keys:
-                        description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                        description_strings.append(
+                            "<h3>%s</h3><p>%s</p>" % (line[0], line[1]))
                     else:
                         if isinstance(line[1], list):
-                            description_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])) )
-                        elif len("%s" % line[1]) >= 17: # Avoid short tidbits taking up too much vertical space
-                            info_strings.append( "<h3>%s</h3><p>%s</p>" % (line[0], line[1]) )
+                            description_strings.append(
+                                "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])))
+                        # Avoid short tidbits taking up too much vertical space
+                        elif len("%s" % line[1]) >= 17:
+                            info_strings.append(
+                                "<h3>%s</h3><p>%s</p>" % (line[0], line[1]))
                         else:
-                            info_strings.append( "<p><b>%s:</b> %s</p>" % (line[0], line[1]) )
+                            info_strings.append(
+                                "<p><b>%s:</b> %s</p>" % (line[0], line[1]))
 
             info_string = ''.join(info_strings)
-            self.show_info.setText( info_string )
+            self.show_info.setText(info_string)
             description_string = ''.join(description_strings)
-            self.show_description.setText( description_string )
+            self.show_description.setText(description_string)
         else:
-            self.show_info.setText( 'There was an error while getting details.' )
+            self.show_info.setText('There was an error while getting details.')
+
 
 class ShowsTableView(QTableView):
     """
@@ -160,7 +172,7 @@ class ShowsTableView(QTableView):
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.horizontalHeader().setHighlightSections(False)
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.horizontalHeader().setSectionsMovable(True)
         else:
             self.horizontalHeader().setMovable(True)
@@ -239,7 +251,7 @@ class AddTableDetailsView(QSplitter):
         self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.AscendingOrder)
         self.table.setSortingEnabled(True)
 
-        if pyqt_version is 5:
+        if pyqt_version == 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         else:
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)

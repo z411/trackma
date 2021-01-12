@@ -22,6 +22,7 @@ import ssl
 from trackma.lib.lib import lib
 from trackma import utils
 
+
 class libvndb(lib):
     """
     API class to communicate with VNDB
@@ -34,12 +35,12 @@ class libvndb(lib):
     """
     name = 'libvndb'
 
-    api_info =  {
-                  'name': 'VNDB',
-                  'shortname': 'vndb',
-                  'version': 2,
-                  'merge': True,
-                }
+    api_info = {
+        'name': 'VNDB',
+        'shortname': 'vndb',
+        'version': 2,
+        'merge': True,
+    }
 
     default_mediatype = 'vnlist'
     pagesize_list = 100
@@ -55,7 +56,7 @@ class libvndb(lib):
         'can_update': False,
         'can_play': False,
         'statuses':  [1, 2, 3, 4, 0],
-        'statuses_dict': { 1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown' },
+        'statuses_dict': {1: 'Playing', 2: 'Finished', 3: 'Stalled', 4: 'Dropped', 0: 'Unknown'},
         'score_max': 10,
         'score_step': 0.1,
         'statuses_start': [1],
@@ -70,7 +71,7 @@ class libvndb(lib):
         'can_update': False,
         'can_play': False,
         'statuses':  [0, 1, 2, 3],
-        'statuses_dict': { 0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist' },
+        'statuses_dict': {0: 'High', 1: 'Medium', 2: 'Low', 3: 'Blacklist'},
         'score_max': 10,
         'score_step': 0.1,
         'statuses_start': [],
@@ -110,9 +111,9 @@ class libvndb(lib):
         """Send a VNDB compatible command and return the response data"""
         msg = cmd
         if options:
-            msg += " " + json.dumps(options, separators=(',',':'))
+            msg += " " + json.dumps(options, separators=(',', ':'))
         msg = msg.encode('utf-8')
-        msg += b"\x04" # EOT
+        msg += b"\x04"  # EOT
 
         # Send message
         self.s.sendall(msg)
@@ -153,12 +154,12 @@ class libvndb(lib):
 
         self.msg.info(self.name, 'Logging in...')
         (name, data) = self._sendcmd('login',
-            {'protocol': 1,
-             'client': 'Trackma',
-             'clientver': self.api_info['version'],
-             'username': self.username,
-             'password': self.password,
-             })
+                                     {'protocol': 1,
+                                      'client': 'Trackma',
+                                      'clientver': self.api_info['version'],
+                                      'username': self.username,
+                                      'password': self.password,
+                                      })
 
         if name == 'ok':
             self.logged_in = True
@@ -179,9 +180,9 @@ class libvndb(lib):
             self.msg.info(self.name, 'Downloading list... (%d)' % page)
 
             (name, data) = self._sendcmd('get %s basic (uid = 0)' % self.mediatype,
-                {'page': page,
-                'results': self.pagesize_list
-                })
+                                         {'page': page,
+                                          'results': self.pagesize_list
+                                          })
 
             # Something is wrong if we don't get a results response.
             if name != 'results':
@@ -191,9 +192,10 @@ class libvndb(lib):
             for item in data['items']:
                 vnid = item['vn']
                 vns[vnid] = utils.show()
-                vns[vnid]['id']         = vnid
+                vns[vnid]['id'] = vnid
                 vns[vnid]['url'] = self._get_url(vnid)
-                vns[vnid]['my_status']  = item.get('status', item.get('priority'))
+                vns[vnid]['my_status'] = item.get(
+                    'status', item.get('priority'))
 
             if not data['more']:
                 # No more VNs, finish
@@ -206,9 +208,9 @@ class libvndb(lib):
             self.msg.info(self.name, 'Downloading votes... (%d)' % page)
 
             (name, data) = self._sendcmd('get votelist basic (uid = 0)',
-                {'page': page,
-                'results': self.pagesize_list
-                })
+                                         {'page': page,
+                                          'results': self.pagesize_list
+                                          })
 
             # Something is wrong if we don't get a results response.
             if name != 'results':
@@ -224,7 +226,8 @@ class libvndb(lib):
                     vns[vnid]['my_status'] = 0
 
                 vns[vnid]['my_score'] = (item['vote'] / 10.0)
-                vns[vnid]['my_finish_date'] = datetime.datetime.fromtimestamp(item['added'])
+                vns[vnid]['my_finish_date'] = datetime.datetime.fromtimestamp(
+                    item['added'])
 
             if not data['more']:
                 # No more VNs, finish
@@ -238,15 +241,15 @@ class libvndb(lib):
 
         start = 0
         infos = list()
-        remaining = [ show['id'] for show in itemlist ]
+        remaining = [show['id'] for show in itemlist]
         while True:
             self.msg.info(self.name, 'Requesting details...(%d)' % start)
             end = start + self.pagesize_details
 
             (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(remaining[start:end]),
-                {'page': 1,
-                 'results': self.pagesize_details,
-                })
+                                         {'page': 1,
+                                          'results': self.pagesize_details,
+                                          })
 
             # Something is wrong if we don't get a results response.
             if name != 'results':
@@ -275,21 +278,24 @@ class libvndb(lib):
 
         # Update status with set vnlist
         if 'my_status' in item:
-            self.msg.info(self.name, 'Updating VN %s (status)...' % item['title'])
+            self.msg.info(self.name, 'Updating VN %s (status)...' %
+                          item['title'])
 
             if self.mediatype == 'wishlist':
                 values = {'priority': item['my_status']}
             else:
                 values = {'status': item['my_status']}
 
-            (name, data) = self._sendcmd('set %s %d' % (self.mediatype, item['id']), values)
+            (name, data) = self._sendcmd('set %s %d' %
+                                         (self.mediatype, item['id']), values)
 
             if name != 'ok':
                 raise utils.APIError("Invalid response (%s)" % name)
 
         # Update vote with set votelist
         if 'my_score' in item:
-            self.msg.info(self.name, 'Updating VN %s (vote)...' % item['title'])
+            self.msg.info(self.name, 'Updating VN %s (vote)...' %
+                          item['title'])
 
             if item['my_score'] > 0:
                 # Add or update vote
@@ -298,7 +304,8 @@ class libvndb(lib):
                 # Delete vote if it's 0
                 values = None
 
-            (name, data) = self._sendcmd('set votelist %d' % item['id'], values)
+            (name, data) = self._sendcmd(
+                'set votelist %d' % item['id'], values)
 
             if name != 'ok':
                 raise utils.APIError("Invalid response (%s)" % name)
@@ -308,7 +315,8 @@ class libvndb(lib):
 
         self.msg.info(self.name, 'Deleting VN %s...' % item['title'])
 
-        (name, data) = self._sendcmd('set %s %d' % (self.mediatype, item['id']))
+        (name, data) = self._sendcmd('set %s %d' %
+                                     (self.mediatype, item['id']))
 
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
@@ -320,9 +328,9 @@ class libvndb(lib):
         self.msg.info(self.name, 'Searching for %s...' % criteria)
 
         (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
-            {'page': 1,
-             'results': self.pagesize_details,
-            })
+                                     {'page': 1,
+                                      'results': self.pagesize_details,
+                                      })
 
         # Something is wrong if we don't get a results response.
         if name != 'results':
@@ -358,11 +366,11 @@ class libvndb(lib):
 
         info = utils.show()
         info.update({'id': item['id'],
-                'title': item['title'],
-                'image': item['image'],
-                'url': self._get_url(item['id']),
-                'start_date': self._str2date(item['released']),
-                'extra': [
+                     'title': item['title'],
+                     'image': item['image'],
+                     'url': self._get_url(item['id']),
+                     'start_date': self._str2date(item['released']),
+                     'extra': [
                     ('Original Name', item['original']),
                     ('Released',      item['released']),
                     ('Languages',     ','.join(item['languages'])),
@@ -372,8 +380,8 @@ class libvndb(lib):
                     ('Length',        item['length']),
                     ('Description',   item['description']),
                     ('Links',         item['links']),
-                ]
-               })
+                    ]
+        })
         return info
 
     def _get_url(self, vnid):
@@ -384,8 +392,6 @@ class libvndb(lib):
             try:
                 return datetime.datetime.strptime(string, "%Y-%m-%d")
             except ValueError:
-                return None # Ignore date if it's invalid
+                return None  # Ignore date if it's invalid
         else:
             return None
-
-

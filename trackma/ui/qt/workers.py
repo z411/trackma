@@ -29,6 +29,7 @@ except ImportError:
 from trackma.engine import Engine
 from trackma import utils
 
+
 class ImageWorker(QtCore.QThread):
     """
     Image thread
@@ -140,7 +141,6 @@ class EngineWorker(QtCore.QThread):
     def _prompt_for_add(self, show, episode):
         self.prompt_for_add.emit(show, episode)
 
-    # Callable functions
     def _start(self, account):
         self.engine = Engine(account, self._messagehandler)
 
@@ -153,7 +153,8 @@ class EngineWorker(QtCore.QThread):
         self.engine.connect_signal('show_deleted', self._changed_list)
         self.engine.connect_signal('show_synced', self._changed_show)
         self.engine.connect_signal('queue_changed', self._changed_queue)
-        self.engine.connect_signal('prompt_for_update', self._prompt_for_update)
+        self.engine.connect_signal(
+            'prompt_for_update', self._prompt_for_update)
         self.engine.connect_signal('prompt_for_add', self._prompt_for_add)
         self.engine.connect_signal('tracker_state', self._tracker_state)
 

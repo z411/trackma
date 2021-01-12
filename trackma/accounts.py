@@ -1,6 +1,7 @@
 import pickle
 from trackma import utils
 
+
 class AccountManager:
     """
     This is the account manager.
@@ -30,7 +31,7 @@ class AccountManager:
                 utils.change_permissions(self.filename, 0o600)
             pickle.dump(self.accounts, f, protocol=2)
 
-    def add_account(self, username, password, api):
+    def add_account(self, username, password, api, extra={}):
         """
         Registers a new account with the specified
         *username*, *password*, and *api*.
@@ -51,14 +52,15 @@ class AccountManager:
         account = {'username': username,
                    'password': password,
                    'api': api,
-                  }
+                   'extra': extra,
+                   }
 
         nextnum = self.accounts['next']
         self.accounts['accounts'][nextnum] = account
         self.accounts['next'] += 1
         self._save()
 
-    def edit_account(self, num, username, password, api):
+    def edit_account(self, num, username, password, api, extra={}):
         """
         Updates data for account *num* with the specified
         *username*, *password*, and *api*.
@@ -76,7 +78,8 @@ class AccountManager:
         account = {'username': username,
                    'password': password,
                    'api': api,
-                  }
+                   'extra': extra,
+                   }
 
         self.accounts['accounts'][num].update(account)
         self._save()
@@ -99,9 +102,11 @@ class AccountManager:
         Renames stale cache files for account number **num**.
         """
         account = self.accounts['accounts'][num]
-        userfolder = utils.to_data_path("%s.%s" % (account['username'], account['api']))
+        userfolder = utils.to_data_path(
+            "%s.%s" % (account['username'], account['api']))
         utils.make_dir(userfolder + '.old')
-        utils.regex_rename_files('(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
+        utils.regex_rename_files(
+            '(.*.queue)|(.*.info)|(.*.list)|(.*.meta)', userfolder, userfolder + '.old')
 
     def get_account(self, num):
         """

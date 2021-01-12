@@ -20,6 +20,7 @@ TYPE_INFO = 2
 #TYPE_FATAL = 4
 TYPE_WARN = 5
 
+
 class Messenger:
     _handler = None
 
