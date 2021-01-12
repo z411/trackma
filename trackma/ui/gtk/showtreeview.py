@@ -126,31 +126,28 @@ class ShowListStore(Gtk.ListStore):
     def update_or_append(self, show):
         for row in self:
             if int(row[0]) == show['id']:
-                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
-                row[2] = show['my_progress']
-                row[4] = episodes_str
-                score_str = "%0.*f" % (self.decimals, show['my_score'])
-                row[3] = show['my_score']
-                row[5] = score_str
-                row[9] = self._get_color(show, row[8])
-                row[15] = show['my_status']
+                self.update(show, row)
                 return
         self.append(show)
 
-    def update(self, show):
-        for row in self:
-            if int(row[0]) == show['id']:
-                episodes_str = "%d / %d" % (show['my_progress'], show['total'])
-                row[2] = show['my_progress']
-                row[4] = episodes_str
+    def update(self, show, row=None):
+        if not row:
+            for row in self:
+                if int(row[0]) == show['id']:
+                    break
+        if row and int(row[0]) == show['id']:
+            episodes_str = "{} / {}".format(show['my_progress'],
+                                            show['total'] or '?')
+            row[2] = show['my_progress']
+            row[4] = episodes_str
 
-                score_str = "%0.*f" % (self.decimals, show['my_score'])
+            score_str = "%0.*f" % (self.decimals, show['my_score'])
 
-                row[3] = show['my_score']
-                row[5] = score_str
-                row[9] = self._get_color(show, row[8])
-                row[15] = show['my_status']
-                return
+            row[3] = show['my_score']
+            row[5] = score_str
+            row[9] = self._get_color(show, row[8])
+            row[15] = show['my_status']
+        return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
 
