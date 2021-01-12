@@ -36,7 +36,7 @@ class Data:
 
     """
     name = 'Data'
-    version = 6
+    version = 7
 
     msg = None
     api = None
