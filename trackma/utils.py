@@ -92,16 +92,17 @@ class BaseEnum(Enum):
 
 class Status(BaseEnum):
     UNKNOWN = 'Unknown'
-    AIRING = 'Airing'
+    ONGOING = 'Ongoing'
     FINISHED = 'Finished'
-    NOTYET = 'Not yet aired'
+    NOTYET = 'Not yet started'
     CANCELLED = 'Cancelled'
     OTHER = 'Other'
 
     # aliases
-    RELEASING = AIRING
-    PUBLISHING = AIRING
-    CURRENTLY_AIRING = AIRING
+    AIRING = ONGOING
+    RELEASING = ONGOING
+    PUBLISHING = ONGOING
+    CURRENTLY_AIRING = ONGOING
     FINISHED_AIRING = FINISHED
     NOT_YET_AIRED = NOTYET
     NOT_YET_RELEASED = NOTYET
