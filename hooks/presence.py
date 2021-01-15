@@ -73,20 +73,19 @@ class DiscordRPC(Thread):
         while True:
             try:
                 self._reconnect()
-                if self._enabled:
-                    if self._update:
-                        self._rpc.set_activity(
-                            pid=self._pid,
-                            large_image="icon",
-                            large_text=self._details['details'],
-                            small_image=self._details['img'],
-                            small_text=self._details['txt'],
-                            details=self._details['details'],
-                            state=self._details['state'],
-                            start=self._details['start']
-                        )
-                        self._update = False
-                    time.sleep(1)
+                if self._enabled and self._update:
+                    self._rpc.set_activity(
+                        pid=self._pid,
+                        large_image="icon",
+                        large_text=self._details['details'],
+                        small_image=self._details['img'],
+                        small_text=self._details['txt'],
+                        details=self._details['details'],
+                        state=self._details['state'],
+                        start=self._details['start']
+                    )
+                    self._update = False
+                time.sleep(1)
             except self._errors:
                 self._enabled = False
                 try:
