@@ -95,6 +95,7 @@ class libmal(lib):
         'ova': utils.TYPE_OVA,
         'ona': utils.TYPE_OVA,
         'music': utils.TYPE_OTHER,
+        'unknown': utils.TYPE_OTHER,
     }
     
     status_translate = {
