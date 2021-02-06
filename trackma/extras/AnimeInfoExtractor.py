@@ -45,6 +45,7 @@ class AnimeInfoExtractor():
         self.version = 1
         self.name = ''
         self.pv = -1
+        self.season = None
         self._processFilename()
 
     def getName(self):
@@ -235,34 +236,48 @@ class AnimeInfoExtractor():
 
     def __extractEpisodeNumbers(self, filename):
         # First check for concurrent episodes (with a + or &)
-        m = re.search(r'\b(?:E\.?|Ep(?:i|isode)?s?[ .]?)?(\d{1,4})[\+\&](\d{1,4})\b',
-                      filename, flags=re.IGNORECASE)
+        m = re.search(
+            r'\b(?:S(?:\.|eason)?(\d+))?(?:E\.?|Ep(?:i|isode)?s?[ .]?)?(\d{1,4})[\+\&](\d{1,4})\b',
+            filename,
+            flags=re.IGNORECASE,
+        )
         if m:
-            start = int(m.group(1))
-            end = int(m.group(2))
+            start = int(m.group(2))
+            end = int(m.group(3))
             if end == start + 1:
+                if m.group(1):
+                    self.season = int(m.group(1))
                 self.episodeStart = start
                 self.episodeEnd = end
                 return filename[:m.start()]
 
-        # Check for multiple episodes
+        # Check for multiple episodes (with a -)
         ep_search_string = (
-            r'\b(?:E\.?|Ep(?:i|isode)?[ .]?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)'
+            r'\b(?:S(?:\.|eason)?(\d+))?'
+            r'(?:E\.?|Ep(?:i|isode)?[ .]?)?'
+            r'((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)'
             # Only allow spaces around the hyphen when we are likely to have a pack
             + (r'-' if self.extension else r' ?- ?')
             + r'(\d{1,4}(?:\.\d{1})?)\b'
         )
         m = re.search(ep_search_string, filename, flags=re.IGNORECASE)
         if m:
-            self.episodeStart = Decimal(m.group(1))
-            self.episodeEnd = Decimal(m.group(2))
+            if m.group(1):
+                self.season = int(m.group(1))
+            self.episodeStart = Decimal(m.group(2))
+            self.episodeEnd = Decimal(m.group(3))
             return filename[:m.start()]
 
         # Check if there is an episode specifier
-        m = re.search(r'\b(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
-                      filename, flags=re.IGNORECASE)
+        m = re.search(
+            r'\b(?:S(?:\.|eason)?(\d+))?(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
+            filename,
+            flags=re.IGNORECASE
+        )
         if m:
-            self.episodeStart = Decimal(m.group(1))
+            if m.group(1):
+                self.season = int(m.group(1))
+            self.episodeStart = Decimal(m.group(2))
             return filename[:m.start()]
 
         # Check any remaining lonely numbers as episode (towards the end has priority)
@@ -302,6 +317,9 @@ class AnimeInfoExtractor():
         if self.name == '' and self.subberTag != '':
             self.name = self.subberTag
             self.subberTag = ''
+        # Reappend season number
+        if self.season:
+            self.name += " {}".format(self.season)
 
     def _processFilename(self):
         filename = self.originalFilename

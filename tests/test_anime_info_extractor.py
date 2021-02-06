@@ -19,6 +19,7 @@ DEFAULTS = {
     'version': 1,
     'name': '',
     'pv': -1,
+    'season': None,
 }
 
 
@@ -146,4 +147,18 @@ def test_with_episode_title():
         resolution="720p",
         releaseSource=["BD"],
         hash="FF757616",
+    )
+
+
+def test_name_sXXeXX_and_sdtv():
+    aie = AnimeInfoExtractor("Clannad - S02E01 - A Farewell to the End of Summer SDTV.mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Clannad 2",
+        season=2,
+        episodeStart=1,
+        extension="mkv",
+        resolution="SD",
+        releaseSource=["TV"],
     )
