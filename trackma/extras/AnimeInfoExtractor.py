@@ -94,8 +94,9 @@ class AnimeInfoExtractor():
                 'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV']}
         for k, v in tags.items():
             for tag in v:
-                m = re.search(r'(?:[\(\[](?:|[^\)\]]*?[^0-9a-zA-Z\)\]]))(' +
-                              tag + r')(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+                m = re.search(r'[\(\[][^\)\]]*?(' + tag + r')\b',
+                              filename,
+                              flags=re.IGNORECASE)
                 if m:
                     if (k == 'video'):
                         self.videoType.append(tag)
