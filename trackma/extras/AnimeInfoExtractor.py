@@ -130,17 +130,17 @@ class AnimeInfoExtractor():
     def __extractResolution(self, filename):
         # Match 3 or 4 chars followed by p, i, or x and 3 or 4 more chars, surrounded by any non-alphanumberic chars
         m = re.search(
-            r'(?:[^0-9a-zA-Z])(\d{3,4}(?:p|i|x\d{3,4}))(?:[^0-9a-zA-Z]|$)', filename)
+            r'\b(\d{3,4}(?:p|i|x\d{3,4}))\b', filename)
         if m:
             self.resolution = m.group(1)
             filename = filename[:m.start(1)] + filename[m.end(1):]
         else:
-            m = re.search(r'(?:\[|\(|\d)(HD|SD)(?:\]|\)| |\.)', filename)
+            m = re.search(r'[\[\(\d](HD|SD)\b', filename)
             if m:
                 self.resolution = m.group(1)
                 filename = filename[:m.start(1)] + filename[m.end(1):]
             else:
-                m = re.search(r'(?:\d{1,3})(HD|SD)(?:[^a-zA-Z])', filename)
+                m = re.search(r'(?:\d{1,3})(HD|SD)\b', filename)
                 if m:
                     self.resolution = m.group(1)
                     # Super special case for HD/SD imediately after episode
@@ -149,24 +149,22 @@ class AnimeInfoExtractor():
 
     def __extractHash(self, filename):
         # Match anything in square or round brackets that is 8 hex digits
-        m = re.search(r'(?:\[|\()((?:[A-F]|[a-f]|\d){8})(?:\]|\))', filename)
+        m = re.search(r'[\(\[]([A-Fa-f0-9]{8})[\)\]]', filename)
         if m:
             self.hash = m.group(1)
             filename = filename[:m.start()] + filename[m.end():]
         return filename
 
     def __checkIfRemux(self, filename):
-        m = re.search(r'(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)',
-                      filename, flags=re.IGNORECASE)
+        m = re.search(r'[\(\[][^\)\]]*?(Remux)\b', filename, flags=re.IGNORECASE)
         return True if m else False
 
     def __cleanUpBrackets(self, filename):
         # Can get rid of the brackets that won't contain subber
-        filename = re.sub(r'\((?:[^\)]*?)' + NO_SUBBER + r'(?:.*?)\)', '', filename)
-        filename = re.sub(r'\[(?:[^\]]*?)' + NO_SUBBER + r'(?:.*?)\]', '', filename)
+        filename = re.sub(r'\([^\)]*?' + NO_SUBBER + r'.*?\)', '', filename)
+        filename = re.sub(r'\[[^\]]*?' + NO_SUBBER + r'.*?\]', '', filename)
         # Strip any empty sets of brackets
-        filename = re.sub(
-            r'(?:\[(?:[^0-9a-zA-Z]*?)\])|(?:\((?:[^0-9a-zA-Z]*?)\))', ' ', filename)
+        filename = re.sub(r'\[\W*?\]|\(\W*?\)', ' ', filename)
         return filename
 
     def __extractSubber(self, filename, remux):
@@ -190,7 +188,7 @@ class AnimeInfoExtractor():
         if remux and 'remux' not in self.subberTag.lower():
             # refind remux and remove it
             m = re.search(
-                r'(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+                r'[\(\[][^\)\]]*?(Remux)\b', filename, flags=re.IGNORECASE)
             if m:
                 filename = filename[:m.start(1)] + filename[m.end(1):]
             if self.subberTag:
@@ -201,7 +199,7 @@ class AnimeInfoExtractor():
 
     def __extractVersion(self, filename):
         # Extract the version number (limit at v7 since V8 is possible in a title...)
-        m = re.search(r'(?:[^a-zA-Z])v([0-7])(?:[^0-9a-zA-Z]|$)',
+        m = re.search(r'(?:[^a-zA-Z])v([0-7])\b',
                       filename, flags=re.IGNORECASE)
         if m:
             self.version = int(m.group(1))
@@ -212,7 +210,9 @@ class AnimeInfoExtractor():
         # Check if this is a volume pack - only relevant for no extension
         if not self.extension:
             m = re.search(
-                r'[^0-9a-zA-Z](?:vol(?:ume)?\.? ?)(\d{1,3})(?: ?- ?(?:vol(?:ume)?\.? ?)?(\d{1,3}))?(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+                r'\b(?:vol(?:ume)?\.? ?)(\d{1,3})(?: ?- ?(?:vol(?:ume)?\.? ?)?(\d{1,3}))?\b',
+                filename,
+                flags=re.IGNORECASE)
             if m:
                 self.volumeStart = int(m.group(1))
                 if m.group(2):
