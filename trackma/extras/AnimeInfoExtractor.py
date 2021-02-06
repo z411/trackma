@@ -17,6 +17,8 @@
 import re
 from decimal import Decimal
 
+NO_SUBBER = '###NO#SUBBER#HERE###'
+
 
 class AnimeInfoExtractor():
     """
@@ -102,8 +104,7 @@ class AnimeInfoExtractor():
                     elif (k == 'source'):
                         self.releaseSource.append(tag)
                     # remove the match
-                    filename = filename[:m.start(
-                        1)] + '###NO#SUBBER#HERE###' + filename[m.end(1):]
+                    filename = filename[:m.start(1)] + NO_SUBBER + filename[m.end(1):]
         return filename
 
     def __extractVideoProfile(self, filename):
@@ -160,10 +161,8 @@ class AnimeInfoExtractor():
 
     def __cleanUpBrackets(self, filename):
         # Can get rid of the brackets that won't contain subber
-        filename = re.sub(
-            r'\((?:[^\)]*?)###NO#SUBBER#HERE##(?:.*?)\)', '', filename)
-        filename = re.sub(
-            r'\[(?:[^\]]*?)###NO#SUBBER#HERE##(?:.*?)\]', '', filename)
+        filename = re.sub(r'\((?:[^\)]*?)' + NO_SUBBER + r'(?:.*?)\)', '', filename)
+        filename = re.sub(r'\[(?:[^\]]*?)' + NO_SUBBER + r'(?:.*?)\]', '', filename)
         # Strip any empty sets of brackets
         filename = re.sub(
             r'(?:\[(?:[^0-9a-zA-Z]*?)\])|(?:\((?:[^0-9a-zA-Z]*?)\))', ' ', filename)
