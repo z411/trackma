@@ -88,7 +88,7 @@ def test_dubsub():
         extension="mkv",
         resolution="1080p",
         audioType=["AAC"],
-        releaseSource=["WEB"],
+        releaseSource=["Web-DL"],
     )
 
 
@@ -115,4 +115,20 @@ def test_name_with_year_and_extra_brackets():
         subberTag="Erai-raws",
         extension="mkv",
         resolution="1080p",
+    )
+
+
+def test_eac3():
+    aie = AnimeInfoExtractor("[PAS] Houseki no Kuni - 05 [WEB 720p E-AC-3] [F671AE53].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Houseki no Kuni",
+        episodeStart=5,
+        subberTag="PAS",
+        extension="mkv",
+        resolution="720p",
+        audioType=["E-AC-3"],
+        releaseSource=["WEB"],
+        hash="F671AE53",
     )

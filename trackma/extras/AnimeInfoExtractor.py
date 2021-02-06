@@ -89,28 +89,27 @@ class AnimeInfoExtractor():
         return filename
 
     def __extractSpecialTags(self, filename):
-        tags = {'video': ['H264', 'H.264', 'x264', 'XviD', 'DivX', 'MP4'],
-                'audio': ['AC3', 'AAC', 'MP3', 'FLAC'],
-                'source': ['TV', 'DVD', 'BluRay', 'BD', 'Blu-Ray', 'BDMV', 'www', 'WEB']}
-        for k, v in tags.items():
-            for tag in v:
-                m = re.search(r'[\(\[][^\)\]]*?(' + tag + r')\b',
-                              filename,
-                              flags=re.IGNORECASE)
-                if m:
-                    if (k == 'video'):
-                        self.videoType.append(tag)
-                    elif (k == 'audio'):
-                        self.audioType.append(tag)
-                    elif (k == 'source'):
-                        self.releaseSource.append(tag)
-                    # remove the match
-                    filename = filename[:m.start(1)] + NO_SUBBER + filename[m.end(1):]
+        tags = {'video': r'H\.?264|x264|AVC|XviD|DivX|H\.?265|HEVC|AV1',
+                'audio': r'AC3|AAC|MP3|FLAC|E-?AC-?3|Opus|DTS(?:-HD)?',
+                'source': r'TV|DVD|Blu-?Ray|BD|BDMV|www|WEB(?:-DL)?'}
+        for k, tag_re in tags.items():
+            m = re.search(r'[\(\[][^\)\]]*?\b(' + tag_re + r')\b',
+                          filename,
+                          flags=re.IGNORECASE)
+            if m:
+                if k == 'video':
+                    self.videoType.append(m.group(1))
+                elif k == 'audio':
+                    self.audioType.append(m.group(1))
+                elif k == 'source':
+                    self.releaseSource.append(m.group(1))
+                # remove the match
+                filename = filename[:m.start(1)] + NO_SUBBER + filename[m.end(1):]
         return filename
 
     def __extractVideoProfile(self, filename):
         # Check for 8bit/10bit
-        tags_10bit = ['Hi10P', 'Hi10', '10bit', '10 bit', '10-bit']
+        tags_10bit = ['Hi10P', 'Hi10', '10bit', '10 bit', '10-bit', 'YUV420P10']
         tags_8bit = ['8bit', '8-bit']
         for tag in tags_10bit:
             if tag in filename:
