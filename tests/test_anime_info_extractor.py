@@ -73,6 +73,7 @@ def test_late_subber_tag_with_hash():
         resolution="720p",
         audioType=["AAC"],
         hash="5D4D1205",
+        releaseSource=["www"],
     )
 
 
@@ -87,4 +88,5 @@ def test_dubsub():
         extension="mkv",
         resolution="1080p",
         audioType=["AAC"],
+        releaseSource=["WEB"],
     )
