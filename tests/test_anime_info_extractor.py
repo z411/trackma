@@ -61,7 +61,7 @@ def test_compound_subber_tag_and_wierd_epnum():
     )
 
 
-def test_late_subber_tag_with_hash():
+def test_late_subber_tag_with_hash_and_commas():
     aie = AnimeInfoExtractor("Chio-chan no Tsuugakuro - 04 [HorribleSubs] [www, 720p, AAC] [5D4D1205].mkv")
     pprint(vars(aie))
     _assert_aie(
@@ -93,22 +93,19 @@ def test_dubsub():
 
 
 def test_name_with_year():
-    aie = AnimeInfoExtractor("Bungou Stray Dogs (2019) - 06 [HorribleSubs] [www, 720p, AAC] [496D45BB].mkv")
+    aie = AnimeInfoExtractor("[TestTag] Bungou Stray Dogs (2019) - 06 [496D45BB].mkv")
     pprint(vars(aie))
     _assert_aie(
         aie,
         name="Bungou Stray Dogs (2019)",
         episodeStart=6,
-        subberTag="HorribleSubs",
+        subberTag="TestTag",
         extension="mkv",
-        resolution="720p",
-        audioType=["AAC"],
-        releaseSource=["www"],
         hash="496D45BB",
     )
 
 
-def test_name_with_year_2():
+def test_name_with_year_and_extra_brackets():
     aie = AnimeInfoExtractor("[Erai-raws] Fairy Tail (2018) - 45 [1080p][Multiple Subtitle].mkv")
     pprint(vars(aie))
     _assert_aie(
