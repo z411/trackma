@@ -75,12 +75,12 @@ class AnimeInfoExtractor():
 
     def __cleanUpSpaces(self, filename):
         filename = filename.replace('_', ' ')
-        if not ' ' in filename:
+        if ' ' not in filename:
             filename = re.sub(r'([^.])\.([^.])', r'\1 \2', filename)
             # to handle .-. case (where - is any single chara)
             filename = re.sub(r'([^.])\.([^.])', r'\1 \2', filename)
             # If there are still no spaces try replacing hyphens with spaces
-            if not ' ' in filename:
+            if ' ' not in filename:
                 filename = re.sub(r'([^\-])-([^\-])', r'\1 \2', filename)
                 # to handle -.- case (where . is any single chara)
                 filename = re.sub(r'([^\-])-([^\-])', r'\1 \2', filename)
@@ -187,7 +187,7 @@ class AnimeInfoExtractor():
                     filename = filename[:m.start()] + filename[m.end():]
         self.subberTag = self.subberTag.strip(' -')
         # Add the remux string if this was a remux and its not found in the subber tag
-        if remux and not 'remux' in self.subberTag.lower():
+        if remux and 'remux' not in self.subberTag.lower():
             # refind remux and remove it
             m = re.search(
                 r'(?:[\(\[][^\)\]]*?[^0-9a-zA-Z\)\]]?)(Remux)(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
