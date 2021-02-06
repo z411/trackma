@@ -128,22 +128,25 @@ class AnimeInfoExtractor():
 
     def __extractResolution(self, filename):
         # Match 3 or 4 chars followed by p, i, or x and 3 or 4 more chars, surrounded by any non-alphanumberic chars
-        m = re.search(
-            r'\b(\d{3,4}(?:p|i|x\d{3,4}))\b', filename)
+        m = re.search(r'\b(\d{3,4}(?:p|i|x\d{3,4}))\b', filename)
         if m:
             self.resolution = m.group(1)
-            filename = filename[:m.start(1)] + filename[m.end(1):]
-        else:
-            m = re.search(r'[\[\(\d](HD|SD)\b', filename)
-            if m:
-                self.resolution = m.group(1)
-                filename = filename[:m.start(1)] + filename[m.end(1):]
-            else:
-                m = re.search(r'(?:\d{1,3})(HD|SD)\b', filename)
-                if m:
-                    self.resolution = m.group(1)
-                    # Super special case for HD/SD imediately after episode
-                    filename = filename[:m.start(1)] + filename[m.end(1):]
+            return filename[:m.start(1)] + filename[m.end(1):]
+        # HD/SD in brackets or after an episode number
+        m = re.search(r'(?:[\[\(]|\d{1,3})\s*([HS]D)(TV)?\b', filename)
+        if m:
+            self.resolution = m.group(1)
+            if m.group(2):
+                self.releaseSource.append(m.group(2))
+            return filename[:m.start(1)] + filename[m.end():]
+        # HD/SD at the end
+        m = re.search(r'\b([HS]D)(TV)?$', filename)
+        if m:
+            self.resolution = m.group(1)
+            if m.group(2):
+                self.releaseSource.append(m.group(2))
+            return filename[:m.start()] + filename[m.end():]
+
         return filename
 
     def __extractHash(self, filename):
