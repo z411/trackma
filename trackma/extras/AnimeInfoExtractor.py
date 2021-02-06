@@ -280,32 +280,23 @@ class AnimeInfoExtractor():
         return filename
 
     def __extractShowName(self, filename):
-        # Unfortunately its very hard to know if there should be brackets in the title...
-        # We really should strip brackets... so to anything with brackets in the title: sorry =(
-        # Strip anything thats still in brackets, but backup the first case incase it IS the title...
-        m = re.search(r'\[([^\. ].*?)\]', filename)
-        backup_title = ''
-        if m:
-            backup_title = m.group(1)
-            filename = filename[:m.start()] + filename[m.end():]
-        else:
-            m = re.search(r'\(([^\. ].*?)\)', filename)
-            if m:
-                backup_title = m.group(1)
+        # Unfortunately it's very hard to know if there should be brackets in the title.
+        # We really should strip brackets, though, so sorry to anything with brackets in the title.
+        # We don't strip years or the whole title, however.
+        bracket_pairs = [
+            (r'\[', r'\]'),
+            (r'\(', r'\)'),
+            (r'\{', r'\}'),
+        ]
+        for opening, closing in bracket_pairs:
+            m = re.search(r'{0}((?!\d{{4}}{1}).*?){1}'.format(opening, closing), filename)
+            if m and m.end() - m.start() < len(filename):
                 filename = filename[:m.start()] + filename[m.end():]
-            else:
-                m = re.search(r'{([^\. ].*?)}', filename)
-                if m:
-                    backup_title = m.group(1)
-                    filename = filename[:m.start()] + filename[m.end():]
-        filename = re.sub(r'(?:\[.*?\])|(?:\(.*?\))', ' ', filename)
-        filename = filename.strip(' -')
-        filename = re.sub(r'  (?:.*)', '', filename)
+        filename = re.sub(r'  .*', '', filename)
         # Strip any unclosed brackets and anything after them
-        filename = re.sub(r'(.*)(?:[\(\[({].*)$', r'\1', filename)
+        for opening, closing in bracket_pairs:
+            filename = re.sub(r'{}r[^{}].*$'.format(opening, closing), '', filename)
         self.name = filename.strip(' -')
-        if self.name == '':
-            self.name = backup_title
         # If we have a subber but no title!? then it must have been a title...
         if self.name == '' and self.subberTag != '':
             self.name = self.subberTag

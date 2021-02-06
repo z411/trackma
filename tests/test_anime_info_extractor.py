@@ -90,3 +90,32 @@ def test_dubsub():
         audioType=["AAC"],
         releaseSource=["WEB"],
     )
+
+
+def test_name_with_year():
+    aie = AnimeInfoExtractor("Bungou Stray Dogs (2019) - 06 [HorribleSubs] [www, 720p, AAC] [496D45BB].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Bungou Stray Dogs (2019)",
+        episodeStart=6,
+        subberTag="HorribleSubs",
+        extension="mkv",
+        resolution="720p",
+        audioType=["AAC"],
+        releaseSource=["www"],
+        hash="496D45BB",
+    )
+
+
+def test_name_with_year_2():
+    aie = AnimeInfoExtractor("[Erai-raws] Fairy Tail (2018) - 45 [1080p][Multiple Subtitle].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Fairy Tail (2018)",
+        episodeStart=45,
+        subberTag="Erai-raws",
+        extension="mkv",
+        resolution="1080p",
+    )
