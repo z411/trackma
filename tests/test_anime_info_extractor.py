@@ -132,3 +132,18 @@ def test_eac3():
         releaseSource=["WEB"],
         hash="F671AE53",
     )
+
+
+def test_with_episode_title():
+    aie = AnimeInfoExtractor("[Opportunity] The Tatami Galaxy 10 - The 4.5-Tatami Idealogue [BD 720p] [FF757616].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="The Tatami Galaxy",
+        episodeStart=10,
+        subberTag="Opportunity",
+        extension="mkv",
+        resolution="720p",
+        releaseSource=["BD"],
+        hash="FF757616",
+    )

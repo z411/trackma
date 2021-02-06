@@ -232,50 +232,49 @@ class AnimeInfoExtractor():
 
     def __extractEpisodeNumbers(self, filename):
         # First check for concurrent episodes (with a + or &)
-        m = re.search(
-            r'[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?s?(?: |\.)?)?(\d{1,4})[\+\&](\d{1,4})(?:[^0-9a-zA-Z]|$)', filename, flags=re.IGNORECASE)
+        m = re.search(r'\b(?:E\.?|Ep(?:i|isode)?s?[ .]?)?(\d{1,4})[\+\&](\d{1,4})\b',
+                      filename, flags=re.IGNORECASE)
         if m:
             start = int(m.group(1))
             end = int(m.group(2))
             if end == start + 1:
                 self.episodeStart = start
                 self.episodeEnd = end
-                filename = filename[:m.start() + 1]
-        if not self.episodeStart:
-            # Check for multiple episodes
-            if self.extension:
-                # no spaces allowed around the hyphen
-                ep_search_string = r'[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?(?: |\.)?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)-(\d{1,4}(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)'
-            else:
-                # probably a pack... so allow spaces around the hyphen
-                ep_search_string = r'[^0-9a-zA-Z](?:E\.?|Ep(?:i|isode)?(?: |\.)?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?) ?- ?(\d{1,4}(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)'
-            m = re.search(ep_search_string, filename, flags=re.IGNORECASE)
-            if m:
-                self.episodeStart = Decimal(m.group(1))
-                self.episodeEnd = Decimal(m.group(2))
-                filename = filename[:m.start() + 1]
-        if not self.episodeStart:
-            # Check if there is an episode specifier
-            m = re.search(
-                r'(?:[^0-9a-zA-Z])(E\.?|Ep(?:i|isode)?(?: |\.)?)(\d{1,}(?:\.\d{1})?)(?:[^\d]|$)', filename, flags=re.IGNORECASE)
-            if m:
-                self.episodeStart = Decimal(m.group(2))
-                filename = filename[:m.start() + 1]
-        if not self.episodeStart:
-            # Check any remaining lonely numbers as episode (towards the end has priority)
-            # First try outside brackets
-            m = re.search(
-                r'(?:.*)(?:[^0-9a-zA-Z\.])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z]|$)', filename)
-            if m:
-                self.episodeStart = Decimal(m.group(1))
-                filename = filename[:m.start(1)]
-        if not self.episodeStart:
-            # then allow brackets
-            m = re.search(
-                r'(?:.*)(?:[^0-9a-zA-Z\.\[\(])((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)(?:[^0-9a-zA-Z\]\)]|$)', filename)
-            if m:
-                self.episodeStart = Decimal(m.group(1))
-                filename = filename[:m.start(1)]
+                return filename[:m.start()]
+
+        # Check for multiple episodes
+        ep_search_string = (
+            r'\b(?:E\.?|Ep(?:i|isode)?[ .]?)?((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)'
+            # Only allow spaces around the hyphen when we are likely to have a pack
+            + (r'-' if self.extension else r' ?- ?')
+            + r'(\d{1,4}(?:\.\d{1})?)\b'
+        )
+        m = re.search(ep_search_string, filename, flags=re.IGNORECASE)
+        if m:
+            self.episodeStart = Decimal(m.group(1))
+            self.episodeEnd = Decimal(m.group(2))
+            return filename[:m.start()]
+
+        # Check if there is an episode specifier
+        m = re.search(r'\b(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
+                      filename, flags=re.IGNORECASE)
+        if m:
+            self.episodeStart = Decimal(m.group(1))
+            return filename[:m.start()]
+
+        # Check any remaining lonely numbers as episode (towards the end has priority)
+        # First try outside brackets
+        m = re.search(r'.*[^\.\[\(]\b((?:\d{1,3}|1[0-8]\d{2})(?:\.\d)?)(?:[\[({]|\s*$|\s+\W)',
+                      filename)
+        if m:
+            self.episodeStart = Decimal(m.group(1))
+            return filename[:m.start(1)]
+
+        # then allow brackets
+        m = re.search(r'.*[\[\(]((?:\d{1,3}|1[0-8]\d{2})(?:\.\d)?)(?:[\])}]|\s*$|\s+\W)', filename)
+        if m:
+            self.episodeStart = Decimal(m.group(1))
+            return filename[:m.start(1)]
         return filename
 
     def __extractShowName(self, filename):
