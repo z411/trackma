@@ -228,7 +228,8 @@ class AnimeInfoExtractor():
     def __extractEpisodeNumbers(self, filename):
         # First check for concurrent episodes (with a + or &)
         m = re.search(
-            r'\b(?:S(?:\.|eason)?(\d+))?(?:E\.?|Ep(?:i|isode)?s?[ .]?)?(\d{1,4})[\+\&](\d{1,4})\b',
+            r'\b(?:S(?:\.|eason)?(\d+)\s*)?'
+            r'(?:E\.?|Ep(?:i|isode)?s?[ .]?)?(\d{1,4})[\+\&](\d{1,4})\b',
             filename,
             flags=re.IGNORECASE,
         )
@@ -244,7 +245,7 @@ class AnimeInfoExtractor():
 
         # Check for multiple episodes (with a -)
         ep_search_string = (
-            r'\b(?:S(?:\.|eason)?(\d+))?'
+            r'\b(?:S(?:\.|eason)?(\d+)\s*)?'
             r'(?:E\.?|Ep(?:i|isode)?[ .]?)?'
             r'((?:\d{1,3}|1[0-8]\d{2})(?:\.\d{1})?)'
             # Only allow spaces around the hyphen when we are likely to have a pack
@@ -261,7 +262,7 @@ class AnimeInfoExtractor():
 
         # Check if there is an episode specifier
         m = re.search(
-            r'\b(?:S(?:\.|eason)?(\d+))?(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
+            r'\b(?:S(?:\.|eason)?(\d+)\s*)?(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
             filename,
             flags=re.IGNORECASE
         )
