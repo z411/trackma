@@ -188,8 +188,24 @@ def test_with_dots():
         episodeStart=1,
         extension="mkv",
         resolution="1080p",
-        # releaseSource="BluRay",
+        # releaseSource=["BluRay"],
         # audioType=["FLAC"],
         videoType=["H264", "Hi10P"],
         hash="98AA9B1C",
+    )
+
+
+def test_unusual_subber():
+    aie = AnimeInfoExtractor("[-__-'] Girls und Panzer OVA 6 [BD 1080p FLAC] [B13C83A0].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Girls und Panzer OVA",
+        episodeStart=6,
+        subberTag="-__-'",
+        extension="mkv",
+        resolution="1080p",
+        releaseSource=["BD"],
+        audioType=["FLAC"],
+        hash="B13C83A0",
     )

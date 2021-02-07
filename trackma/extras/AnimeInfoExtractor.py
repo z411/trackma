@@ -19,6 +19,13 @@ from decimal import Decimal
 
 NO_SUBBER = '###NO#SUBBER#HERE###'
 
+BRACKET_PAIRS = [
+    # to be inserted in regular epressions
+    (r'\[', r'\]'),
+    (r'\(', r'\)'),
+    (r'\{', r'\}'),
+]
+
 
 class AnimeInfoExtractor():
     """
@@ -77,16 +84,11 @@ class AnimeInfoExtractor():
         return filename
 
     def __cleanUpSpaces(self, filename):
-        filename = filename.replace('_', ' ')
-        if ' ' not in filename:
-            filename = re.sub(r'([^.])\.([^.])', r'\1 \2', filename)
-            # to handle .-. case (where - is any single chara)
-            filename = re.sub(r'([^.])\.([^.])', r'\1 \2', filename)
-            # If there are still no spaces try replacing hyphens with spaces
-            if ' ' not in filename:
-                filename = re.sub(r'([^\-])-([^\-])', r'\1 \2', filename)
-                # to handle -.- case (where . is any single chara)
-                filename = re.sub(r'([^\-])-([^\-])', r'\1 \2', filename)
+        characters = "_.-"
+        for char in characters:
+            if ' ' in filename:
+                break
+            filename = re.sub(r'([^{0}]){0}([^{0}])'.format(re.escape(char)), r'\1 \2', filename)
         return filename
 
     def __extractSpecialTags(self, filename):
@@ -166,27 +168,18 @@ class AnimeInfoExtractor():
         # Can get rid of the brackets that won't contain subber
         filename = re.sub(r'\([^\)]*?' + NO_SUBBER + r'.*?\)', '', filename)
         filename = re.sub(r'\[[^\]]*?' + NO_SUBBER + r'.*?\]', '', filename)
-        # Strip any empty sets of brackets
-        filename = re.sub(r'\[\W*?\]|\(\W*?\)', ' ', filename)
+        # Strip any empty sets of brackets, unless they are at the beginning
+        filename = re.sub(r'(?!^)\[\W*?\]|\(\W*?\)', '', filename)
         return filename
 
     def __extractSubber(self, filename, remux):
         # Extract the subber from square brackets (or round failing that)
-        m = re.search(r'\[([^\. ].*?)\]', filename)
-        if m:
-            self.subberTag = m.group(1)
-            filename = filename[:m.start()] + filename[m.end():]
-        else:
-            m = re.search(r'\(([^\. ].*?)\)', filename)
+        for opening, closing in BRACKET_PAIRS:
+            m = re.search(r'{0}([^\. ].*?){1}'.format(opening, closing), filename)
             if m:
                 self.subberTag = m.group(1)
                 filename = filename[:m.start()] + filename[m.end():]
-            else:
-                m = re.search(r'{([^\. ].*?)}', filename)
-                if m:
-                    self.subberTag = m.group(1)
-                    filename = filename[:m.start()] + filename[m.end():]
-        self.subberTag = self.subberTag.strip(' -')
+                break
         # Add the remux string if this was a remux and its not found in the subber tag
         if remux and 'remux' not in self.subberTag.lower():
             # refind remux and remove it
@@ -299,18 +292,13 @@ class AnimeInfoExtractor():
         # Unfortunately it's very hard to know if there should be brackets in the title.
         # We really should strip brackets, though, so sorry to anything with brackets in the title.
         # We don't strip years or the whole title, however.
-        bracket_pairs = [
-            (r'\[', r'\]'),
-            (r'\(', r'\)'),
-            (r'\{', r'\}'),
-        ]
-        for opening, closing in bracket_pairs:
+        for opening, closing in BRACKET_PAIRS:
             m = re.search(r'{0}((?!\d{{4}}{1}).*?){1}'.format(opening, closing), filename)
             if m and m.end() - m.start() < len(filename):
                 filename = filename[:m.start()] + filename[m.end():]
         filename = re.sub(r'  .*', '', filename)
         # Strip any unclosed brackets and anything after them
-        for opening, closing in bracket_pairs:
+        for opening, closing in BRACKET_PAIRS:
             filename = re.sub(r'{}r[^{}].*$'.format(opening, closing), '', filename)
         self.name = re.sub(r'( - *)+$', '', filename.strip(' '))
         # If we have a subber but no title!? then it must have been a title...
