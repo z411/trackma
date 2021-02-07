@@ -93,7 +93,7 @@ class AnimeInfoExtractor():
 
     def __extractSpecialTags(self, filename):
         tags = {'video': r'H\.?264|x264|AVC|XviD|DivX|H\.?265|HEVC|AV1',
-                'audio': r'AC3|AAC|MP3|FLAC|E-?AC-?3|Opus|DTS(?:-HD)?',
+                'audio': r'AC3|AAC|MP3|FLAC|E-?AC-?3|Opus|DTS(?:-HD)?|TrueHD|L?PCM',
                 'source': r'TV|DVD|Blu-?Ray|BD|BDMV|www|WEB(?:-DL)?'}
         for k, tag_re in tags.items():
             m = re.search(r'[\(\[][^\)\]]*?\b(' + tag_re + r')\b',

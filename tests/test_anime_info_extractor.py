@@ -268,3 +268,19 @@ def test_hi444pp_profile():
         audioType=["FLAC"],
         videoType=["H264", "Hi444PP"],
     )
+
+
+def test_jpbd_lpcm():
+    aie = AnimeInfoExtractor("[Koten_Gars] Kiddy Grade - Movie I [JP.BD][Hi10][1080p][LPCM] [2FAAB41B].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Kiddy Grade - Movie I",
+        subberTag="Koten_Gars",
+        extension="mkv",
+        resolution="1080p",
+        releaseSource=["BD"],
+        audioType=["LPCM"],
+        videoType=["H264", "Hi10P"],
+        hash="2FAAB41B"
+    )
