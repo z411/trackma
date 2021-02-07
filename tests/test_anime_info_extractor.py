@@ -176,3 +176,20 @@ def test_name_sXXeXX_and_trailing_hyphen():
         resolution="1080p",
         audioType=["E-AC3"],
     )
+
+
+def test_with_dots():
+    aie = AnimeInfoExtractor("Kill.la.Kill.S01E01.1080p-Hi10p.BluRay.FLAC2.0.x264-CTR.[98AA9B1C].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Kill la Kill",
+        season=1,
+        episodeStart=1,
+        extension="mkv",
+        resolution="1080p",
+        # releaseSource="BluRay",
+        # audioType=["FLAC"],
+        videoType=["H264", "Hi10P"],
+        hash="98AA9B1C",
+    )

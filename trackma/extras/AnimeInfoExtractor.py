@@ -318,7 +318,7 @@ class AnimeInfoExtractor():
             self.name = self.subberTag
             self.subberTag = ''
         # Reappend season number
-        if self.season:
+        if self.season and self.season > 1:
             self.name += " {}".format(self.season)
 
     def _processFilename(self):
