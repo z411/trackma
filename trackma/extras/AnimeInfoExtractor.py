@@ -88,7 +88,7 @@ class AnimeInfoExtractor():
         for char in characters:
             if ' ' in filename:
                 break
-            filename = re.sub(r'([^{0}]){0}([^{0}])'.format(re.escape(char)), r'\1 \2', filename)
+            filename = re.sub(r'([^{0}]){0}(?=[^{0}]|$)'.format(re.escape(char)), r'\1 ', filename)
         return filename
 
     def __extractSpecialTags(self, filename):

@@ -284,3 +284,17 @@ def test_jpbd_lpcm():
         videoType=["H264", "Hi10P"],
         hash="2FAAB41B"
     )
+
+
+def test_underscores():
+    aie = AnimeInfoExtractor("[No]Touhou_Gensou_Mangekyou_-_01_(Hi10P)[26D7A2B3].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Touhou Gensou Mangekyou",
+        episodeStart=1,
+        subberTag="No",
+        extension="mkv",
+        videoType=["H264", "Hi10P"],
+        hash="26D7A2B3"
+    )
