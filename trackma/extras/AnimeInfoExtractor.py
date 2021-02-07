@@ -111,21 +111,19 @@ class AnimeInfoExtractor():
         return filename
 
     def __extractVideoProfile(self, filename):
-        # Check for 8bit/10bit
-        tags_10bit = ['Hi10P', 'Hi10', '10bit', '10 bit', '10-bit', 'YUV420P10']
-        tags_8bit = ['8bit', '8-bit']
-        for tag in tags_10bit:
-            if tag in filename:
-                self.videoType = ['H264', 'Hi10P']
-                # Don't replace Hi10 coz its a subber name
-                if tag != 'Hi10':
-                    filename = filename.replace(tag, '')
-                return filename
-        if not self.videoType == ['H264', 'Hi10P']:
-            for tag in tags_8bit:
+        # Check for 8bit/10bit/Hi444PP
+        h264_profiles = [
+            (['H264', 'Hi10P'], ['Hi10P', 'Hi10', '10bit', '10 bit', '10-bit', 'YUV420P10']),
+            (['H264', '8bit'], ['8bit', '8-bit']),
+            (['H264', 'Hi444PP'], ['Hi444PP', 'YUV444P10']),
+        ]
+        for to_add, tags in h264_profiles:
+            for tag in tags:
                 if tag in filename:
-                    self.videoType = ['H264', '8bit']
-                    filename = filename.replace(tag, '')
+                    self.videoType = to_add
+                    # Don't replace Hi10 coz its a subber name
+                    if tag != 'Hi10':
+                        filename = filename.replace(tag, '')
                     return filename
         return filename
 

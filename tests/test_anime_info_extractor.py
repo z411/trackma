@@ -253,3 +253,18 @@ def test_nothing_in_particular():
         audioType=["FLAC"],
         hash="81722FD7",
     )
+
+
+def test_hi444pp_profile():
+    aie = AnimeInfoExtractor("[Erai-raws] Goblin Slayer - Goblin's Crown [BD][1080p YUV444P10][FLAC][Multiple Subtitle].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Goblin Slayer - Goblin's Crown",
+        subberTag="Erai-raws",
+        extension="mkv",
+        resolution="1080p",
+        releaseSource=["BD"],
+        audioType=["FLAC"],
+        videoType=["H264", "Hi444PP"],
+    )
