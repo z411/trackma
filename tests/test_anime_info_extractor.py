@@ -150,7 +150,7 @@ def test_with_episode_title():
     )
 
 
-def test_name_sXXeXX_and_sdtv():
+def test_sXXeXX_and_sdtv():
     aie = AnimeInfoExtractor("Clannad - S02E01 - A Farewell to the End of Summer SDTV.mkv")
     pprint(vars(aie))
     _assert_aie(
@@ -164,7 +164,7 @@ def test_name_sXXeXX_and_sdtv():
     )
 
 
-def test_name_sXXeXX_and_trailing_hyphen():
+def test_sXXeXX_and_trailing_hyphen():
     aie = AnimeInfoExtractor("ReZERO -Starting Life in Another World- S02E06 [1080p][E-AC3].mkv")
     pprint(vars(aie))
     _assert_aie(
@@ -175,6 +175,19 @@ def test_name_sXXeXX_and_trailing_hyphen():
         extension="mkv",
         resolution="1080p",
         audioType=["E-AC3"],
+    )
+
+
+def test_with_brackets():
+    aie = AnimeInfoExtractor("[HorribleSubs] Nakanohito Genome [Jikkyouchuu] - 01 [1080p].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Nakanohito Genome",  # ' [Jikkyouchuu]' is stripped currently
+        episodeStart=1,
+        subberTag="HorribleSubs",
+        extension="mkv",
+        resolution="1080p",
     )
 
 
@@ -208,4 +221,35 @@ def test_unusual_subber():
         releaseSource=["BD"],
         audioType=["FLAC"],
         hash="B13C83A0",
+    )
+
+
+def test_unusual_subber_and_no_epnum():
+    aie = AnimeInfoExtractor("[-__-'] Girls und Panzer OVA Anzio-sen [BD 1080p FLAC] [231FDA45].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Girls und Panzer OVA Anzio-sen",
+        subberTag="-__-'",
+        extension="mkv",
+        resolution="1080p",
+        releaseSource=["BD"],
+        audioType=["FLAC"],
+        hash="231FDA45",
+    )
+
+
+def test_nothing_in_particular():
+    aie = AnimeInfoExtractor("[Underwater-FFF] Saki Zenkoku-hen - The Nationals - 01 [BD][1080p-FLAC][81722FD7].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Saki Zenkoku-hen - The Nationals",
+        episodeStart=1,
+        subberTag="Underwater-FFF",
+        extension="mkv",
+        resolution="1080p",
+        releaseSource=["BD"],
+        audioType=["FLAC"],
+        hash="81722FD7",
     )
