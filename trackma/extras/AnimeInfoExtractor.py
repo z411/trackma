@@ -312,7 +312,7 @@ class AnimeInfoExtractor():
         # Strip any unclosed brackets and anything after them
         for opening, closing in bracket_pairs:
             filename = re.sub(r'{}r[^{}].*$'.format(opening, closing), '', filename)
-        self.name = filename.strip(' -')
+        self.name = re.sub(r'( - *)+$', '', filename.strip(' '))
         # If we have a subber but no title!? then it must have been a title...
         if self.name == '' and self.subberTag != '':
             self.name = self.subberTag

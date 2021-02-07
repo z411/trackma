@@ -162,3 +162,17 @@ def test_name_sXXeXX_and_sdtv():
         resolution="SD",
         releaseSource=["TV"],
     )
+
+
+def test_name_sXXeXX_and_trailing_hyphen():
+    aie = AnimeInfoExtractor("ReZERO -Starting Life in Another World- S02E06 [1080p][E-AC3].mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="ReZERO -Starting Life in Another World- 2",
+        season=2,
+        episodeStart=6,
+        extension="mkv",
+        resolution="1080p",
+        audioType=["E-AC3"],
+    )
