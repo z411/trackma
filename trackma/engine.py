@@ -853,8 +853,9 @@ class Engine:
 
                     show_id = show['id']
                 else:
-                    self.msg.debug(
-                        self.name, "Not a show, skipping: {}".format(fullpath))
+                    self.msg.debug(self.name,
+                                   "Unable to match '{}', skipping: {}"
+                                   .format(show_title, fullpath))
                     library_cache[filename] = None
             else:
                 self.msg.debug(
