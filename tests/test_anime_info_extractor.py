@@ -135,7 +135,7 @@ def test_eac3():
     )
 
 
-def test_with_episode_title():
+def test_with_number_in_episode_title():
     aie = AnimeInfoExtractor("[Opportunity] The Tatami Galaxy 10 - The 4.5-Tatami Idealogue [BD 720p] [FF757616].mkv")
     pprint(vars(aie))
     _assert_aie(
@@ -147,6 +147,18 @@ def test_with_episode_title():
         resolution="720p",
         releaseSource=["BD"],
         hash="FF757616",
+    )
+
+
+def test_with_standalone_number_in_episode_title():
+    aie = AnimeInfoExtractor("Monogatari - S02E01 - Karen Bee - Part 2.mkv")
+    pprint(vars(aie))
+    _assert_aie(
+        aie,
+        name="Monogatari 2",
+        season=2,
+        episodeStart=1,
+        extension="mkv",
     )
 
 
