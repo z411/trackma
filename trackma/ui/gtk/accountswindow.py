@@ -57,8 +57,9 @@ class AccountsWindow(Gtk.Dialog):
     username_entry = Gtk.Template.Child()
     btn_pin_request = Gtk.Template.Child()
 
-    def __init__(self, manager, **kwargs):
-        Gtk.Dialog.__init__(self, use_header_bar=True, **kwargs)
+    def __init__(self, manager, transient_for=None):
+        Gtk.Dialog.__init__(self, use_header_bar=True,
+                            transient_for=transient_for)
         self.init_template()
 
         self.accounts = []

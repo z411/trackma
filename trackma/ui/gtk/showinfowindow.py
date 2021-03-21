@@ -28,7 +28,8 @@ class ShowInfoWindow(Gtk.Dialog):
     info_container = Gtk.Template.Child()
 
     def __init__(self, engine, show_data, transient_for=None):
-        Gtk.Dialog.__init__(self, transient_for=transient_for)
+        Gtk.Dialog.__init__(self, use_header_bar=True,
+                            transient_for=transient_for)
         self.init_template()
 
         self._engine = engine
