@@ -276,3 +276,12 @@ def test_underscores():
         videoType=["H264", "Hi10P"],
         hash="26D7A2B3"
     )
+
+
+def test_literal_ep():
+    _assert_aie(
+        "Uzaki-chan wa Asobitai! Ep 2.mkv",
+        name="Uzaki-chan wa Asobitai!",
+        episodeStart=2,
+        extension="mkv",
+    )
