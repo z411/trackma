@@ -32,6 +32,7 @@ from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 from trackma.extras import redirections
 
+
 class Engine:
     """
     The engine is the controller that handles commands coming from
@@ -257,23 +258,27 @@ class Engine:
         if redirections.supports(api, mediatype):
             if utils.file_exists(utils.to_config_path('anime-relations.txt')):
                 fname = utils.to_config_path('anime-relations.txt')
-                self.msg.debug(self.name, "Using user-provided redirection file.")
+                self.msg.debug(
+                    self.name, "Using user-provided redirection file.")
             else:
                 fname = utils.to_data_path('anime-relations.txt')
                 if self.config['redirections_time'] and (
                         not utils.file_exists(fname) or
                         utils.file_older_than(fname, self.config['redirections_time'] * 86400)):
                     self.msg.info(self.name, "Syncing redirection file...")
-                    self.msg.debug(self.name, "Syncing from: %s" % self.config['redirections_url'])
+                    self.msg.debug(self.name, "Syncing from: %s" %
+                                   self.config['redirections_url'])
                     utils.sync_file(fname, self.config['redirections_url'])
 
             if not utils.file_exists(fname):
-                self.msg.debug(self.name, "Defaulting to repo provided redirections file.")
+                self.msg.debug(
+                    self.name, "Defaulting to repo provided redirections file.")
                 fname = utils.DATADIR + '/anime-relations/anime-relations.txt'
 
             self.msg.info(self.name, "Parsing redirection file...")
             try:
-                self.redirections = redirections.parse_anime_relations(fname, api)
+                self.redirections = redirections.parse_anime_relations(
+                    fname, api)
             except Exception as e:
                 self.msg.warn(self.name, "Error parsing anime-relations.txt!")
                 self.msg.debug(self.name, "{}".format(e))
@@ -353,6 +358,20 @@ class Engine:
             self.data_handler.unload()
             if self.tracker:
                 self.tracker.disable()
+
+            # If there are loaded hooks, unload them
+            self.msg.info(self.name, "Unloading user hooks...")
+            for module in self.hooks_available.copy():
+                self.msg.debug(self.name, "Unloading hook {}...".format(
+                    module.__name__))
+                try:
+                    if hasattr(module, 'destroy'):
+                        module.destroy(self)
+                    self.hooks_available.remove(module)
+                except Exception as err:
+                    self.msg.warn(self.name, "Error destroying hook {}: {}".format(
+                        module.__name__, err))
+
             self.loaded = False
 
     def reload(self, account=None, mediatype=None):
