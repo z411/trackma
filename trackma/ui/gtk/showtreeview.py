@@ -374,15 +374,15 @@ class ProgressCellRenderer(Gtk.CellRenderer):
 
     __gproperties__ = {
         "value": (GObject.TYPE_INT, "Value",
-                  "Progress percentage", 0, 1000, 0,
+                  "Progress percentage", 0, 100000, 0,
                   GObject.ParamFlags.READWRITE),
 
         "subvalue": (GObject.TYPE_INT, "Subvalue",
-                     "Sub percentage", 0, 1000, 0,
+                     "Sub percentage", 0, 100000, 0,
                      GObject.ParamFlags.READWRITE),
 
         "total": (GObject.TYPE_INT, "Total",
-                  "Total percentage", 0, 1000, 0,
+                  "Total percentage", 0, 100000, 0,
                   GObject.ParamFlags.READWRITE),
 
         "eps": (GObject.TYPE_PYOBJECT, "Episodes",
