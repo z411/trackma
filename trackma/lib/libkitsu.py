@@ -105,7 +105,13 @@ class libkitsu(lib):
         'statuses_start': ['current'],
         'statuses_finish': ['completed'],
         'statuses': default_statuses,
-        'statuses_dict': default_statuses_dict,
+        'statuses_dict': {
+            'current': 'Reading',
+            'completed': 'Completed',
+            'on_hold': 'On Hold',
+            'dropped': 'Dropped',
+            'planned': 'Plan to Read'
+        },
         'score_max': 5,
         'score_step': 0.25,
     }
@@ -286,15 +292,15 @@ class libkitsu(lib):
                 # "include": self.mediatype, # TODO : This returns a 500 for some reason.
                 "include": "media",
                 # TODO : List for manga should be different
-                "fields[anime]": ','.join([
+                f"fields[{self.mediatype}]": ','.join([
                     'id',
                     'slug',
                     'canonicalTitle',
                     'titles',
-                    'episodeCount' if self.mediatype in ['anime','drama'] else 'chapterCount',
+                    'episodeCount' if self.mediatype in [
+                        'anime', 'drama'] else 'chapterCount',
                     'description',
                     'status',
-                    'nsfw',
                     'tba',
                     'subtype',
                     'posterImage',
@@ -304,10 +310,20 @@ class libkitsu(lib):
                     'averageRating',
                     'popularityRank',
                     'ratingRank',
-                    'ageRating'
+                    'ageRating',
+                    'ageRatingGuide',
+                    'userCount',
+                    'favoritesCount'
                 ]),
                 "page[limit]": "250",
             }
+
+            if self.mediatype == 'anime':
+                params['fields[anime]'] = params['fields[anime]'] + ',nsfw'
+
+            if self.mediatype == 'manga':
+                params['fields[manga]'] = params['fields[manga]'] + \
+                    ',serialization'
 
             url = "{}/library-entries?{}".format(
                 self.prefix, urllib.parse.urlencode(params))
@@ -549,29 +565,36 @@ class libkitsu(lib):
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
-            'type':        self.type_translate.get(attr['subtype'],utils.TYPE_UNKNOWN),
-            'status':      self.status_translate.get(attr['status'],utils.STATUS_UNKNOWN),
+            'type':        self.type_translate.get(attr['subtype'], utils.TYPE_UNKNOWN),
+            'status':      self.status_translate.get(attr['status'], utils.STATUS_UNKNOWN),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
-                ('Synopsis', attr['description']),
-                ('Type',     attr['subtype']),
-                ('Titles',  list(filter(None, attr['titles'].values())) ),
-                ('Average Rating', attr['averageRating'] or '?'),
-                ('Popularity Rank', attr['popularityRank']),
-                ('Rating Rank', attr['ratingRank']),
-                ('Age Rating', attr['ageRating']),
+                ('Synopsis',            attr['description']),
+                ('Type',                attr['subtype']),
+                ('Titles',              list(
+                    filter(None, attr['titles'].values()))),
+                ('Synonyms',            attr.get('abbreviatedTitles', '?')),
+                ('Average Rating',      attr.get('averageRating', '?')),
+                ('Rank',                "Popularity #{}\nRating #{}".format(
+                    attr.get('popularityRank', '?'), attr.get('ratingRank', '?'))),
+                ('Age Rating',          "{} ({})".format(
+                    attr.get('ageRating', 'Unknown'), attr.get('ageRatingGuide', 'Unknown'))),
             ]
         })
+
+        if attr.get('nsfw', False):
+            info['extra'].insert(
+                2, ('NSFW', 'Yes'))
+        elif attr.get('serialization', False):
+            info['extra'].insert(
+                4, ('Serialization', attr['serialization']))
 
         # WORKAROUND: Shows with 1 episode (TVs, SPs, OVAs) end the same day they start
         if total == 1:
             info['end_date'] = info['start_date']
 
         if attr['status'] in ['upcoming', 'unreleased']:
-            info['extra'].append(('Expected Release', attr['tba'] or '?'))
-
-        if attr['nsfw']:
-            info['extra'].append(('Not Safe for Work', None))
+            info['extra'].append(('Expected Release', attr.get('tba', '?')))
 
         return info
