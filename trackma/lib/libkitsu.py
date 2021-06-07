@@ -319,11 +319,10 @@ class libkitsu(lib):
             }
 
             if self.mediatype == 'anime':
-                params['fields[anime]'] = params['fields[anime]'] + ',nsfw'
+                params['fields[anime]'] += ',nsfw'
 
             if self.mediatype == 'manga':
-                params['fields[manga]'] = params['fields[manga]'] + \
-                    ',serialization'
+                params['fields[manga]'] += ',serialization'
 
             url = "{}/library-entries?{}".format(
                 self.prefix, urllib.parse.urlencode(params))
