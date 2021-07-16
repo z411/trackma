@@ -39,7 +39,6 @@ class AccountsWindow(Gtk.Dialog):
         'account-open': (GObject.SignalFlags.RUN_FIRST, None, (int, bool))
     }
 
-    header_bar = Gtk.Template.Child()
     internal_box = Gtk.Template.Child()
     accounts_frame = Gtk.Template.Child()
     accounts_listbox = Gtk.Template.Child()
@@ -58,8 +57,9 @@ class AccountsWindow(Gtk.Dialog):
     username_entry = Gtk.Template.Child()
     btn_pin_request = Gtk.Template.Child()
 
-    def __init__(self, manager, **kwargs):
-        super().__init__(self, **kwargs)
+    def __init__(self, manager, transient_for=None):
+        Gtk.Dialog.__init__(self, use_header_bar=True,
+                            transient_for=transient_for)
         self.init_template()
 
         self.accounts = []
@@ -209,7 +209,7 @@ class AccountsWindow(Gtk.Dialog):
         self.account_edit = self.manager.get_account(row.get_account_id())
         self.account_edit['account_id'] = row.get_account_id()
 
-        self.header_bar.set_title("Edit account")
+        self.set_title("Edit account")
         self._clear_new_account()
 
         if utils.available_libs[self.account_edit['api']][2] == utils.LOGIN_OAUTH:
@@ -235,7 +235,7 @@ class AccountsWindow(Gtk.Dialog):
             'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_add_new(self):
-        self.header_bar.set_title("Add account")
+        self.set_title("Add account")
         self._clear_new_account()
         self.btn_new_confirm.show()
         self.btn_new_cancel.show()
@@ -249,7 +249,7 @@ class AccountsWindow(Gtk.Dialog):
             'new_account', Gtk.StackTransitionType.SLIDE_LEFT)
 
     def _show_accounts_list(self):
-        self.header_bar.set_title("Accounts")
+        self.set_title("Accounts")
         self.btn_new_confirm.hide()
         self.btn_new_cancel.hide()
         self.btn_edit_confirm.hide()
