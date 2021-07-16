@@ -83,6 +83,8 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._main_view = MainView(self._config)
             self._main_view.connect('error', self._on_main_view_error)
             self._main_view.connect(
+                'success', lambda x: self._set_buttons_sensitive(True))
+            self._main_view.connect(
                 'error-fatal', self._on_main_view_error_fatal)
             self._main_view.connect('show-action', self._on_show_action)
             self.add(self._main_view)
@@ -117,6 +119,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._destroy_modals()
 
         if self.hidden:
+            self.deiconify()
             self.present()
 
             if not self._engine:
@@ -155,6 +158,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         self._set_actions()
         self._set_mediatypes_menu()
         self._update_widgets(account)
+        self._set_buttons_sensitive(True)
 
     def _set_actions(self):
         builder = Gtk.Builder.new_from_file(
@@ -230,6 +234,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _on_change_mediatype(self, action, value):
         action.set_state(value)
         mediatype = value.get_string()
+        self._set_buttons_sensitive(False)
         self._main_view.load_account_mediatype(
             None, mediatype, self.header_bar)
 
@@ -344,6 +349,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
         # Reload the engine if already started,
         # start it otherwise
+        self._set_buttons_sensitive(False)
         if self._engine and self._engine.loaded:
             self._main_view.load_account_mediatype(account, None, None)
         else:

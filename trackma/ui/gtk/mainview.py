@@ -35,6 +35,8 @@ class MainView(Gtk.Box):
     __gsignals__ = {
         'error': (GObject.SignalFlags.RUN_FIRST, None,
                   (str, )),
+        'success': (GObject.SignalFlags.RUN_CLEANUP, None,
+                    ()),
         'error-fatal': (GObject.SignalFlags.RUN_FIRST, None,
                         (str,)),
         'show-action': (GObject.SignalFlags.RUN_FIRST, None,
@@ -191,6 +193,7 @@ class MainView(Gtk.Box):
                                        self._engine.api_info['mediatype'] + ")")
 
         self.set_status_idle("Ready.")
+        self.emit('success')
         self.set_buttons_sensitive_idle(True)
 
     def _reset_widgets(self):
