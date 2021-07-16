@@ -29,6 +29,7 @@ class DiscordRPC(Thread):
     _client_id = ""  # set discord application id here
     _enabled = False
     _update = False
+    regret = True
 
     _rpc = None
     _pid = None
@@ -74,16 +75,20 @@ class DiscordRPC(Thread):
             try:
                 self._reconnect()
                 if self._enabled and self._update:
-                    self._rpc.set_activity(
-                        pid=self._pid,
-                        large_image="icon",
-                        large_text=self._details['details'],
-                        small_image=self._details['img'],
-                        small_text=self._details['txt'],
-                        details=self._details['details'],
-                        state=self._details['state'],
-                        start=self._details['start']
-                    )
+                    if self._details['details'] == "Regretting..." \
+                            and not self.regret:
+                        self._rpc.clear_activity(pid=self._pid)
+                    else:
+                        self._rpc.set_activity(
+                            pid=self._pid,
+                            large_image="icon",
+                            large_text=self._details['details'],
+                            small_image=self._details['img'],
+                            small_text=self._details['txt'],
+                            details=self._details['details'],
+                            state=self._details['state'],
+                            start=self._details['start']
+                        )
                     self._update = False
                 time.sleep(1)
             except self._errors:
@@ -112,7 +117,6 @@ def init(engine):
     Initialize this hook.
     """
     rpc.start()
-    print('a')
     rpc.present(engine)
 
 
