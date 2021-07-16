@@ -16,6 +16,7 @@
 # TODO: Add gui stuff for this
 
 import time
+import os
 import requests
 
 from trackma.tracker import tracker
@@ -85,7 +86,7 @@ class JellyfinTracker(tracker.TrackerBase):
             time.sleep(config['tracker_interval'])
 
     def _get_sessions_info(self):
-        session_url = "http://"+self.host_port+"/Sessions?api_key={}".format(self.api_key)
+        session_url = self.host_port+"/Sessions?api_key={}".format(self.api_key)
 
         info = {
             "status": NOT_RUNNING,
@@ -111,7 +112,7 @@ class JellyfinTracker(tracker.TrackerBase):
                 return {
                     "status": ACTIVE,
                     "state": PAUSED if session['PlayState']['IsPaused'] else PLAYING,
-                    "file_name": current_session['Name'],
+                    "file_name": os.path.basename(current_session['Path']),
                     "view_offset": int(session['PlayState']['PositionTicks']/10000)
                 }
 
