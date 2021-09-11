@@ -760,12 +760,12 @@ class MainWindow(QMainWindow):
         self.view.model().sourceModel().setMediaInfo(self.mediainfo)
         self.view.model().sourceModel().setShowList(showlist, altnames, library)
         self.view.resizeRowsToContents()
+        self.view.setSortingEnabled(True)
 
         self.s_filter_changed()
 
     def _init_view(self):
         # Set view options
-        self.view.setSortingEnabled(True)
         self.view.sortByColumn(
             self.config['sort_index'], self.config['sort_order'])
 
