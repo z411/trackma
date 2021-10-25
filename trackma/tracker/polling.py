@@ -26,7 +26,7 @@ from trackma import utils
 class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
 
-    def get_playing_file(self, watch_dirs, players):
+    def get_playing_file(self, watch_dirs, players, full_path=False):
         for path in watch_dirs:
             # TODO: We'll run lsof once for each directory for now.
             try:
@@ -42,7 +42,10 @@ class PollingTracker(tracker.TrackerBase):
 
             for line in output.splitlines():
                 if line[0] == 'n' and utils.is_media(line):
-                    return os.path.basename(line[1:])
+                    if full_path:
+                        return line[1:]
+                    else:
+                        return os.path.basename(line[1:])
 
         return None
 
@@ -52,7 +55,7 @@ class PollingTracker(tracker.TrackerBase):
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self.get_playing_file(
-                watch_dirs, config['tracker_process'])
+                watch_dirs, config['tracker_process'], config['library_full_path'])
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
