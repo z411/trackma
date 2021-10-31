@@ -790,7 +790,7 @@ class Engine:
             for fullpath, filename in utils.regex_find_videos(searchdir):
                 if self.config['library_full_path']:
                     filename = self._get_show_name_from_full_path(
-                        searchdir, fullpath).strip()
+                        searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
                     library, library_cache, rescan, fullpath, filename, tracker_list)
 
@@ -1024,8 +1024,8 @@ class Engine:
 
     def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""
-        relative = fullpath[len(searchdir):]
-        return relative.replace(os.path.sep, " ")
+        relative = fullpath[len(searchdir):].lstrip(os.path.sep)
+        return relative
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""
