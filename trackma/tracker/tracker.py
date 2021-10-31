@@ -244,9 +244,7 @@ class TrackerBase(object):
             if os.path.isabs(filename):
                 for watch_prefix in self.watch_dirs:
                     if filename.startswith(watch_prefix):
-                        filename = filename[len(watch_prefix):]
-                        if filename.startswith(os.path.sep):
-                            filename = filename[len(os.path.sep):]
+                        filename = filename[len(watch_prefix):].lstrip(os.path.sep)
                         break
 
             if filename == self.last_filename:
