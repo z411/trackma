@@ -238,6 +238,12 @@ class TrackerBase(object):
             return (utils.Tracker.NOVIDEO, None)
 
         if filename:
+            if filename == self.last_filename:
+                # It's the exact same filename, there's no need to do the processing again
+                self.msg.debug("Same filename as before. Skipping.")
+                return (self.last_state, self.last_show_tuple)
+
+            self.last_filename = filename
             self.msg.debug("Guessing filename: {}".format(filename))
 
             # Trim out watch dir
@@ -246,13 +252,6 @@ class TrackerBase(object):
                     if filename.startswith(watch_prefix):
                         filename = filename[len(watch_prefix):].lstrip(os.path.sep)
                         break
-
-            if filename == self.last_filename:
-                # It's the exact same filename, there's no need to do the processing again
-                self.msg.debug("Same filename as before. Skipping.")
-                return (self.last_state, self.last_show_tuple)
-
-            self.last_filename = filename
 
             # Do a regex to the filename to get
             # the show title and episode number
