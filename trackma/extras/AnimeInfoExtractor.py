@@ -258,9 +258,9 @@ class AnimeInfoExtractor():
         if not self.episodeStart:
             # Check if there is an episode specifier
             m = re.search(
-                '(?:[^0-9a-zA-Z])(E\.?|Ep(?:i|isode)?(?: |\.)?)(\d{1,}(?:\.\d{1})?)(?:[^\d]|$)', filename, flags=re.IGNORECASE)
+                '(?:[^0-9a-zA-Z])(S[0-9]+)?(E\.?|Ep(?:i|isode)?(?: |\.)?)(\d{1,}(?:\.\d{1})?)(?:[^\d]|$)', filename, flags=re.IGNORECASE)
             if m:
-                self.episodeStart = Decimal(m.group(2))
+                self.episodeStart = Decimal(m.group(3))
                 filename = filename[:m.start() + 1]
         if not self.episodeStart:
             # Check any remaining lonely numbers as episode (towards the end has priority)
