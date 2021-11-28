@@ -15,6 +15,7 @@
 #
 
 import re
+import os
 import anitopy
 from decimal import Decimal
 
@@ -29,6 +30,7 @@ class AnitopyWrapper():
     def __init__(self, filename):
         self.file_name = filename
         self.__preProcessFilename()
+        self.__trimFilename()
         self.__parseFilename()
 
         self.__fixEpisodeNumber()
@@ -70,6 +72,20 @@ class AnitopyWrapper():
     def __preProcessFilename(self):
         # Make some adjustments to the filename to increase parsing accuracy
 
+        # If full path is provided to AnimeInfoExtractor, all [brackets with contents]
+        # adjacent to the path separators should be moved to the VERY beginning.
+        # Or Anitopy won't be able to parse them out.
+        self.file_name = os.path.sep + self.file_name
+        for m in re.finditer(
+                r'(?<={0})\[.*?\]|\[.*?\](?={0})'.format(os.path.sep),
+                self.file_name):
+            self.file_name = (m.group() + self.file_name[:m.start()]
+                              + self.file_name[m.end():])
+
+        # Remove all the path separators (except the last one, we'll need it later)
+        self.file_name = re.sub(
+            r'{0}(?=.+{0})'.format(os.path.sep), r' ', self.file_name)
+
         # Anitopy can parse S01E01 properly, but not S01OVA01, S01S01, S01NCOP01 etc.
         # So we'll need to break things down for the parser.
         m = re.search(
@@ -89,6 +105,34 @@ class AnitopyWrapper():
                 self.file_name[:m.start()] + 'Season ' + groups['season']
                 + ' ' + groups['type'] + ' - ' + groups['episode']
                 + self.file_name[m.end():])
+
+    def __trimFilename(self):
+        # If the same title appears in the parent directory and the file name,
+        # we might want to remove the duplicate one.
+        # Otherwise, Anitopy would concatenate them together.
+        try:
+            # Temporarily replace all punctuations with spaces
+            temp = re.sub(r'[^\w\s{0}\(\)\{{\}}\[\]]'.format(os.path.sep),
+                          r' ', self.file_name, flags=re.ASCII)
+            # Search and remove the longest duplicate
+            m = max(
+                [x for x in re.finditer(
+                    r'(\b.{{3,}}\b)(?=.*?{0}.*?(?P<DUP>\1))'.format(os.path.sep),
+                    temp, flags=re.IGNORECASE)],
+                key = lambda y: y.end() - y.start()
+            )
+            if m:
+                self.file_name = (self.file_name[:m.start('DUP')]
+                                  + ' ' + self.file_name[m.end('DUP'):])
+        except ValueError:
+            pass
+
+        # Remove the remaining path separator(s)
+        self.file_name = self.file_name.replace(os.path.sep, ' ')
+        # Remove empty ( ) brackets
+        self.file_name = re.sub(r'[\[\{\(][\s\._]*[\)\}\]]', r'', self.file_name)
+        # Trim unnecessary     spaces
+        self.file_name = re.sub(r'\s{2,}', r' ', self.file_name.strip())
 
     def __parseFilename(self):
         try:
