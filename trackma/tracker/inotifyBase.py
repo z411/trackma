@@ -88,7 +88,8 @@ class inotifyBase(tracker.TrackerBase):
                             cmdline = f.read()
                             pname = cmdline.partition(b'\x00')[0]
                         self.msg.debug(
-                            self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
+                            self.name, 'Playing process: {} {} ({})'.format(
+                                p, pname.decode(), cmdline.decode()))
 
                         # Check if it's our process
                         if self.re_players.search(pname):

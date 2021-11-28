@@ -822,6 +822,11 @@ class Engine:
         library_cache = self.data_handler.library_cache_get()
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
+        for searchdir in self.searchdirs:
+            if self.config['library_full_path'] and fullpath.startswith(searchdir):
+                filename = self._get_show_name_from_full_path(
+                    searchdir, fullpath)
+                break
         self._add_show_to_library(
             library, library_cache, rescan, fullpath, filename, tracker_list)
 
