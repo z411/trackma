@@ -27,21 +27,20 @@ class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
 
     def get_playing_file(self, watch_dirs, players):
+        try:
+            lsof = subprocess.Popen(
+                ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+        except OSError:
+            self.msg.warn(
+                self.name, "Couldn't execute lsof. Disabling tracker.")
+            self.disable()
+            return None
+
+        output = lsof.communicate()[0].decode('utf-8')
+
         for path in watch_dirs:
-            # TODO: We'll run lsof once for each directory for now.
-            try:
-                lsof = subprocess.Popen(
-                    ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
-            except OSError:
-                self.msg.warn(
-                    self.name, "Couldn't execute lsof. Disabling tracker.")
-                self.disable()
-                return None
-
-            output = lsof.communicate()[0].decode('utf-8')
-
             for line in output.splitlines():
-                if line[0] == 'n' and utils.is_media(line):
+                if line.startswith('n{}'.format(path)) and utils.is_media(line):
                     return os.path.basename(line[1:])
 
         return None
