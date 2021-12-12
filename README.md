@@ -32,15 +32,15 @@ Qt interface
 
 GTK interface
 
-![GTK](http://z411.github.com/trackma/images/screen_gtk.png)
+![GTK](https://z411.github.io/trackma/images/screen_gtk.png)
 
 Curses interface
 
-![Curses](http://z411.github.com/trackma/images/screen_curses.png)
+![Curses](https://z411.github.io/trackma/images/screen_curses.png)
 
 CLI
 
-![CLI](http://z411.github.com/trackma/images/screen_cli.png)
+![CLI](https://z411.github.io/trackma/images/screen_cli.png)
 
 Dependencies
 ------------
