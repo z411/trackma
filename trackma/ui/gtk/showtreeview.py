@@ -461,8 +461,7 @@ class ProgressCellRenderer(Gtk.CellRenderer):
                                  finish-start, h-(h-self._subheight))
                     cr.fill()
 
-    @staticmethod
-    def do_get_size(widget, cell_area):
+    def do_get_size(self, widget, cell_area):
         if cell_area is None:
             return 0, 0, 0, 0
         x = cell_area.x
