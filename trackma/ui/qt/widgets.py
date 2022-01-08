@@ -101,6 +101,7 @@ class DetailsWidget(QWidget):
 
         # Load show image
         if show.get('image'):
+            utils.make_dir(utils.to_cache_path())
             filename = utils.to_cache_path("%s_%s_f_%s.jpg" % (
                 api_info['shortname'], api_info['mediatype'], show['id']))
 
