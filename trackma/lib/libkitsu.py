@@ -353,7 +353,7 @@ class libkitsu(lib):
                         'my_id': entry['id'],
                         'my_progress': entry['attributes']['progress'],
                         'my_score': float(rating)/4.00 if rating is not None else 0.0,
-                        'my_status': entry['attributes']['status'],
+                        'my_status': status,
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
                     })
@@ -560,8 +560,8 @@ class libkitsu(lib):
             # For now I'm just picking the romaji title in these cases.
             'title':       attr['titles'].get('en_jp') or attr.get('canonicalTitle') or attr['titles'].get('en'),
             'total':       total or 0,
-            'image':       attr['posterImage'] and attr['posterImage']['small'],
-            'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
+            'image':       attr['posterImage'] and attr['posterImage'].get('small'),
+            'image_thumb': attr['posterImage'] and attr['posterImage'].get('tiny'),
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'type':        self.type_translate.get(attr['subtype'], utils.TYPE_UNKNOWN),
