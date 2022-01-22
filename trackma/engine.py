@@ -773,7 +773,7 @@ class Engine:
                 my_status = self.mediainfo['statuses']
             else:
                 my_status = self.mediainfo.get(
-                    'statuses_library', self.mediainfo['statuses_start'])
+                    'statuses_start', self.mediainfo['statuses_library'])
 
         if rescan:
             self.msg.info(
