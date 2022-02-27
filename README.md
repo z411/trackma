@@ -86,6 +86,10 @@ following command:
 
 <pre># pip3 install Trackma</pre>
 
+You can also install the git (probably unstable, but newer) version like this"
+
+<pre># pip3 install -U git+https://github.com/z411/trackma.git</pre>
+
 Or download the source code and install:
 
 <pre># git clone --recursive https://github.com/z411/trackma.git
