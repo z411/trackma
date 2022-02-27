@@ -75,7 +75,7 @@ class inotifyTracker(inotifyBase.inotifyBase):
                               or 'IN_CLOSE_WRITE' in types):
                             self._proc_close(
                                 str(path, 'utf-8'), str(filename, 'utf-8'))
-                elif self.last_state != utils.TRACKER_NOVIDEO and not self.last_updated:
+                elif self.last_state != utils.Tracker.NOVIDEO and not self.last_updated:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
                     self.update_show_if_needed(

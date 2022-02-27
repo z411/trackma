@@ -706,15 +706,15 @@ class Trackma_urwid():
         timer = status['timer']
         paused = status['paused']
 
-        if state == utils.TRACKER_NOVIDEO:
+        if state == utils.Tracker.NOVIDEO:
             st = 'LISTEN'
-        elif state == utils.TRACKER_PLAYING:
+        elif state == utils.Tracker.PLAYING:
             st = '{}{}'.format('#' if paused else '+', timer)
-        elif state == utils.TRACKER_UNRECOGNIZED:
+        elif state == utils.Tracker.UNRECOGNIZED:
             st = 'UNRECOG'
-        elif state == utils.TRACKER_NOT_FOUND:
+        elif state == utils.Tracker.NOT_FOUND:
             st = 'NOTFOUN'
-        elif state == utils.TRACKER_IGNORED:
+        elif state == utils.Tracker.IGNORED:
             st = 'IGNORE'
         else:
             st = '???'
@@ -957,7 +957,7 @@ class AccountDialog(Dialog):
             self.frame.set_focus('body')
             return
 
-        if api[2] == utils.LOGIN_OAUTH:
+        if api[2] == utils.Login.OAUTH:
             ask = Asker("Account name: ")
         else:
             ask = Asker("Username: ")
@@ -966,10 +966,10 @@ class AccountDialog(Dialog):
 
     def do_add_password(self, data):
         self.adding_data['username'] = data
-        if self.adding_data['api'][2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+        if self.adding_data['api'][2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             auth_url = self.adding_data['api'][3]
             
-            if self.adding_data['api'][2] == utils.LOGIN_OAUTH_PKCE:
+            if self.adding_data['api'][2] == utils.Login.OAUTH_PKCE:
                 self.adding_data['extra'] = {'code_verifier': utils.oauth_generate_pkce()}
                 auth_url = auth_url % self.adding_data['extra']['code_verifier']
             
@@ -1148,9 +1148,9 @@ class ShowItem(urwid.WidgetWrap):
             self.color = 'item_updated'
         elif self.eps and max(self.eps) > show['my_progress']:
             self.color = 'item_neweps'
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             self.color = 'item_airing'
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             self.color = 'item_notaired'
         else:
             self.color = 'body'

@@ -383,7 +383,7 @@ class Trackma_cmd(cmd.Cmd):
 
         for line in details['extra']:
             if line[0] == 'Status':
-                print(f"{line[0]}: {utils.STATUS_DICT[line[1]]}")
+                print(f"{line[0]}: {utils.Status.DICT[line[1]]}")
             else:
                 print("%s: %s" % line)
 
@@ -477,15 +477,15 @@ class Trackma_cmd(cmd.Cmd):
             print("- Tracker status -")
 
             if info:
-                if info['state'] == utils.TRACKER_NOVIDEO:
+                if info['state'] == utils.Tracker.NOVIDEO:
                     state = 'No video'
-                elif info['state'] == utils.TRACKER_PLAYING:
+                elif info['state'] == utils.Tracker.PLAYING:
                     state = 'Playing'
-                elif info['state'] == utils.TRACKER_UNRECOGNIZED:
+                elif info['state'] == utils.Tracker.UNRECOGNIZED:
                     state = 'Unrecognized'
-                elif info['state'] == utils.TRACKER_NOT_FOUND:
+                elif info['state'] == utils.Tracker.NOT_FOUND:
                     state = 'Not found'
-                elif info['state'] == utils.TRACKER_IGNORED:
+                elif info['state'] == utils.Tracker.IGNORED:
                     state = 'Ignored'
                 else:
                     state = 'N/A'
@@ -927,7 +927,7 @@ class Trackma_cmd(cmd.Cmd):
                 title_str) > max_title_length else title_str
 
             # Color title according to status
-            if show['status'] == utils.STATUS_AIRING:
+            if show['status'] == utils.Status.AIRING:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
             else:
                 colored_title = title_str
@@ -976,14 +976,14 @@ class Trackma_accounts(AccountManager):
                     print("Invalid API.")
                     continue
 
-                if selected_api[2] == utils.LOGIN_PASSWD:
+                if selected_api[2] == utils.Login.PASSWD:
                     username = input('Enter username: ')
                     password = getpass.getpass('Enter password (no echo): ')
-                elif selected_api[2] in [utils.LOGIN_OAUTH, utils.LOGIN_OAUTH_PKCE]:
+                elif selected_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
                     username = input('Enter account name: ')
                     
                     auth_url = selected_api[3]
-                    if selected_api[2] == utils.LOGIN_OAUTH_PKCE:
+                    if selected_api[2] == utils.Login.OAUTH_PKCE:
                         extra['code_verifier'] = utils.oauth_generate_pkce()
                         auth_url = auth_url % extra['code_verifier']
                     

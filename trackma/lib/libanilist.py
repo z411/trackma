@@ -64,7 +64,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
+        'search_methods': [utils.SearchMethod.KW, utils.SearchMethod.SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -88,7 +88,7 @@ class libanilist(lib):
         },
         'score_max': 100,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW],
+        'search_methods': [utils.SearchMethod.KW],
     }
     default_mediatype = 'anime'
 
@@ -101,32 +101,32 @@ class libanilist(lib):
     }
 
     type_translate = {
-        None: utils.TYPE_UNKNOWN,
-        'TV': utils.TYPE_TV,
-        'TV_SHORT': utils.TYPE_TV,
-        'MOVIE': utils.TYPE_MOVIE,
-        'SPECIAL': utils.TYPE_SP,
-        'OVA': utils.TYPE_OVA,
-        'ONA': utils.TYPE_OVA,
-        'MUSIC': utils.TYPE_OTHER,
-        'MANGA': utils.TYPE_OTHER,
-        'NOVEL': utils.TYPE_OTHER,
-        'ONE_SHOT': utils.TYPE_OTHER,
+        None: utils.Type.UNKNOWN,
+        'TV': utils.Type.TV,
+        'TV_SHORT': utils.Type.TV,
+        'MOVIE': utils.Type.MOVIE,
+        'SPECIAL': utils.Type.SP,
+        'OVA': utils.Type.OVA,
+        'ONA': utils.Type.OVA,
+        'MUSIC': utils.Type.OTHER,
+        'MANGA': utils.Type.OTHER,
+        'NOVEL': utils.Type.OTHER,
+        'ONE_SHOT': utils.Type.OTHER,
     }
 
     status_translate = {
-        None: utils.STATUS_UNKNOWN,
-        'RELEASING': utils.STATUS_AIRING,
-        'FINISHED': utils.STATUS_FINISHED,
-        'NOT_YET_RELEASED': utils.STATUS_NOTYET,
-        'CANCELLED': utils.STATUS_CANCELLED,
+        None: utils.Status.UNKNOWN,
+        'RELEASING': utils.Status.AIRING,
+        'FINISHED': utils.Status.FINISHED,
+        'NOT_YET_RELEASED': utils.Status.NOTYET,
+        'CANCELLED': utils.Status.CANCELLED,
     }
 
     season_translate = {
-        utils.SEASON_WINTER: 'WINTER',
-        utils.SEASON_SPRING: 'SPRING',
-        utils.SEASON_SUMMER: 'SUMMER',
-        utils.SEASON_FALL: 'FALL',
+        utils.Season.WINTER: 'WINTER',
+        utils.Season.SPRING: 'SPRING',
+        utils.Season.SUMMER: 'SUMMER',
+        utils.Season.FALL: 'FALL',
     }
 
     # Supported signals for the data handler
@@ -378,10 +378,10 @@ fragment mediaListEntry on MediaList {
         self.check_credentials()
         self.msg.info(self.name, "Searching for {}...".format(criteria))
 
-        if method == utils.SEARCH_METHOD_KW:
+        if method == utils.SearchMethod.KW:
             query = "query ($query: String, $type: MediaType) { Page { media(search: $query, type: $type) {"
             variables = {'query': urllib.parse.quote_plus(criteria)}
-        elif method == utils.SEARCH_METHOD_SEASON:
+        elif method == utils.SearchMethod.SEASON:
             season, seasonYear = criteria
 
             query = "query ($season: MediaSeason, $seasonYear: Int, $type: MediaType) { Page { media(season: $season, seasonYear: $seasonYear, type: $type) {"
@@ -496,10 +496,10 @@ fragment mediaListEntry on MediaList {
         return aliases
 
     def _translate_type(self, orig_type):
-        return self.type_translate.get(orig_type, utils.TYPE_UNKNOWN)
+        return self.type_translate.get(orig_type, utils.Type.UNKNOWN)
 
     def _translate_status(self, orig_status):
-        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+        return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
     def _dict2date(self, item):
         if not item:

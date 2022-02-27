@@ -61,7 +61,7 @@ class libmal(lib):
         },
         'score_max': 10,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW, utils.SEARCH_METHOD_SEASON],
+        'search_methods': [utils.SearchMethod.KW, utils.SearchMethod.SEASON],
     }
     mediatypes['manga'] = {
         'has_progress': True,
@@ -84,31 +84,30 @@ class libmal(lib):
         },
         'score_max': 10,
         'score_step': 1,
-        'search_methods': [utils.SEARCH_METHOD_KW],
+        'search_methods': [utils.SearchMethod.KW],
     }
     default_mediatype = 'anime'
 
     type_translate = {
-        'tv': utils.TYPE_TV,
-        'movie': utils.TYPE_MOVIE,
-        'special': utils.TYPE_SP,
-        'ova': utils.TYPE_OVA,
-        'ona': utils.TYPE_OVA,
-        'music': utils.TYPE_OTHER,
-        'unknown': utils.TYPE_OTHER,
+        'tv': utils.Type.TV,
+        'movie': utils.Type.MOVIE,
+        'special': utils.Type.SP,
+        'ova': utils.Type.OVA,
+        'ona': utils.Type.OVA,
+        'music': utils.Type.OTHER,
     }
     
     status_translate = {
-        'currently_airing': utils.STATUS_AIRING,
-        'finished_airing': utils.STATUS_FINISHED,
-        'not_yet_aired': utils.STATUS_NOTYET,
+        'currently_airing': utils.Status.AIRING,
+        'finished_airing': utils.Status.FINISHED,
+        'not_yet_aired': utils.Status.NOTYET,
     }
     
     season_translate = {
-        utils.SEASON_WINTER: 'winter',
-        utils.SEASON_SPRING: 'spring',
-        utils.SEASON_SUMMER: 'summer',
-        utils.SEASON_FALL: 'fall',
+        utils.Season.WINTER: 'winter',
+        utils.Season.SPRING: 'spring',
+        utils.Season.SUMMER: 'summer',
+        utils.Season.FALL: 'fall',
     }
 
     # Supported signals for the data handler
@@ -301,11 +300,11 @@ class libmal(lib):
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields}
         
-        if method == utils.SEARCH_METHOD_KW:
+        if method == utils.SearchMethod.KW:
             url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
-        elif method == utils.SEARCH_METHOD_SEASON:
+        elif method == utils.SearchMethod.SEASON:
             season, season_year = criteria            
 
             url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])
@@ -383,7 +382,7 @@ class libmal(lib):
         return info
         
     def _translate_status(self, orig_status):
-        return self.status_translate.get(orig_status, utils.STATUS_UNKNOWN)
+        return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
     def _str2date(self, string):
         if string is None:

@@ -26,64 +26,146 @@ import json
 import difflib
 import pickle
 import uuid
+from enum import Enum, auto
 
 VERSION = '0.8.4'
 
 DATADIR = os.path.dirname(__file__) + '/data'
-LOGIN_PASSWD = 1
-LOGIN_OAUTH = 2
-LOGIN_OAUTH_PKCE = 3
 
-STATUS_UNKNOWN = 0
-STATUS_AIRING = 1
-STATUS_FINISHED = 2
-STATUS_NOTYET = 3
-STATUS_CANCELLED = 4
-STATUS_OTHER = 100
 
-STATUS_DICT = {
-    STATUS_UNKNOWN: 'Unknown',
-    STATUS_AIRING: 'Airing',
-    STATUS_FINISHED: 'Finished',
-    STATUS_NOTYET: 'Not yet aired',
-    STATUS_CANCELLED: 'Cancelled',
-    STATUS_OTHER: 'Other',
-}
+class Login(Enum):
+    PASSWD = auto()
+    OAUTH = auto()
+    OAUTH_PKCE = auto()
 
-TYPE_UNKNOWN = 0
-TYPE_TV = 1
-TYPE_MOVIE = 2
-TYPE_OVA = 3
-TYPE_SP = 4
-TYPE_OTHER = 100
 
-TRACKER_NOVIDEO = 0
-TRACKER_PLAYING = 1
-TRACKER_UNRECOGNIZED = 2
-TRACKER_NOT_FOUND = 3
-TRACKER_IGNORED = 4
+class BaseEnum(Enum):
+    @classmethod
+    def find(cls, name):
+        try:
+            return cls(name)
+        except ValueError:
+            pass
+        try:
+            return cls[name.upper().replace(' ', '_')]
+        except KeyError:
+            pass
+        return cls.UNKNOWN
 
-SEASON_WINTER = 1
-SEASON_SPRING = 2
-SEASON_SUMMER = 3
-SEASON_FALL = 4
+    @classmethod
+    def from_int(cls, index):
+        try:
+            return list(cls.__members__.values())[index]
+        except IndexError:
+            return cls.UNKNOWN
 
-SEARCH_METHOD_KW = 1
-SEARCH_METHOD_SEASON = 2
+    def __int__(self):
+        try:
+            return list(self.__class__.__members__.values()).index(self)
+        except IndexError:
+            return list(self.__class__.__members__.values()).index(self.__class__.UNKNOWN)
+
+    def __lt__(self, other):
+        return int(self) < int(other)
+
+    def __le__(self, other):
+        return int(self) <= int(other)
+
+    def __gt__(self, other):
+        return int(self) > int(other)
+
+    def __ge__(self, other):
+        return int(self) >= int(other)
+
+    def __add__(self, other):
+        if isinstance(other, str):
+            return str(self) + other
+        else:
+            return super().__add__(other)
+
+    def __str__(self):
+        if isinstance(self.value, (str,)):
+            return self.value
+        else:
+            return self.name.replace('_', ' ')
+
+
+class Status(BaseEnum):
+    UNKNOWN = 'Unknown'
+    ONGOING = 'Ongoing'
+    FINISHED = 'Finished'
+    NOTYET = 'Not yet started'
+    CANCELLED = 'Cancelled'
+    OTHER = 'Other'
+
+    # aliases
+    AIRING = ONGOING
+    RELEASING = ONGOING
+    PUBLISHING = ONGOING
+    CURRENTLY_AIRING = ONGOING
+    FINISHED_AIRING = FINISHED
+    NOT_YET_AIRED = NOTYET
+    NOT_YET_RELEASED = NOTYET
+    NOT_YET_PUBLISHED = NOTYET
+
+
+class Type(BaseEnum):
+    UNKNOWN = "Unknown"
+    OTHER = "Other"
+
+    # anime
+    TV = "TV"
+    MOVIE = "Movie"
+    OVA = "OVA"
+    SPECIAL = "Special"
+
+    # manga
+    MANGA = "Manga"
+    NOVEL = "Novel"
+    ONE_SHOT = "One Shot"
+
+    # aliases
+    SP = SPECIAL
+    MUSIC = OTHER
+    ONA = OVA
+
+
+class Tracker(Enum):
+    NOVIDEO = auto()
+    PLAYING = auto()
+    UNRECOGNIZED = auto()
+    NOT_FOUND = auto()
+    IGNORED = auto()
+
+
+class Season(Enum):
+    WINTER = 'Winter'
+    SPRING = 'Spring'
+    SUMMER = 'Summer'
+    FALL = 'Fall'
+
+
+class SearchMethod(Enum):
+    KEYWORD = auto()
+    SEASON = auto()
+
+    # aliases
+    KW = KEYWORD
+
 
 HOME = os.path.expanduser("~")
 EXTENSIONS = ('.mkv', '.mp4', '.avi', '.ts')
 
 # Put the available APIs here
 available_libs = {
-    'anilist':   ('Anilist',      DATADIR + '/anilist.jpg',     LOGIN_OAUTH,
-                 "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"),
-    'kitsu':     ('Kitsu',        DATADIR + '/kitsu.png',       LOGIN_PASSWD),
-    'mal':       ('MyAnimeList',  DATADIR + '/mal.jpg',     LOGIN_OAUTH_PKCE,
-                 "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s"),
-    'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   LOGIN_OAUTH,
+    'anilist':   ('Anilist',      DATADIR + '/anilist.jpg',     Login.OAUTH,
+                  "https://anilist.co/api/v2/oauth/authorize?client_id=537&response_type=token"),
+    'kitsu':     ('Kitsu',        DATADIR + '/kitsu.png',       Login.PASSWD),
+    'mal':       ('MyAnimeList',  DATADIR + '/mal.jpg',     Login.OAUTH_PKCE,
+                  "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s"),
+    'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   Login.OAUTH,
                   "https://shikimori.org/oauth/authorize?client_id=Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro&redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&response_type=code&scope=user_rates"),
-    'vndb':      ('VNDB',         DATADIR + '/vndb.jpg',        LOGIN_PASSWD),
+    'vndb':      ('VNDB',         DATADIR + '/vndb.jpg',        Login.PASSWD),
 }
 
 available_trackers = [
@@ -97,12 +179,14 @@ available_trackers = [
     ('win32', 'Win32'),
 ]
 
+
 def oauth_generate_pkce() -> str:
     import secrets
-    
+
     token = secrets.token_urlsafe(100)
     return token[:128]
-    
+
+
 def parse_config(filename, default):
     config = copy.copy(default)
 
@@ -263,12 +347,12 @@ def change_permissions(filename, mode):
 def estimate_aired_episodes(show):
     """ Estimate how many episodes have passed since airing """
 
-    if show['status'] == STATUS_FINISHED:
+    if show['status'] == Status.FINISHED:
         return show['total']
-    elif show['status'] == STATUS_NOTYET:
+    elif show['status'] == Status.NOTYET:
         return 0
     # It's airing, so we make an estimate based on available information
-    elif show['status'] == STATUS_AIRING:
+    elif show['status'] == Status.AIRING:
         if 'next_ep_number' in show:  # Do we have the upcoming episode number?
             return show['next_ep_number']-1
         elif show['start_date']:  # Do we know when it started? Let's just assume 1 episode = 1 week
@@ -342,7 +426,7 @@ def spawn_process(arg_list):
     Helper generic function to spawn a subprocess.
     Does a double fork on *nix to prevent zombie processes.
     """
-    
+
     if not sys.platform.startswith('win32'):
         try:
             pid = os.fork()

@@ -71,9 +71,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
             color = 'is_queued'
         elif self.library.get(show['id']) and max(self.library.get(show['id'])) > show['my_progress']:
             color = 'new_episode'
-        elif show['status'] == utils.STATUS_AIRING:
+        elif show['status'] == utils.Status.AIRING:
             color = 'is_airing'
-        elif show['status'] == utils.STATUS_NOTYET:
+        elif show['status'] == utils.Status.NOTYET:
             color = 'not_aired'
         else:
             color = None
@@ -249,10 +249,10 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
 class AddTableModel(QtCore.QAbstractTableModel):
     columns = ["Name", "Type", "Total"]
-    types = {utils.TYPE_TV: "TV",
-             utils.TYPE_MOVIE: "Movie",
-             utils.TYPE_OVA: "OVA",
-             utils.TYPE_SP: "Special"}
+    types = {utils.Type.TV: "TV",
+             utils.Type.MOVIE: "Movie",
+             utils.Type.OVA: "OVA",
+             utils.Type.SP: "Special"}
 
     def __init__(self, parent=None):
         self.results = None
@@ -358,13 +358,13 @@ class AddListModel(QtCore.QAbstractListModel):
             return self.thumbs.get(row)
         elif role == QtCore.Qt.BackgroundRole:
             t = self.results[row].get('type')
-            if t == utils.TYPE_TV:
+            if t == utils.Type.TV:
                 return QtGui.QColor(202, 253, 150)
-            elif t == utils.TYPE_MOVIE:
+            elif t == utils.Type.MOVIE:
                 return QtGui.QColor(150, 202, 253)
-            elif t == utils.TYPE_OVA:
+            elif t == utils.Type.OVA:
                 return QtGui.QColor(253, 253, 150)
-            elif t == utils.TYPE_SP:
+            elif t == utils.Type.SP:
                 return QtGui.QColor(253, 150, 150)
             else:
                 return QtGui.QColor(250, 250, 250)
