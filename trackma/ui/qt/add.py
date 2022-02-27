@@ -83,7 +83,7 @@ class AddDialog(QDialog):
             self.season_year = QSpinBox()
 
             today = date.today()
-            current_season = (today.month - 1) / 3
+            current_season = (today.month - 1) // 3
 
             self.season_year.setRange(1900, today.year)
             self.season_year.setValue(today.year)
