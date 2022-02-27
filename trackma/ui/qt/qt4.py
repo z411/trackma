@@ -14,19 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import signal
-import sys
-from trackma.ui.gtk.application import TrackmaApplication
-from trackma import utils
-
-
-def main():
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-    print("Trackma GTK v{}".format(utils.VERSION))
-    app = TrackmaApplication()
-    sys.exit(app.run(sys.argv))
-
-
 if __name__ == '__main__':
-    main()
+    from . import main
+    main(force_qt4=True)

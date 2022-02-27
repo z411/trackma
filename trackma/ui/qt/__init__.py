@@ -16,74 +16,65 @@
 
 
 from trackma.ui.qt.mainwindow import MainWindow
-from trackma import messenger
 from trackma import utils
 import sys
 import os
 
-debug = False
-force_qt4 = False
 
+def main(force_qt4=False):
+    print("Trackma-qt v{}".format(utils.VERSION))
 
-print("Trackma-qt v{}".format(utils.VERSION))
+    debug = False
 
-if '-h' in sys.argv:
-    print("Usage: trackma-qt [options]")
-    print()
-    print('Options:')
-    print(' -d  Shows debugging information')
-    print(' -4  Force Qt4')
-    print(' -h  Shows this help')
-    sys.exit(0)
-if '-d' in sys.argv:
-    print('Showing debug information.')
-    debug = True
-if '-4' in sys.argv:
-    print('Forcing Qt4.')
-    force_qt4 = True
+    if '-h' in sys.argv:
+        print("Usage: trackma-qt [options]")
+        print()
+        print('Options:')
+        print(' -d  Shows debugging information')
+        print(' -4  Force Qt4')
+        print(' -h  Shows this help')
+        sys.exit(0)
+    if '-d' in sys.argv:
+        print('Showing debug information.')
+        debug = True
+    if '-4' in sys.argv:
+        print('Forcing Qt4.')
+        force_qt4 = True
 
-if not force_qt4:
+    if not force_qt4:
+        try:
+            from PyQt5.QtWidgets import QApplication, QMessageBox
+            os.environ['PYQT5'] = "1"
+        except ImportError:
+            print("Couldn't import Qt5 dependencies. "
+                  "Make sure you installed the PyQt5 package.")
+
+    if 'PYQT5' not in os.environ:
+        try:
+            import sip
+            sip.setapi('QVariant', 2)
+            from PyQt4.QtGui import QApplication, QMessageBox
+        except ImportError:
+            print("Couldn't import Qt4 dependencies. "
+                  "Make sure you installed the PyQt4 package.")
+            sys.exit(-1)
+
     try:
-        from PyQt5.QtWidgets import QApplication, QMessageBox
-        os.environ['PYQT5'] = "1"
-    except ImportError:
-        print("Couldn't import Qt5 dependencies. "
-              "Make sure you installed the PyQt5 package.")
-
-if 'PYQT5' not in os.environ:
-    try:
-        import sip
-        sip.setapi('QVariant', 2)
-        from PyQt4.QtGui import QApplication, QMessageBox
-    except ImportError:
-        print("Couldn't import Qt4 dependencies. "
-              "Make sure you installed the PyQt4 package.")
-        sys.exit(-1)
-
-
-try:
-    from PIL import Image
-    os.environ['imaging_available'] = "1"
-except ImportError:
-    try:
-        import Image
+        from PIL import Image
         os.environ['imaging_available'] = "1"
     except ImportError:
-        print("Warning: PIL or Pillow isn't available. "
-              "Preview images will be disabled.")
+        try:
+            import Image
+            os.environ['imaging_available'] = "1"
+        except ImportError:
+            print("Warning: PIL or Pillow isn't available. "
+                  "Preview images will be disabled.")
 
-
-def main():
     app = QApplication(sys.argv)
     app.setApplicationName("trackma")
     app.setDesktopFileName("trackma")
     try:
-        mainwindow = MainWindow(debug)
+        MainWindow(debug)
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
-        QMessageBox.critical(None, 'Fatal Error',
-                             "{0}".format(e), QMessageBox.Ok)
-
-
-if __name__ == '__main__':
-    main()
+        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
