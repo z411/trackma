@@ -228,7 +228,10 @@ class libmal(lib):
         if not self._get_userconfig('access_token'):
             self._request_access_token(False)
         elif (timestamp+60) > self._get_userconfig('expires'):
-            self._request_access_token(True)
+            try:
+                self._request_access_token(True)
+            except utils.APIError:
+                self._request_access_token(False)
         else:
             self.logged_in = True
 
