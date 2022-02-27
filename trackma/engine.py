@@ -863,7 +863,7 @@ class Engine:
                             (show, show_ep_start), self.redirections, tracker_list)
                         show_ep_end = show_ep_start = show_ep
 
-                        self.msg.debug(self.name, "Redirected to {} {}".format(
+                        self.msg.debug(self.name, "Redirected to: {} {}".format(
                             show['title'], show_ep))
                         library_cache[filename] = (show['id'], show_ep)
                     else:
@@ -872,8 +872,9 @@ class Engine:
 
                     show_id = show['id']
                 else:
-                    self.msg.debug(
-                        self.name, "Not a show, skipping: {}".format(fullpath))
+                    self.msg.debug(self.name,
+                                   "Unable to match '{}', skipping: {}"
+                                   .format(show_title, fullpath))
                     library_cache[filename] = None
             else:
                 self.msg.debug(
