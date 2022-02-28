@@ -204,10 +204,10 @@ class TrackerBase(object):
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.Tracker.PLAYING:
-                self.msg.info('Will update %s %d' %
+                self.msg.info('Will update %s - %d' %
                               (show['title'], episode))
             elif state == utils.Tracker.NOT_FOUND:
-                self.msg.info('Will add %s %d' %
+                self.msg.info('Will add %s - %d' %
                               (show['title'], episode))
 
             self._update_show(state, show_tuple)
@@ -240,7 +240,6 @@ class TrackerBase(object):
         if filename:
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
-                self.msg.debug("Same filename as before. Skipping.")
                 return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename

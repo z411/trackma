@@ -431,7 +431,7 @@ class Engine:
 
             aie = AnimeInfoExtractor(filename)
             (show_title, ep) = aie.getName(), aie.getEpisode()
-            self.msg.debug("Guessed {}".format(show_title))
+            self.msg.debug("Show guess: {}".format(show_title))
 
             if show_title:
                 tracker_list = self._get_tracker_list()
@@ -841,6 +841,7 @@ class Engine:
                 show = utils.guess_show(show_title, tracker_list)
                 if show:
                     self.msg.debug("Adding to library: {}".format(fullpath))
+                    self.msg.debug("Show guess: {}".format(show_title))
 
                     if show_ep_start == show_ep_end:
                         # TODO : Support redirections for episode ranges
@@ -848,7 +849,7 @@ class Engine:
                             (show, show_ep_start), self.redirections, tracker_list)
                         show_ep_end = show_ep_start = show_ep
 
-                        self.msg.debug("Redirected to: {} {}".format(
+                        self.msg.debug("Redirected to: {} - {}".format(
                             show['title'], show_ep))
                         library_cache[filename] = (show['id'], show_ep)
                     else:
