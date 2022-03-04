@@ -125,6 +125,13 @@ class libkitsu(lib):
     _client_id = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
 
+    type_translate = {'ONA': utils.Type.ONA,
+                      'OVA': utils.Type.OVA,
+                      'TV': utils.Type.TV,
+                      'movie': utils.Type.MOVIE,
+                      'music': utils.Type.MUSIC,
+                      'special': utils.Type.SP}
+
     status_translate = {'Currently Airing': utils.Status.AIRING,
                         'Finished Airing': utils.Status.FINISHED,
                         'Not Yet Aired': utils.Status.NOTYET}
@@ -556,8 +563,8 @@ class libkitsu(lib):
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
-            'type':        self.type_translate.get(attr['subtype'], utils.TYPE_UNKNOWN),
-            'status':      self.status_translate.get(attr['status'], utils.STATUS_UNKNOWN),
+            'type':        self.type_translate.get(attr['subtype'], utils.Type.UNKNOWN),
+            'status':      self.status_translate.get(attr['status'], utils.Type.UNKNOWN),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
