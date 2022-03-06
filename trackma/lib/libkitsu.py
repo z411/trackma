@@ -564,7 +564,7 @@ class libkitsu(lib):
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'type':        self.type_translate.get(attr['subtype'], utils.Type.UNKNOWN),
-            'status':      self.status_translate.get(attr['status'], utils.Type.UNKNOWN),
+            'status':      self.status_translate.get(attr['status'], utils.Status.UNKNOWN),
             'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
