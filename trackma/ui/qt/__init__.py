@@ -74,7 +74,8 @@ def main(force_qt4=False):
     app.setApplicationName("trackma")
     app.setDesktopFileName("trackma")
     try:
-        MainWindow(debug)
+        # keep the variable around to prevent it from being gc'ed
+        main_window = MainWindow(debug)
         sys.exit(app.exec_())
     except utils.TrackmaFatal as e:
         QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
