@@ -945,7 +945,7 @@ class Engine:
 
         if show:
             playing_next = False
-            if not playep:
+            if playep <= 0:
                 playep = show['my_progress'] + 1
                 playing_next = True
 
@@ -954,8 +954,11 @@ class Engine:
 
             self.msg.info(self.name, "Getting %s %s from library..." %
                           (show['title'], playep))
-            filename = self.get_episode_path(show, playep)
-            endep = playep
+
+            try:
+                filename = self.get_episode_path(show, playep)
+            except utils.EngineError:
+                filename = None
 
             if filename:
                 self.msg.info(self.name, 'Found. Starting player...')
@@ -967,8 +970,21 @@ class Engine:
 
                 args.append(filename)
                 return args
-            else:
-                raise utils.EngineError('Episode file not found.')
+
+            anicli = shutil.which("ani-cli")
+            if anicli:
+                self.msg.info(self.name, 'Not found. Delegating to ani-cli...')
+
+                query = show["title"].strip() # Needs Sanitization?
+                args = [anicli, "-q", "best", "-a", str(playep), query]
+                cmd = " ".join(args[:-1]) + f" '{query}'"
+
+                self.msg.info(self.name, cmd)
+                return args
+
+            raise utils.EngineError(
+                'Episode file not found.\nani-cli not available')
+
 
     def undoall(self):
         """Clears the data handler queue and discards any unsynced change."""
