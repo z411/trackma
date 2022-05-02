@@ -16,6 +16,7 @@
 
 from trackma import utils
 from trackma import messenger
+import trackma
 from trackma.accounts import AccountManager
 from trackma.ui.qt.util import getIcon, FilterBar
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
@@ -76,7 +77,10 @@ class MainWindow(QMainWindow):
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
-        QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
+        if os.system != "Win32":
+            QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
+        else:
+            QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.ico'))
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
