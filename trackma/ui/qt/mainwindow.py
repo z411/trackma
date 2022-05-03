@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
-        if os.system != "Win32":
+        if os.name != "nt":
             QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
         else:
             QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.ico'))
