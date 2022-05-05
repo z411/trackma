@@ -46,7 +46,7 @@ class TrackerBase(object):
     }
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
-        self.msg = messenger
+        self.msg = messenger.with_classname(self.name)
         self.msg.info(self.name, 'Initializing...')
 
         self.list = tracker_list
@@ -71,7 +71,7 @@ class TrackerBase(object):
 
     def set_message_handler(self, message_handler):
         """Changes the message handler function on the fly."""
-        self.msg = message_handler
+        self.msg = message_handler.with_classname(self.name)
 
     def disable(self):
         self.msg.info(self.name, 'Unloading...')

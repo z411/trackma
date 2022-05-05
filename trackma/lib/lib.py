@@ -68,7 +68,7 @@ class lib:
     def __init__(self, messenger, account, userconfig):
         """Initializes the API"""
         self.userconfig = userconfig
-        self.msg = messenger
+        self.msg = messenger.with_classname(self.name)
         self.msg.info(self.name, 'Initializing...')
 
         if not userconfig.get('mediatype'):
@@ -160,4 +160,4 @@ class lib:
         return self.mediatypes[self.mediatype]
 
     def set_message_handler(self, message_handler):
-        self.msg = message_handler
+        self.msg = message_handler.with_classname(self.name)

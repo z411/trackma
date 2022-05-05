@@ -75,7 +75,7 @@ class Engine:
                }
 
     def __init__(self, account=None, message_handler=None, accountnum=None):
-        self.msg = messenger.Messenger(message_handler)
+        self.msg = messenger.Messenger(message_handler, self.name)
 
         # Utility parameter to get the account from the account manager
         if accountnum:
@@ -231,7 +231,7 @@ class Engine:
 
     def set_message_handler(self, message_handler):
         """Changes the message handler function on the fly."""
-        self.msg = messenger.Messenger(message_handler)
+        self.msg = messenger.Messenger(message_handler, self.name)
         self.data_handler.set_message_handler(self.msg)
 
     def start(self):

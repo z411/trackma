@@ -57,7 +57,7 @@ class Data:
 
     def __init__(self, messenger, config, account, mediatype):
         """Checks if the config is correct and creates an API object."""
-        self.msg = messenger
+        self.msg = messenger.with_classname(self.name)
         self.config = config
         self.msg.info(self.name, "Initializing...")
 
@@ -123,7 +123,7 @@ class Data:
             raise utils.DataFatal("Invalid signal.")
 
     def set_message_handler(self, message_handler):
-        self.msg = message_handler
+        self.msg = message_handler.with_classname(self.name)
         self.api.set_message_handler(self.msg)
 
     def start(self):

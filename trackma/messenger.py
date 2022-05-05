@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import traceback
+
 TYPE_DEBUG = 1
 TYPE_INFO = 2
 # TYPE_ERROR = 3
@@ -24,27 +26,40 @@ TYPE_WARN = 5
 class Messenger:
     _handler = None
 
-    def __init__(self, handler):
+    def __init__(self, handler, classname):
         self._handler = handler
+        self.classname = classname
 
     def set_handler(self, handler):
         self._handler = handler
 
-    def debug(self, classname, msg):
-        if self._handler:
-            self._handler(classname, TYPE_DEBUG, msg)
+    def with_classname(self, classname):
+        return Messenger(self._handler, classname)
 
-    def info(self, classname, msg):
+    def _call_handler(self, msgs, msg_type):
         if self._handler:
-            self._handler(classname, TYPE_INFO, msg)
+            cn, msg = self._parse_msgs(msgs)
+            self._handler(cn, msg_type, msg)
 
-    def warn(self, classname, msg):
-        if self._handler:
-            self._handler(classname, TYPE_WARN, msg)
+    def _parse_msgs(self, msgs):
+        if len(msgs) >= 2:
+            return (msgs[0], " ".join(msgs[1:]) if msgs[2:] else msgs[1])
+        return (self.classname, msgs[0])
 
-    def exception(self, classname, exc_info):
-        import traceback
+    def debug(self, *msgs):
+        self._call_handler(msgs, TYPE_DEBUG)
+
+    def info(self, *msgs):
+        self._call_handler(msgs, TYPE_INFO)
+
+    def warn(self, *msgs):
+        self._call_handler(msgs, TYPE_WARN)
+
+    def exception(self, *msgs):
+        if not self._handler:
+            return
+        cn, exc_info = self._parse_msgs(msgs[:2])
         exc_type, exc_value, exc_traceback = exc_info
         for block in traceback.format_exception(exc_type, exc_value, exc_traceback):
             for line in block.splitlines():
-                self.debug(classname, line)
+                self._handler(cn, TYPE_DEBUG, line)
