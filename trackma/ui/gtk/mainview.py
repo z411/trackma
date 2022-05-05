@@ -753,7 +753,10 @@ class NotebookPage(Gtk.ScrolledWindow):
         for i in range(1, total + 1):
             mb_playep = Gtk.CheckMenuItem(str(i))
             if i <= show['my_progress']:
-                mb_playep.set_active(True)
+                mb_playep.set_state(Gtk.StateType.INCONSISTENT)
+            elif i == show['my_progress'] + 1:
+                mb_playep.set_label(str(i) + " - Next")
+            mb_playep.set_active(i in library_episodes)
             mb_playep.connect("activate",
                               self._on_mb_activate,
                               ShowEventType.PLAY_EPISODE, i)
