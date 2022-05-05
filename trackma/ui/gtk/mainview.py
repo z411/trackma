@@ -725,6 +725,8 @@ class NotebookPage(Gtk.ScrolledWindow):
 
         mb_playep = Gtk.MenuItem("Play episode")
         mb_playep.set_submenu(menu_eps)
+        if not menu_eps.get_children():
+            mb_playep.set_state(Gtk.StateType.INSENSITIVE)
         menu.append(mb_playep)
 
         menu.append(mb_info)
@@ -740,7 +742,12 @@ class NotebookPage(Gtk.ScrolledWindow):
         menu.popup_at_pointer(event)
 
     def _build_episode_menu(self, show):
-        total = show['total'] or utils.estimate_aired_episodes(show) or 0
+        library_episodes = set(self._engine.library().get(show['id'], ()))
+        total = show['total'] or max(
+            show['my_progress'],
+            *library_episodes,
+            utils.estimate_aired_episodes(show)
+        )
 
         menu_eps = Gtk.Menu()
         for i in range(1, total + 1):
