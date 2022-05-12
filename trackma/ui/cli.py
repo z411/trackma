@@ -470,7 +470,7 @@ class Trackma_cmd(cmd.Cmd):
         """
         Shows information about the tracker, if it's running.
 
-        :usage trackmer
+        :usage tracker
         """
         try:
             info = self.engine.tracker_status()
