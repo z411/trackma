@@ -725,8 +725,7 @@ class NotebookPage(Gtk.ScrolledWindow):
 
         mb_playep = Gtk.MenuItem("Play episode")
         mb_playep.set_submenu(menu_eps)
-        if not menu_eps.get_children():
-            mb_playep.set_state(Gtk.StateType.INSENSITIVE)
+        mb_playep.set_sensitive(bool(menu_eps.get_children()))
         menu.append(mb_playep)
 
         menu.append(mb_info)
@@ -748,15 +747,18 @@ class NotebookPage(Gtk.ScrolledWindow):
             *library_episodes,
             utils.estimate_aired_episodes(show)
         )
+        next_ep = show['my_progress'] + 1
 
         menu_eps = Gtk.Menu()
         for i in range(1, total + 1):
             mb_playep = Gtk.CheckMenuItem(str(i))
-            if i <= show['my_progress']:
-                mb_playep.set_state(Gtk.StateType.INCONSISTENT)
-            elif i == show['my_progress'] + 1:
+            if i == next_ep:
                 mb_playep.set_label(str(i) + " - Next")
+                mb_playep.set_margin_left(10)
+                menu_eps.set_focus_child(mb_playep)
+            mb_playep.set_inconsistent(i < next_ep)
             mb_playep.set_active(i in library_episodes)
+            mb_playep.set_draw_as_radio(True)
             mb_playep.connect("activate",
                               self._on_mb_activate,
                               ShowEventType.PLAY_EPISODE, i)
