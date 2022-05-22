@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import gzip
 import json
 import urllib.parse
 import urllib.request
@@ -244,8 +245,8 @@ class libmal(lib):
         self.check_credentials()
         shows = {}
         
-        fields = 'id,alternative_titles,title,main_picture,' + self.total_str + ',status'
-        listfields = self.watched_str + ',score,status,start_date,finish_date'
+        fields = 'id,alternative_titles,title,start_date,main_picture,status,' + self.total_str
+        listfields = 'score,status,start_date,finish_date,' + self.watched_str
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
             'limit': self.library_page_limit
@@ -269,6 +270,7 @@ class libmal(lib):
                     'image_thumb': item['node'].get('main_picture', {}).get('medium'),
                     'total': item['node'][self.total_str],
                     'status': self._translate_status(item['node']['status']),
+                    'start_date': self._str2date(item['node'].get('start_date')),
                     'my_progress': item['list_status'][self.watched_str],
                     'my_score': item['list_status']['score'],
                     'my_status': item['list_status']['status'],
