@@ -113,9 +113,9 @@ class AccountDialog(QDialog):
                                          password=acct['password'],
                                          api=acct['api'])
             if result:
-                (username, password, api) = result
+                (username, password, api, extra) = result
                 self.accountman.edit_account(
-                    selected_account_num, username, password, api)
+                    selected_account_num, username, password, api, extra)
                 self.rebuild()
         except IndexError:
             self._error("Please select an account.")
