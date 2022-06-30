@@ -1240,7 +1240,7 @@ class MainWindow(QMainWindow):
         if not self.accountman_widget:
             self.accountman_create()
         else:
-            self.accountman_widget.update()
+            self.accountman_widget.rebuild()
 
         self.accountman_widget.setModal(True)
         self.accountman_widget.show()
