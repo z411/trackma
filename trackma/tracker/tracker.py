@@ -270,12 +270,15 @@ class TrackerBase(object):
                 return (utils.Tracker.UNRECOGNIZED, None)
 
             playing_show = utils.guess_show(show_title, self.list)
-            self.msg.debug(self.name, "Show guess: {}: {}".format(
-                show_title, playing_show))
+            self.msg.debug(self.name, "Show guess: {}: {} ({})".format(
+                show_title, playing_show, show_ep))
 
             if playing_show:
-                (playing_show, show_ep) = utils.redirect_show(
+                (redirected_show, redirected_ep) = utils.redirect_show(
                     (playing_show, show_ep), self.redirections, self.list)
+                if (redirected_show, redirected_ep) != (playing_show, show_ep):
+                    self.msg.debug(self.name, "Redirected to: {} ({})".format(redirected_show, redirected_ep))
+                    (playing_show, show_ep) = (redirected_show, redirected_ep)
 
                 return (utils.Tracker.PLAYING, (playing_show, show_ep))
             else:
