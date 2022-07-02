@@ -1,1 +1,2 @@
-from trackma.extras.AnimeInfoExtractor import AnimeInfoExtractor
+from .AnimeInfoExtractor import AnimeInfoExtractor
+from .AnitopyWrapper import AnitopyWrapper

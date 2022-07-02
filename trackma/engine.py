@@ -27,7 +27,6 @@ from decimal import Decimal
 from trackma import data
 from trackma import messenger
 from trackma import utils
-from trackma.extras import AnimeInfoExtractor
 from trackma.extras import redirections
 
 
@@ -281,6 +280,14 @@ class Engine:
                 self.msg.warn("Error parsing anime-relations.txt!")
                 self.msg.debug("{}".format(e))
 
+        # Determine parser library
+        try:
+            self.msg.debug(self.name, "Initializing parser...")
+            self.parser_class = self._get_parser_class(self.config['title_parser'])
+        except ImportError:
+            self.msg.warn(self.name, "Couldn't import specified parser: {}".format(
+                self.config['title_parser']))
+
         # Rescan library if necessary
         if self.config['library_autoscan']:
             try:
@@ -429,8 +436,8 @@ class Engine:
             # Guess show by filename
             self.msg.debug("Guessing by filename.")
 
-            aie = AnimeInfoExtractor(filename)
-            (show_title, ep) = aie.getName(), aie.getEpisode()
+            anime_info = self.parser_class(filename)
+            (show_title, ep) = anime_info.getName(), anime_info.getEpisode()
             self.msg.debug("Show guess: {}".format(show_title))
 
             if show_title:
@@ -834,9 +841,9 @@ class Engine:
             # the information from the filename and do a fuzzy search
             # on the user's list. Cache the information.
             # If it fails, cache it as None.
-            aie = AnimeInfoExtractor(filename)
-            show_title = aie.getName()
-            (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
+            anime_info = self.parser_class(filename)
+            show_title = anime_info.getName()
+            (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
                 show = utils.guess_show(show_title, tracker_list)
                 if show:
@@ -1053,7 +1060,7 @@ class Engine:
         return new_status
 
     def _get_tracker_class(self, ttype):
-        # Choose the tracker we want to tart
+        # Choose the tracker we want to start
         if ttype == 'plex':
             from trackma.tracker.plex import PlexTracker
             return PlexTracker
@@ -1093,3 +1100,16 @@ class Engine:
                 return self._get_tracker_class('inotify_auto')
             except ImportError:
                 return self._get_tracker_class('polling')
+
+    def _get_parser_class(self, parser):
+        # Choose the parser we want to use
+        if parser == 'aie':
+            from trackma.extras import AnimeInfoExtractor
+            self.msg.debug(self.name, 'Using AnimeInfoExtractor parser')
+            return AnimeInfoExtractor
+        if parser == 'anitopy':
+            from trackma.extras import AnitopyWrapper
+            self.msg.debug(self.name, 'Using Anitopy parser')
+            return AnitopyWrapper
+        else:
+            return self._get_parser_class('aie')

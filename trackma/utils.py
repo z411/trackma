@@ -584,6 +584,7 @@ config_defaults = {
     'redirections_url': 'https://raw.githubusercontent.com/erengy/anime-relations/master/anime-relations.txt',
     'redirections_time': 1,
     'use_hooks': True,
+    'title_parser': 'aie',
 }
 
 userconfig_defaults = {
