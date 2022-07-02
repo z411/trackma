@@ -382,10 +382,7 @@ class Trackma_cmd(cmd.Cmd):
         print()
 
         for line in details['extra']:
-            if line[0] == 'Status':
-                print(f"{line[0]}: {utils.Status.DICT[line[1]]}")
-            else:
-                print("%s: %s" % line)
+            print("%s: %s" % line)
 
     def do_search(self, args):
         """
