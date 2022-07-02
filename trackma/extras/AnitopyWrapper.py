@@ -27,8 +27,13 @@ class AnitopyWrapper():
     some edge cases that Anitopy cannot solve.
     """
 
-    def __init__(self, filename):
+    name = 'Parser'
+
+    def __init__(self, msg, filename):
+        self.msg = msg
+        self.original_file_name = filename
         self.file_name = filename
+
         self.__preProcessFilename()
         self.__trimFilename()
         self.__parseFilename()
@@ -54,19 +59,25 @@ class AnitopyWrapper():
         (ep_start, ep_end) = (None, None)
 
         if hasattr(self, 'episode_number'):
-            if type(self.episode_number) is list:
-                ep_start = Decimal(self.episode_number[0])
-                ep_end = Decimal(self.episode_number[-1])
-            else:
-                ep_start = Decimal(self.episode_number)
-                if force_numbers:
-                    ep_end = ep_start
-        else:
-            if force_numbers:
-                return (1, 1)
+            try:
+                if type(self.episode_number) is list:
+                    ep_start = Decimal(self.episode_number[0])
+                    ep_end = Decimal(self.episode_number[-1])
+                else:
+                    ep_start = Decimal(self.episode_number)
+                    if force_numbers:
+                        ep_end = ep_start
+            except ArithmeticError:
+                self.msg.warn(self.name, "Unable to parse episode number '{}' of: {}"
+                                         .format(self.episode_number, self.original_file_name))
 
         if force_numbers:
+            if ep_start is None:
+                ep_start = 1
+            if ep_end is None:
+                ep_end = ep_start
             (ep_start, ep_end) = (int(ep_start), int(ep_end))
+
         return (ep_start, ep_end)
 
     def __preProcessFilename(self):
@@ -175,7 +186,7 @@ class AnitopyWrapper():
                 # Ignore non-episodes such as openings, endings, previews etc.
                 if t.upper() in anitype_invalid:
                     for attr in list(self.__dict__.keys()):
-                        if attr not in ('file_name', 'anime_type'):
+                        if attr not in ('file_name', 'msg', 'original_file_name', 'anime_type'):
                             delattr(self, attr)
                     return
                 if t not in self.anime_title and t.upper() in anitype_specials:

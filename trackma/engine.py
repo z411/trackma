@@ -436,7 +436,7 @@ class Engine:
             # Guess show by filename
             self.msg.debug("Guessing by filename.")
 
-            anime_info = self.parser_class(filename)
+            anime_info = self.parser_class(self.msg, filename)
             (show_title, ep) = anime_info.getName(), anime_info.getEpisode()
             self.msg.debug("Show guess: {}".format(show_title))
 
@@ -841,7 +841,7 @@ class Engine:
             # the information from the filename and do a fuzzy search
             # on the user's list. Cache the information.
             # If it fails, cache it as None.
-            anime_info = self.parser_class(filename)
+            anime_info = self.parser_class(self.msg, filename)
             show_title = anime_info.getName()
             (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
