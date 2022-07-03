@@ -110,6 +110,7 @@ Trackma also has user-provided packages for several distributions.
 - **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
 - **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
 - **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
+- **NixOS:** https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix
 - **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
 - **Void Linux:** https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template
 
