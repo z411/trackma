@@ -196,7 +196,7 @@ class AnitopyWrapper():
             if hasattr(self, 'episode_title'):
                 for t in anitype_specials:
                     m = re.search(
-                        r'{0}\b'.format(t),
+                        r'{0}\b'.format(re.escape(t)),
                         self.episode_title, flags=re.IGNORECASE)
                     if m:
                         self.anime_title += ' ' + m.group(0)
