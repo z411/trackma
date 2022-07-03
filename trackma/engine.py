@@ -1104,11 +1104,11 @@ class Engine:
     def _get_parser_class(self, parser):
         # Choose the parser we want to use
         if parser == 'aie':
-            from trackma.extras import AnimeInfoExtractor
+            from trackma.parser.animeinfoextractor import AnimeInfoExtractor
             self.msg.debug(self.name, 'Using AnimeInfoExtractor parser')
             return AnimeInfoExtractor
         if parser == 'anitopy':
-            from trackma.extras import AnitopyWrapper
+            from trackma.parser.anitopy import AnitopyWrapper
             self.msg.debug(self.name, 'Using Anitopy parser')
             return AnitopyWrapper
         else:
