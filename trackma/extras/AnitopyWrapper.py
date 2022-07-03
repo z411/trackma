@@ -94,8 +94,8 @@ class AnitopyWrapper():
                               + self.file_name[m.end():])
 
         # Remove all the path separators (except the last one, we'll need it later)
-        self.file_name = re.sub(
-            r'{0}(?=.+{0})'.format(os.path.sep), r' ', self.file_name)
+        *parts, last_part = self.file_name.split(os.path.sep)
+        self.file_name = ' '.join(parts) + last_part
 
         # Anitopy can parse S01E01 properly, but not S01OVA01, S01S01, S01NCOP01 etc.
         # So we'll need to break things down for the parser.
