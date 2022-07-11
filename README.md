@@ -131,7 +131,7 @@ Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 Development
 -----------
 
-The code is hosted as a git repository in github:
+The code is hosted as a git repository in GitHub:
 
 http://github.com/z411/trackma
 
@@ -141,7 +141,7 @@ instead of the normal way, so the changes you make get reflected immediately:
 <pre># python3 setup.py develop</pre>
 
 If you encounter any problems or have anything to suggest, please don't
-hesitate to submit an issue in the github issue tracker:
+hesitate to submit an issue in the GitHub issue tracker:
 
 http://github.com/z411/trackma/issues
 
