@@ -574,7 +574,7 @@ class Engine:
                     # Change to start status
                     self.set_status(show['id'], self._guess_new_start(show))
             except utils.EngineError as e:
-                # Only warn about engine errors since status change here is not crtical
+                # Only warn about engine errors since status change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -590,7 +590,7 @@ class Engine:
 
                 self.set_dates(show['id'], start_date, finish_date)
             except utils.EngineError as e:
-                # Only warn about engine errors since date change here is not crtical
+                # Only warn about engine errors since date change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
@@ -668,7 +668,7 @@ class Engine:
             try:
                 self.set_status(show['id'], self._guess_new_finish(show))
             except utils.EngineError as e:
-                # Only warn about engine errors since status change here is not crtical
+                # Only warn about engine errors since status change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 

@@ -195,7 +195,7 @@ class MPRISTracker(tracker.TrackerBase):
         self.session = SessionBus()
         self.bus = self.session.get('.DBus')
 
-        # Look for already running players and conect them
+        # Look for already running players and connect them
         for name in self.bus.ListNames():
             if name.startswith(MPRISTracker.mpris_base):
                 self._connect(name)

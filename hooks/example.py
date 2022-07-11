@@ -75,7 +75,7 @@ def show_synced(engine, show, change):
 
 def sync_complete(engine, items):
     """This is called after the entire queue has been processed.
-    Unlike show_synced, it's only called once after all itmes have been processed,
+    Unlike show_synced, it's only called once after all items have been processed,
     and `items` contains a list of tuples (show,change) of all the shows that were
     processed correctly.
     """

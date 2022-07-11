@@ -20,7 +20,7 @@ from decimal import Decimal
 NO_SUBBER = '###NO#SUBBER#HERE###'
 
 BRACKET_PAIRS = [
-    # to be inserted in regular epressions
+    # to be inserted in regular expressions
     (r'\[', r'\]'),
     (r'\(', r'\)'),
     (r'\{', r'\}'),
@@ -121,14 +121,14 @@ class AnimeInfoExtractor():
             for tag in tags:
                 if tag in filename:
                     self.videoType = to_add
-                    # Don't replace Hi10 coz its a subber name
+                    # Don't replace Hi10 because it's a subber name
                     if tag != 'Hi10':
                         filename = filename.replace(tag, '')
                     return filename
         return filename
 
     def __extractResolution(self, filename):
-        # Match 3 or 4 chars followed by p, i, or x and 3 or 4 more chars, surrounded by any non-alphanumberic chars
+        # Match 3 or 4 chars followed by p, i, or x and 3 or 4 more chars, surrounded by any non-alphanumeric chars
         m = re.search(r'\b(\d{3,4}(?:p|i|x\d{3,4}))\b', filename)
         if m:
             self.resolution = m.group(1)
@@ -178,7 +178,7 @@ class AnimeInfoExtractor():
                 self.subberTag = m.group(1)
                 filename = filename[:m.start()] + filename[m.end():]
                 break
-        # Add the remux string if this was a remux and its not found in the subber tag
+        # Add the remux string if this was a remux and it's not found in the subber tag
         if remux and 'remux' not in self.subberTag.lower():
             # refind remux and remove it
             m = re.search(
@@ -216,7 +216,7 @@ class AnimeInfoExtractor():
         return filename, title_len
 
     def __extractPv(self, filename):
-        # Check if this is a PV release (not relevant if its a pack)
+        # Check if this is a PV release (not relevant if it's a pack)
         m = re.search(r' PV ?(\d)?(?:[^a-zA-Z0-9]|$)', filename)
         if not self.volumeStart and m:
             self.pv = 0

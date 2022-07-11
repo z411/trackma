@@ -245,7 +245,7 @@ class Trackma_urwid():
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
         self.engine.connect_signal('tracker_state', self.tracker_state)
 
-        # Engine start and list rebuildi
+        # Engine start and list rebuild
         self.status("Building lists...")
         self.engine.start()
         self._rebuild()
@@ -283,7 +283,7 @@ class Trackma_urwid():
         try:
             self.keymapping[input]()
         except KeyError:
-            # Unbinded key pressed; do nothing
+            # Unbound key pressed; do nothing
             pass
 
     def key_left(self):

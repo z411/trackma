@@ -400,7 +400,7 @@ def guess_show(show_title, tracker_list):
 
 
 def redirect_show(show_tuple, redirections, tracker_list):
-    """ Use a redirection dictionary and return the new show ID and episode acordingly """
+    """ Use a redirection dictionary and return the new show ID and episode accordingly """
     if not redirections:
         return show_tuple
 

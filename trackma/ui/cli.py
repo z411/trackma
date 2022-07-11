@@ -202,7 +202,7 @@ class Trackma_cmd(cmd.Cmd):
         print("Trackma is an open source client for media tracking websites.")
         print("https://github.com/z411/trackma")
         print()
-        print("This program is licensed under the GPLv3 and it comes with ASOLUTELY NO WARRANTY.")
+        print("This program is licensed under the GPLv3 and it comes with ABSOLUTELY NO WARRANTY.")
         print("Many contributors have helped to run this project; for more information see the AUTHORS file.")
         print("For more information about the license, see the COPYING file.")
         print()
@@ -793,7 +793,7 @@ class Trackma_cmd(cmd.Cmd):
         if needed[0] <= len(args) <= needed[1]:
             return func(args)
         else:
-            print("Incorrent number of arguments. See `help %s`" % cmd)
+            print("Incorrect number of arguments. See `help %s`" % cmd)
 
     def display_error(self, e):
         print("%s%s: %s%s" % (_COLOR_ERROR, type(e).__name__, e, _COLOR_RESET))

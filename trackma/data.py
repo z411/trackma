@@ -571,7 +571,7 @@ class Data:
                 self.api.merge(show, info)
 
             # Here we request the missing items and merge them
-            # immedately with the list.
+            # immediately with the list.
             if missing:
                 infos = self.api.request_info(missing)
                 for info in infos:

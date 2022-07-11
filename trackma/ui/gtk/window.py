@@ -176,7 +176,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self.add_action(action)
 
         add_action('search', self._on_search)
-        add_action('syncronize', self._on_synchronize)
+        add_action('synchronize', self._on_synchronize)
         add_action('upload', self._on_upload)
         add_action('download', self._on_download)
         add_action('scanfiles', self._on_scanfiles)
@@ -650,7 +650,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _set_buttons_sensitive(self, sensitive):
         actions_names = ['search',
-                         'syncronize',
+                         'synchronize',
                          'upload',
                          'download',
                          'scanfiles',

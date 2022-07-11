@@ -191,7 +191,7 @@ v0.4
 - Improvement: (Qt) Option to remember position, size and state
 - Improvement: (CLI) Added indexes to make specifying a show quicker
 - Improvement: (Qt/GTK) Added shortcuts
-- Bugfix: Fixed ocassional bug where the cache got corrupted
+- Bugfix: Fixed occasional bug where the cache got corrupted
 - Bugfix: (Qt) Fixed problem with non-western characters in the search dialog
 - Bugfix: (MAL) Fixed situations where libmal had problems with non-gzipped responses
 - Bugfix: (MAL) Fixed an error when MAL returned an empty document
