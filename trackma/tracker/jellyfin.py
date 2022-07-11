@@ -67,7 +67,7 @@ class JellyfinTracker(tracker.TrackerBase):
                     elif session_info['state'] == PLAYING:
                         self.resume_timer()
 
-                except (IndexError,TypeError):
+                except (IndexError, TypeError):
                     if self.status_log[-1] == IDLE:
                         self.last_filename = None
                         self.update_show_if_needed(0, None)
