@@ -244,8 +244,8 @@ class libmal(lib):
         else:
             self.logged_in = True
 
-        #if not self.userid:
-        #    self._refresh_user_info()
+        # if not self.userid:
+        #     self._refresh_user_info()
 
         return True
 

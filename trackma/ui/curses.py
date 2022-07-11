@@ -484,7 +484,7 @@ class Trackma_urwid():
         mediatype = urwid.Columns(
             [urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
 
-        #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
+        # main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
         self.dialog = Dialog(mediatype, self.mainloop,
                              width=30, title='Change media type')
         self.dialog.show()
@@ -754,7 +754,7 @@ class Trackma_urwid():
             text = "Search forward: "
 
         self.ask(text, self.search_request, key)
-        #urwid.connect_signal(self.asker, 'change', self.search_live)
+        # urwid.connect_signal(self.asker, 'change', self.search_live)
 
     # def search_live(self, widget, data):
     #    if data:
@@ -1070,7 +1070,7 @@ class ShowWalker(urwid.SimpleListWalker):
         for i, item in enumerate(self):
             if showid == item.showid:
                 return (i, item)
-        #raise Exception('Show not found in ShowWalker.')
+        # raise Exception('Show not found in ShowWalker.')
         return (None, None)
 
     def highlight_show(self, show, tocolor):

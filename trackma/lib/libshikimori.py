@@ -135,7 +135,7 @@ class libshikimori(lib):
             self.watched_str = "episodes"
 
         # handler=urllib.request.HTTPHandler(debuglevel=1)
-        #self.opener = urllib.request.build_opener(handler)
+        # self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma')]
 
@@ -341,7 +341,7 @@ class libshikimori(lib):
             }
             dest_url = self.api_url + "/user_rates"
         else:
-            #user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
+            # user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
             user_rate = {}
             dest_url = self.api_url + "/user_rates/{}".format(item['my_id'])
 
@@ -367,7 +367,7 @@ class libshikimori(lib):
             'url': self.url + item['url'],
             'extra': [
                 ('Description',     self._lc(item.get('description'))),
-                #('Genres',          item.get('genres')),
+                # ('Genres',          item.get('genres')),
                 ('Type',            self._lc(item.get('kind').capitalize())),
                 ('Average score',   self._lc(item.get('score'))),
                 ('Russian title',   self._lc(item.get('russian'))),

@@ -120,7 +120,7 @@ class AddDialog(QDialog):
         self.contents.addWidget(tableview)
 
         # Use for testing
-        #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
+        # self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
         bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)

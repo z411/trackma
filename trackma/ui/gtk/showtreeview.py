@@ -250,11 +250,11 @@ class ShowTreeView(Gtk.TreeView):
             if name not in self.visible_columns:
                 self.cols[name].set_visible(False)
 
-        #renderer_id = Gtk.CellRendererText()
-        #self.cols['ID'].pack_start(renderer_id, False, True, 0)
+        # renderer_id = Gtk.CellRendererText()
+        # self.cols['ID'].pack_start(renderer_id, False, True, 0)
         # self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
         # self.cols['ID'].set_expand(False)
-        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        # self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)

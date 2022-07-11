@@ -1472,7 +1472,7 @@ class MainWindow(QMainWindow):
         if result['success']:
             args = result['result']
             if len(args) > 1:
-                #QtCore.QProcess.startDetached(args[0], args[1:])
+                # QtCore.QProcess.startDetached(args[0], args[1:])
                 process = QtCore.QProcess()
                 for attr in ['setStandardErrorFile', 'setStandardOutputFile']:
                     getattr(process, attr)(QtCore.QProcess.nullDevice())

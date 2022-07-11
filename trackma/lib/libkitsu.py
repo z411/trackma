@@ -23,8 +23,8 @@ import json
 import gzip
 import socket
 
-#import http.client
-#http.client.HTTPConnection.debuglevel = 1
+# import http.client
+# http.client.HTTPConnection.debuglevel = 1
 
 from trackma.lib.lib import lib
 from trackma import utils
@@ -332,7 +332,7 @@ class libkitsu(lib):
                 data = self._request('GET', url)
                 data_json = json.loads(data)
 
-                #print(json.dumps(data_json, sort_keys=True, indent=2))
+                # print(json.dumps(data_json, sort_keys=True, indent=2))
                 # return []
 
                 entries = data_json['data']
@@ -340,7 +340,7 @@ class libkitsu(lib):
 
                 for entry in entries:
                     # TODO : Including the mediatype returns a 500 for some reason.
-                    #showid = int(entry['relationships'][self.mediatype]['data']['id'])
+                    # showid = int(entry['relationships'][self.mediatype]['data']['id'])
                     showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
                     rating = entry['attributes']['ratingTwenty']
@@ -542,8 +542,8 @@ class libkitsu(lib):
         info = utils.show()
         attr = media['attributes']
 
-        #print(json.dumps(media, indent=2))
-        #raise NotImplementedError
+        # print(json.dumps(media, indent=2))
+        # raise NotImplementedError
 
         if media['type'] == 'anime':
             total = attr['episodeCount']

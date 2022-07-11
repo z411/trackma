@@ -178,9 +178,9 @@ class SearchTreeView(Gtk.TreeView):
             self.append_column(self.cols[name])
             i += 1
 
-        #renderer_id = Gtk.CellRendererText()
-        #self.cols['ID'].pack_start(renderer_id, False)
-        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        # renderer_id = Gtk.CellRendererText()
+        # self.cols['ID'].pack_start(renderer_id, False)
+        # self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
