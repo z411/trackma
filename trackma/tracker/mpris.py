@@ -62,7 +62,7 @@ class MPRISTracker(tracker.TrackerBase):
                 if not self.active_player:
                     self._handle_status(status, sender)
 
-                if not sender in self.view_offsets:
+                if sender not in self.view_offsets:
                     GLib.timeout_add(
                         100, self._update_view_offset, sender, properties)
 

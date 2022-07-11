@@ -100,12 +100,12 @@ def parse_anime_relations(filename, api, last=None):
                         dst_eps = (int(m.group(9)), int(
                             m.group(10) or m.group(9)))
 
-                    if not src_id in relations:
+                    if src_id not in relations:
                         relations[src_id] = []
                     relations[src_id].append((src_eps, dst_id, dst_eps))
                     # Handle self-redirecting rules
                     if m.group(11) == '!':
-                       if not dst_id in relations:
+                       if dst_id not in relations:
                            relations[dst_id] = []
                        relations[dst_id].append((src_eps, dst_id, dst_eps))
                 else:

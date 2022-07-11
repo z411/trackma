@@ -102,7 +102,7 @@ class JellyfinTracker(tracker.TrackerBase):
             return info
 
         for session in response_json:
-            if not 'UserName' in session:
+            if 'UserName' not in session:
                 continue
             if session['UserName'] != self.username:
                 continue
