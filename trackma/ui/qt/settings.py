@@ -415,20 +415,20 @@ class SettingsDialog(QDialog):
         self.syscolor_buttons = []
         g_scheme_layout = QGridLayout()
         tw_scheme = QTabWidget()
-        for (key, tab_title) in col_tabs:
+        for (key1, tab_title) in col_tabs:
             page = QFrame()
             page_layout = QGridLayout()
             col = 0
             # Generate widgets from the keys and values
-            for (key, label) in self.colors[key]:
+            for (key2, label) in self.colors[key1]:
                 self.color_buttons.append(QPushButton())
                 # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
                 self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.color_buttons[-1].clicked.connect(
-                    self.s_color_picker(key, False))
+                    self.s_color_picker(key2, False))
                 self.syscolor_buttons.append(QPushButton('System Colors'))
                 self.syscolor_buttons[-1].clicked.connect(
-                    self.s_color_picker(key, True))
+                    self.s_color_picker(key2, True))
                 page_layout.addWidget(QLabel(label),             col, 0, 1, 1)
                 page_layout.addWidget(self.color_buttons[-1],    col, 1, 1, 1)
                 page_layout.addWidget(self.syscolor_buttons[-1], col, 2, 1, 1)
