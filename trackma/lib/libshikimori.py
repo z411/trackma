@@ -251,7 +251,6 @@ class libshikimori(lib):
                 'aliases': [item[self.mediatype]['russian']],
                 'type': self.type_translate[item[self.mediatype]['kind']],
                 'status': self.status_translate[item[self.mediatype]['status']],
-                'my_id': item['id'],
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
                 'my_score': item['score'],
