@@ -262,7 +262,7 @@ class AnimeInfoExtractor:
 
         # Check if there is an episode specifier
         m = re.search(
-            r'\b(?:S(?:\.|eason)?(\d+)\s*)?(?:E\.?|Ep(?:i|isode)?[ .]?)(\d{1,}(?:\.\d)?)(?:\b|v)',
+            r'\b(?:S(?:\.|eason)?(\d+)\s*)?(?:E\.?|Ep(?:i|isode)?[ .]?)(\d+(?:\.\d)?)(?:\b|v)',
             filename,
             flags=re.IGNORECASE
         )
