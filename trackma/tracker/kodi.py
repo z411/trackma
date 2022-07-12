@@ -86,8 +86,8 @@ class KodiTracker(tracker.TrackerBase):
         if self._get_kodi_status() == IDLE:
             return None
 
-        time = self._get_player_props("totaltime")
-        seconds = (time['hours']*3600)+(time['minutes']*60)+(time['seconds'])
+        totaltime = self._get_player_props("totaltime")
+        seconds = (totaltime['hours'] * 3600) + (totaltime['minutes'] * 60) + (totaltime['seconds'])
 
         return round(seconds*0.80)
 
