@@ -24,7 +24,7 @@ try:
 except ImportError:
     has_readline = False
 
-import cmd
+import cmd as command
 import shlex
 import textwrap
 import re
@@ -55,7 +55,7 @@ _PCOLOR_MEDIATYPE = '\001\033[0;33m\002'
 _PCOLOR_FILTER = '\001\033[0;35m\002'
 
 
-class Trackma_cmd(cmd.Cmd):
+class Trackma_cmd(command.Cmd):
     """
     Main program, inherits from the useful Cmd class
     for interactive console
