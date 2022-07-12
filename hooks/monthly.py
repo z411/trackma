@@ -4,13 +4,13 @@
 #
 # To use, copy this file to ~/.trackma/hooks/ and fill in the access token.
 
+import urllib.parse, urllib.request, json
+import trackma.utils as utils
+
 ACCESS_TOKEN = ""
 
 if not ACCESS_TOKEN:
     raise Exception("You must provide the Monthly.moe HTTP API access token..")
-
-import urllib.parse, urllib.request, json
-import trackma.utils as utils
 
 MONTHLY_URL = "https://www.monthly.moe/api/v1/user/library/taiga"
 HEADERS = {'User-Agent': 'Trackma/{}'.format(utils.VERSION)}
