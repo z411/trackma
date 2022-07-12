@@ -6,6 +6,7 @@ for fetching, updating and using data from personal lists hosted in several medi
 
 Features
 --------
+
 - Manage local list and synchronize when necessary, useful when offline
 - Manage multiple accounts on different media tracking sites
 - Support for several mediatypes (as supported by the site)
@@ -17,6 +18,7 @@ Features
 
 Currently supported websites
 ----------------------------
+
 - [Anilist](https://anilist.co/) (Anime, Manga)
 - [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
@@ -147,8 +149,10 @@ http://github.com/z411/trackma/issues
 
 License
 -------
+
 Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
+
 Trackma was originally written by z411 <z411@omaera.org>. For other contributors see AUTHORS file. GTK icon designed by shuuichi.
