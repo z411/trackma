@@ -17,6 +17,7 @@
 
 import datetime
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import json
@@ -185,7 +186,7 @@ class libkitsu(lib):
                 return gzip.GzipFile(fileobj=response).read().decode('utf-8')
             else:
                 return response.read().decode('utf-8')
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
@@ -194,7 +195,7 @@ class libkitsu(lib):
                     raise utils.APIError("API error: %s" % api_error)
                 else:
                     raise utils.APIError("Connection error: %s" % e)
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
@@ -368,7 +369,7 @@ class libkitsu(lib):
                 i += 1
 
             return showlist
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError(
                 "Error getting list (HTTPError): %s" % e.read())
         except urllib.error.URLError as e:
@@ -406,7 +407,7 @@ class libkitsu(lib):
 
             data_json = json.loads(data)
             return int(data_json['data']['id'])
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error adding: ' + str(e.reason))
@@ -421,7 +422,7 @@ class libkitsu(lib):
         try:
             self._request('PATCH', self.prefix + "/library-entries/%s" %
                           item['my_id'], body=data, auth=True)
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error updating: ' + str(e.reason))
@@ -434,7 +435,7 @@ class libkitsu(lib):
         try:
             self._request('DELETE', self.prefix +
                           "/library-entries/%s" % item['my_id'], auth=True)
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error deleting: ' + str(e.reason))
@@ -463,7 +464,7 @@ class libkitsu(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error searching: ' + str(e.reason))

@@ -15,6 +15,7 @@
 #
 
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 import socket
@@ -183,7 +184,7 @@ class libanilist(lib):
         try:
             response = self.opener.open(request, timeout=10)
             return json.loads(response.read().decode('utf-8'))
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 400:
                 raise utils.APIError("Invalid HTTP request: %s" % e.read())
             else:

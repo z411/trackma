@@ -26,6 +26,8 @@ import json
 import difflib
 import pickle
 import uuid
+import urllib.error
+import urllib.request
 from enum import Enum, auto
 
 VERSION = '0.8.4'

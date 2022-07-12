@@ -15,6 +15,7 @@
 #
 
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 import socket
@@ -168,7 +169,7 @@ class libshikimori(lib):
             response = self.opener.open(request)
 
             return json.loads(response.read().decode('utf-8'))
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")

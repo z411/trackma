@@ -18,6 +18,7 @@ import time
 import json
 import base64
 import urllib.request
+import urllib.error
 
 import trackma.utils as utils
 from trackma.tracker import tracker
@@ -55,7 +56,7 @@ class KodiTracker(tracker.TrackerBase):
                     return IDLE
             else:
                 return IDLE
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             if hasattr(e, 'code'):
                 if e.code == 401:
                     return AUTH_REQUIRED
