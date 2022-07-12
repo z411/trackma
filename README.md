@@ -86,26 +86,23 @@ Make sure you've installed the proper dependencies (listed above)
 according to the user interface you plan to use, and then run the
 following command:
 
-<pre># pip3 install Trackma</pre>
-
+    # pip3 install Trackma
 You can also install the git (probably unstable, but newer) version like this:
 
-<pre># pip3 install -U git+https://github.com/z411/trackma.git</pre>
+    # pip3 install -U git+https://github.com/z411/trackma.git
 
 Or download the source code and install:
 
-<pre># git clone --recursive https://github.com/z411/trackma.git
-# cd trackma
-# sudo python3 setup.py install</pre>
+    # git clone --recursive https://github.com/z411/trackma.git
+    # cd trackma
+    # sudo python3 setup.py install
 
 Then you can run the program with the interface you like.
 
-<pre>
-$ trackma
-$ trackma-curses
-$ trackma-gtk
-$ trackma-qt
-</pre>
+    $ trackma
+    $ trackma-curses
+    $ trackma-gtk
+    $ trackma-qt
 
 Trackma also has user-provided packages for several distributions.
 
@@ -140,7 +137,7 @@ http://github.com/z411/trackma
 If you plan to make changes to the code, I suggest using the following method to install Trackma
 instead of the normal way, so the changes you make get reflected immediately:
 
-<pre># python3 setup.py develop</pre>
+    # python3 setup.py develop
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the GitHub issue tracker:
