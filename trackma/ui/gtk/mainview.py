@@ -18,13 +18,14 @@ import html
 import os
 import threading
 
-from gi.repository import GLib, Gtk, Gdk, GObject
+from gi.repository import GLib, GObject, Gdk, Gtk
+
+from trackma import messenger
+from trackma import utils
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.imagebox import ImageBox
 from trackma.ui.gtk.showeventtype import ShowEventType
-from trackma.ui.gtk.showtreeview import ShowTreeView, ShowListStore, ShowListFilter
-from trackma import utils
-from trackma import messenger
+from trackma.ui.gtk.showtreeview import ShowListFilter, ShowListStore, ShowTreeView
 
 
 @Gtk.Template.from_file(os.path.join(gtk_dir, 'data/mainview.ui'))

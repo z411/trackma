@@ -14,9 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import re
 import subprocess
+import sys
+import webbrowser
+from itertools import cycle
+from operator import itemgetter
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 
 try:
     import urwid
@@ -24,17 +33,6 @@ except ImportError:
     print("urwid not found. Make sure you installed the "
           "urwid package.")
     sys.exit(-1)
-
-import re
-import urwid
-import webbrowser
-from operator import itemgetter
-from itertools import cycle
-
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
 
 
 class Trackma_urwid:

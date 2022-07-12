@@ -17,10 +17,11 @@
 import os
 import threading
 
-from gi.repository import GLib, Gtk, GObject
+from gi.repository import GLib, GObject, Gtk
+
+from trackma import utils
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.showinfobox import ShowInfoBox
-from trackma import utils
 
 
 class SearchThread(threading.Thread):

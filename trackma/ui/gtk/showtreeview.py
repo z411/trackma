@@ -14,7 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import Gtk, Gdk, Pango, GObject
+from gi.repository import GObject, Gdk, Gtk, Pango
+
 from trackma import utils
 
 

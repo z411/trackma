@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QDialogButtonBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout
 
 from trackma.ui.qt.widgets import DetailsWidget
 

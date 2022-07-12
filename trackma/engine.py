@@ -14,20 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
-import os
-import sys
-import subprocess
-import difflib
-import time
 import datetime
+import os
 import random
+import re
 import shlex
 import shutil
+import sys
+import time
 from decimal import Decimal
 
-from trackma import messenger
 from trackma import data
+from trackma import messenger
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 from trackma.extras import redirections

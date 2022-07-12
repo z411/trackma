@@ -15,8 +15,9 @@
 
 # TODO: Add gui stuff for this
 
-import time
 import os
+import time
+
 import requests
 
 from trackma.tracker import tracker

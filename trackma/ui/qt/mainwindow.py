@@ -14,37 +14,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma import utils
+import base64
+import os
+import subprocess
+import sys
+
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import (QAbstractItemView, QAction, QActionGroup, QApplication, QCheckBox, QComboBox,
+                             QDoubleSpinBox, QFormLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
+                             QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QSpinBox, QStyle,
+                             QStyleOptionButton, QSystemTrayIcon, QTabBar, QToolButton, QVBoxLayout, QWidget)
+
 from trackma import messenger
+from trackma import utils
 from trackma.accounts import AccountManager
-from trackma.ui.qt.util import getIcon, FilterBar
-from trackma.ui.qt.workers import EngineWorker, ImageWorker
-from trackma.ui.qt.widgets import ShowsTableView
-from trackma.ui.qt.settings import SettingsDialog
-from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.accounts import AccountDialog
 from trackma.ui.qt.add import AddDialog
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QFormLayout,
-    QGridLayout, QHBoxLayout, QVBoxLayout,
-    QAbstractItemView, QHeaderView, QListWidget,
-    QListWidgetItem, QTabBar, QTableWidget,
-    QTableWidgetItem, QFrame, QScrollArea,
-    QStackedWidget, QWidget, QCheckBox, QComboBox,
-    QDoubleSpinBox, QGroupBox, QLineEdit,
-    QPushButton, QRadioButton, QSpinBox,
-    QStyleOptionButton, QToolButton, QProgressBar,
-    QDialog, QColorDialog, QDialogButtonBox,
-    QFileDialog, QInputDialog, QMessageBox,
-    QAction, QActionGroup, QLabel, QMenu, QStyle,
-    QSystemTrayIcon, QStyleOptionProgressBar
-)
-from PyQt5 import QtCore, QtGui
-import base64
-import subprocess
-import datetime
-import os
-import sys
+from trackma.ui.qt.details import DetailsDialog
+from trackma.ui.qt.settings import SettingsDialog
+from trackma.ui.qt.util import FilterBar, getIcon
+from trackma.ui.qt.widgets import ShowsTableView
+from trackma.ui.qt.workers import EngineWorker, ImageWorker
+
 pyqt_version = 5
 
 

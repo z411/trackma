@@ -18,10 +18,11 @@ import html
 import os
 import threading
 
-from gi.repository import Gtk, GObject
+from gi.repository import GObject, Gtk
+
+from trackma import utils
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.imagebox import ImageBox
-from trackma import utils
 
 
 @Gtk.Template.from_file(os.path.join(gtk_dir, 'data/showinfobox.ui'))

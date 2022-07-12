@@ -1,7 +1,5 @@
 from pprint import pprint
 
-# import pytest
-
 from trackma.extras import AnimeInfoExtractor
 
 DEFAULTS = {

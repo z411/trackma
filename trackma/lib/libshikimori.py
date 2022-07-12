@@ -15,14 +15,14 @@
 #
 
 import json
+import socket
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import socket
-import time
 
-from trackma.lib.lib import lib
 from trackma import utils
+from trackma.lib.lib import lib
 
 
 class libshikimori(lib):

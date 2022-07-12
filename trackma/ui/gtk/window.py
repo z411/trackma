@@ -14,12 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
 import subprocess
+import sys
 import threading
 
-from gi.repository import GLib, Gio, Gtk, Gdk
+from gi.repository import GLib, Gdk, Gio, Gtk
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.accountswindow import AccountsWindow
 from trackma.ui.gtk.mainview import MainView
@@ -28,10 +33,6 @@ from trackma.ui.gtk.settingswindow import SettingsWindow
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showinfowindow import ShowInfoWindow
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
 
 
 @Gtk.Template.from_file(os.path.join(gtk_dir, 'data/window.ui'))

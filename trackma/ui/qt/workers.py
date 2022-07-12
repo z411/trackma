@@ -15,10 +15,9 @@
 #
 
 import os
-
-from io import BytesIO
 import urllib.error
 import urllib.request
+from io import BytesIO
 
 from PyQt5 import QtCore
 

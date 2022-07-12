@@ -1,11 +1,10 @@
+import datetime
+
 from PyQt5 import QtCore, QtGui
 
+from trackma import utils
 from trackma.ui.qt.thumbs import ThumbManager
 from trackma.ui.qt.util import getColor, getIcon
-
-from trackma import utils
-
-import datetime
 
 
 class ShowListModel(QtCore.QAbstractTableModel):

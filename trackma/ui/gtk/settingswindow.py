@@ -16,10 +16,11 @@
 
 import os
 
-from gi.repository import Gtk, Gdk, GObject, Pango
+from gi.repository import Gdk, Gtk, Pango
+
+from trackma import utils
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
-from trackma import utils
 
 
 def reprColor(gdkColor):

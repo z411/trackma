@@ -16,19 +16,20 @@
 #
 
 import datetime
+import gzip
+import json
+import socket
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import json
-import gzip
-import socket
+
+from trackma import utils
+from trackma.lib.lib import lib
+
 
 # import http.client
 # http.client.HTTPConnection.debuglevel = 1
-
-from trackma.lib.lib import lib
-from trackma import utils
 
 
 class libkitsu(lib):

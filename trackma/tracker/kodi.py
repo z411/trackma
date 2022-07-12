@@ -14,13 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import time
-import json
 import base64
-import urllib.request
+import json
+import time
 import urllib.error
+import urllib.request
 
-import trackma.utils as utils
 from trackma.tracker import tracker
 
 NOT_RUNNING = 0

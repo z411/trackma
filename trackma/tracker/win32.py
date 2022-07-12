@@ -15,8 +15,8 @@
 #
 
 import ctypes
-import time
 import re
+import time
 
 from trackma.tracker import tracker
 

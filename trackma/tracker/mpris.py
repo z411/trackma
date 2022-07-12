@@ -18,11 +18,11 @@ import os
 import re
 import urllib.parse
 
-from pydbus import SessionBus
 from gi.repository import GLib
+from pydbus import SessionBus
 
-from trackma.tracker import tracker
 from trackma import utils
+from trackma.tracker import tracker
 
 
 class MPRISTracker(tracker.TrackerBase):

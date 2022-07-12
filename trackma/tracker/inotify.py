@@ -18,8 +18,8 @@
 import inotify.adapters
 import inotify.constants
 
-from trackma.tracker import inotifyBase
 from trackma import utils
+from trackma.tracker import inotifyBase
 
 
 class inotifyTracker(inotifyBase.inotifyBase):

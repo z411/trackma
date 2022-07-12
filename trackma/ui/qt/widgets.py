@@ -15,20 +15,15 @@
 #
 
 import os
-import datetime
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QGridLayout,
-    QScrollArea, QProgressBar, QTableWidget, QTableWidgetItem,
-    QTableView, QAbstractItemView, QSplitter, QHeaderView, QListView)
-
-from trackma.ui.qt.delegates import AddListDelegate, ShowsTableDelegate
-from trackma.ui.qt.models import AddTableModel, AddListModel, AddListProxy, ShowListModel, ShowListProxy
-from trackma.ui.qt.workers import ImageWorker
-from trackma.ui.qt.util import getColor
+from PyQt5.QtWidgets import (QAbstractItemView, QGridLayout, QHeaderView, QLabel, QListView, QScrollArea, QSplitter,
+                             QTableView, QVBoxLayout, QWidget)
 
 from trackma import utils
+from trackma.ui.qt.delegates import AddListDelegate, ShowsTableDelegate
+from trackma.ui.qt.models import AddListModel, AddListProxy, AddTableModel, ShowListModel, ShowListProxy
+from trackma.ui.qt.workers import ImageWorker
 
 pyqt_version = 5
 

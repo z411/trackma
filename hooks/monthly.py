@@ -4,9 +4,10 @@
 #
 # To use, copy this file to ~/.trackma/hooks/ and fill in the access token.
 
+import json
 import urllib.parse
 import urllib.request
-import json
+
 import trackma.utils as utils
 
 ACCESS_TOKEN = ""

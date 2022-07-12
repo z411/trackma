@@ -9,7 +9,6 @@
 # To use, copy this file to ~/.trackma/hooks/
 
 import os
-import trackma.utils as utils
 
 
 def episode_changed(engine, show):

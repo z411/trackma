@@ -14,20 +14,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import subprocess
-import sys
-import re
-import time
-import shutil
 import copy
 import datetime
-import json
 import difflib
+import json
+import os
 import pickle
-import uuid
+import re
+import shutil
+import subprocess
+import sys
+import time
 import urllib.error
 import urllib.request
+import uuid
 from enum import Enum, auto
 
 VERSION = '0.8.4'

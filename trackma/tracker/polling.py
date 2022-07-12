@@ -14,13 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import time
-import re
 import os
 import subprocess
+import time
 
-from trackma.tracker import tracker
 from trackma import utils
+from trackma.tracker import tracker
 
 
 class PollingTracker(tracker.TrackerBase):

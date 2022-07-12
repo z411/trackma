@@ -15,8 +15,7 @@
 #
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QGridLayout, QPushButton, QDialogButtonBox)
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QGridLayout, QPushButton, QVBoxLayout
 
 
 class ThemedColorPicker(QDialog):

@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 # Modified from bear/python-twitter/get_access_token.py
 
-from requests_oauthlib import OAuth1Session
 import webbrowser
 
-import sys
+from requests_oauthlib import OAuth1Session
 
 REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
 ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'

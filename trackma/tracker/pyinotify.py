@@ -16,8 +16,8 @@
 
 import pyinotify
 
-from trackma.tracker import inotifyBase
 from trackma import utils
+from trackma.tracker import inotifyBase
 
 
 class pyinotifyTracker(inotifyBase.inotifyBase):

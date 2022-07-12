@@ -14,27 +14,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
+import argparse
+import cmd as command
 import os
+import re
+import shlex
 import subprocess
+import sys
+import textwrap
+from operator import itemgetter  # Used for sorting list
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 
 try:
     import readline
     has_readline = True
 except ImportError:
     has_readline = False
-
-import cmd as command
-import shlex
-import textwrap
-import re
-import argparse
-from operator import itemgetter  # Used for sorting list
-
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
 
 _COLOR_RESET = '\033[0m'
 _COLOR_ENGINE = '\033[0;32m'
