@@ -930,12 +930,12 @@ class MainWindow(QMainWindow):
             for action in ep_actions:
                 if current_actions >= bp_btm:
                     current_actions = 0
-                    l = len(self.play_ep_submenus)
+                    length = len(self.play_ep_submenus)
                     self.play_ep_submenus.append(
-                        QMenu('Episodes %d-%d:' % (l*bp_btm + 1, min((l+1)*bp_btm, max_eps))))
-                    if watched_eps > min((l+1)*bp_btm, max_eps):
+                        QMenu('Episodes %d-%d:' % (length*bp_btm + 1, min((length+1)*bp_btm, max_eps))))
+                    if watched_eps > min((length+1)*bp_btm, max_eps):
                         self.play_ep_submenus[-1].setIcon(self.ep_icons['all'])
-                    elif watched_eps > l*bp_btm:
+                    elif watched_eps > length*bp_btm:
                         self.play_ep_submenus[-1].setIcon(
                             self.ep_icons['part'])
                     else:
@@ -954,14 +954,14 @@ class MainWindow(QMainWindow):
                 for s in self.play_ep_submenus:
                     if current_menus >= bp_mid:
                         current_menus = 0
-                        l = len(self.play_ep_sub2menus)
+                        length = len(self.play_ep_sub2menus)
                         self.play_ep_sub2menus.append(QMenu(
-                            'Episodes %d-%d:' % (l*bp_btm*bp_mid + 1, min((l+1)*bp_btm*bp_mid, max_eps))))
+                            'Episodes %d-%d:' % (length*bp_btm*bp_mid + 1, min((length+1)*bp_btm*bp_mid, max_eps))))
                     self.play_ep_sub2menus[-1].addMenu(s)
-                    if watched_eps > min((l+1)*bp_btm*bp_mid, max_eps):
+                    if watched_eps > min((length+1)*bp_btm*bp_mid, max_eps):
                         self.play_ep_sub2menus[-1].setIcon(
                             self.ep_icons['all'])
-                    elif watched_eps > l*bp_btm*bp_mid:
+                    elif watched_eps > length*bp_btm*bp_mid:
                         self.play_ep_sub2menus[-1].setIcon(
                             self.ep_icons['part'])
                     else:
@@ -979,14 +979,14 @@ class MainWindow(QMainWindow):
                     for s in self.play_ep_sub2menus:
                         if current_menus >= bp_mid:
                             current_menus = 0
-                            l = len(self.play_ep_sub3menus)
+                            length = len(self.play_ep_sub3menus)
                             self.play_ep_sub3menus.append(QMenu(
-                                'Episodes %d-%d:' % (l*bp_btm*bp_mid*bp_mid + 1, min((l+1)*bp_btm*bp_mid*bp_mid, max_eps))))
+                                'Episodes %d-%d:' % (length*bp_btm*bp_mid*bp_mid + 1, min((length+1)*bp_btm*bp_mid*bp_mid, max_eps))))
                         self.play_ep_sub3menus[-1].addMenu(s)
-                        if watched_eps > min((l+1)*bp_btm*bp_mid*bp_mid, max_eps):
+                        if watched_eps > min((length+1)*bp_btm*bp_mid*bp_mid, max_eps):
                             self.play_ep_sub3menus[-1].setIcon(
                                 self.ep_icons['all'])
-                        elif watched_eps > l*bp_btm*bp_mid*bp_mid:
+                        elif watched_eps > length*bp_btm*bp_mid*bp_mid:
                             self.play_ep_sub3menus[-1].setIcon(
                                 self.ep_icons['part'])
                         else:
