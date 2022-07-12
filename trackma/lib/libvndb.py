@@ -385,7 +385,7 @@ class libvndb(lib):
         return info
 
     def _get_url(self, vnid):
-        return "http://vndb.org/v%d" % vnid
+        return "https://vndb.org/v%d" % vnid
 
     def _str2date(self, string):
         if string != '0000-00-00':

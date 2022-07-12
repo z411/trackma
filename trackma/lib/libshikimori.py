@@ -29,7 +29,7 @@ class libshikimori(lib):
     """
     API class to communicate with Shikimori
 
-    Website: http://shikimori.org
+    Website: https://shikimori.org
 
     messenger: Messenger object to send useful messages to
     """

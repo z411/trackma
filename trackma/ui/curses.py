@@ -413,7 +413,7 @@ class Trackma_urwid:
         helptext = "Trackma-curses " + utils.VERSION + \
             "  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
-        helptext += "http://github.com/z411/trackma\n\n"
+        helptext += "https://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
         helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"

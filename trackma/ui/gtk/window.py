@@ -377,7 +377,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_license_type(Gtk.License.GPL_3_0_ONLY)
         about.set_comments(
             "Trackma is an open source client for media tracking websites.\nThanks to all contributors.")
-        about.set_website("http://github.com/z411/trackma")
+        about.set_website("https://github.com/z411/trackma")
         about.set_copyright("© z411, et al.")
         about.set_authors(["See AUTHORS file"])
         about.set_artists(["shuuichi"])
