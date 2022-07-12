@@ -39,8 +39,8 @@ def parse_anime_relations(filename, api, last=None):
 
         relations = {'meta': {}}
 
-        id_pattern = "(\d+|[\?~])\|(\d+|[\?~])\|(\d+|[\?~])"
-        ep_pattern = "(\d+)-?(\d+|\?)?"
+        id_pattern = r"(\d+|[\?~])\|(\d+|[\?~])\|(\d+|[\?~])"
+        ep_pattern = r"(\d+)-?(\d+|\?)?"
         full = r'- {0}:{1} -> {0}:{1}(!)?'.format(id_pattern, ep_pattern)
         _re = re.compile(full)
 
