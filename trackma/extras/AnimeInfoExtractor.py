@@ -27,7 +27,7 @@ BRACKET_PAIRS = [
 ]
 
 
-class AnimeInfoExtractor():
+class AnimeInfoExtractor:
     """
     Extracts lots of information about anime from filename alone
     @author: Tyris

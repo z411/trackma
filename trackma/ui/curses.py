@@ -37,7 +37,7 @@ from trackma import messenger
 from trackma import utils
 
 
-class Trackma_urwid():
+class Trackma_urwid:
     """
     Main class for the urwid version of Trackma
     """

@@ -19,7 +19,7 @@ from PyQt5 import QtGui
 from trackma import utils
 
 
-class FilterBar():
+class FilterBar:
     """
     Constants relating to filter bar settings can live here.
     """
