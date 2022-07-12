@@ -207,7 +207,7 @@ class libkitsu(lib):
                 errors += "{}: {}".format(error['code'], error['detail'])
 
             return errors
-        except:
+        except Exception:
             return None
 
     def _request_access_token(self, refresh=False):
@@ -508,7 +508,7 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
@@ -518,7 +518,7 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 

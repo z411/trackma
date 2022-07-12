@@ -468,12 +468,12 @@ def get_terminal_size(fd=1):
         import termios
         import struct
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-    except:
+    except Exception:
         try:
             width = int(os.environ.get('COLUMNS', 80))
             height = int(os.environ.get('LINES', 25))
             hw = (height, width)
-        except:
+        except Exception:
             hw = (25, 80)
 
     return hw

@@ -198,7 +198,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
             if isinstance(key, (str,)):
                 key = self.props.child_model.column(key)
             return super().get_value(obj, key)
-        except:
+        except Exception:
             return None
 
 

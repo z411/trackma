@@ -404,6 +404,6 @@ class libmal(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
