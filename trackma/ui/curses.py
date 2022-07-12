@@ -279,9 +279,9 @@ class Trackma_urwid:
             except AssertionError:
                 print(msg)
 
-    def keystroke(self, input):
+    def keystroke(self, key_input):
         try:
-            self.keymapping[input]()
+            self.keymapping[key_input]()
         except KeyError:
             # Unbound key pressed; do nothing
             pass

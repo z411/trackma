@@ -484,7 +484,7 @@ class MainView(Gtk.Box):
         try:
             show = self._engine.get_show_info(self._current_page.selected_show)
         except utils.EngineError:
-            self._list.remove(id=self._current_page.selected_show)
+            self._list.remove(show_id=self._current_page.selected_show)
             self.set_buttons_sensitive(False, lists_too=False)
             return
 

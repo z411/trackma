@@ -162,9 +162,9 @@ class ShowListStore(Gtk.ListStore):
                 row[1] = title_str
                 return
 
-    def remove(self, show=None, id=None):
+    def remove(self, show=None, show_id=None):
         for row in self:
-            if int(row[0]) == (show['id'] if show is not None else id):
+            if int(row[0]) == (show['id'] if show is not None else show_id):
                 Gtk.ListStore.remove(self, row.iter)
                 return
 
@@ -188,8 +188,8 @@ class ShowListFilter(Gtk.TreeModelFilter):
         self.set_visible_func(self.status_filter)
         self._status = status
 
-    def status_filter(self, model, iter, data):
-        return self._status is None or model[iter][15] == self._status
+    def status_filter(self, model, iterator, data):
+        return self._status is None or model[iterator][15] == self._status
 
     def get_value(self, obj, key='id'):
         try:
