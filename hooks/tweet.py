@@ -25,7 +25,7 @@ except NameError:
     print("tweet-hook: python3-twitter is not installed.")
 except ModuleNotFoundError:
     from twitter import TwitterError
-    USE_OAUTH=True
+    USE_OAUTH = True
 
 if USE_OAUTH:
     api = twitter.Twitter(
