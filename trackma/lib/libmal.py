@@ -248,7 +248,8 @@ class libmal(lib):
         listfields = self.watched_str + ',score,status,start_date,finish_date'
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
-            'limit': self.library_page_limit
+            'limit': self.library_page_limit,
+            'nsfw': 'true'
         }
         
         url = "{}/users/@me/{}list?{}".format(self.query_url, self.mediatype, urllib.parse.urlencode(params))
@@ -301,7 +302,7 @@ class libmal(lib):
         self.msg.info(self.name, "Searching for {}...".format(criteria))
         
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
-        params = {'fields': fields}
+        params = {'fields': fields, 'nsfw': 'true'}
         
         if method == utils.SearchMethod.KW:
             url = '/%s' % self.mediatype
@@ -328,7 +329,7 @@ class libmal(lib):
         infolist = []
         
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
-        params = {'fields': fields}
+        params = {'fields': fields, 'nsfw': 'true'}
         for item in itemlist:
             data = self._request('GET', self.query_url + '/%s/%d' % (self.mediatype, item['id']), get=params, auth=True)
             infolist.append(self._parse_info(data))
