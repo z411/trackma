@@ -188,9 +188,13 @@ class TrackerBase(object):
             if state == utils.Tracker.PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
                 # Check if we shouldn't update the show
-                if self.config['tracker_ignore_not_next'] and episode != (show['my_progress'] + 1):
+                expected_next_ep = show['my_progress'] + 1
+                if self.config['tracker_ignore_not_next'] and episode != expected_next_ep:
                     self.msg.warn(
-                        self.name, 'Not playing the next episode of %s. Ignoring.' % show['title'])
+                        self.name,
+                        'Not playing the next episode of {} (expected: {}, found: {}). Ignoring.'
+                            .format(show['title'], expected_next_ep, episode),
+                    )
                     self._ignore_current()
                     return
                 if episode == show['my_progress']:
@@ -270,12 +274,15 @@ class TrackerBase(object):
                 return (utils.Tracker.UNRECOGNIZED, None)
 
             playing_show = utils.guess_show(show_title, self.list)
-            self.msg.debug(self.name, "Show guess: {}: {}".format(
-                show_title, playing_show))
+            self.msg.debug(self.name, "Show guess: {}: {} ({})".format(
+                show_title, playing_show, show_ep))
 
             if playing_show:
-                (playing_show, show_ep) = utils.redirect_show(
+                (redirected_show, redirected_ep) = utils.redirect_show(
                     (playing_show, show_ep), self.redirections, self.list)
+                if (redirected_show, redirected_ep) != (playing_show, show_ep):
+                    self.msg.debug(self.name, "Redirected to: {} ({})".format(redirected_show, redirected_ep))
+                    (playing_show, show_ep) = (redirected_show, redirected_ep)
 
                 return (utils.Tracker.PLAYING, (playing_show, show_ep))
             else:

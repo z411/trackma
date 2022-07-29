@@ -41,3 +41,10 @@ class Messenger:
     def warn(self, classname, msg):
         if self._handler:
             self._handler(classname, TYPE_WARN, msg)
+
+    def exception(self, classname, exc_info):
+        import traceback
+        exc_type, exc_value, exc_traceback = exc_info
+        for block in traceback.format_exception(exc_type, exc_value, exc_traceback):
+            for line in block.splitlines():
+                self.debug(classname, line)

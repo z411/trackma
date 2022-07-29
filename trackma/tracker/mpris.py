@@ -103,7 +103,7 @@ class MPRISTracker(tracker.TrackerBase):
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
-            self.msg.debug(self.name, "New tracker status: {} ({})".format(
+            self.msg.debug(self.name, "New tracker status: {} (previously: {})".format(
                 state, self.last_state))
 
             # We can override the active player if this player is playing a valid show.

@@ -313,10 +313,7 @@ class Engine:
                     except ImportError:
                         self.msg.warn(
                             self.name, "Error importing hook {}.".format(name))
-                        import traceback
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        for line in traceback.format_exception(exc_type, exc_value, exc_traceback):
-                            self.msg.debug(self.name, line.rstrip())
+                        self.msg.exception(self.name, sys.exc_info())
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -341,6 +338,7 @@ class Engine:
             except ImportError:
                 self.msg.warn(self.name, "Couldn't import specified tracker: {}".format(
                     self.config['tracker_type']))
+                self.msg.exception(self.name, sys.exc_info())
 
         self.loaded = True
         return True
