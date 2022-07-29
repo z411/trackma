@@ -24,8 +24,10 @@ pyqt_version = 5
 
 
 class AccountDialog(QDialog):
+
     selected = QtCore.pyqtSignal(int, bool)
     aborted = QtCore.pyqtSignal()
+    selected_account_num = None
 
     def __init__(self, parent, accountman):
         QDialog.__init__(self, parent)
@@ -45,6 +47,7 @@ class AccountDialog(QDialog):
         self.table.verticalHeader().hide()
         self.table.setGridStyle(QtCore.Qt.NoPen)
         self.table.doubleClicked.connect(self.select)
+        self.table.itemSelectionChanged.connect(self.update_selection)
 
         bottom_layout = QHBoxLayout()
         self.remember_chk = QCheckBox('Remember')
@@ -67,14 +70,14 @@ class AccountDialog(QDialog):
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
         self.edit_btns.activated.connect(self.s_edit)
-        select_btn = QPushButton('Select')
-        select_btn.clicked.connect(self.select)
-        select_btn.setDefault(True)
+        self.select_btn = QPushButton('Select')
+        self.select_btn.clicked.connect(self.select)
+        self.select_btn.setDefault(True)
         bottom_layout.addWidget(self.remember_chk)
         bottom_layout.addWidget(cancel_btn)
         bottom_layout.addWidget(add_btn)
         bottom_layout.addWidget(self.edit_btns)
-        bottom_layout.addWidget(select_btn)
+        bottom_layout.addWidget(self.select_btn)
 
         # Get icons
         self.icons = dict()
@@ -93,6 +96,14 @@ class AccountDialog(QDialog):
     def update(self):
         self.remember_chk.setChecked(self.accountman.get_default() is not None)
 
+    def update_selection(self):
+        if self.table.selectedItems():
+            self.selected_account_num = self.table.selectedItems()[0].num
+        else:
+            self.selected_account_num = None
+        self.edit_btns.setDisabled(not self.selected_account_num)
+        self.select_btn.setDisabled(not self.selected_account_num)
+
     def add(self):
         result = AccountAddDialog.do(icons=self.icons)
         if result:
@@ -100,57 +111,46 @@ class AccountDialog(QDialog):
             self.accountman.add_account(username, password, api, extra)
             self.rebuild()
 
-    def edit(self):
+    def s_edit(self, index):
         self.edit_btns.blockSignals(True)
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
-        try:
-            selected_account_num = self.table.selectedItems()[0].num
-            acct = self.accountman.get_account(selected_account_num)
-            result = AccountAddDialog.do(icons=self.icons,
-                                         edit=True,
-                                         username=acct['username'],
-                                         password=acct['password'],
-                                         api=acct['api'])
-            if result:
-                (username, password, api, extra) = result
-                self.accountman.edit_account(
-                    selected_account_num, username, password, api, extra)
-                self.rebuild()
-        except IndexError:
-            self._error("Please select an account.")
 
-    def delete(self):
-        try:
-            selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(
-                self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
-
-            if reply == QMessageBox.Yes:
-                self.accountman.delete_account(selected_account_num)
-                self.rebuild()
-        except IndexError:
-            self._error("Please select an account.")
-
-    def purge(self):
-        try:
-            selected_account_num = self.table.selectedItems()[0].num
-            reply = QMessageBox.question(
-                self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
-
-            if reply == QMessageBox.Yes:
-                self.accountman.purge_account(selected_account_num)
-                self.rebuild()
-        except IndexError:
-            self._error("Please select an account.")
-
-    def s_edit(self, index):
         if index == 1:
             self.edit()
         elif index == 2:
             self.delete()
         elif index == 3:
             self.purge()
+
+    def edit(self):
+        acct = self.accountman.get_account(self.selected_account_num)
+        result = AccountAddDialog.do(icons=self.icons,
+                                     edit=True,
+                                     username=acct['username'],
+                                     password=acct['password'],
+                                     api=acct['api'])
+        if result:
+            (username, password, api, extra) = result
+            self.accountman.edit_account(
+                self.selected_account_num, username, password, api, extra)
+            self.rebuild()
+
+    def delete(self):
+        reply = QMessageBox.question(
+            self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.accountman.delete_account(self.selected_account_num)
+            self.rebuild()
+
+    def purge(self):
+        reply = QMessageBox.question(
+            self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.accountman.purge_account(self.selected_account_num)
+            self.rebuild()
 
     def rebuild(self):
         self.table.clear()
@@ -161,15 +161,12 @@ class AccountDialog(QDialog):
         self.table.setRowCount(len(self.accountman.accounts['accounts']))
 
         accounts = self.accountman.get_accounts()
-        i = 0
-        for k, account in accounts:
+        for i, (k, account) in enumerate(accounts):
             self.table.setRowHeight(i, QtGui.QFontMetrics(
                 self.table.font()).height() + 2)
             self.table.setItem(i, 0, AccountItem(k, account['username']))
             self.table.setItem(i, 1, AccountItem(
                 k, account['api'], self.icons.get(account['api'])))
-
-            i += 1
 
         if pyqt_version == 5:
             self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
@@ -177,13 +174,12 @@ class AccountDialog(QDialog):
             self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
 
     def select(self, checked):
-        try:
-            selected_account_num = self.table.selectedItems()[0].num
-            self.selected.emit(selected_account_num,
-                               self.remember_chk.isChecked())
-            self.close()
-        except IndexError:
+        if not self.selected_account_num:
             self._error("Please select an account.")
+            return
+        self.selected.emit(self.selected_account_num,
+                           self.remember_chk.isChecked())
+        self.close()
 
     def cancel(self, checked):
         self.aborted.emit()
