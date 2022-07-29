@@ -73,6 +73,7 @@ class Engine:
                'prompt_for_update': None,
                'prompt_for_add':    None,
                'tracker_state':     None,
+               'episode_missing': None,
                }
 
     def __init__(self, account=None, message_handler=None, accountnum=None):
@@ -941,32 +942,38 @@ class Engine:
         except ValueError:
             raise utils.EngineError('Episode must be numeric.')
 
-        if show:
-            playing_next = False
-            if not playep:
-                playep = show['my_progress'] + 1
-                playing_next = True
+        if not show:
+            raise utils.EngineError('Show given is invalid')
 
-            if show['total'] and playep > show['total']:
-                raise utils.EngineError('Episode beyond limits.')
+        if playep <= 0:
+            playep = show['my_progress'] + 1
 
-            self.msg.info(self.name, "Getting %s %s from library..." %
-                          (show['title'], playep))
+        if show['total'] and playep > show['total']:
+            raise utils.EngineError('Episode beyond limits.')
+
+        self.msg.info(self.name, "Getting '%s' episode '%s' from library..." %
+                        (show['title'], playep))
+
+        try:
             filename = self.get_episode_path(show, playep)
-            endep = playep
+        except utils.EngineError:
+            self.msg.info(self.name, "Episode not found. Calling hooks...")
+            self._emit_signal("episode_missing", show, playep)
+            return []
 
-            if filename:
-                self.msg.info(self.name, 'Found. Starting player...')
-                args = shlex.split(self.config['player'])
+        self.msg.info(self.name, 'Found. Starting player...')
+        args = shlex.split(self.config['player'])
 
-                if len(args) > 0 and shutil.which(args[0]) == None:
-                    raise utils.EngineError(
-                        'Player not found, check your config.json')
+        if not args:
+            raise utils.EngineError('Player not set up, check your config.json')
 
-                args.append(filename)
-                return args
-            else:
-                raise utils.EngineError('Episode file not found.')
+        args[0] = shutil.which(args[0])
+
+        if not args[0]:
+            raise utils.EngineError('Player not found, check your config.json')
+
+        args.append(filename)
+        return args
 
     def undoall(self):
         """Clears the data handler queue and discards any unsynced change."""

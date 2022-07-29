@@ -426,6 +426,8 @@ def spawn_process(arg_list):
     Helper generic function to spawn a subprocess.
     Does a double fork on *nix to prevent zombie processes.
     """
+    if not arg_list:
+        return
 
     if not sys.platform.startswith('win32'):
         try:
