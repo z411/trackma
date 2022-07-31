@@ -16,7 +16,6 @@
 
 from trackma import utils
 from trackma import messenger
-import trackma
 from trackma.accounts import AccountManager
 from trackma.ui.qt.util import getIcon, FilterBar
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
