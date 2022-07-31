@@ -73,6 +73,10 @@ def main(force_qt4=False):
     app = QApplication(sys.argv)
     app.setApplicationName("trackma")
     app.setDesktopFileName("trackma")
+    if os.name == "nt":
+        import ctypes
+        myappid = 'trackma' + utils.VERSION
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     try:
         # keep the variable around to prevent it from being gc'ed
         main_window = MainWindow(debug)

@@ -76,7 +76,10 @@ class MainWindow(QMainWindow):
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
-        QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
+        if os.name != "nt":
+            QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
+        else:
+            QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.ico'))
         self.setWindowTitle('Trackma-qt')
 
         self.accountman = AccountManager()
