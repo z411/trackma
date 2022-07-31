@@ -324,32 +324,37 @@ class ShowTreeView(Gtk.TreeView):
         return self.props.model.props.model
 
     def show_tooltip(self, view, x, y, kbd, tip):
-        has_path, tx, ty, model, path, _iter = view.get_tooltip_context(
-            x, y, kbd)
-        if has_path:
-            _, col, _, _ = view.get_path_at_pos(tx, ty)
-            renderer = next(k for i, k in enumerate(col.get_cells()) if i == 0)
-            lines = []
+        (has_path, tx, ty,
+         model, path, tree_iter) = view.get_tooltip_context(x, y, kbd)
+        if not has_path:
+            return False
 
-            if col == self.cols['Percent']:
-                lines.append("Watched: %d" %
-                             view.filter.get_value(path, 'stat'))
-                if view.filter.get_value(path, 'subvalue') and not view.filter.get_value(path, 'status') == utils.Status.NOTYET:
-                    lines.append("Aired%s: %d" % (' (estimated)' if view.filter.get_value(
-                        path, 'status') == utils.Status.AIRING else '', view.filter.get_value(path, 'subvalue')))
+        _, col, _, _ = view.get_path_at_pos(tx, ty)
+        if col != self.cols['Percent']:
+            return False
 
-                if len(view.filter.get_value(path, 'avail-eps')) > 0:
-                    lines.append("Available: %d" %
-                                 max(view.filter.get_value(path, 'avail-eps')))
+        def gv(key):
+            return model.get_value(tree_iter, ShowListStore.column(key))
 
-                lines.append("Total: %s" %
-                             (view.filter.get_value(path, 'total-eps') or '?'))
+        lines = []
+        lines.append("Watched: %d" % gv('stat'))
 
-            if len(lines):
-                tip.set_markup('\n'.join(lines))
-                self.set_tooltip_cell(tip, path, col, renderer)
-                return True
-        return False
+        aired = gv('subvalue')
+        status = gv('status')
+        if aired and not status == utils.Status.NOTYET:
+            lines.append("Aired%s: %d" % (
+                ' (estimated)' if status == utils.Status.AIRING else '', aired))
+
+        avail_eps = gv('avail-eps')
+        if len(avail_eps) > 0:
+            lines.append("Available: %d" % max(avail_eps))
+
+        lines.append("Total: %s" % (gv('total-eps') or '?'))
+
+        tip.set_markup('\n'.join(lines))
+        renderer = next(iter(col.get_cells()))
+        self.set_tooltip_cell(tip, path, col, renderer)
+        return True
 
     def _header_menu_item(self, w, column_name, visible):
         self.emit('column-toggled', column_name, visible)
