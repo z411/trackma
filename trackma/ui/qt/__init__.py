@@ -75,7 +75,7 @@ def main(force_qt4=False):
     app.setDesktopFileName("trackma")
     if os.name == "nt":
         import ctypes
-        myappid = u'trackma' + utils.VERSION
+        myappid = 'trackma' + utils.VERSION
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     try:
         # keep the variable around to prevent it from being gc'ed
