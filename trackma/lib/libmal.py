@@ -96,6 +96,14 @@ class libmal(lib):
         'ova': utils.Type.OVA,
         'ona': utils.Type.OVA,
         'music': utils.Type.OTHER,
+        'unknown': utils.Type.UNKNOWN,
+        'manga': utils.Type.MANGA,
+        'novel': utils.Type.NOVEL,
+        'light_novel': utils.Type.NOVEL,
+        'manhwa': utils.Type.MANGA,
+        'manhua': utils.Type.MANGA,
+        'one_shot': utils.Type.ONE_SHOT,
+        'doujinshi': utils.Type.MANGA,
     }
     
     status_translate = {
