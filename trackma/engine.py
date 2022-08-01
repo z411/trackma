@@ -915,7 +915,10 @@ class Engine:
         self.msg.info(self.name, 'Looking for random episode.')
 
         for showid, eps in library.items():
-            show = self.get_show_info(showid)
+            try:
+                show = self.get_show_info(showid)
+            except utils.EngineError:
+                continue # In library but not available
             if show['my_progress'] + 1 in eps:
                 newep.append(show)
 
