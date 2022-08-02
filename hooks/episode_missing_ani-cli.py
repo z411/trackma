@@ -9,6 +9,7 @@
 import shutil
 from trackma import utils
 
+
 # Executed when trying to watch an episode that don't exists on your library
 def episode_missing(engine, show, episode):
 

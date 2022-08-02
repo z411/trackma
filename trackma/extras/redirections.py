@@ -19,8 +19,10 @@ from trackma import utils
 SUPPORTED_APIS = ['mal', 'kitsu', 'anilist']
 SUPPORTED_MEDIATYPES = ['anime']
 
+
 def supports(api, mediatype):
     return api in SUPPORTED_APIS and mediatype in SUPPORTED_MEDIATYPES
+
 
 def parse_anime_relations(filename, api, last=None):
     """

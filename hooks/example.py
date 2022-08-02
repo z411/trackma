@@ -30,20 +30,24 @@ def playing(engine, show, is_playing, episode):
 
     pass
 
+
 def show_added(engine, show):
     """This is called after an item has been added to the local list.
     `show` contains the item information as a dictionary."""
     pass
+
 
 def episode_changed(engine, show):
     """This is called after the episode of an item has been updated in the local list.
     `show` contains the item information as a dictionary."""
     pass
 
+
 def score_changed(engine, show):
     """This is called after the episode of an item has been updated in the local list.
     `show` contains the item information as a dictionary."""
     pass
+
 
 def status_changed(engine, show, old_status):
     """This is called after the status of an item has been updated in the local list.
@@ -51,10 +55,12 @@ def status_changed(engine, show, old_status):
     `old_status` contains the status ID before the change."""
     pass
 
+
 def show_deleted(engine, show):
     """This is called after an item has been deleted from the local list.
     `show` contains the item information as a dictionary."""
     pass
+
 
 # These functions are called when the change is made remotely.
 def show_synced(engine, show, change):
@@ -72,6 +78,7 @@ def show_synced(engine, show, change):
         print("Show ID %d, title %s, was updated in the remote list." % (show['id'], show['title']))
     elif change['action'] == 'delete':
         print("Show ID %d, title %s, was deleted from the remote list." % (show['id'], show['title']))
+
 
 def sync_complete(engine, items):
     """This is called after the entire queue has been processed.

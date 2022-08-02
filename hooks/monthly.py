@@ -15,6 +15,7 @@ import trackma.utils as utils
 MONTHLY_URL = "https://www.monthly.moe/api/v1/user/library/taiga"
 HEADERS = {'User-Agent': 'Trackma/{}'.format(utils.VERSION)}
 
+
 def episode_changed(engine, show):
     api_name = engine.api_info['name'].lower()
     if api_name not in ["myanimelist", "anilist"]:
