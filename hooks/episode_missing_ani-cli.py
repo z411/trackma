@@ -2,7 +2,7 @@
  Author: imsamuka
  Place under ~/.config/trackma/hooks/ or ~/.trackma/hooks/
 
- When a episode is not found, it executes 'ani-cli' to find and
+ When an episode is not found, it executes 'ani-cli' to find and
  watch it via streaming automatically!
 """
 
@@ -10,7 +10,7 @@ import shutil
 from trackma import utils
 
 
-# Executed when trying to watch an episode that don't exists on your library
+# Executed when trying to watch an episode that doesn't exist in your library
 def episode_missing(engine, show, episode):
 
     query = show["title"].strip()
