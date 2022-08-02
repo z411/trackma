@@ -150,7 +150,7 @@ class libmal(lib):
         else:
             self.total_str = "num_episodes"
             self.watched_str = "num_episodes_watched"
-            self.watched_send_str = "num_watched_episodes" # Please fix this upstream...
+            self.watched_send_str = "num_watched_episodes"  # Please fix this upstream...
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
