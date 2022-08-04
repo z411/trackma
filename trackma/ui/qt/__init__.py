@@ -15,10 +15,11 @@
 #
 
 
-from trackma.ui.qt.mainwindow import MainWindow
-from trackma import utils
-import sys
 import os
+import sys
+
+from trackma import utils
+from trackma.ui.qt.mainwindow import MainWindow
 
 
 def main(force_qt4=False):

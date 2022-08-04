@@ -14,12 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
 import subprocess
+import sys
 import threading
 
-from gi.repository import GLib, Gio, Gtk, Gdk
+from gi.repository import GLib, Gdk, Gio, Gtk
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.accountswindow import AccountsWindow
 from trackma.ui.gtk.mainview import MainView
@@ -28,10 +33,6 @@ from trackma.ui.gtk.settingswindow import SettingsWindow
 from trackma.ui.gtk.showeventtype import ShowEventType
 from trackma.ui.gtk.showinfowindow import ShowInfoWindow
 from trackma.ui.gtk.statusicon import TrackmaStatusIcon
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
 
 
 @Gtk.Template.from_file(os.path.join(gtk_dir, 'data/window.ui'))
@@ -176,7 +177,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self.add_action(action)
 
         add_action('search', self._on_search)
-        add_action('syncronize', self._on_synchronize)
+        add_action('synchronize', self._on_synchronize)
         add_action('upload', self._on_upload)
         add_action('download', self._on_download)
         add_action('scanfiles', self._on_scanfiles)
@@ -377,7 +378,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
         about.set_license_type(Gtk.License.GPL_3_0_ONLY)
         about.set_comments(
             "Trackma is an open source client for media tracking websites.\nThanks to all contributors.")
-        about.set_website("http://github.com/z411/trackma")
+        about.set_website("https://github.com/z411/trackma")
         about.set_copyright("© z411, et al.")
         about.set_authors(["See AUTHORS file"])
         about.set_artists(["shuuichi"])
@@ -650,7 +651,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
 
     def _set_buttons_sensitive(self, sensitive):
         actions_names = ['search',
-                         'syncronize',
+                         'synchronize',
                          'upload',
                          'download',
                          'scanfiles',

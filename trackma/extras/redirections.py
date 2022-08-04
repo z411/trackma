@@ -14,13 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma import utils
-
 SUPPORTED_APIS = ['mal', 'kitsu', 'anilist']
 SUPPORTED_MEDIATYPES = ['anime']
 
+
 def supports(api, mediatype):
     return api in SUPPORTED_APIS and mediatype in SUPPORTED_MEDIATYPES
+
 
 def parse_anime_relations(filename, api, last=None):
     """
@@ -37,8 +37,8 @@ def parse_anime_relations(filename, api, last=None):
 
         relations = {'meta': {}}
 
-        id_pattern = "(\d+|[\?~])\|(\d+|[\?~])\|(\d+|[\?~])"
-        ep_pattern = "(\d+)-?(\d+|\?)?"
+        id_pattern = r"(\d+|[\?~])\|(\d+|[\?~])\|(\d+|[\?~])"
+        ep_pattern = r"(\d+)-?(\d+|\?)?"
         full = r'- {0}:{1} -> {0}:{1}(!)?'.format(id_pattern, ep_pattern)
         _re = re.compile(full)
 
@@ -100,14 +100,14 @@ def parse_anime_relations(filename, api, last=None):
                         dst_eps = (int(m.group(9)), int(
                             m.group(10) or m.group(9)))
 
-                    if not src_id in relations:
+                    if src_id not in relations:
                         relations[src_id] = []
                     relations[src_id].append((src_eps, dst_id, dst_eps))
                     # Handle self-redirecting rules
                     if m.group(11) == '!':
-                       if not dst_id in relations:
-                           relations[dst_id] = []
-                       relations[dst_id].append((src_eps, dst_id, dst_eps))
+                        if dst_id not in relations:
+                            relations[dst_id] = []
+                        relations[dst_id].append((src_eps, dst_id, dst_eps))
                 else:
                     print("Not recognized. " + line)
 

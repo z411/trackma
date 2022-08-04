@@ -18,9 +18,10 @@ import os
 import webbrowser
 from enum import Enum
 
-from gi.repository import Gtk, GdkPixbuf, GObject
-from trackma.ui.gtk import gtk_dir
+from gi.repository import GObject, GdkPixbuf, Gtk
+
 from trackma import utils
+from trackma.ui.gtk import gtk_dir
 
 
 class AccountsView(Enum):

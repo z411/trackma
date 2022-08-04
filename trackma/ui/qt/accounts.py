@@ -14,12 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma import utils
-from PyQt5.QtWidgets import (
-    QDialog, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QTableWidget,
-    QAbstractItemView, QCheckBox, QPushButton, QComboBox, QHeaderView,
-    QMessageBox, QFormLayout, QLabel, QLineEdit, QDialogButtonBox)
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
+                             QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox, QPushButton, QTableWidget,
+                             QTableWidgetItem, QVBoxLayout)
+
+from trackma import utils
+
 pyqt_version = 5
 
 

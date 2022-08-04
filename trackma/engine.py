@@ -14,20 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
-import os
-import sys
-import subprocess
-import difflib
-import time
 import datetime
+import os
 import random
+import re
 import shlex
 import shutil
+import sys
+import time
 from decimal import Decimal
 
-from trackma import messenger
 from trackma import data
+from trackma import messenger
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 from trackma.extras import redirections
@@ -574,7 +572,7 @@ class Engine:
                     # Change to start status
                     self.set_status(show['id'], self._guess_new_start(show))
             except utils.EngineError as e:
-                # Only warn about engine errors since status change here is not crtical
+                # Only warn about engine errors since status change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 
@@ -590,7 +588,7 @@ class Engine:
 
                 self.set_dates(show['id'], start_date, finish_date)
             except utils.EngineError as e:
-                # Only warn about engine errors since date change here is not crtical
+                # Only warn about engine errors since date change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but dates weren\'t changed: %s' % e)
 
@@ -668,7 +666,7 @@ class Engine:
             try:
                 self.set_status(show['id'], self._guess_new_finish(show))
             except utils.EngineError as e:
-                # Only warn about engine errors since status change here is not crtical
+                # Only warn about engine errors since status change here is not critical
                 self.msg.warn(
                     self.name, 'Updated episode but status wasn\'t changed: %s' % e)
 

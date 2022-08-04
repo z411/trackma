@@ -14,13 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import socket
-import json
 import datetime
+import json
+import socket
 import ssl
 
-from trackma.lib.lib import lib
 from trackma import utils
+from trackma.lib.lib import lib
 
 
 class libvndb(lib):
@@ -385,7 +385,7 @@ class libvndb(lib):
         return info
 
     def _get_url(self, vnid):
-        return "http://vndb.org/v%d" % vnid
+        return "https://vndb.org/v%d" % vnid
 
     def _str2date(self, string):
         if string != '0000-00-00':

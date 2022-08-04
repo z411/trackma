@@ -17,7 +17,7 @@
 from trackma import utils
 
 
-class lib():
+class lib:
     """
     Base interface for creating API implementations for Trackma.
 

@@ -1,5 +1,5 @@
-import queue
 import os
+import queue
 
 from PyQt5 import QtCore, QtGui, QtNetwork
 

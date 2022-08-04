@@ -16,18 +16,20 @@
 #
 
 import datetime
+import gzip
+import json
+import socket
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
-import json
-import gzip
-import socket
 
-#import http.client
-#http.client.HTTPConnection.debuglevel = 1
-
-from trackma.lib.lib import lib
 from trackma import utils
+from trackma.lib.lib import lib
+
+
+# import http.client
+# http.client.HTTPConnection.debuglevel = 1
 
 
 class libkitsu(lib):
@@ -121,7 +123,7 @@ class libkitsu(lib):
     url = 'https://kitsu.io/api'
     prefix = 'https://kitsu.io/api/edge'
 
-    # TODO : These values are previsional.
+    # TODO : These values are provisional.
     _client_id = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
     _client_secret = '54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151'
 
@@ -185,7 +187,7 @@ class libkitsu(lib):
                 return gzip.GzipFile(fileobj=response).read().decode('utf-8')
             else:
                 return response.read().decode('utf-8')
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             if e.code == 401:
                 raise utils.APIError("Incorrect credentials.")
             else:
@@ -194,7 +196,7 @@ class libkitsu(lib):
                     raise utils.APIError("API error: %s" % api_error)
                 else:
                     raise utils.APIError("Connection error: %s" % e)
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
@@ -207,7 +209,7 @@ class libkitsu(lib):
                 errors += "{}: {}".format(error['code'], error['detail'])
 
             return errors
-        except:
+        except Exception:
             return None
 
     def _request_access_token(self, refresh=False):
@@ -259,7 +261,7 @@ class libkitsu(lib):
 
     def check_credentials(self):
         """
-        Log into Kitsu. If there isn't an acess token, request it, or
+        Log into Kitsu. If there isn't an access token, request it, or
         refresh it if necessary.
         """
         timestamp = int(time.time())
@@ -332,7 +334,7 @@ class libkitsu(lib):
                 data = self._request('GET', url)
                 data_json = json.loads(data)
 
-                #print(json.dumps(data_json, sort_keys=True, indent=2))
+                # print(json.dumps(data_json, sort_keys=True, indent=2))
                 # return []
 
                 entries = data_json['data']
@@ -340,7 +342,7 @@ class libkitsu(lib):
 
                 for entry in entries:
                     # TODO : Including the mediatype returns a 500 for some reason.
-                    #showid = int(entry['relationships'][self.mediatype]['data']['id'])
+                    # showid = int(entry['relationships'][self.mediatype]['data']['id'])
                     showid = int(entry['relationships']['media']['data']['id'])
                     status = entry['attributes']['status']
                     rating = entry['attributes']['ratingTwenty']
@@ -368,7 +370,7 @@ class libkitsu(lib):
                 i += 1
 
             return showlist
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError(
                 "Error getting list (HTTPError): %s" % e.read())
         except urllib.error.URLError as e:
@@ -406,7 +408,7 @@ class libkitsu(lib):
 
             data_json = json.loads(data)
             return int(data_json['data']['id'])
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error adding: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error adding: ' + str(e.reason))
@@ -421,7 +423,7 @@ class libkitsu(lib):
         try:
             self._request('PATCH', self.prefix + "/library-entries/%s" %
                           item['my_id'], body=data, auth=True)
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error updating: ' + str(e.reason))
@@ -434,7 +436,7 @@ class libkitsu(lib):
         try:
             self._request('DELETE', self.prefix +
                           "/library-entries/%s" % item['my_id'], auth=True)
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error deleting: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error deleting: ' + str(e.reason))
@@ -463,7 +465,7 @@ class libkitsu(lib):
                 raise utils.APIError('No results.')
 
             return infolist
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
         except urllib.error.URLError as e:
             raise utils.APIError('Error searching: ' + str(e.reason))
@@ -508,7 +510,7 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
@@ -518,7 +520,7 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
@@ -542,8 +544,8 @@ class libkitsu(lib):
         info = utils.show()
         attr = media['attributes']
 
-        #print(json.dumps(media, indent=2))
-        #raise NotImplementedError
+        # print(json.dumps(media, indent=2))
+        # raise NotImplementedError
 
         if media['type'] == 'anime':
             total = attr['episodeCount']
@@ -558,7 +560,6 @@ class libkitsu(lib):
             # For now I'm just picking the romaji title in these cases.
             'title':       attr['titles'].get('en_jp') or attr.get('canonicalTitle') or attr['titles'].get('en'),
             'total':       total or 0,
-            'type':        utils.Type.find(attr['subtype']),
             'image':       attr['posterImage'] and attr['posterImage']['small'],
             'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
             'start_date':  self._str2date(attr['startDate']),

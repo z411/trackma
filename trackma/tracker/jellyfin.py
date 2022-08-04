@@ -15,8 +15,9 @@
 
 # TODO: Add gui stuff for this
 
-import time
 import os
+import time
+
 import requests
 
 from trackma.tracker import tracker
@@ -67,7 +68,7 @@ class JellyfinTracker(tracker.TrackerBase):
                     elif session_info['state'] == PLAYING:
                         self.resume_timer()
 
-                except (IndexError,TypeError):
+                except (IndexError, TypeError):
                     if self.status_log[-1] == IDLE:
                         self.last_filename = None
                         self.update_show_if_needed(0, None)
@@ -102,7 +103,7 @@ class JellyfinTracker(tracker.TrackerBase):
             return info
 
         for session in response_json:
-            if not 'UserName' in session:
+            if 'UserName' not in session:
                 continue
             if session['UserName'] != self.username:
                 continue

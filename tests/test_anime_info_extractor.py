@@ -1,7 +1,5 @@
 from pprint import pprint
 
-# import pytest
-
 from trackma.extras import AnimeInfoExtractor
 
 DEFAULTS = {
@@ -29,7 +27,7 @@ def _assert_aie(filename, **assertions):
     Accepts a dict of assertions and asserts everything not provided as unchanged.
     """
     aie = AnimeInfoExtractor(filename)
-    pprint(vars(aie))  # print defails for quicker debugging on failure
+    pprint(vars(aie))  # print details for quicker debugging on failure
     for key, default in DEFAULTS.items():
         expected = assertions.get(key, default)
         assert getattr(aie, key) == expected

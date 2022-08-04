@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import time
-import json
 import base64
+import json
+import time
+import urllib.error
 import urllib.request
 
-import trackma.utils as utils
 from trackma.tracker import tracker
 
 NOT_RUNNING = 0
@@ -55,7 +55,7 @@ class KodiTracker(tracker.TrackerBase):
                     return IDLE
             else:
                 return IDLE
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             if hasattr(e, 'code'):
                 if e.code == 401:
                     return AUTH_REQUIRED
@@ -86,8 +86,8 @@ class KodiTracker(tracker.TrackerBase):
         if self._get_kodi_status() == IDLE:
             return None
 
-        time = self._get_player_props("totaltime")
-        seconds = (time['hours']*3600)+(time['minutes']*60)+(time['seconds'])
+        totaltime = self._get_player_props("totaltime")
+        seconds = (totaltime['hours'] * 3600) + (totaltime['minutes'] * 60) + (totaltime['seconds'])
 
         return round(seconds*0.80)
 

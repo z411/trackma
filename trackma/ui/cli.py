@@ -14,27 +14,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
+import argparse
+import cmd as command
 import os
+import re
+import shlex
 import subprocess
+import sys
+import textwrap
+from operator import itemgetter  # Used for sorting list
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 
 try:
     import readline
     has_readline = True
 except ImportError:
     has_readline = False
-
-import cmd
-import shlex
-import textwrap
-import re
-import argparse
-from operator import itemgetter  # Used for sorting list
-
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
 
 _COLOR_RESET = '\033[0m'
 _COLOR_ENGINE = '\033[0;32m'
@@ -55,7 +54,7 @@ _PCOLOR_MEDIATYPE = '\001\033[0;33m\002'
 _PCOLOR_FILTER = '\001\033[0;35m\002'
 
 
-class Trackma_cmd(cmd.Cmd):
+class Trackma_cmd(command.Cmd):
     """
     Main program, inherits from the useful Cmd class
     for interactive console
@@ -202,7 +201,7 @@ class Trackma_cmd(cmd.Cmd):
         print("Trackma is an open source client for media tracking websites.")
         print("https://github.com/z411/trackma")
         print()
-        print("This program is licensed under the GPLv3 and it comes with ASOLUTELY NO WARRANTY.")
+        print("This program is licensed under the GPLv3 and it comes with ABSOLUTELY NO WARRANTY.")
         print("Many contributors have helped to run this project; for more information see the AUTHORS file.")
         print("For more information about the license, see the COPYING file.")
         print()
@@ -793,7 +792,7 @@ class Trackma_cmd(cmd.Cmd):
         if needed[0] <= len(args) <= needed[1]:
             return func(args)
         else:
-            print("Incorrent number of arguments. See `help %s`" % cmd)
+            print("Incorrect number of arguments. See `help %s`" % cmd)
 
     def display_error(self, e):
         print("%s%s: %s%s" % (_COLOR_ERROR, type(e).__name__, e, _COLOR_RESET))

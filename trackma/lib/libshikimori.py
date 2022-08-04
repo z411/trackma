@@ -15,20 +15,21 @@
 #
 
 import json
-import urllib.parse
-import urllib.request
 import socket
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
-from trackma.lib.lib import lib
 from trackma import utils
+from trackma.lib.lib import lib
 
 
 class libshikimori(lib):
     """
     API class to communicate with Shikimori
 
-    Website: http://shikimori.org
+    Website: https://shikimori.org
 
     messenger: Messenger object to send useful messages to
     """
@@ -135,7 +136,7 @@ class libshikimori(lib):
             self.watched_str = "episodes"
 
         # handler=urllib.request.HTTPHandler(debuglevel=1)
-        #self.opener = urllib.request.build_opener(handler)
+        # self.opener = urllib.request.build_opener(handler)
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [('User-agent', 'Trackma')]
 
@@ -168,7 +169,7 @@ class libshikimori(lib):
             response = self.opener.open(request)
 
             return json.loads(response.read().decode('utf-8'))
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
@@ -251,7 +252,6 @@ class libshikimori(lib):
                 'aliases': [item[self.mediatype]['russian']],
                 'type': self.type_translate[item[self.mediatype]['kind']],
                 'status': self.status_translate[item[self.mediatype]['status']],
-                'my_id': item['id'],
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
                 'my_score': item['score'],
@@ -342,7 +342,7 @@ class libshikimori(lib):
             }
             dest_url = self.api_url + "/user_rates"
         else:
-            #user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
+            # user_rate = {'score': 0, 'status': 0, 'episodes': 0, 'volumes': 0, 'chapters': 0, 'text': '', 'rewatches': 0}
             user_rate = {}
             dest_url = self.api_url + "/user_rates/{}".format(item['my_id'])
 
@@ -368,7 +368,7 @@ class libshikimori(lib):
             'url': self.url + item['url'],
             'extra': [
                 ('Description',     self._lc(item.get('description'))),
-                #('Genres',          item.get('genres')),
+                # ('Genres',          item.get('genres')),
                 ('Type',            self._lc(item.get('kind').capitalize())),
                 ('Average score',   self._lc(item.get('score'))),
                 ('Russian title',   self._lc(item.get('russian'))),

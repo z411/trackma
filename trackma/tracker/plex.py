@@ -16,6 +16,7 @@
 
 import ntpath
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.dom.minidom as xdmd
@@ -51,7 +52,7 @@ class PlexTracker(tracker.TrackerBase):
                 return ACTIVE
             else:
                 return IDLE
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             if e.code == 401:
                 return CLAIMED
             else:
@@ -168,7 +169,7 @@ class PlexTracker(tracker.TrackerBase):
     def _get_xml_info(self, url, tag, attr):
         try:
             uop = urllib.request.urlopen(url)
-        except urllib.request.URLError:
+        except urllib.error.URLError:
             uop = urllib.request.urlopen(url+self.token)
 
         doc = xdmd.parse(uop)

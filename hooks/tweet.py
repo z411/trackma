@@ -7,15 +7,15 @@
 
 #########################
 
-ACCESS_KEY      = ""
-ACCESS_SECRET   = ""
+ACCESS_KEY = ""
+ACCESS_SECRET = ""
 
 #########################
 
 if not ACCESS_KEY or not ACCESS_SECRET:
     raise Exception("You must provide the Twitter access token in the hook file.")
 
-CONSUMER_KEY    = "9Hb6ZdMmvuAWxi4GCkfhToRiH"
+CONSUMER_KEY = "9Hb6ZdMmvuAWxi4GCkfhToRiH"
 CONSUMER_SECRET = "86kx9Mv9wJ5UTkDEw2jRBFYstpkDK2iP7ZAo12fhf0WooMln5w"
 
 try:
@@ -25,7 +25,7 @@ except NameError:
     print("tweet-hook: python3-twitter is not installed.")
 except ModuleNotFoundError:
     from twitter import TwitterError
-    USE_OAUTH=True
+    USE_OAUTH = True
 
 if USE_OAUTH:
     api = twitter.Twitter(
@@ -42,10 +42,11 @@ else:
         access_token_key=ACCESS_KEY,
         access_token_secret=ACCESS_SECRET)
 
+
 def status_changed(engine, show, old_status):
-    api_name        = engine.api_info['name']
+    api_name = engine.api_info['name']
     finished_status = engine.mediainfo['statuses_finish']
-    score_max       = engine.mediainfo['score_max']
+    score_max = engine.mediainfo['score_max']
 
     if show['my_status'] in finished_status:
         msg = "[%s] Finished %s" % (api_name, show['title'])

@@ -7,15 +7,15 @@
  use images from pypresence-assets dir
  when creating discord application
 """
-import time
 import os
-
+import time
+from asyncio import new_event_loop as new_loop
+from asyncio import set_event_loop as set_loop
 from threading import Thread
-from asyncio import (
-    new_event_loop as new_loop,
-    set_event_loop as set_loop)
+
 from pypresence.client import Client
 from pypresence.exceptions import InvalidID, InvalidPipe
+
 from trackma.utils import estimate_aired_episodes
 
 

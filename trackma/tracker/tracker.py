@@ -14,14 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import threading
-import re
-import time
 import os
+import threading
+import time
 
-import ctypes
-
-from trackma import messenger
 from trackma import utils
 from trackma.extras import AnimeInfoExtractor
 

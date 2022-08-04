@@ -14,7 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import Gtk, Gdk, Pango, GObject
+from gi.repository import GObject, Gdk, Gtk, Pango
+
 from trackma import utils
 
 
@@ -162,9 +163,9 @@ class ShowListStore(Gtk.ListStore):
                 row[1] = title_str
                 return
 
-    def remove(self, show=None, id=None):
+    def remove(self, show=None, show_id=None):
         for row in self:
-            if int(row[0]) == (show['id'] if show is not None else id):
+            if int(row[0]) == (show['id'] if show is not None else show_id):
                 Gtk.ListStore.remove(self, row.iter)
                 return
 
@@ -188,8 +189,8 @@ class ShowListFilter(Gtk.TreeModelFilter):
         self.set_visible_func(self.status_filter)
         self._status = status
 
-    def status_filter(self, model, iter, data):
-        return self._status is None or model[iter][15] == self._status
+    def status_filter(self, model, iterator, data):
+        return self._status is None or model[iterator][15] == self._status
 
     def get_value(self, obj, key='id'):
         try:
@@ -198,7 +199,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
             if isinstance(key, (str,)):
                 key = self.props.child_model.column(key)
             return super().get_value(obj, key)
-        except:
+        except Exception:
             return None
 
 
@@ -250,11 +251,11 @@ class ShowTreeView(Gtk.TreeView):
             if name not in self.visible_columns:
                 self.cols[name].set_visible(False)
 
-        #renderer_id = Gtk.CellRendererText()
-        #self.cols['ID'].pack_start(renderer_id, False, True, 0)
+        # renderer_id = Gtk.CellRendererText()
+        # self.cols['ID'].pack_start(renderer_id, False, True, 0)
         # self.cols['ID'].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
         # self.cols['ID'].set_expand(False)
-        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        # self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)
@@ -459,7 +460,7 @@ class ProgressCellRenderer(Gtk.CellRenderer):
             cr.set_source_rgb(
                 *self.__get_color(self.colors['progress_sub_fg']))
             for episode in self.eps:
-                if episode > 0 and episode <= self.total:
+                if 0 < episode <= self.total:
                     start = int(w / float(self.total) * (episode - 1))
                     finish = int(w / float(self.total) * episode)
                     cr.rectangle(x+start, y+h-self._subheight,

@@ -19,7 +19,8 @@ import threading
 import urllib.request
 from io import BytesIO
 
-from gi.repository import GLib, Gtk, GdkPixbuf
+from gi.repository import GLib, GdkPixbuf, Gtk
+
 from trackma import utils
 
 try:

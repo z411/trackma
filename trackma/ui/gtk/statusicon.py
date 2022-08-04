@@ -13,9 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from trackma import utils
-from gi.repository import Gdk, Gtk, GObject
 from gi import require_version
+from gi.repository import GObject, Gdk, Gtk
+
+from trackma import utils
+
 require_version('Gdk', '3.0')
 
 

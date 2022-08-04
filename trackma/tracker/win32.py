@@ -15,8 +15,8 @@
 #
 
 import ctypes
-import time
 import re
+import time
 
 from trackma.tracker import tracker
 
@@ -27,7 +27,7 @@ class Win32Tracker(tracker.TrackerBase):
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
-        self.winregex = re.compile("(\.mkv|\.mp4|\.avi)")
+        self.winregex = re.compile(r"(\.mkv|\.mp4|\.avi)")
 
     def _foreach_window(self, hwnd, lParam):
         # Get class name and window title of the current hwnd

@@ -15,7 +15,7 @@
 
     <section>
       <item>
-        <attribute name="action">win.syncronize</attribute>
+        <attribute name="action">win.synchronize</attribute>
         <attribute name="label" translatable="yes">Synchronize</attribute>
       </item>
       <item>
@@ -79,7 +79,7 @@
       <submenu>
         <attribute name="label" translatable="yes">_List</attribute>
         <item>
-          <attribute name="action">win.syncronize</attribute>
+          <attribute name="action">win.synchronize</attribute>
           <attribute name="label" translatable="yes">_Synchronize</attribute>
         </item>
         <item>

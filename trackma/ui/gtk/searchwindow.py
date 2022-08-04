@@ -17,10 +17,11 @@
 import os
 import threading
 
-from gi.repository import GLib, Gtk, GObject
+from gi.repository import GLib, GObject, Gtk
+
+from trackma import utils
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.showinfobox import ShowInfoBox
-from trackma import utils
 
 
 class SearchThread(threading.Thread):
@@ -178,9 +179,9 @@ class SearchTreeView(Gtk.TreeView):
             self.append_column(self.cols[name])
             i += 1
 
-        #renderer_id = Gtk.CellRendererText()
-        #self.cols['ID'].pack_start(renderer_id, False)
-        #self.cols['ID'].add_attribute(renderer_id, 'text', 0)
+        # renderer_id = Gtk.CellRendererText()
+        # self.cols['ID'].pack_start(renderer_id, False)
+        # self.cols['ID'].add_attribute(renderer_id, 'text', 0)
 
         renderer_title = Gtk.CellRendererText()
         self.cols['Title'].pack_start(renderer_title, False)

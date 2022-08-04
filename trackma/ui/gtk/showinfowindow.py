@@ -16,7 +16,8 @@
 
 import os
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk, Gtk
+
 from trackma.ui.gtk import gtk_dir
 from trackma.ui.gtk.showinfobox import ShowInfoBox
 

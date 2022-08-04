@@ -6,6 +6,7 @@ for fetching, updating and using data from personal lists hosted in several medi
 
 Features
 --------
+
 - Manage local list and synchronize when necessary, useful when offline
 - Manage multiple accounts on different media tracking sites
 - Support for several mediatypes (as supported by the site)
@@ -17,6 +18,7 @@ Features
 
 Currently supported websites
 ----------------------------
+
 - [Anilist](https://anilist.co/) (Anime, Manga)
 - [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
@@ -84,39 +86,36 @@ Make sure you've installed the proper dependencies (listed above)
 according to the user interface you plan to use, and then run the
 following command:
 
-<pre># pip3 install Trackma</pre>
+    # pip3 install Trackma
+You can also install the git (probably unstable, but newer) version like this:
 
-You can also install the git (probably unstable, but newer) version like this"
-
-<pre># pip3 install -U git+https://github.com/z411/trackma.git</pre>
+    # pip3 install -U git+https://github.com/z411/trackma.git
 
 Or download the source code and install:
 
-<pre># git clone --recursive https://github.com/z411/trackma.git
-# cd trackma
-# sudo python3 setup.py install</pre>
+    # git clone --recursive https://github.com/z411/trackma.git
+    # cd trackma
+    # sudo python3 setup.py install
 
 Then you can run the program with the interface you like.
 
-<pre>
-$ trackma
-$ trackma-curses
-$ trackma-gtk
-$ trackma-qt
-</pre>
+    $ trackma
+    $ trackma-curses
+    $ trackma-gtk
+    $ trackma-qt
 
 Trackma also has user-provided packages for several distributions.
 
-- **Arch Linux:** http://aur.archlinux.org/packages/trackma-git
-- **Fedora:** https://copr.fedoraproject.org/coprs/dyskette/trackma/
-- **Gentoo Linux:** http://gpo.zugaina.org/net-misc/trackma
-- **NixOS:** https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix
-- **OpenSUSE:** http://download.opensuse.org/repositories/home:/Rethil/
-- **Void Linux:** https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template
+- **Arch Linux:** <http://aur.archlinux.org/packages/trackma-git>
+- **Fedora:** <https://copr.fedoraproject.org/coprs/dyskette/trackma/>
+- **Gentoo Linux:** <http://gpo.zugaina.org/net-misc/trackma>
+- **NixOS:** <https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix>
+- **OpenSUSE:** <http://download.opensuse.org/repositories/home:/Rethil/>
+- **Void Linux:** <https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template>
 
 A user from the community also is providing a Docker image:
 
-- **Docker:** https://hub.docker.com/r/frosty5689/trackma/
+- **Docker:** <https://hub.docker.com/r/frosty5689/trackma/>
 
 Configuration
 -------------
@@ -124,31 +123,33 @@ Configuration
 A configuration file will be created in `~/.config/trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
-https://github.com/z411/trackma/wiki/Configuration-File
+<https://github.com/z411/trackma/wiki/Configuration-File>
 
 Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 
 Development
 -----------
 
-The code is hosted as a git repository in github:
+The code is hosted as a git repository in GitHub:
 
-http://github.com/z411/trackma
+<http://github.com/z411/trackma>
 
 If you plan to make changes to the code, I suggest using the following method to install Trackma
 instead of the normal way, so the changes you make get reflected immediately:
 
-<pre># python3 setup.py develop</pre>
+    # python3 setup.py develop
 
 If you encounter any problems or have anything to suggest, please don't
-hesitate to submit an issue in the github issue tracker:
+hesitate to submit an issue in the GitHub issue tracker:
 
-http://github.com/z411/trackma/issues
+<http://github.com/z411/trackma/issues>
 
 License
 -------
+
 Trackma is licensed under the GPLv3 license, please see LICENSE for details.
 
 Authors
 -------
+
 Trackma was originally written by z411 <z411@omaera.org>. For other contributors see AUTHORS file. GTK icon designed by shuuichi.

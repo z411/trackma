@@ -18,8 +18,8 @@ import os
 import re
 import time
 
-from trackma.tracker import tracker
 from trackma import utils
+from trackma.tracker import tracker
 
 
 class inotifyBase(tracker.TrackerBase):

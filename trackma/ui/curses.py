@@ -14,9 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import re
 import subprocess
+import sys
+import webbrowser
+from itertools import cycle
+from operator import itemgetter
+
+from trackma import messenger
+from trackma import utils
+from trackma.accounts import AccountManager
+from trackma.engine import Engine
 
 try:
     import urwid
@@ -25,19 +34,8 @@ except ImportError:
           "urwid package.")
     sys.exit(-1)
 
-import re
-import urwid
-import webbrowser
-from operator import itemgetter
-from itertools import cycle
 
-from trackma.engine import Engine
-from trackma.accounts import AccountManager
-from trackma import messenger
-from trackma import utils
-
-
-class Trackma_urwid():
+class Trackma_urwid:
     """
     Main class for the urwid version of Trackma
     """
@@ -245,7 +243,7 @@ class Trackma_urwid():
         self.engine.connect_signal('prompt_for_update', self.prompt_update)
         self.engine.connect_signal('tracker_state', self.tracker_state)
 
-        # Engine start and list rebuildi
+        # Engine start and list rebuild
         self.status("Building lists...")
         self.engine.start()
         self._rebuild()
@@ -279,11 +277,11 @@ class Trackma_urwid():
             except AssertionError:
                 print(msg)
 
-    def keystroke(self, input):
+    def keystroke(self, key_input):
         try:
-            self.keymapping[input]()
+            self.keymapping[key_input]()
         except KeyError:
-            # Unbinded key pressed; do nothing
+            # Unbound key pressed; do nothing
             pass
 
     def key_left(self):
@@ -413,7 +411,7 @@ class Trackma_urwid():
         helptext = "Trackma-curses " + utils.VERSION + \
             "  by z411 (z411@omaera.org)\n\n"
         helptext += "Trackma is an open source client for media tracking websites.\n"
-        helptext += "http://github.com/z411/trackma\n\n"
+        helptext += "https://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
         helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
@@ -484,7 +482,7 @@ class Trackma_urwid():
         mediatype = urwid.Columns(
             [urwid.Text('Mediatype:'), urwid.Pile(mediatypes)])
 
-        #main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
+        # main_pile = urwid.Pile([mediatype, urwid.Divider(), api])
         self.dialog = Dialog(mediatype, self.mainloop,
                              width=30, title='Change media type')
         self.dialog.show()
@@ -754,7 +752,7 @@ class Trackma_urwid():
             text = "Search forward: "
 
         self.ask(text, self.search_request, key)
-        #urwid.connect_signal(self.asker, 'change', self.search_live)
+        # urwid.connect_signal(self.asker, 'change', self.search_live)
 
     # def search_live(self, widget, data):
     #    if data:
@@ -1070,7 +1068,7 @@ class ShowWalker(urwid.SimpleListWalker):
         for i, item in enumerate(self):
             if showid == item.showid:
                 return (i, item)
-        #raise Exception('Show not found in ShowWalker.')
+        # raise Exception('Show not found in ShowWalker.')
         return (None, None)
 
     def highlight_show(self, show, tocolor):

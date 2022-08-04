@@ -14,16 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma import utils
-from trackma.ui.qt.util import getIcon, getColor, FilterBar
-from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
-from trackma.ui.qt.delegates import ShowsTableDelegate
-from PyQt5.QtWidgets import (
-    QDialog, QGridLayout, QListWidget, QListWidgetItem, QAbstractItemView,
-    QWidget, QVBoxLayout, QGroupBox, QFormLayout, QCheckBox, QRadioButton,
-    QSpinBox, QLineEdit, QLabel, QPushButton, QComboBox, QTabWidget, QSplitter,
-    QFrame, QStackedWidget, QDialogButtonBox, QColorDialog, QFileDialog, QScrollArea)
 from PyQt5 import QtCore
+from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QColorDialog, QComboBox, QDialog, QDialogButtonBox,
+                             QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QLabel, QLineEdit, QListWidget,
+                             QListWidgetItem, QPushButton, QRadioButton, QScrollArea, QSpinBox, QSplitter,
+                             QStackedWidget, QTabWidget, QVBoxLayout, QWidget)
+
+from trackma import utils
+from trackma.ui.qt.delegates import ShowsTableDelegate
+from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
+from trackma.ui.qt.util import FilterBar, getColor, getIcon
+
 pyqt_version = 5
 
 
@@ -415,20 +416,20 @@ class SettingsDialog(QDialog):
         self.syscolor_buttons = []
         g_scheme_layout = QGridLayout()
         tw_scheme = QTabWidget()
-        for (key, tab_title) in col_tabs:
+        for (key1, tab_title) in col_tabs:
             page = QFrame()
             page_layout = QGridLayout()
             col = 0
             # Generate widgets from the keys and values
-            for (key, label) in self.colors[key]:
+            for (key2, label) in self.colors[key1]:
                 self.color_buttons.append(QPushButton())
                 # self.color_buttons[-1].setStyleSheet('background-color: ' + getColor(self.config['colors'][key]).name())
                 self.color_buttons[-1].setFocusPolicy(QtCore.Qt.NoFocus)
                 self.color_buttons[-1].clicked.connect(
-                    self.s_color_picker(key, False))
+                    self.s_color_picker(key2, False))
                 self.syscolor_buttons.append(QPushButton('System Colors'))
                 self.syscolor_buttons[-1].clicked.connect(
-                    self.s_color_picker(key, True))
+                    self.s_color_picker(key2, True))
                 page_layout.addWidget(QLabel(label),             col, 0, 1, 1)
                 page_layout.addWidget(self.color_buttons[-1],    col, 1, 1, 1)
                 page_layout.addWidget(self.syscolor_buttons[-1], col, 2, 1, 1)

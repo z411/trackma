@@ -14,16 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from trackma import utils
-from trackma.ui.qt.widgets import AddTableDetailsView, AddCardView
-from trackma.ui.qt.details import DetailsDialog
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QTableView, QAbstractItemView, QHeaderView, QSpinBox,
-    QDialogButtonBox, QStackedWidget, QComboBox, QRadioButton, QSplitter,
-    QMessageBox)
-from PyQt5 import QtCore, QtGui
 from datetime import date
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
+                             QRadioButton, QSpinBox, QSplitter, QStackedWidget, QVBoxLayout)
+
+from trackma import utils
+from trackma.ui.qt.details import DetailsDialog
+from trackma.ui.qt.widgets import AddCardView, AddTableDetailsView
+
 pyqt_version = 5
 
 
@@ -120,7 +120,7 @@ class AddDialog(QDialog):
         self.contents.addWidget(tableview)
 
         # Use for testing
-        #self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
+        # self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
         bottom_buttons = QDialogButtonBox()
         bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)

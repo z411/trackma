@@ -14,16 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import datetime
 import gzip
 import json
-import urllib.parse
-import urllib.request
 import socket
 import time
-import datetime
+import urllib.error
+import urllib.parse
+import urllib.request
 
-from trackma.lib.lib import lib
 from trackma import utils
+from trackma.lib.lib import lib
 
 
 class libmal(lib):
@@ -150,7 +151,7 @@ class libmal(lib):
         else:
             self.total_str = "num_episodes"
             self.watched_str = "num_episodes_watched"
-            self.watched_send_str = "num_watched_episodes" # Please fix this upstream...
+            self.watched_send_str = "num_watched_episodes"  # Please fix this upstream...
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
@@ -192,9 +193,9 @@ class libmal(lib):
                 response = response.read().decode('utf-8')
             
             return json.loads(response)
-        except urllib.request.HTTPError as e:
+        except urllib.error.HTTPError as e:
             raise utils.APIError("Connection error: %s" % e)
-        except urllib.request.URLError as e:
+        except urllib.error.URLError as e:
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
@@ -244,8 +245,8 @@ class libmal(lib):
         else:
             self.logged_in = True
 
-        #if not self.userid:
-        #    self._refresh_user_info()
+        # if not self.userid:
+        #     self._refresh_user_info()
 
         return True
 
@@ -404,6 +405,6 @@ class libmal(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
-        except:
+        except Exception:
             self.msg.debug(self.name, 'Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid

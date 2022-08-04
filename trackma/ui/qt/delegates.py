@@ -1,6 +1,7 @@
-from trackma.ui.qt.util import getColor
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QStyledItemDelegate, QStyle, QDoubleSpinBox, QStyleOptionProgressBar
+from PyQt5.QtWidgets import QDoubleSpinBox, QStyle, QStyleOptionProgressBar, QStyledItemDelegate
+
+from trackma.ui.qt.util import getColor
 
 MARGIN = 5
 PADDING = 5

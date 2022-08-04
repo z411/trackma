@@ -66,7 +66,7 @@ class TrackmaApplication(Gtk.Application):
 
         accels = (
             ('win.search', '<Primary>A'),
-            ('win.syncronize', '<Primary>S'),
+            ('win.synchronize', '<Primary>S'),
             ('win.upload', '<Primary>E'),
             ('win.download', '<Primary>D'),
             ('win.scanfiles', '<Primary>L'),

@@ -18,11 +18,11 @@ import os
 import re
 import urllib.parse
 
-from pydbus import SessionBus
 from gi.repository import GLib
+from pydbus import SessionBus
 
-from trackma.tracker import tracker
 from trackma import utils
+from trackma.tracker import tracker
 
 
 class MPRISTracker(tracker.TrackerBase):
@@ -62,7 +62,7 @@ class MPRISTracker(tracker.TrackerBase):
                 if not self.active_player:
                     self._handle_status(status, sender)
 
-                if not sender in self.view_offsets:
+                if sender not in self.view_offsets:
                     GLib.timeout_add(
                         100, self._update_view_offset, sender, properties)
 
@@ -195,7 +195,7 @@ class MPRISTracker(tracker.TrackerBase):
         self.session = SessionBus()
         self.bus = self.session.get('.DBus')
 
-        # Look for already running players and conect them
+        # Look for already running players and connect them
         for name in self.bus.ListNames():
             if name.startswith(MPRISTracker.mpris_base):
                 self._connect(name)

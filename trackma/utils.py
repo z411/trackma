@@ -14,17 +14,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import subprocess
-import sys
-import re
-import time
-import shutil
 import copy
 import datetime
-import json
 import difflib
+import json
+import os
 import pickle
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
 import uuid
 from enum import Enum, auto
 
@@ -400,7 +402,7 @@ def guess_show(show_title, tracker_list):
 
 
 def redirect_show(show_tuple, redirections, tracker_list):
-    """ Use a redirection dictionary and return the new show ID and episode acordingly """
+    """ Use a redirection dictionary and return the new show ID and episode accordingly """
     if not redirections:
         return show_tuple
 
@@ -468,12 +470,12 @@ def get_terminal_size(fd=1):
         import termios
         import struct
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-    except:
+    except Exception:
         try:
             width = int(os.environ.get('COLUMNS', 80))
             height = int(os.environ.get('LINES', 25))
             hw = (height, width)
-        except:
+        except Exception:
             hw = (25, 80)
 
     return hw
