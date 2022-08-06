@@ -354,8 +354,6 @@ class MainWindow(QMainWindow):
         self.show_image.setFixedHeight(149)
         self.show_image.setMinimumWidth(100)
         self.show_image.setAlignment(QtCore.Qt.AlignCenter)
-        self.show_image.setStyleSheet(
-            "border: 1px solid #777;background-color:#999;text-align:center")
         show_progress_label = QLabel('Progress:')
         self.show_progress = QSpinBox()
         self.show_progress_bar = QProgressBar()
