@@ -153,7 +153,7 @@ class libshikimori(lib):
             content_type = 'application/json'
 
         request = urllib.request.Request(url, post)
-        self.msg.debug(self.name, "URL: %s" % url)
+        self.msg.debug("URL: %s" % url)
         request.get_method = lambda: method
 
         if content_type:
@@ -185,12 +185,12 @@ class libshikimori(lib):
         }
 
         if refresh:
-            self.msg.info(self.name, 'Refreshing access token...')
+            self.msg.info('Refreshing access token...')
 
             params['grant_type'] = 'refresh_token'
             params['refresh_token'] = self._get_userconfig('refresh_token')
         else:
-            self.msg.info(self.name, 'Requesting access token...')
+            self.msg.info('Requesting access token...')
 
             params['code'] = self.pin
             params['grant_type'] = 'authorization_code'
@@ -208,7 +208,7 @@ class libshikimori(lib):
         self._emit_signal('userconfig_changed')
 
     def _refresh_user_info(self):
-        self.msg.info(self.name, 'Refreshing user details...')
+        self.msg.info('Refreshing user details...')
 
         data = self._request("GET", self.api_url + "/users/whoami", auth=True)
 
@@ -235,7 +235,7 @@ class libshikimori(lib):
 
     def fetch_list(self):
         self.check_credentials()
-        self.msg.info(self.name, 'Downloading list...')
+        self.msg.info('Downloading list...')
 
         params = {'limit': 5000}
         data = self._request(
@@ -267,17 +267,17 @@ class libshikimori(lib):
 
     def add_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Adding item %s..." % item['title'])
+        self.msg.info("Adding item %s..." % item['title'])
         return self._update_entry(item, "POST")
 
     def update_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Updating item %s..." % item['title'])
+        self.msg.info("Updating item %s..." % item['title'])
         return self._update_entry(item, "PUT")
 
     def delete_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Deleting item %s..." % item['title'])
+        self.msg.info("Deleting item %s..." % item['title'])
 
         data = self._request(
             "DELETE", self.api_url + "/user_rates/{}".format(item['my_id']), auth=True)
@@ -285,7 +285,7 @@ class libshikimori(lib):
     def search(self, criteria, method):
         self.check_credentials()
 
-        self.msg.info(self.name, "Searching for {}...".format(criteria))
+        self.msg.info("Searching for {}...".format(criteria))
         param = {'q': criteria}
         try:
             data = self._request(

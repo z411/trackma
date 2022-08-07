@@ -87,19 +87,17 @@ class inotifyBase(tracker.TrackerBase):
                         with open('/proc/%s/cmdline' % p, 'rb') as f:
                             cmdline = f.read()
                             pname = cmdline.partition(b'\x00')[0]
-                        self.msg.debug(
-                            self.name, 'Playing process: {} {} ({})'.format(p, pname, cmdline))
+                        self.msg.debug('Playing process: {} {} ({})'.format(p, pname, cmdline))
 
                         # Check if it's our process
                         if self.re_players.search(pname):
                             return p, fd
                         else:
-                            self.msg.debug(
-                                self.name, "Not read by player ({})".format(pname))
+                            self.msg.debug("Not read by player ({})".format(pname))
             except OSError:
                 pass
 
-        self.msg.debug(self.name, "Couldn't find playing process.")
+        self.msg.debug("Couldn't find playing process.")
         return None, None
 
     def _closed_handle(self, pid, fd):
@@ -110,7 +108,7 @@ class inotifyBase(tracker.TrackerBase):
         return not os.path.islink(d)
 
     def _proc_open(self, path, name):
-        self.msg.debug(self.name, 'Got OPEN event: {} {}'.format(path, name))
+        self.msg.debug('Got OPEN event: {} {}'.format(path, name))
         pathname = os.path.join(path, name)
 
         pid, fd = self._is_being_played(pathname)
@@ -123,24 +121,23 @@ class inotifyBase(tracker.TrackerBase):
                 (state, show_tuple) = self._get_playing_show(pathname)
             else:
                 (state, show_tuple) = self._get_playing_show(name)
-            self.msg.debug(
-                self.name, "Got status: {} {}".format(state, show_tuple))
+            self.msg.debug("Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple)
         else:
-            self.msg.debug(self.name, "Not played by player, ignoring.")
+            self.msg.debug("Not played by player, ignoring.")
 
     def _proc_close(self, path, name):
-        self.msg.debug(self.name, 'Got CLOSE event: {} {}'.format(path, name))
+        self.msg.debug('Got CLOSE event: {} {}'.format(path, name))
         pathname = os.path.join(path, name)
 
         open_pathname, pid, fd = self.open_file
 
         if pathname != open_pathname:
-            self.msg.debug(self.name, "A different file was closed.")
+            self.msg.debug("A different file was closed.")
             return
 
         if not self._closed_handle(pid, fd):
-            self.msg.debug(self.name, "Our pid hasn't closed the file.")
+            self.msg.debug("Our pid hasn't closed the file.")
             return
 
         self._emit_signal('detected', path, name)

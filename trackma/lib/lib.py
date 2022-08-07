@@ -69,7 +69,7 @@ class lib:
         """Initializes the API"""
         self.userconfig = userconfig
         self.msg = messenger.with_classname(self.name)
-        self.msg.info(self.name, 'Initializing...')
+        self.msg.info('Initializing...')
 
         if not userconfig.get('mediatype'):
             userconfig['mediatype'] = self.default_mediatype

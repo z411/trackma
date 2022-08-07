@@ -219,12 +219,12 @@ class libkitsu(lib):
         }
 
         if refresh:
-            self.msg.info(self.name, 'Refreshing access token...')
+            self.msg.info('Refreshing access token...')
 
             params['grant_type'] = 'refresh_token'
             params['refresh_token'] = self._get_userconfig('refresh_token')
         else:
-            self.msg.info(self.name, 'Requesting access token...')
+            self.msg.info('Requesting access token...')
 
             params['grant_type'] = 'password'
             params['username'] = self.username
@@ -246,7 +246,7 @@ class libkitsu(lib):
         self._emit_signal('userconfig_changed')
 
     def _refresh_user_info(self):
-        self.msg.info(self.name, 'Refreshing user details...')
+        self.msg.info('Refreshing user details...')
         params = {
             "filter[self]": 'true',
         }
@@ -279,7 +279,7 @@ class libkitsu(lib):
         """Queries the full list from the remote server.
         Returns the list if successful, False otherwise."""
         self.check_credentials()
-        self.msg.info(self.name, 'Downloading list...')
+        self.msg.info('Downloading list...')
 
         try:
             showlist = dict()
@@ -329,7 +329,7 @@ class libkitsu(lib):
             i = 1
 
             while url:
-                self.msg.info(self.name, 'Getting page {}...'.format(i))
+                self.msg.info('Getting page {}...'.format(i))
 
                 data = self._request('GET', url)
                 data_json = json.loads(data)
@@ -398,7 +398,7 @@ class libkitsu(lib):
     def add_show(self, item):
         """Adds a new show in the server"""
         self.check_credentials()
-        self.msg.info(self.name, "Adding show %s..." % item['title'])
+        self.msg.info("Adding show %s..." % item['title'])
 
         data = self._build_data(item)
 
@@ -416,7 +416,7 @@ class libkitsu(lib):
     def update_show(self, item):
         """Sends a show update to the server"""
         self.check_credentials()
-        self.msg.info(self.name, "Updating show %s..." % item['title'])
+        self.msg.info("Updating show %s..." % item['title'])
 
         data = self._build_data(item)
 
@@ -431,7 +431,7 @@ class libkitsu(lib):
     def delete_show(self, item):
         """Sends a show delete to the server"""
         self.check_credentials()
-        self.msg.info(self.name, "Deleting show %s..." % item['title'])
+        self.msg.info("Deleting show %s..." % item['title'])
 
         try:
             self._request('DELETE', self.prefix +
@@ -442,7 +442,7 @@ class libkitsu(lib):
             raise utils.APIError('Error deleting: ' + str(e.reason))
 
     def search(self, query, method):
-        self.msg.info(self.name, "Searching for %s..." % query)
+        self.msg.info("Searching for %s..." % query)
 
         values = {
             "filter[text]": query,
@@ -511,7 +511,7 @@ class libkitsu(lib):
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
         except Exception:
-            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
     def _iso2date(self, string):
@@ -521,7 +521,7 @@ class libkitsu(lib):
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
         except Exception:
-            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
     def _guess_status(self, start_date, end_date):

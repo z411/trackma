@@ -47,7 +47,7 @@ class TrackerBase(object):
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
         self.msg = messenger.with_classname(self.name)
-        self.msg.info(self.name, 'Initializing...')
+        self.msg.info('Initializing...')
 
         self.list = tracker_list
         self.config = config
@@ -66,7 +66,7 @@ class TrackerBase(object):
         tracker_t = threading.Thread(target=self.observe, args=tracker_args)
         tracker_t.daemon = True
 
-        self.msg.debug(self.name, 'Enabling tracker...')
+        self.msg.debug('Enabling tracker...')
         tracker_t.start()
 
     def set_message_handler(self, message_handler):
@@ -74,7 +74,7 @@ class TrackerBase(object):
         self.msg = message_handler.with_classname(self.name)
 
     def disable(self):
-        self.msg.info(self.name, 'Unloading...')
+        self.msg.info('Unloading...')
         self.active = False
 
     def update_list(self, tracker_list):
@@ -126,7 +126,7 @@ class TrackerBase(object):
                 def action(): return self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
-                self.msg.info(self.name, 'Waiting for the player to close.')
+                self.msg.info('Waiting for the player to close.')
                 self.last_close_queue = action
             elif action:
                 action()
@@ -187,30 +187,27 @@ class TrackerBase(object):
                 expected_next_ep = show['my_progress'] + 1
                 if self.config['tracker_ignore_not_next'] and episode != expected_next_ep:
                     self.msg.warn(
-                        self.name,
                         'Not playing the next episode of {} (expected: {}, found: {}). Ignoring.'
                             .format(show['title'], expected_next_ep, episode),
                     )
                     self._ignore_current()
                     return
                 if episode == show['my_progress']:
-                    self.msg.warn(
-                        self.name, 'Playing the current episode of %s. Ignoring.' % show['title'])
+                    self.msg.warn('Playing the current episode of %s. Ignoring.' % show['title'])
                     self._ignore_current()
                     return
                 if episode < 1 or (show['total'] and episode > show['total']):
-                    self.msg.warn(
-                        self.name, 'Playing an invalid episode of %s. Ignoring.' % show['title'])
+                    self.msg.warn('Playing an invalid episode of %s. Ignoring.' % show['title'])
                     self._ignore_current()
                     return
 
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.Tracker.PLAYING:
-                self.msg.info(self.name, 'Will update %s %d' %
+                self.msg.info('Will update %s %d' %
                               (show['title'], episode))
             elif state == utils.Tracker.NOT_FOUND:
-                self.msg.info(self.name, 'Will add %s %d' %
+                self.msg.info('Will add %s %d' %
                               (show['title'], episode))
 
             self._update_show(state, show_tuple)
@@ -221,14 +218,12 @@ class TrackerBase(object):
             if state == utils.Tracker.NOVIDEO:  # No video is playing
                 # Video didn't get to update phase before it was closed
                 if self.last_state == utils.Tracker.PLAYING and not self.last_updated:
-                    self.msg.info(
-                        self.name, 'Player was closed before update.')
+                    self.msg.info('Player was closed before update.')
             # There's a new video playing but the regex didn't recognize the format
             elif state == utils.Tracker.UNRECOGNIZED:
-                self.msg.warn(
-                    self.name, 'Found video but the file name format couldn\'t be recognized.')
+                self.msg.warn('Found video but the file name format couldn\'t be recognized.')
             elif state == utils.Tracker.NOT_FOUND:  # There's a new video playing but an associated show wasn't found
-                self.msg.warn(self.name, 'Found player but show not in list.')
+                self.msg.warn('Found player but show not in list.')
 
             self.last_show_tuple = None
             self.last_updated = False
@@ -243,7 +238,7 @@ class TrackerBase(object):
             return (utils.Tracker.NOVIDEO, None)
 
         if filename:
-            self.msg.debug(self.name, "Guessing filename: {}".format(filename))
+            self.msg.debug("Guessing filename: {}".format(filename))
 
             # Trim out watch dir
             if os.path.isabs(filename):
@@ -256,7 +251,7 @@ class TrackerBase(object):
 
             if filename == self.last_filename:
                 # It's the exact same filename, there's no need to do the processing again
-                self.msg.debug(self.name, "Same filename as before. Skipping.")
+                self.msg.debug("Same filename as before. Skipping.")
                 return (self.last_state, self.last_show_tuple)
 
             self.last_filename = filename
@@ -270,14 +265,14 @@ class TrackerBase(object):
                 return (utils.Tracker.UNRECOGNIZED, None)
 
             playing_show = utils.guess_show(show_title, self.list)
-            self.msg.debug(self.name, "Show guess: {}: {} ({})".format(
+            self.msg.debug("Show guess: {}: {} ({})".format(
                 show_title, playing_show, show_ep))
 
             if playing_show:
                 (redirected_show, redirected_ep) = utils.redirect_show(
                     (playing_show, show_ep), self.redirections, self.list)
                 if (redirected_show, redirected_ep) != (playing_show, show_ep):
-                    self.msg.debug(self.name, "Redirected to: {} ({})".format(redirected_show, redirected_ep))
+                    self.msg.debug("Redirected to: {} ({})".format(redirected_show, redirected_ep))
                     (playing_show, show_ep) = (redirected_show, redirected_ep)
 
                 return (utils.Tracker.PLAYING, (playing_show, show_ep))

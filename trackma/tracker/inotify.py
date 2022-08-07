@@ -27,15 +27,14 @@ class inotifyTracker(inotifyBase.inotifyBase):
 
     def observe(self, config, watch_dirs):
         # Note that this lib uses bytestrings for filenames and paths.
-        self.msg.info(self.name, 'Using inotify.')
+        self.msg.info('Using inotify.')
 
-        self.msg.debug(self.name, 'Checking if there are open players...')
+        self.msg.debug('Checking if there are open players...')
         opened = self._proc_poll()
         if opened:
             self._proc_open(*opened)
 
-        self.msg.debug(
-            self.name, 'Watching the following paths: ' + ','.join(watch_dirs))
+        self.msg.debug('Watching the following paths: ' + ','.join(watch_dirs))
 
         paths = (path.encode('utf-8') for path in watch_dirs)
         mask = (inotify.constants.IN_OPEN
@@ -81,5 +80,5 @@ class inotifyTracker(inotifyBase.inotifyBase):
                     self.update_show_if_needed(
                         self.last_state, self.last_show_tuple)
         finally:
-            self.msg.info(self.name, 'Tracker has stopped.')
+            self.msg.info('Tracker has stopped.')
             # inotify resource is cleaned-up automatically

@@ -64,7 +64,7 @@ class Win32Tracker(tracker.TrackerBase):
         return False
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, "Using Win32.")
+        self.msg.info("Using Win32.")
 
         while self.active:
             # This runs the tracker and update the playing show if necessary

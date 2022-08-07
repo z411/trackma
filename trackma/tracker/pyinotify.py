@@ -24,9 +24,9 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
     name = 'Tracker (pyinotify)'
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, 'Using pyinotify.')
+        self.msg.info('Using pyinotify.')
 
-        self.msg.debug(self.name, 'Checking if there are open players...')
+        self.msg.debug('Checking if there are open players...')
         opened = self._proc_poll()
         if opened:
             self._proc_open(*opened)
@@ -77,7 +77,7 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
         handler = EventHandler(parent=self)
         notifier = pyinotify.Notifier(wm, handler)
         for path in watch_dirs:
-            self.msg.debug(self.name, 'Watching directory {}'.format(path))
+            self.msg.debug('Watching directory {}'.format(path))
             wm.add_watch(path, mask, rec=True, auto_add=True)
 
         try:
@@ -96,10 +96,10 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
                     else:
                         timeout = 1000  # Check each second for counting
                 elif self.active:
-                    self.msg.debug(self.name, "Sending last state {} {}".format(
+                    self.msg.debug("Sending last state {} {}".format(
                         self.last_state, self.last_show_tuple))
                     self.update_show_if_needed(
                         self.last_state, self.last_show_tuple)
         finally:
             notifier.stop()
-            self.msg.info(self.name, 'Tracker has stopped.')
+            self.msg.info('Tracker has stopped.')

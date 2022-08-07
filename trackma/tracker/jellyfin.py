@@ -45,7 +45,7 @@ class JellyfinTracker(tracker.TrackerBase):
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, "Using Jellyfin.")
+        self.msg.info("Using Jellyfin.")
 
         while self.active:
             session_info = self._get_sessions_info()
@@ -53,7 +53,7 @@ class JellyfinTracker(tracker.TrackerBase):
 
             if self.status_log[-1] == ACTIVE or self.status_log[-1] == IDLE:
                 if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
-                    self.msg.info(self.name, "Reconnected to Jellyfin.")
+                    self.msg.info("Reconnected to Jellyfin.")
                     self.wait_s = config['tracker_update_wait_s']
 
                 try:
@@ -76,10 +76,9 @@ class JellyfinTracker(tracker.TrackerBase):
                         pass
 
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
-                self.msg.warn(
-                    self.name, "Claimed Jellyfin, login in the settings and restart trackma.")
+                self.msg.warn("Claimed Jellyfin, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
-                self.msg.warn(self.name, "Jellyfin is not running.")
+                self.msg.warn("Jellyfin is not running.")
 
             del self.status_log[0]
 

@@ -59,7 +59,7 @@ class Data:
         """Checks if the config is correct and creates an API object."""
         self.msg = messenger.with_classname(self.name)
         self.config = config
-        self.msg.info(self.name, "Initializing...")
+        self.msg.info("Initializing...")
 
         # Get filenames
         userfolder = "%s.%s" % (account['username'], account['api'])
@@ -90,7 +90,7 @@ class Data:
 
         # Set mediatype
         mediatype = self.userconfig.get('mediatype')
-        self.msg.info(self.name, "Using %s (%s)" % (libname, mediatype))
+        self.msg.info("Using %s (%s)" % (libname, mediatype))
 
         # Get filenames
         self.queue_file = utils.to_data_path(
@@ -135,7 +135,7 @@ class Data:
 
         """
         # Lock the database
-        self.msg.debug(self.name, "Locking database...")
+        self.msg.debug("Locking database...")
         self._lock()
 
         # Load different caches
@@ -168,8 +168,7 @@ class Data:
                     self.process_queue()
                     self.download_data()
                 except utils.APIError as e:
-                    self.msg.warn(
-                        self.name, "Couldn't download list! Using cache.")
+                    self.msg.warn("Couldn't download list! Using cache.")
                     self._load_cache()
             elif not self.showlist:
                 # If the cache wasn't loaded before, do it now
@@ -195,7 +194,7 @@ class Data:
         as it does necessary operations to close the API and the data handler itself.
 
         """
-        self.msg.debug(self.name, "Unloading...")
+        self.msg.debug("Unloading...")
 
         # Cancel autosend thread
         if self.autosend_timer:
@@ -259,7 +258,7 @@ class Data:
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', self.queue)
-        self.msg.info(self.name, "Queued add for %s" % show['title'])
+        self.msg.info("Queued add for %s" % show['title'])
 
     def queue_update(self, show, key, value):
         """
@@ -302,8 +301,8 @@ class Data:
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', self.queue)
-        self.msg.info(self.name, "Queued update for %s" % show['title'])
-        self.msg.debug(self.name, "Queued: {} -> {}".format(key, value))
+        self.msg.info("Queued update for %s" % show['title'])
+        self.msg.debug("Queued: {} -> {}".format(key, value))
 
         # Immediately process the action if necessary
         if self._is_queue_ready():
@@ -344,7 +343,7 @@ class Data:
         self._save_queue()
         self._save_cache()
         self._emit_signal('queue_changed', self.queue)
-        self.msg.info(self.name, "Queued delete for %s" % item['title'])
+        self.msg.info("Queued delete for %s" % item['title'])
 
     def queue_clear(self):
         """Clears the queue completely."""
@@ -352,7 +351,7 @@ class Data:
             self.queue = []
             self._save_queue()
             self._emit_signal('queue_changed', self.queue)
-            self.msg.info(self.name, "Cleared queue.")
+            self.msg.info("Cleared queue.")
 
     def process_queue(self):
         """
@@ -364,7 +363,7 @@ class Data:
 
         """
         if self.queue:
-            self.msg.info(self.name, 'Processing queue...')
+            self.msg.info('Processing queue...')
 
             # Load the cache if it wasn't loaded for some reason
             if not self.showlist:
@@ -405,8 +404,7 @@ class Data:
                     elif operation == 'delete':
                         self.api.delete_show(item)
                     else:
-                        self.msg.warn(
-                            self.name, "Unknown operation in queue (%s), skipping..." % repr(operation))
+                        self.msg.warn("Unknown operation in queue (%s), skipping..." % repr(operation))
 
                     if self.showlist.get(showid):
                         self.showlist[showid]['queued'] = False
@@ -415,16 +413,14 @@ class Data:
                     items_processed.append((show, item))
                     self._emit_signal('queue_changed', self.queue)
                 except utils.APIError as e:
-                    self.msg.warn(
-                        self.name, "Can't process %s, will leave unsynced." % item['title'])
-                    self.msg.debug(self.name, "Info: %s" % e)
+                    self.msg.warn("Can't process %s, will leave unsynced." % item['title'])
+                    self.msg.debug("Info: %s" % e)
                     items_failed.append(item)
                 except NotImplementedError:
-                    self.msg.warn(
-                        self.name, "Operation not implemented in API. Skipping...")
+                    self.msg.warn("Operation not implemented in API. Skipping...")
                     items_failed.append(item)
                 # except TypeError:
-                #    self.msg.warn(self.name, "%s not in list, unexpected. Not changing queued status." % showid)
+                #    self.msg.warn("%s not in list, unexpected. Not changing queued status." % showid)
 
             if items_failed:
                 self.queue += items_failed
@@ -434,7 +430,7 @@ class Data:
             self._save_queue()
             self._emit_signal('sync_complete', items_processed)
         else:
-            self.msg.debug(self.name, 'No items in queue.')
+            self.msg.debug('No items in queue.')
 
         self.meta['lastsend'] = time.time()
 
@@ -506,45 +502,45 @@ class Data:
             self.autosend_timer.start()
 
     def _load_cache(self):
-        self.msg.debug(self.name, "Reading cache...")
+        self.msg.debug("Reading cache...")
         self.showlist = utils.load_data(self.cache_file)
 
     def _save_cache(self):
-        self.msg.debug(self.name, "Saving cache...")
+        self.msg.debug("Saving cache...")
         utils.save_data(self.showlist, self.cache_file)
 
     def _load_info(self):
-        self.msg.debug(self.name, "Reading info DB...")
+        self.msg.debug("Reading info DB...")
         self.infocache = utils.load_data(self.info_file)
 
     def _save_info(self):
-        self.msg.debug(self.name, "Saving info DB...")
+        self.msg.debug("Saving info DB...")
         utils.save_data(self.infocache, self.info_file)
 
     def _load_userconfig(self):
-        self.msg.debug(self.name, "Reading userconfig...")
+        self.msg.debug("Reading userconfig...")
         self.userconfig = utils.parse_config(
             self.userconfig_file, utils.userconfig_defaults)
 
     def _save_userconfig(self):
-        self.msg.debug(self.name, "Saving userconfig...")
+        self.msg.debug("Saving userconfig...")
         utils.save_config(self.userconfig, self.userconfig_file)
 
     def _load_queue(self):
-        self.msg.debug(self.name, "Reading queue...")
+        self.msg.debug("Reading queue...")
         self.queue = utils.load_data(self.queue_file)
 
     def _save_queue(self):
-        self.msg.debug(self.name, "Saving queue...")
+        self.msg.debug("Saving queue...")
         utils.save_data(self.queue, self.queue_file)
 
     def _load_meta(self):
-        self.msg.debug(self.name, "Reading metadata...")
+        self.msg.debug("Reading metadata...")
         loadedmeta = utils.load_data(self.meta_file)
         self.meta.update(loadedmeta)
 
     def _save_meta(self):
-        self.msg.debug(self.name, "Saving metadata...")
+        self.msg.debug("Saving metadata...")
         utils.save_data(self.meta, self.meta_file)
 
     def download_data(self):
