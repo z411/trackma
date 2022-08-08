@@ -19,7 +19,11 @@ import subprocess
 import sys
 import threading
 
-from gi.repository import GLib, Gdk, Gio, Gtk
+from gi.repository import GLib, Gio, Gtk
+
+# When Gdk is loaded before Gtk, the program crashes:
+# "Requiring namespace 'Gdk' version '3.0', but '4.0' is already loaded"
+from gi.repository import Gdk
 
 from trackma import messenger
 from trackma import utils
