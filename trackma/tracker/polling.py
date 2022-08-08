@@ -26,33 +26,41 @@ class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
 
     def get_playing_file(self, watch_dirs, players):
+        try:
+            lsof = subprocess.Popen(
+                ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn'], stdout=subprocess.PIPE)
+        except OSError:
+            self.msg.warn(
+                self.name, "Couldn't execute lsof. Disabling tracker.")
+            self.disable()
+            return None
+
+        output = lsof.communicate()[0].decode('utf-8')
+
         for path in watch_dirs:
-            # TODO: We'll run lsof once for each directory for now.
-            try:
-                lsof = subprocess.Popen(
-                    ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
-            except OSError:
-                self.msg.warn(
-                    self.name, "Couldn't execute lsof. Disabling tracker.")
-                self.disable()
-                return None
-
-            output = lsof.communicate()[0].decode('utf-8')
-
             for line in output.splitlines():
-                if line[0] == 'n' and utils.is_media(line):
-                    return os.path.basename(line[1:])
+                if line.startswith('n{}'.format(path)) and utils.is_media(line):
+                    return line[1:]
 
         return None
 
     def observe(self, config, watch_dirs):
         self.msg.info(
             self.name, "pyinotify not available; using polling (slow).")
+
+        last_filename = None
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self.get_playing_file(
                 watch_dirs, config['tracker_process'])
-            (state, show_tuple) = self._get_playing_show(filename)
+
+            if filename and not filename == last_filename:
+                last_filename = filename
+                path, name = os.path.split(filename)
+                self._emit_signal('detected', path, name)
+
+            (state, show_tuple) = self._get_playing_show(
+                filename if config['library_full_path'] else name)
             self.update_show_if_needed(state, show_tuple)
 
             # Wait for the interval before running check again
