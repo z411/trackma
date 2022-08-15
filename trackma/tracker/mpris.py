@@ -38,12 +38,10 @@ class MPRISTracker(tracker.TrackerBase):
             try:
                 sender = self.bus.GetNameOwner(name)
             except GLib.Error:
-                self.msg.warn(
-                    self.name, "Bus was closed before access: {}".format(name))
+                self.msg.warn("Bus was closed before access: {}".format(name))
                 return
 
-            self.msg.info(
-                self.name, "Connecting to MPRIS player: {}".format(name))
+            self.msg.info("Connecting to MPRIS player: {}".format(name))
             try:
                 proxy = self.session.get(name, '/org/mpris/MediaPlayer2')
                 properties = proxy['org.freedesktop.DBus.Properties']
@@ -71,7 +69,7 @@ class MPRISTracker(tracker.TrackerBase):
             except GLib.Error:
                 self._stopped(sender)
         else:
-            self.msg.info(self.name, "Unknown player: {}".format(name))
+            self.msg.info("Unknown player: {}".format(name))
 
     def _get_filename(self, metadata):
         if 'xesam:title' in metadata and len(metadata['xesam:title']) > 5:
@@ -83,7 +81,7 @@ class MPRISTracker(tracker.TrackerBase):
             return None
 
     def _handle_status(self, status, sender):
-        self.msg.debug(self.name, "New playback status: {}".format(status))
+        self.msg.debug("New playback status: {}".format(status))
 
         if status == "Playing":
             self._playing(self.filenames[sender], sender)
@@ -98,22 +96,22 @@ class MPRISTracker(tracker.TrackerBase):
 
     def _playing(self, filename, sender):
         if filename != self.last_filename:
-            self.msg.debug(self.name, "New video: {}".format(filename))
+            self.msg.debug("New video: {}".format(filename))
 
             (state, show_tuple) = self._get_playing_show(filename)
             self.update_show_if_needed(state, show_tuple)
 
-            self.msg.debug(self.name, "New tracker status: {} (previously: {})".format(
+            self.msg.debug("New tracker status: {} (previously: {})".format(
                 state, self.last_state))
 
             # We can override the active player if this player is playing a valid show.
             if not self.active_player or self.last_state == utils.Tracker.PLAYING:
-                self.msg.debug(self.name, "({}) Setting active player: {}".format(
+                self.msg.debug("({}) Setting active player: {}".format(
                     self.last_state, sender))
                 self.active_player = sender
 
                 if not self.timing:
-                    self.msg.debug(self.name, "Starting MPRIS timer.")
+                    self.msg.debug("Starting MPRIS timer.")
                     self.timing = True
 
                     self._pass_timer()
@@ -124,8 +122,7 @@ class MPRISTracker(tracker.TrackerBase):
 
         if sender == self.active_player:
             # Active player got closed!
-            self.msg.debug(
-                self.name, "Clearing active player: {}".format(sender))
+            self.msg.debug("Clearing active player: {}".format(sender))
             self.active_player = None
             self.view_offset = None
 
@@ -167,8 +164,7 @@ class MPRISTracker(tracker.TrackerBase):
                 self._handle_status(status, sender)
 
         else:
-            self.msg.debug(
-                self.name, "Got signal from an inactive player, ignoring.")
+            self.msg.debug("Got signal from an inactive player, ignoring.")
 
     def _new_name(self, name, old, new):
         if name.startswith(MPRISTracker.mpris_base):
@@ -184,7 +180,7 @@ class MPRISTracker(tracker.TrackerBase):
         return self.timing
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, "Using MPRIS.")
+        self.msg.info("Using MPRIS.")
 
         self.re_players = re.compile(config['tracker_process'])
         self.filenames = {}

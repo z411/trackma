@@ -129,13 +129,13 @@ class KodiTracker(tracker.TrackerBase):
         return info[prop]
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, "Using Kodi.")
+        self.msg.info("Using Kodi.")
 
         while self.active:
             self.status_log.append(self._get_kodi_status())
 
             if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
-                self.msg.info(self.name, "Reconnected to Kodi.")
+                self.msg.info("Reconnected to Kodi.")
 
             if self.status_log[-1] == ACTIVE:
                 if self.config['kodi_obey_update_wait_s']:
@@ -154,10 +154,9 @@ class KodiTracker(tracker.TrackerBase):
                     self.resume_timer()
 
             elif self.status_log[-1] == AUTH_REQUIRED:
-                self.msg.warn(
-                    self.name, "Authentication needed by Kodi, login in the settings and restart trackma.")
+                self.msg.warn("Authentication needed by Kodi, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING:
-                self.msg.warn(self.name, "Kodi HTTP Server is not running.")
+                self.msg.warn("Kodi HTTP Server is not running.")
 
             del self.status_log[0]
 

@@ -169,9 +169,9 @@ class libmal(lib):
         if post:
             post = urllib.parse.urlencode(post).encode('utf-8')
             content_type = 'application/x-www-form-urlencoded'
-            self.msg.debug(self.name, "POST data: " + str(post))
+            self.msg.debug("POST data: " + str(post))
 
-        self.msg.debug(self.name, method + " URL: " + url)
+        self.msg.debug(method + " URL: " + url)
         request = urllib.request.Request(url, post)
         request.get_method = lambda: method
 
@@ -209,12 +209,12 @@ class libmal(lib):
         }
 
         if refresh:
-            self.msg.info(self.name, 'Refreshing access token...')
+            self.msg.info('Refreshing access token...')
 
             params['grant_type'] = 'refresh_token'
             params['refresh_token'] = self._get_userconfig('refresh_token')
         else:
-            self.msg.info(self.name, 'Requesting access token...')
+            self.msg.info('Requesting access token...')
 
             params['code'] = self.pin
             params['code_verifier'] = self.code_verifier
@@ -266,7 +266,7 @@ class libmal(lib):
         i = 1
         
         while url:
-            self.msg.info(self.name, 'Downloading list (page %d)...' % i)
+            self.msg.info('Downloading list (page %d)...' % i)
             data = self._request('GET', url, auth=True)
             for item in data['data']:
                 showid = item['node']['id']
@@ -295,22 +295,22 @@ class libmal(lib):
 
     def add_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Adding item %s..." % item['title'])
+        self.msg.info("Adding item %s..." % item['title'])
         self._update_entry(item)
 
     def update_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Updating item %s..." % item['title'])
+        self.msg.info("Updating item %s..." % item['title'])
         self._update_entry(item)
     
     def delete_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Deleting item %s..." % item['title'])
+        self.msg.info("Deleting item %s..." % item['title'])
         data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), auth=True)
     
     def search(self, criteria, method):
         self.check_credentials()
-        self.msg.info(self.name, "Searching for {}...".format(criteria))
+        self.msg.info("Searching for {}...".format(criteria))
         
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields, 'nsfw': 'true'}
@@ -406,5 +406,5 @@ class libmal(lib):
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
         except Exception:
-            self.msg.debug(self.name, 'Invalid date {}'.format(string))
+            self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid

@@ -89,14 +89,14 @@ class PlexTracker(tracker.TrackerBase):
             return None
 
     def observe(self, config, watch_dirs):
-        self.msg.info(self.name, "Using Plex.")
+        self.msg.info("Using Plex.")
 
         while self.active:
             self.status_log.append(self.get_plex_status())
 
             if self.status_log[-1] == ACTIVE or self.status_log[-1] == IDLE:
                 if self.status_log[-1] == IDLE and self.status_log[-2] == NOT_RUNNING:
-                    self.msg.info(self.name, "Reconnected to Plex.")
+                    self.msg.info("Reconnected to Plex.")
 
                 if self.config['plex_obey_update_wait_s']:
                     self.wait_s = config['tracker_update_wait_s']
@@ -132,10 +132,9 @@ class PlexTracker(tracker.TrackerBase):
                     else:
                         pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
-                self.msg.warn(
-                    self.name, "Claimed Plex Media Server, login in the settings and restart trackma.")
+                self.msg.warn("Claimed Plex Media Server, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING and self.status_log[-2] == NOT_RUNNING:
-                self.msg.warn(self.name, "Plex Media Server is not running.")
+                self.msg.warn("Plex Media Server is not running.")
 
             del self.status_log[0]
 

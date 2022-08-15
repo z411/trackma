@@ -149,10 +149,10 @@ class libvndb(lib):
         if self.logged_in:
             return True
 
-        self.msg.info(self.name, 'Connecting...')
+        self.msg.info('Connecting...')
         self._connect()
 
-        self.msg.info(self.name, 'Logging in...')
+        self.msg.info('Logging in...')
         (name, data) = self._sendcmd('login',
                                      {'protocol': 1,
                                       'client': 'Trackma',
@@ -177,7 +177,7 @@ class libvndb(lib):
         page = 1
         vns = dict()
         while True:
-            self.msg.info(self.name, 'Downloading list... (%d)' % page)
+            self.msg.info('Downloading list... (%d)' % page)
 
             (name, data) = self._sendcmd('get %s basic (uid = 0)' % self.mediatype,
                                          {'page': page,
@@ -205,7 +205,7 @@ class libvndb(lib):
         # Retrieve scores per pages
         page = 1
         while True:
-            self.msg.info(self.name, 'Downloading votes... (%d)' % page)
+            self.msg.info('Downloading votes... (%d)' % page)
 
             (name, data) = self._sendcmd('get votelist basic (uid = 0)',
                                          {'page': page,
@@ -243,7 +243,7 @@ class libvndb(lib):
         infos = list()
         remaining = [show['id'] for show in itemlist]
         while True:
-            self.msg.info(self.name, 'Requesting details...(%d)' % start)
+            self.msg.info('Requesting details...(%d)' % start)
             end = start + self.pagesize_details
 
             (name, data) = self._sendcmd('get vn basic,details (id = %s)' % repr(remaining[start:end]),
@@ -278,7 +278,7 @@ class libvndb(lib):
 
         # Update status with set vnlist
         if 'my_status' in item:
-            self.msg.info(self.name, 'Updating VN %s (status)...' %
+            self.msg.info('Updating VN %s (status)...' %
                           item['title'])
 
             if self.mediatype == 'wishlist':
@@ -294,7 +294,7 @@ class libvndb(lib):
 
         # Update vote with set votelist
         if 'my_score' in item:
-            self.msg.info(self.name, 'Updating VN %s (vote)...' %
+            self.msg.info('Updating VN %s (vote)...' %
                           item['title'])
 
             if item['my_score'] > 0:
@@ -313,7 +313,7 @@ class libvndb(lib):
     def delete_show(self, item):
         self.check_credentials()
 
-        self.msg.info(self.name, 'Deleting VN %s...' % item['title'])
+        self.msg.info('Deleting VN %s...' % item['title'])
 
         (name, data) = self._sendcmd('set %s %d' %
                                      (self.mediatype, item['id']))
@@ -325,7 +325,7 @@ class libvndb(lib):
         self.check_credentials()
 
         results = list()
-        self.msg.info(self.name, 'Searching for %s...' % criteria)
+        self.msg.info('Searching for %s...' % criteria)
 
         (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
                                      {'page': 1,
@@ -348,7 +348,7 @@ class libvndb(lib):
         return results
 
     def logout(self):
-        self.msg.info(self.name, 'Disconnecting...')
+        self.msg.info('Disconnecting...')
         self._disconnect()
         self.logged_in = False
 

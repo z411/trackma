@@ -32,8 +32,7 @@ class PollingTracker(tracker.TrackerBase):
                 lsof = subprocess.Popen(
                     ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
             except OSError:
-                self.msg.warn(
-                    self.name, "Couldn't execute lsof. Disabling tracker.")
+                self.msg.warn("Couldn't execute lsof. Disabling tracker.")
                 self.disable()
                 return None
 
@@ -46,8 +45,7 @@ class PollingTracker(tracker.TrackerBase):
         return None
 
     def observe(self, config, watch_dirs):
-        self.msg.info(
-            self.name, "pyinotify not available; using polling (slow).")
+        self.msg.info("pyinotify not available; using polling (slow).")
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self.get_playing_file(

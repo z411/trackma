@@ -212,7 +212,7 @@ class libanilist(lib):
         return True
 
     def _refresh_user_info(self):
-        self.msg.info(self.name, 'Refreshing user details...')
+        self.msg.info('Refreshing user details...')
         query = '{Viewer{ id name avatar{large} options{titleLanguage displayAdultContent} mediaListOptions{scoreFormat} }}'
         data = self._request(query)['data']['Viewer']
 
@@ -224,7 +224,7 @@ class libanilist(lib):
 
     def fetch_list(self):
         self.check_credentials()
-        self.msg.info(self.name, 'Downloading list...')
+        self.msg.info('Downloading list...')
 
         query = '''query ($id: Int!, $listType: MediaType) {
   MediaListCollection (userId: $id, type: $listType) {
@@ -359,24 +359,24 @@ fragment mediaListEntry on MediaList {
 
     def add_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Adding item %s..." % item['title'])
+        self.msg.info("Adding item %s..." % item['title'])
         return self._update_entry(item)
 
     def update_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Updating item %s..." % item['title'])
+        self.msg.info("Updating item %s..." % item['title'])
         self._update_entry(item)
 
     def delete_show(self, item):
         self.check_credentials()
-        self.msg.info(self.name, "Deleting item %s..." % item['title'])
+        self.msg.info("Deleting item %s..." % item['title'])
         query = 'mutation ($id: Int) {DeleteMediaListEntry(id: $id){deleted} }'
         variables = {'id': item['my_id']}
         self._request(query, variables)
 
     def search(self, criteria, method):
         self.check_credentials()
-        self.msg.info(self.name, "Searching for {}...".format(criteria))
+        self.msg.info("Searching for {}...".format(criteria))
 
         if method == utils.SearchMethod.KW:
             query = "query ($query: String, $type: MediaType) { Page { media(search: $query, type: $type) {"
