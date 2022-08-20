@@ -1353,14 +1353,17 @@ class MainWindow(QMainWindow):
         self._update_tracker_info(status)
 
     def ws_prompt_update(self, show, episode):
-        reply = QMessageBox.question(self, 'Message',
-                                     'Do you want to update %s to %d?' % (
-                                         show['title'], episode),
-                                     QMessageBox.Yes, QMessageBox.No)
-
-        if reply == QMessageBox.Yes:
-            self.worker_call('set_episode', self.r_generic,
-                             show['id'], episode)
+        box = QMessageBox(self)
+        box.setWindowTitle("Update prompt")
+        box.setText(f"Do you want to update {show['title']} to {episode}?")
+        box.setIcon(QMessageBox.Question)
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        box.setAttribute(QtCore.Qt.WA_ShowWithoutActivating)
+        box.setModal(False)
+        box.accepted.connect(lambda:
+                self.worker_call('set_episode', self.r_generic,
+                show['id'], episode))
+        box.show()
 
     def ws_prompt_add(self, show, episode):
         page = self.notebook.currentIndex()

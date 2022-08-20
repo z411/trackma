@@ -149,6 +149,7 @@ class Engine:
 
     def _tracker_update(self, show, episode):
         if self.config['tracker_update_prompt']:
+            self.msg.info("Prompting for update.")
             self._emit_signal('prompt_for_update', show, episode)
         else:
             try:
