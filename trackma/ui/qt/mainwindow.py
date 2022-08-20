@@ -310,16 +310,13 @@ class MainWindow(QMainWindow):
                             'my_end': 9,
                             'tag': 10}
 
-        self.menu_columns_group = QActionGroup(self)
-        self.menu_columns_group.triggered.connect(self.s_toggle_column)
-
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
             action = QAction(column_name, self, checkable=True)
             action.setData(i)
             if column_name in self.api_config['visible_columns']:
                 action.setChecked(True)
 
-            self.menu_columns_group.addAction(action)
+            action.triggered.connect(self.s_toggle_column)
             self.menu_columns.addAction(action)
 
         # Create filter list
@@ -489,11 +486,11 @@ class MainWindow(QMainWindow):
             # Get API specific configuration
             self.api_config = self._get_api_config(account['api'])
 
-        self.menu_columns_group.setEnabled(False)
-        for action in self.menu_columns_group.actions():
+        self.menu_columns.setEnabled(False)
+        for action in self.menu_columns.actions():
             action.setChecked(
                 action.text() in self.api_config['visible_columns'])
-        self.menu_columns_group.setEnabled(True)
+        self.menu_columns.setEnabled(True)
 
         self.show()
         self._busy(False)
@@ -1284,8 +1281,9 @@ class MainWindow(QMainWindow):
         globalPos += QtCore.QPoint(3, 3)
         self.menu_columns.exec_(globalPos)
 
-    def s_toggle_column(self, w):
-        (index, column_name, visible) = (w.data(), w.text(), w.isChecked())
+    def s_toggle_column(self, visible):
+        w = self.sender()
+        index, column_name = w.data(), w.text()
         MIN_WIDTH = 30  # Width to restore columns to if too small to see
 
         if visible:
