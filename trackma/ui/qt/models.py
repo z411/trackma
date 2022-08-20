@@ -213,7 +213,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return getIcon('media-playback-start')
         elif role == QtCore.Qt.TextAlignmentRole:
             if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE]:
-                return QtCore.Qt.AlignHCenter
+                return QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter
         elif role == QtCore.Qt.ToolTipRole:
             if column == ShowListModel.COL_PERCENT:
                 tooltip = "Watched: %d<br>" % show['my_progress']
