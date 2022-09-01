@@ -579,6 +579,10 @@ class MainWindow(QMainWindow):
         self.action_retrieve.setEnabled(enable)
         self.action_reload.setEnabled(enable)
 
+        self.show_filter.setEnabled(enable)
+        self.show_filter_invert.setEnabled(enable)
+        self.show_filter_casesens.setEnabled(enable)
+
     def _enable_show_widgets(self, enable):
         self.show_progress.setEnabled(enable)
         self.show_score.setEnabled(enable)
