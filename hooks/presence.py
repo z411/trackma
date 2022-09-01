@@ -17,7 +17,7 @@ from pypresence.client import Client
 from pypresence.exceptions import InvalidID, InvalidPipe
 
 from trackma.utils import estimate_aired_episodes
-
+from trackma.utils import Tracker
 
 class DiscordRPC(Thread):
     """
@@ -124,7 +124,7 @@ def tracker_state(engine, status):
     """
     Update status in thread.
     """
-    if status["state"] == 1:
+    if status["state"] == Tracker.PLAYING:
         show = status["show"][0]
         title = show["titles"][0]
         episode = status["show"][-1]
