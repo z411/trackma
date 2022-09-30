@@ -127,7 +127,7 @@ def tracker_state(engine, status):
     """
     Update status in thread.
     """
-    if status["state"] == Tracker.PLAYING:
+    if status["state"] == Tracker.PLAYING or status["state"] == Tracker.IGNORED:
         show = status["show"][0]
         title = show["titles"][0]
         episode = status["show"][-1]
