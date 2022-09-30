@@ -53,7 +53,7 @@ class DiscordRPC(Thread):
             'txt': None
         }
 
-    def present(self, engine, start=None, details="Regretting...", state=None):
+    def present(self, engine, start=None, details="Regretting...", state=None, url=None, thumb="icon"):
         """
         Set status for DiscordRPC.
         """
@@ -61,11 +61,10 @@ class DiscordRPC(Thread):
             'details': details,
             'state': state,
             'start': time.time()*1000 - start if start else None,
+            'thumb': thumb,
+            'buttons': [ { "label": "View Anime", "url": url } ] if url else None,
             'img': engine.account["api"],
-            'txt': "{} at {}".format(
-                engine.account["username"],
-                engine.account["api"]
-            )
+            'txt': engine.account["api"]
         }
         self._update = True
 
@@ -81,10 +80,11 @@ class DiscordRPC(Thread):
                     else:
                         self._rpc.set_activity(
                             pid=self._pid,
-                            large_image="icon",
+                            large_image=self._details['thumb'],
                             large_text=self._details['details'],
                             small_image=self._details['img'],
                             small_text=self._details['txt'],
+                            buttons=self._details['buttons'],
                             details=self._details['details'],
                             state=self._details['state'],
                             start=self._details['start']
@@ -128,6 +128,8 @@ def tracker_state(engine, status):
         show = status["show"][0]
         title = show["titles"][0]
         episode = status["show"][-1]
+        url = engine.get_show_info(show['id'])["url"]
+        thumb = engine.get_show_info(show['id'])["image"]
         total = show["total"] or estimate_aired_episodes(
             engine.get_show_info(show['id'])
         ) or '?'
@@ -139,7 +141,9 @@ def tracker_state(engine, status):
                         "Episode {} of {}".format(
                             episode,
                             total
-                        )
+                        ),
+                        url,
+                        thumb
                         )
         else:
             rpc.present(engine,
@@ -148,7 +152,9 @@ def tracker_state(engine, status):
                         "Episode {} of {}".format(
                             episode,
                             total
-                        )
+                        ),
+                        url,
+                        thumb
                         )
 
     else:
