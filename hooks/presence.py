@@ -64,7 +64,10 @@ class DiscordRPC(Thread):
             'thumb': thumb,
             'buttons': [ { "label": "View Anime", "url": url } ] if url else None,
             'img': engine.account["api"],
-            'txt': engine.account["api"]
+            'txt': "{} at {}".format(
+                engine.account["username"],
+                engine.account["api"]
+            )
         }
         self._update = True
 
