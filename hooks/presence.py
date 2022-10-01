@@ -62,7 +62,7 @@ class DiscordRPC(Thread):
             'state': state,
             'start': time.time()*1000 - start if start else None,
             'thumb': thumb,
-            'buttons': [ { "label": "View Anime", "url": url } ] if url else None,
+            'buttons': [ { "label": "View %s" % engine.api_info['mediatype'].capitalize(), "url": url } ] if url else None,
             'img': engine.account["api"],
             'txt': "{} at {}".format(
                 engine.account["username"],
