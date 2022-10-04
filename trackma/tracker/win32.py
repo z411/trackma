@@ -55,7 +55,7 @@ class Win32Tracker(tracker.TrackerBase):
         # Enumerate all windows using the win32 API
         # This will call _foreach_window for each window handle
         # Then return the window title if the class name matches
-        # Currently supporting MPC(-HC) and mpv
+        # Currently supporting MPC(-HC) and mpv(.net)
 
         self.win32_hwnd_list = []
         self.EnumWindowsProc = ctypes.WINFUNCTYPE(
