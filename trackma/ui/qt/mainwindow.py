@@ -1260,8 +1260,9 @@ class MainWindow(QMainWindow):
 
     def s_mediatype(self, action):
         index = action.data()
-        mediatype = self.api_info['supported_mediatypes'][index]
-        self.reload(None, mediatype)
+        if index is not None:
+            mediatype = self.api_info['supported_mediatypes'][index]
+            self.reload(None, mediatype)
 
     def s_settings(self):
         dialog = SettingsDialog(
