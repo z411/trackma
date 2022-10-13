@@ -1,3 +1,18 @@
+v0.8.5
+- Enhancement: Improved title guessing logic
+- Enhancement: (GTK) Several visual improvements and bugfixes
+- Enhancement: (MPRIS) Add support for view_offset
+- Enhancement: (Qt) Several peformance improvements
+- Enhancement: (Win32) Add mpv.net detection
+- Change: (MPRIS) Using pydbus instead of dbus-python
+- Change: Added Discord presence hook
+- Bugfix: Several Kitsu bugfixes
+- Bugfix: Prevent zombie processes
+- Bugfix: (Shikimori) Fixed fetch limit and edge cases
+- Bugfix: (Tracker) Fixed altname changes
+- Bugfix: (MAL) Fixed token refreshing failure
+- Bugfix: (MAL) Fixed crash with unknown media types
+
 v0.8.4
 - Hotfix: (GTK) Fixed account screen for OAuth PKCE (MAL)
 

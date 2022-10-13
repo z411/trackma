@@ -30,7 +30,7 @@ import urllib.request
 import uuid
 from enum import Enum, auto
 
-VERSION = '0.8.4'
+VERSION = '0.8.5'
 
 DATADIR = os.path.dirname(__file__) + '/data'
 
