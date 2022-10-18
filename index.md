@@ -16,7 +16,7 @@ Features
 
 Currently supported websites
 ----------------------------
-- [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Anilist](https://anilist.co/) (Anime, Manga)
 - [Kitsu](https://kitsu.io) (Anime, Manga, Drama)
 - [VNDB](https://vndb.org/) (VNs)
@@ -88,12 +88,12 @@ Development
 
 The code is hosted as a git repository in github:
 
-http://github.com/z411/trackma
+https://github.com/z411/trackma
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the github issue tracker:
 
-http://github.com/z411/trackma/issues
+https://github.com/z411/trackma/issues
 
 License
 -------
