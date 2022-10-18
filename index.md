@@ -18,8 +18,9 @@ Currently supported websites
 ----------------------------
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Anilist](https://anilist.co/) (Anime, Manga)
-- [Kitsu](https://kitsu.io) (Anime, Manga, Drama)
+- [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
 - [VNDB](https://vndb.org/) (VNs)
+- [Shikimori](https://shikimori.org/) (Anime, Manga)
 
 Screenshots
 -----------
