@@ -41,15 +41,41 @@ CLI
 
 ![CLI](https://z411.github.io/trackma/images/screen_cli.png)
 
-Requirements
+
+Dependencies
 ------------
 
-- Python 2.6/2.7
-- lsof - for the media player detection tracker.
-- (Optional) PyQt - for the Qt Interface
-- (Optional) PyGTK (python-gtk2) - for the GTK interface.
-- (Optional) Urwid (python-urwid) - for the curses/urwid interface.
-- (Optional/Recommended) PIL (python-imaging) - for showing preview images in the Qt/GTK interfaces.
+The only required dependency to run Trackma is:
+
+- Python 3.4/3.5
+- python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
+
+But only basic features will work (only CLI interface and no tracker). Everything else is optional.
+
+The following user interfaces are available and their requirements are as follows:
+
+| UI | Dependencies |
+| --- | --- |
+| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
+| GTK 3 | PyGI (python3-gi and python3-cairo) |
+| curses | Urwid (python3-urwid) |
+| CLI | None |
+
+The following media recognition trackers are available and their requirements are as follows:
+
+| Tracker | Description | Dependencies |
+| --- | --- | --- |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
+| Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
+| Plex | Connects to Plex server. Enabled manually. | None |
+| Kodi | Connects to Kodi server. Enabled manually. | None |
+| Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
+| MPRIS | Connects to running MPRIS capable media players. | dbus-python |
+| Win32 | Recognition for Windows platforms. | None |
+
+Additional optional dependencies:
+
+- PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
