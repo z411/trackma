@@ -17,11 +17,11 @@ Features
 
 Currently supported websites
 ----------------------------
-- [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Anilist](https://anilist.co/) (Anime, Manga)
 - [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
+- [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
+- [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)
-- [Shikimori](https://shikimori.org/) (Anime, Manga)
 
 Screenshots
 -----------
