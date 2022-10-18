@@ -40,11 +40,6 @@ CLI
 
 ![CLI](https://z411.github.io/trackma/images/screen_cli.png)
 
-Documentation
--------------
-
-The documentation for Trackma is [available on ReadTheDocs](http://trackma.readthedocs.org).
-
 Requirements
 ------------
 
