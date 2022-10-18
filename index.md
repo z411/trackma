@@ -17,6 +17,7 @@ Features
 Currently supported websites
 ----------------------------
 - [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
+- [Anilist](https://anilist.co/) (Anime, Manga)
 - [Kitsu](https://kitsu.io) (Anime, Manga, Drama)
 - [VNDB](https://vndb.org/) (VNs)
 
