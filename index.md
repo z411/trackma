@@ -17,7 +17,7 @@ Features
 Currently supported websites
 ----------------------------
 - [MyAnimeList](http://myanimelist.net/) (Anime, Manga)
-- [Hummingbird](http://hummingbird.me/) (Anime)
+- [Kitsu](https://kitsu.io) (Anime, Manga, Drama)
 - [VNDB](https://vndb.org/) (VNs)
 - [Melative](http://melative.com/) (Partial; Anime, Manga, VNs, LNs)
 
