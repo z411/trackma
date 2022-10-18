@@ -118,24 +118,29 @@ A user from the community also is providing a Docker image:
 Configuration
 -------------
 
-A configuration file will be created in `~/.trackma/config.json`, make sure to fill in the directory
+A configuration file will be created in `~/.config/trackma/config.json`, make sure to fill in the directory
 where you store your video files and other settings. Details about what each option does can be done here:
 
-https://github.com/z411/trackma/wiki/Configuration-File
+<https://github.com/z411/trackma/wiki/Configuration-File>
 
 Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 
 Development
 -----------
 
-The code is hosted as a git repository in github:
+The code is hosted as a git repository in GitHub:
 
-https://github.com/z411/trackma
+<https://github.com/z411/trackma>
+
+If you plan to make changes to the code, I suggest using the following method to install Trackma
+instead of the normal way, so the changes you make get reflected immediately:
+
+    # python3 setup.py develop
 
 If you encounter any problems or have anything to suggest, please don't
-hesitate to submit an issue in the github issue tracker:
+hesitate to submit an issue in the GitHub issue tracker:
 
-https://github.com/z411/trackma/issues
+<https://github.com/z411/trackma/issues>
 
 License
 -------
