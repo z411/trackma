@@ -110,7 +110,6 @@ Trackma also has user-provided packages for several distributions.
 - **Fedora:** <https://copr.fedoraproject.org/coprs/dyskette/trackma/>
 - **Gentoo Linux:** <http://gpo.zugaina.org/net-misc/trackma>
 - **NixOS:** <https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix>
-- **OpenSUSE:** <http://download.opensuse.org/repositories/home:/Rethil/>
 - **Void Linux:** <https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template>
 
 A user from the community also is providing a Docker image:
@@ -132,7 +131,7 @@ Development
 
 The code is hosted as a git repository in GitHub:
 
-<http://github.com/z411/trackma>
+<https://github.com/z411/trackma>
 
 If you plan to make changes to the code, I suggest using the following method to install Trackma
 instead of the normal way, so the changes you make get reflected immediately:
@@ -142,7 +141,7 @@ instead of the normal way, so the changes you make get reflected immediately:
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the GitHub issue tracker:
 
-<http://github.com/z411/trackma/issues>
+<https://github.com/z411/trackma/issues>
 
 License
 -------
