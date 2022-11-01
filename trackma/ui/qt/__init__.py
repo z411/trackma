@@ -48,12 +48,8 @@ def main():
         from PIL import Image
         os.environ['imaging_available'] = "1"
     except ImportError:
-        try:
-            import Image
-            os.environ['imaging_available'] = "1"
-        except ImportError:
-            print("Warning: PIL or Pillow isn't available. "
-                  "Preview images will be disabled.")
+        print("Warning: PIL or Pillow isn't available. "
+              "Preview images will be disabled.")
 
     app = QApplication(sys.argv)
     app.setApplicationName("trackma")
