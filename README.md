@@ -49,7 +49,7 @@ Dependencies
 
 The only required dependency to run Trackma is:
 
-- Python 3.4/3.5
+- Python 3.7.14
 - python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
