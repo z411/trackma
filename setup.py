@@ -42,7 +42,6 @@ setup(
         'gui_scripts': [
             'trackma-gtk = trackma.ui.gtk:main [GTK]',
             'trackma-qt = trackma.ui.qt:main [Qt]',
-            'trackma-qt4 = trackma.ui.qt.qt4:main [Qt4]',
         ]
     },
     classifiers=[
