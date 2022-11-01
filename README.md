@@ -49,8 +49,8 @@ Dependencies
 
 The only required dependency to run Trackma is:
 
-- Python 3.7.14
-- python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
+- Python 3.7+
+- `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
@@ -58,26 +58,26 @@ The following user interfaces are available and their requirements are as follow
 
 | UI | Dependencies |
 | --- | --- |
-| Qt | PyQt5 (python-pyqt5) |
-| GTK 3 | PyGI (python3-gi and python3-cairo) |
-| curses | Urwid (python3-urwid) |
+| Qt | PyQt5 (`python-pyqt5`) |
+| GTK 3 | PyGI (`python3-gi` and `python3-cairo`) |
+| curses | Urwid (`python3-urwid`) |
 | CLI | None |
 
 The following media recognition trackers are available and their requirements are as follows:
 
 | Tracker | Description | Dependencies |
 | --- | --- | --- |
-| inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
-| Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | `inotify` *or* `pyinotify` |
+| Polling | Slow, but supported in every POSIX platform. Fallback. | `lsof` |
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Kodi | Connects to Kodi server. Enabled manually. | None |
 | Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
-| MPRIS | Connects to running MPRIS capable media players. | dbus-python |
+| MPRIS | Connects to running MPRIS capable media players. | `dbus-python` |
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional dependencies:
 
-- PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
+- PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
@@ -87,6 +87,7 @@ according to the user interface you plan to use, and then run the
 following command:
 
     # pip3 install Trackma
+
 You can also install the git (probably unstable, but newer) version like this:
 
     # pip3 install -U git+https://github.com/z411/trackma.git
@@ -95,7 +96,15 @@ Or download the source code and install:
 
     # git clone --recursive https://github.com/z411/trackma.git
     # cd trackma
-    # sudo python3 setup.py install
+    # poetry build
+    # pip3 install dist/trackma-0.8.5-py3-none-any.whl
+
+If you want to install any of the extras be sure to specify them before building:
+
+    # poetry install -E gtk -E trackers -E curses
+    # poetry install -E qt -E discord_rpc -E trackers
+    # poetry install -E ui
+    # poetry install -E twitter
 
 Then you can run the program with the interface you like.
 
@@ -129,12 +138,21 @@ Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 Development
 -----------
 
-The code is hosted as a git repository in [GitHub](https://github.com/z411/trackma).
+The code is hosted as a git repository on [GitHub](https://github.com/z411/trackma).
 
-If you plan to make changes to the code, I suggest using the following method to install Trackma
-instead of the normal way, so the changes you make get reflected immediately:
+Clone the repo and create the virtual environment using `poetry`:
 
-    # python3 setup.py develop
+    $ git clone --recursive https://github.com/z411/trackma.git
+    $ cd trackma
+    $ poetry install --all-extras
+    $ poetry shell
+
+To test run scripts:
+
+    $ poetry run trackma
+    $ poetry run trackma-curses
+    $ poetry run trackma-gtk
+    $ poetry run trackma-qt
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the GitHub [issue tracker](https://github.com/z411/trackma/issues).
