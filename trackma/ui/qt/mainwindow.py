@@ -67,6 +67,7 @@ class MainWindow(QMainWindow):
         self.config = utils.parse_config(self.configfile, utils.qt_defaults)
 
         # Build UI
+        QtGui.QGuiApplication.setDesktopFileName("Trackma-qt")
         if os.name != "nt":
             QApplication.setWindowIcon(QtGui.QIcon(utils.DATADIR + '/icon.png'))
         else:
