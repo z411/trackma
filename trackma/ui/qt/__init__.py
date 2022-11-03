@@ -73,7 +73,7 @@ def main(force_qt4=False):
 
     app = QApplication(sys.argv)
     app.setApplicationName("trackma")
-    app.setDesktopFileName("trackma")
+    app.setDesktopFileName("Trackma-qt")
     if os.name == "nt":
         import ctypes
         myappid = 'trackma' + utils.VERSION
