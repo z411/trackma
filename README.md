@@ -129,9 +129,7 @@ Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 Development
 -----------
 
-The code is hosted as a git repository in GitHub:
-
-<https://github.com/z411/trackma>
+The code is hosted as a git repository in [GitHub](https://github.com/z411/trackma).
 
 If you plan to make changes to the code, I suggest using the following method to install Trackma
 instead of the normal way, so the changes you make get reflected immediately:
@@ -139,14 +137,12 @@ instead of the normal way, so the changes you make get reflected immediately:
     # python3 setup.py develop
 
 If you encounter any problems or have anything to suggest, please don't
-hesitate to submit an issue in the GitHub issue tracker:
-
-<https://github.com/z411/trackma/issues>
+hesitate to submit an issue in the GitHub [issue tracker](https://github.com/z411/trackma/issues).
 
 License
 -------
 
-Trackma is licensed under the GPLv3 license, please see LICENSE for details.
+Trackma is licensed under the GPLv3 license, please see [LICENSE](../COPYING) for details.
 
 Authors
 -------
