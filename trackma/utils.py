@@ -356,7 +356,7 @@ def estimate_aired_episodes(show):
     # It's airing, so we make an estimate based on available information
     elif show['status'] == Status.AIRING:
         if 'next_ep_number' in show:  # Do we have the upcoming episode number?
-            return show['next_ep_number']-1
+            return show['next_ep_number'] - 1
         elif show['start_date']:  # Do we know when it started? Let's just assume 1 episode = 1 week
             days = (datetime.datetime.now() - show['start_date']).days
             if days <= 0:

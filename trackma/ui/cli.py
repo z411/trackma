@@ -44,6 +44,7 @@ _COLOR_ERROR = '\033[0;31m'
 _COLOR_FATAL = '\033[1;31m'
 
 _COLOR_AIRING = '\033[0;34m'
+_COLOR_BEHIND = '\033[0;31m'
 
 # We must use mark these with special characters for
 # readline to calculate line width correctly
@@ -923,8 +924,11 @@ class Trackma_cmd(command.Cmd):
                 title_str) > max_title_length else title_str
 
             # Color title according to status
+            estimate = utils.estimate_aired_episodes(show)
             if show['status'] == utils.Status.AIRING:
                 colored_title = _COLOR_AIRING + title_str + _COLOR_RESET
+            elif estimate and show['my_progress'] < estimate:
+                colored_title = _COLOR_BEHIND + title_str + _COLOR_RESET
             else:
                 colored_title = title_str
 
