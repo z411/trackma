@@ -362,6 +362,13 @@ class Trackma_cmd(command.Cmd):
         # Show the list in memory
         self._make_list(self.sortedlist)
 
+    def do_list_raw(self, args):
+        """
+        Similar to list except remove formatting.
+        : name list_raw
+        """
+        self._make_list_raw(self.sortedlist)
+
     def do_info(self, args):
         """
         Gets detailed information about a local show.
@@ -945,6 +952,26 @@ class Trackma_cmd(command.Cmd):
         print('%d results' % len(showlist))
         print()
 
+    def _make_list_raw(self, showlist):
+        """
+        Helper function for printing a non-formatted show list
+        """
+        altnames = self.engine.altnames()
+
+        # List shows
+        for index, show in showlist:
+            if self.engine.mediainfo['has_progress']:
+                episodes_str = "{0}\t{1}".format(
+                    show['my_progress'], show['total'] or '?')
+            else:
+                episodes_str = "-"
+
+            # Get title (and alt. title) and if need be, truncate it
+            title_str = show['title']
+            if altnames.get(show['id']):
+                title_str += " [{}]".format(altnames.get(show['id']))
+
+            print(index,title_str, episodes_str,show['my_score'],sep='\t')
 
 class Trackma_accounts(AccountManager):
     def _get_id(self, index):
