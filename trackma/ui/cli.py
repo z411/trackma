@@ -74,6 +74,7 @@ class Trackma_cmd(command.Cmd):
         'sort':         1,
         'mediatype':    (0, 1),
         'info':         1,
+        'name':         1,
         'search':       1,
         'add':          1,
         'del':          1,
@@ -368,6 +369,22 @@ class Trackma_cmd(command.Cmd):
         : name list_raw
         """
         self._make_list_raw(self.sortedlist)
+
+    def do_name(self, args):
+        """
+        Print title name for given index.
+
+        :param show Show index.
+        :usage name <index>
+        """
+        try:
+            show = self._get_show(args[0])
+            details = self.engine.get_show_details(show)
+        except utils.TrackmaError as e:
+            self.display_error(e)
+            return
+
+        print(show['title'])
 
     def do_info(self, args):
         """
