@@ -243,6 +243,8 @@ class Engine:
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
 
+        self.msg.debug("Starting engine...")
+
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
@@ -343,6 +345,7 @@ class Engine:
                 self.msg.exception(sys.exc_info())
 
         self.loaded = True
+        self.msg.debug("Engine started")
         return True
 
     def unload(self):
@@ -1112,4 +1115,5 @@ class Engine:
             self.msg.debug(self.name, 'Using Anitopy parser')
             return AnitopyWrapper
         else:
+            self.msg.debug('Unknown parser "{}", falling back to default'.format(parser))
             return self._get_parser_class('aie')
