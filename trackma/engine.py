@@ -28,6 +28,7 @@ from trackma import data
 from trackma import messenger
 from trackma import utils
 from trackma.extras import redirections
+from trackma.parser import get_parser_class
 
 
 class Engine:
@@ -285,7 +286,7 @@ class Engine:
         # Determine parser library
         try:
             self.msg.debug(self.name, "Initializing parser...")
-            self.parser_class = self._get_parser_class(self.config['title_parser'])
+            self.parser_class = get_parser_class(self.msg, self.config['title_parser'])
         except ImportError:
             self.msg.warn(self.name, "Couldn't import specified parser: {}".format(
                 self.config['title_parser']))
@@ -1103,17 +1104,3 @@ class Engine:
                 return self._get_tracker_class('inotify_auto')
             except ImportError:
                 return self._get_tracker_class('polling')
-
-    def _get_parser_class(self, parser):
-        # Choose the parser we want to use
-        if parser == 'aie':
-            from trackma.parser.animeinfoextractor import AnimeInfoExtractor
-            self.msg.debug(self.name, 'Using AnimeInfoExtractor parser')
-            return AnimeInfoExtractor
-        if parser == 'anitopy':
-            from trackma.parser.anitopy import AnitopyWrapper
-            self.msg.debug(self.name, 'Using Anitopy parser')
-            return AnitopyWrapper
-        else:
-            self.msg.debug('Unknown parser "{}", falling back to default'.format(parser))
-            return self._get_parser_class('aie')

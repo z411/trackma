@@ -19,8 +19,7 @@ import threading
 import time
 
 from trackma import utils
-# TODO determine dynamically (like the engine already does)
-from trackma.parser.animeinfoextractor import AnimeInfoExtractor
+from trackma.parser import get_parser_class
 
 
 class TrackerBase(object):
@@ -60,6 +59,7 @@ class TrackerBase(object):
         self.timer = None
         self.timer_paused = None
         self.timer_offset = 0
+        self.parser_class = get_parser_class(self.msg, self.config['title_parser'])
 
         self.view_offset = None
 
@@ -255,7 +255,7 @@ class TrackerBase(object):
 
             # Do a regex to the filename to get
             # the show title and episode number
-            aie = AnimeInfoExtractor(self.msg, filename)
+            aie = self.parser_class(self.msg, filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
                 # Format not recognized
