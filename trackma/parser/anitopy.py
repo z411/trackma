@@ -27,49 +27,55 @@ class AnitopyWrapper():
     some edge cases that Anitopy cannot solve.
     """
 
-    name = 'Parser'
+    def __init__(self, msg, file_name):
+        self.msg = msg.with_classname('Parser')
+        self.original_file_name = file_name
 
-    def __init__(self, msg, filename):
-        self.msg = msg
-        self.original_file_name = filename
-        self.file_name = filename
+        file_name = self.__preProcessFileName(file_name)
+        file_name = self.__trimFileName(file_name)
+        self.file_name = file_name
 
-        self.__preProcessFilename()
-        self.__trimFilename()
-        self.__parseFilename()
+        try:
+            data = anitopy.parse(file_name)
+        except Exception:
+            # If Anitopy crashes while parsing a filename, print the traceback
+            # instead of crashing Trackma altogether.
+            import traceback
+            traceback.print_exc()
+            data = {}
+            return
 
-        self.__fixEpisodeNumber()
-        self.__fixAnimeTitle()
+        self.episode_number = self.__extractEpisodeNumber(data)
+        self.anime_title = self.__extractAnimeTitle(data)
 
     def getName(self):
         # Returns the anime title
-        return getattr(self, 'anime_title', None)
+        return self.anime_title
 
     def getEpisode(self):
         # Returns the first/only episode number
-        if not hasattr(self, 'episode_number'):
+        if self.episode_number is None:
             return 1
 
         if type(self.episode_number) is list:
             return int(self.episode_number[-1])
-        return int(self.episode_number)
+        else:
+            return int(self.episode_number)
 
     def getEpisodeNumbers(self, force_numbers=False):
         # Returns the episode range as a tuple
         (ep_start, ep_end) = (None, None)
 
-        if hasattr(self, 'episode_number'):
+        if self.episode_number:
             try:
-                if type(self.episode_number) is list:
+                if isinstance(self.episode_number, list):
                     ep_start = Decimal(self.episode_number[0])
                     ep_end = Decimal(self.episode_number[-1])
                 else:
                     ep_start = Decimal(self.episode_number)
-                    if force_numbers:
-                        ep_end = ep_start
             except ArithmeticError:
-                self.msg.warn(self.name, "Unable to parse episode number '{}' of: {}"
-                                         .format(self.episode_number, self.original_file_name))
+                self.msg.warn("Unable to parse episode number '{}' of: {}"
+                              .format(self.episode_number, self.original_file_name))
 
         if force_numbers:
             if ep_start is None:
@@ -80,28 +86,27 @@ class AnitopyWrapper():
 
         return (ep_start, ep_end)
 
-    def __preProcessFilename(self):
-        # Make some adjustments to the filename to increase parsing accuracy
+    @staticmethod
+    def __preProcessFileName(file_name):
+        # Make some adjustments to the file name to increase parsing accuracy
 
-        # If full path is provided to AnimeInfoExtractor, all [brackets with contents]
+        # If full path is provided to Anitopy, all [brackets with contents]
         # adjacent to the path separators should be moved to the VERY beginning.
         # Or Anitopy won't be able to parse them out.
-        self.file_name = os.path.sep + self.file_name
+        file_name = os.path.sep + file_name
         for m in re.finditer(
                 r'(?<={0})\[.*?\]|\[.*?\](?={0})'.format(os.path.sep),
-                self.file_name):
-            self.file_name = (m.group() + self.file_name[:m.start()]
-                              + self.file_name[m.end():])
+                file_name):
+            file_name = (m.group() + file_name[:m.start()]
+                              + file_name[m.end():])
 
         # Remove all the path separators (except the last one, we'll need it later)
-        *parts, last_part = self.file_name.split(os.path.sep)
-        self.file_name = ' '.join(parts) + last_part
+        *parts, last_part = file_name.split(os.path.sep)
+        file_name = ' '.join(parts) + last_part
 
         # Anitopy can parse S01E01 properly, but not S01OVA01, S01S01, S01NCOP01 etc.
         # So we'll need to break things down for the parser.
-        m = re.search(
-            r'S(?P<season>[0-9]+)(?P<type>[A-Za-z]+)(?P<episode>[0-9]+)',
-            self.file_name)
+        m = re.search(r'S(?P<season>[0-9]+)(?P<type>[A-Za-z]+)(?P<episode>[0-9]+)', file_name)
         if m:
             groups = m.groupdict()
             # 'S01E01' -> 'Season 01 - 01'
@@ -112,19 +117,22 @@ class AnitopyWrapper():
                 groups['type'] = 'Specials'
             # for all other cases:
             # 'S01{type}01' -> 'Season 01 {type} - 01'
-            self.file_name = (
-                self.file_name[:m.start()] + 'Season ' + groups['season']
+            file_name = (
+                file_name[:m.start()] + 'Season ' + groups['season']
                 + ' ' + groups['type'] + ' - ' + groups['episode']
-                + self.file_name[m.end():])
+                + file_name[m.end():])
 
-    def __trimFilename(self):
+        return file_name
+
+    @staticmethod
+    def __trimFileName(file_name):
         # If the same title appears in the parent directory and the file name,
         # we might want to remove the duplicate one.
         # Otherwise, Anitopy would concatenate them together.
         try:
             # Temporarily replace all punctuations with spaces
             temp = re.sub(r'[^\w\s{0}\(\)\{{\}}\[\]]'.format(os.path.sep),
-                          r' ', self.file_name, flags=re.ASCII)
+                          r' ', file_name, flags=re.ASCII)
             # Search and remove the longest duplicate
             m = max(
                 [x for x in re.finditer(
@@ -133,92 +141,87 @@ class AnitopyWrapper():
                 key = lambda y: y.end() - y.start()
             )
             if m:
-                self.file_name = (self.file_name[:m.start('DUP')]
-                                  + ' ' + self.file_name[m.end('DUP'):])
+                file_name = file_name[:m.start('DUP')] + ' ' + file_name[m.end('DUP'):]
         except ValueError:
             pass
 
         # Remove the remaining path separator(s)
-        self.file_name = self.file_name.replace(os.path.sep, ' ')
+        file_name = file_name.replace(os.path.sep, ' ')
         # Remove empty ( ) brackets
-        self.file_name = re.sub(r'[\[\{\(][\s\._]*[\)\}\]]', r'', self.file_name)
+        file_name = re.sub(r'[\[\{\(][\s\._]*[\)\}\]]', r'', file_name)
         # Trim unnecessary     spaces
-        self.file_name = re.sub(r'\s{2,}', r' ', self.file_name.strip())
+        file_name = re.sub(r'\s{2,}', r' ', file_name.strip())
 
-    def __parseFilename(self):
-        try:
-            for name, value in anitopy.parse(self.file_name).items():
-                setattr(self, name, value)
-        except Exception:
-            # If Anitopy crashes while parsing a filename, print the traceback
-            # instead of crashing Trackma altogether.
-            import traceback
-            traceback.print_exc()
+        return file_name
 
-    def __fixAnimeTitle(self):
+    @staticmethod
+    def __extractAnimeTitle(data):
         # Deal with anime title related stuff that Anitopy left out
-        if not hasattr(self, 'anime_title'):
-            return
+        if 'anime_title' not in data:
+            return None
+        anime_title = data['anime_title']
 
         # Append anime season to the title (if needed)
-        if hasattr(self, 'anime_season'):
-            if type(self.anime_season) is list:
-                season = int(self.anime_season[0])
-            else:
-                season = int(self.anime_season)
-            if season > 1:
-                self.anime_title += ' Season ' + str(season)
+        anime_season = data.get('anime_season')
+        if anime_season:
+            if not isinstance(anime_season, list):
+                anime_season = anime_season[0]
+            if int(anime_season) > 1:
+                anime_title += ' Season ' + anime_season
+
         # Solve 'Season X Part Y' cases
-        if hasattr(self, 'episode_title'):
-            m = re.search(r'^Part [2-9]\b', self.episode_title, flags=re.IGNORECASE)
+        if 'episode_title' in data:
+            m = re.search(r'^Part [2-9]\b', data['episode_title'], flags=re.IGNORECASE)
             if m:
-                self.anime_title += ' ' + m.group(0)
+                anime_title += ' ' + m.group(0)
 
         # Append anime type to the title (if needed)
         anitype_invalid = ('OP', 'NCOP', 'OPENING', 'ED', 'NCED', 'ENDING', 'PV', 'PREVIEW')
         anitype_specials = ('OAD', 'OAV', 'ONA', 'OVA', 'SPECIAL', 'SPECIALS')
-        if hasattr(self, 'anime_type'):
-            if type(self.anime_type) is list:
-                anitype = self.anime_type
-            else:
-                anitype = [self.anime_type]
+        anime_type = data.get('anime_type')
+        if anime_type:
+            if not isinstance(anime_type, list):
+                anitype = [anime_type]
             for t in anitype:
                 # Ignore non-episodes such as openings, endings, previews etc.
                 if t.upper() in anitype_invalid:
-                    for attr in list(self.__dict__.keys()):
-                        if attr not in ('file_name', 'msg', 'original_file_name', 'anime_type'):
-                            delattr(self, attr)
-                    return
-                if t not in self.anime_title and t.upper() in anitype_specials:
-                    self.anime_title += ' ' + t
+                    return None
+                if t not in anime_title and t.upper() in anitype_specials:
+                    anime_title += ' ' + t
         else:
             # Fix anime type being detected as episode title
-            if hasattr(self, 'episode_title'):
+            if 'episode_title' in data:
                 for t in anitype_specials:
-                    m = re.search(
-                        r'{0}\b'.format(re.escape(t)),
-                        self.episode_title, flags=re.IGNORECASE)
+                    m = re.search(r'{0}\b'.format(re.escape(t)), data['episode_title'],
+                                  flags=re.IGNORECASE)
                     if m:
-                        self.anime_title += ' ' + m.group(0)
+                        anime_title += ' ' + m.group(0)
 
         # Append anime year to the title (if needed)
-        if hasattr(self, 'anime_year') and self.anime_year not in self.anime_title:
-            self.anime_title += ' (' + self.anime_year + ')'
+        anime_year = data.get('anime_year')
+        if anime_year and anime_year not in anime_title:
+            anime_title += ' (' + anime_year + ')'
 
-    def __fixEpisodeNumber(self):
+        return anime_title
+
+    @staticmethod
+    def __extractEpisodeNumber(data):
         # Deal with episode related stuff that Anitopy left out
-        if not hasattr(self, 'episode_number'):
+        if 'episode_number' not in data:
             return
+        episode_number = data['episode_number']
 
         # Handle cases like: "[Judas] Naruto - S05E01 (186).mkv"
         # Anitopy should detect the consecutive episode number (186) properly.
         # Just set that as the original episode number, and remove the season value.
-        if hasattr(self, 'episode_number_alt'):
-            self.episode_number = self.episode_number_alt
-            del self.episode_number_alt
-            if hasattr(self, 'anime_season'):
-                del self.anime_season
+        if 'episode_number_alt' in data:
+            episode_number = data['episode_number_alt']
+            del data['episode_number_alt']
+            if 'anime_season' in data:
+                del data['anime_season']
 
         # Unfortunately, we can't have episode numbers like 1A, 1B, 1C etc.
-        if type(self.episode_number) is str:
-            self.episode_number = re.sub(r'ABCabc', r'', self.episode_number)
+        if isinstance(data['episode_number'], str):
+            episode_number = re.sub(r'ABCabc', r'', episode_number)
+
+        return episode_number

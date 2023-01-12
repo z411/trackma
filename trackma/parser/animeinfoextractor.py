@@ -36,10 +36,8 @@ class AnimeInfoExtractor:
     @note: Does more than what's needed, but that behaviour is well tested
     """
 
-    name = 'Parser'
-
     def __init__(self, msg, filename):
-        self.msg = msg
+        self.msg = msg.with_classname('Parser')
         self.originalFilename = filename
         self.resolution = ''
         self.hash = ''
