@@ -22,6 +22,7 @@ import shlex
 import subprocess
 import sys
 import textwrap
+import json
 from operator import itemgetter  # Used for sorting list
 
 from trackma import messenger
@@ -76,6 +77,7 @@ class Trackma_cmd(command.Cmd):
         'info':         1,
         'name':         1,
         'search':       1,
+        'list_json':    (0, 1),
         'add':          1,
         'del':          1,
         'delete':       1,
@@ -363,12 +365,23 @@ class Trackma_cmd(command.Cmd):
         # Show the list in memory
         self._make_list(self.sortedlist)
 
-    def do_list_raw(self, args):
+    def do_list_json(self, args):
         """
-        Similar to list except remove formatting.
-        : name list_raw
+        Print list of shows in json format.
+        Use the command `filter` without arguments to see the available statuses.
+
+        :name list_json
+        :usage list_json <status>
         """
-        self._make_list_raw(self.sortedlist)
+        if args:
+            try:
+                self.filter_num = self._guess_status(args[0].lower())
+                self._load_list()
+            except KeyError:
+                print("Invalid filter.")
+                return
+
+        self._make_list_json(self.sortedlist)
 
     def do_name(self, args):
         """
@@ -379,7 +392,6 @@ class Trackma_cmd(command.Cmd):
         """
         try:
             show = self._get_show(args[0])
-            details = self.engine.get_show_details(show)
         except utils.TrackmaError as e:
             self.display_error(e)
             return
@@ -969,26 +981,48 @@ class Trackma_cmd(command.Cmd):
         print('%d results' % len(showlist))
         print()
 
-    def _make_list_raw(self, showlist):
+    def _make_list_json(self, showlist):
         """
-        Helper function for printing a non-formatted show list
+        helper function for printing a json formatted show list
         """
         altnames = self.engine.altnames()
 
-        # List shows
+        episode_str_current = ""
+        episode_str_last = ""
+        # list shows
         for index, show in showlist:
             if self.engine.mediainfo['has_progress']:
-                episodes_str = "{0}\t{1}".format(
-                    show['my_progress'], show['total'] or '?')
-            else:
-                episodes_str = "-"
+                episode_str_current = "{0}".format(show['my_progress'] or '0')
+                episode_str_last = "{0}".format(show['total'] or '?')
 
-            # Get title (and alt. title) and if need be, truncate it
+            # get title (and alt. title) and if need be, truncate it
             title_str = show['title']
             if altnames.get(show['id']):
                 title_str += " [{}]".format(altnames.get(show['id']))
 
-            print(index,title_str, episodes_str,show['my_score'],sep='\t')
+            # ensure score is string; anilist can have string scores such as stars or smiles
+            score = "{0}".format(show['my_score'])
+
+            # json dictionary
+            j = {
+                "title": title_str,
+                "current_episode": episode_str_current,
+                "final_episode": episode_str_last,
+                "score": score
+            }
+
+            # Color title according to status
+            if show['status'] == utils.Status.AIRING:
+                estimate = utils.estimate_aired_episodes(show)
+                if estimate and show['my_progress'] < estimate:
+                    # User is behind the (estimated) aired episode
+                    j["color"] = _COLOR_BEHIND
+                else:
+                    j["color"] = _COLOR_AIRING
+            else:
+                j["color"] = _COLOR_RESET
+
+            print(json.dumps(j))
 
 class Trackma_accounts(AccountManager):
     def _get_id(self, index):
@@ -1027,12 +1061,12 @@ class Trackma_accounts(AccountManager):
                     password = getpass.getpass('Enter password (no echo): ')
                 elif selected_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
                     username = input('Enter account name: ')
-                    
+
                     auth_url = selected_api[3]
                     if selected_api[2] == utils.Login.OAUTH_PKCE:
                         extra['code_verifier'] = utils.oauth_generate_pkce()
                         auth_url = auth_url % extra['code_verifier']
-                    
+
                     print('OAuth Authentication')
                     print('--------------------')
                     print('This website requires OAuth authentication.')
