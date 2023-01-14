@@ -932,7 +932,6 @@ class Engine:
             raise utils.EngineError('Show given is invalid')
 
         if isinstance(playep, int) or isinstance(playep, str):
-            ep_iter = ()
             try:
                 first_ep = int(playep)
             except ValueError:
@@ -940,6 +939,12 @@ class Engine:
 
             if first_ep <= 0:
                 first_ep = show['my_progress'] + 1
+
+            if self.config['watch_continuously']:
+                ep_iter = itertools.count(first_ep)
+                next(ep_iter) # pop first_ep
+            else:
+                ep_iter = ()
 
         elif isinstance(playep, Iterable):
             ep_iter = iter(playep)
@@ -999,20 +1004,25 @@ class Engine:
 
         # bare "#N"
         if "-" not in raw_range:
-            first_ep = int(raw_range.lstrip("#"))
-            if not first_ep:
-                raise utils.EngineError("0 is a invalid episode number")
-            ep_iter = (first_ep, )
-        else:
-            left, right = raw_range.split("-")
-            # a left-open range always expand to 1
-            left = parse_num(left or "1")
-            if not left:
-                raise utils.EngineError("0 is a invalid episode number")
-            if right:
-                ep_iter = range(left, 1 + parse_num(right))
+            first = int(raw_range.lstrip("#"))
+            
+            if self.config['watch_continuously']:
+                ep_iter = itertools.count(first)
             else:
-                ep_iter = itertools.count(left)
+                ep_iter = (first, )
+        else:
+            first, last = raw_range.split("-")
+            # a left-open range always expand to 1
+            first = parse_num(first or "1")
+
+            if last:
+                ep_iter = range(first, 1 + parse_num(last))
+            else:
+                ep_iter = itertools.count(first)
+
+        if first == 0:
+            raise utils.EngineError("0 is a invalid episode number")
+        
         return ep_iter
 
     def undoall(self):
