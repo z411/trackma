@@ -990,19 +990,20 @@ class Trackma_cmd(command.Cmd):
                 "title": title_str,
                 "current_episode": episode_str_current,
                 "total_episodes": episode_str_last,
-                "score": score
+                "score": score,
+                "airing_status": False,
+                "behind_status": False
             }
 
-            # Color title according to status
+            # Check if show is airing and if user is behind
             if show['status'] == utils.Status.AIRING:
                 estimate = utils.estimate_aired_episodes(show)
                 if estimate and show['my_progress'] < estimate:
                     # User is behind the (estimated) aired episode
-                    j["color"] = _COLOR_BEHIND
+                    j["airing_status"] = True;
+                    j["behind_status"] = True;
                 else:
-                    j["color"] = _COLOR_AIRING
-            else:
-                j["color"] = _COLOR_RESET
+                    j["airing_status"] = True;
 
             print(json.dumps(j))
 
