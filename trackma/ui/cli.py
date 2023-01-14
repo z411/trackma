@@ -75,7 +75,6 @@ class Trackma_cmd(command.Cmd):
         'sort':         1,
         'mediatype':    (0, 1),
         'info':         1,
-        'name':         1,
         'search':       1,
         'list_json':    (0, 1),
         'add':          1,
@@ -382,21 +381,6 @@ class Trackma_cmd(command.Cmd):
                 return
 
         self._make_list_json(self.sortedlist)
-
-    def do_name(self, args):
-        """
-        Print title name for given index.
-
-        :param show Show index.
-        :usage name <index>
-        """
-        try:
-            show = self._get_show(args[0])
-        except utils.TrackmaError as e:
-            self.display_error(e)
-            return
-
-        print(show['title'])
 
     def do_info(self, args):
         """
