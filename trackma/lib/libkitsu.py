@@ -555,15 +555,12 @@ class libkitsu(lib):
         info = utils.show()
         attr = media['attributes']
 
-        # print(json.dumps(media, indent=2))
-        # raise NotImplementedError
-
         if media['type'] == 'anime':
             total = attr['episodeCount']
         elif media['type'] == 'manga':
             total = attr['chapterCount']
         elif media['type'] == 'drama':
-            total = attr['episodeCount']  # TODO Unconfirmed
+            total = attr['episodeCount']
 
         poster_image = attr.get('posterImage', {})
         image = utils.get_any(poster_image, PosterImageKey.SMALL, PosterImageKey.MEDIUM, PosterImageKey.LARGE, PosterImageKey.ORIGINAL)
