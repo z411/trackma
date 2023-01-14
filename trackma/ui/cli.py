@@ -503,11 +503,26 @@ class Trackma_cmd(command.Cmd):
 
     def do_play(self, args):
         """
-        Starts the media player with the specified episode number (next if unspecified).
+        Starts the media player with the specified episode range.
+        Examples of useful episode ranges: '', '1', '3', '#3', '#3-', '-#6'
+        _
+        Episode range syntax: 'X', 'X-Y', 'X-', '-X'.
+        'X' is relative to the last seen ep:       '1'  is the next ep unwatched.
+        '#X' is absolute ep number:                '#2' is the second ep.
+        'X-' will open 'X' and every ep after:     '#3-' start ep 3 onwards.
+        'X-Y' will open 'X' until 'Y' (inclusive): '#2-#6' ep 2, until ep 6.
+        Range starting with '-' will begin at '1': '-#6' last ep, until ep 6.
+        _
+        For convenience, some conversions are made:
+        '' -> '-' -> '1-'    - continue watching onwards
+        '4' -> '-4' -> '1-4' - watch next 4 episodes
+        If "watch_continuously" config is "true":
+        '#6' -> '#6-'        - play episode 6 onwards
 
         :param show Episode index or title.
-        :optparam ep Episode number or range. TODO: include syntax help
-        :usage play <show index or title> [episode number]
+        :optparam ep Episode range. See syntax above.
+
+        :usage play <show index or title> [episode range]
         """
         try:
             show = self._get_show(args[0])

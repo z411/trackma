@@ -990,7 +990,7 @@ class Engine:
 
     def parse_episode_range(self, show, raw_range: str) -> Iterable[int]:
         """
-        TODO: add documentation
+        Parse a string into a iterable of episode numbers, acording to a custom syntax.
         """
         def parse_num(num_str):
             if num_str.startswith("#"):
