@@ -15,6 +15,7 @@
 #
 
 import datetime
+import itertools
 import os
 import random
 import re
@@ -23,6 +24,7 @@ import shutil
 import sys
 import time
 from decimal import Decimal
+from typing import Iterable
 
 from trackma import data
 from trackma import messenger
@@ -912,54 +914,73 @@ class Engine:
         show = random.choice(newep)
         return self.play_episode(show)
 
-    def play_episode(self, show, playep=0):
+    def play_episode(self, show, playep : int | str | Iterable[int] = 0):
         """
         Does a local search in the hard disk (in the folder specified by the config file)
         for the specified episode (**playep**) for the specified **show**.
 
-        If no **playep** is specified, the next episode of the show will be returned.
+        If no **playep** is zero or not specified, the next episode of the show will be returned.
+        
+        **playep** may also be a iterable of episode numbers, like `range(3, 12)`
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError(
                 'Operation not supported by current site or mediatype.')
 
-        try:
-            playep = int(playep)
-        except ValueError:
-            raise utils.EngineError('Episode must be numeric.')
-
         if not show:
             raise utils.EngineError('Show given is invalid')
 
-        if playep <= 0:
-            playep = show['my_progress'] + 1
+        if isinstance(playep, int) or isinstance(playep, str):
+            ep_iter = ()
+            try:
+                first_ep = int(playep)
+            except ValueError:
+                raise utils.EngineError('Episode must be a integer.')
 
-        if show['total'] and playep > show['total']:
+            if first_ep <= 0:
+                first_ep = show['my_progress'] + 1
+
+        elif isinstance(playep, Iterable):
+            ep_iter = iter(playep)
+            try:
+                first_ep = next(ep_iter)
+            except StopIteration:
+                raise utils.EngineError('Range of episodes is empty.')
+
+        self.msg.info(
+            f"Searching episode '{first_ep}' of '{show['title']}' from library...")
+
+        if show['total'] > 0 and first_ep > show['total']:
             raise utils.EngineError('Episode beyond limits.')
 
-        self.msg.info("Getting '%s' episode '%s' from library..." %
-                        (show['title'], playep))
+        ep_iter = itertools.chain((first_ep,), ep_iter)
+        filenames = []
+        ep_numbers = []
 
         try:
-            filename = self.get_episode_path(show, playep)
+            for ep in ep_iter:
+                filename = self.get_episode_path(show, ep)
+                filenames.append(filename)
+                ep_numbers.append(ep)
         except utils.EngineError:
-            self.msg.info("Episode not found. Calling hooks...")
-            self._emit_signal("episode_missing", show, playep)
-            return []
-
-        self.msg.info('Found. Starting player...')
+            if not filenames:
+                self.msg.info("Episode not found. Calling hooks...")
+                self._emit_signal("episode_missing", show, first_ep)
+                return []
+        
+        self.msg.info('Found. Playing episodes: ' + repr(ep_numbers))
         args = shlex.split(self.config['player'])
 
         if not args:
             raise utils.EngineError('Player not set up, check your config.json')
 
-        args[0] = shutil.which(args[0])
+        args[0] = shutil.which(args[0]) or ""
 
         if not args[0]:
             raise utils.EngineError('Player not found, check your config.json')
 
-        args.append(filename)
+        args.extend(filenames)
         return args
 
     def undoall(self):
