@@ -360,6 +360,7 @@ class Trackma_urwid:
         item = self._get_selected_item()
         if item:
             show = self.engine.get_show_info(item.showid)
+            # TODO: use the CLI range syntax
             self.ask('[Play] Episode # to play: ',
                      self.play_request, show['my_progress']+1)
 

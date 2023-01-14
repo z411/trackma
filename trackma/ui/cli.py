@@ -506,21 +506,19 @@ class Trackma_cmd(command.Cmd):
         Starts the media player with the specified episode number (next if unspecified).
 
         :param show Episode index or title.
-        :optparam ep Episode number. Assume next if not specified.
+        :optparam ep Episode number or range. TODO: include syntax help
         :usage play <show index or title> [episode number]
         """
         try:
-            episode = 0
             show = self._get_show(args[0])
 
-            # If the user specified an episode, play it
+            # If the user specified an episode range, play it
             # otherwise play the next episode not watched yet
-            if len(args) > 1:
-                episode = args[1]
-
-            args = self.engine.play_episode(show, episode)
+            raw_range = args[1] if len(args) > 1 else ""
+            ep_iter = self.engine.parse_episode_range(show, raw_range)
+            args = self.engine.play_episode(show, ep_iter)
             utils.spawn_process(args)
-        except utils.TrackmaError as e:
+        except (utils.TrackmaError, ValueError) as e:
             self.display_error(e)
 
     def do_openfolder(self, args):

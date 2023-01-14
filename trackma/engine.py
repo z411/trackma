@@ -983,6 +983,38 @@ class Engine:
         args.extend(filenames)
         return args
 
+    def parse_episode_range(self, show, raw_range: str) -> Iterable[int]:
+        """
+        TODO: add documentation
+        """
+        def parse_num(num_str):
+            if num_str.startswith("#"):
+                return int(num_str.lstrip("#"))
+            else:
+                return show["my_progress"] + int(num_str)
+
+        # convert bare "N" to "-N" and "" to "-"
+        if "-" not in raw_range and not raw_range.startswith("#"):
+            raw_range = "-" + raw_range
+
+        # bare "#N"
+        if "-" not in raw_range:
+            first_ep = int(raw_range.lstrip("#"))
+            if not first_ep:
+                raise utils.EngineError("0 is a invalid episode number")
+            ep_iter = (first_ep, )
+        else:
+            left, right = raw_range.split("-")
+            # a left-open range always expand to 1
+            left = parse_num(left or "1")
+            if not left:
+                raise utils.EngineError("0 is a invalid episode number")
+            if right:
+                ep_iter = range(left, 1 + parse_num(right))
+            else:
+                ep_iter = itertools.count(left)
+        return ep_iter
+
     def undoall(self):
         """Clears the data handler queue and discards any unsynced change."""
         return self.data_handler.queue_clear()
