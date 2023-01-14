@@ -991,7 +991,7 @@ class Trackma_cmd(command.Cmd):
             j = {
                 "title": title_str,
                 "current_episode": episode_str_current,
-                "final_episode": episode_str_last,
+                "total_episodes": episode_str_last,
                 "score": score
             }
 
