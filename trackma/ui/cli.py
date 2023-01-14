@@ -969,41 +969,29 @@ class Trackma_cmd(command.Cmd):
         """
         helper function for printing a json formatted show list
         """
-        altnames = self.engine.altnames()
 
-        episode_str_current = ""
-        episode_str_last = ""
         # list shows
         for index, show in showlist:
             if self.engine.mediainfo['has_progress']:
                 episode_str_current = "{0}".format(show['my_progress'] or '0')
                 episode_str_last = "{0}".format(show['total'] or '?')
 
-            # get title
-            title_str = show['title']
-
             # ensure score is string; anilist can have string scores such as stars or smiles
             score = "{0}".format(show['my_score'])
 
             # json dictionary
             j = {
-                "title": title_str,
+                "title": show['title'],
                 "current_episode": episode_str_current,
                 "total_episodes": episode_str_last,
                 "score": score,
-                "airing_status": False,
-                "behind_status": False
+                "status": show['status'].value
             }
 
-            # Check if show is airing and if user is behind
+            # Check if show is airing and get estimated aired episode
             if show['status'] == utils.Status.AIRING:
                 estimate = utils.estimate_aired_episodes(show)
-                if estimate and show['my_progress'] < estimate:
-                    # User is behind the (estimated) aired episode
-                    j["airing_status"] = True;
-                    j["behind_status"] = True;
-                else:
-                    j["airing_status"] = True;
+                j["estimated_aired_episode"] = estimate
 
             print(json.dumps(j))
 
