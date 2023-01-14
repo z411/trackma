@@ -979,10 +979,8 @@ class Trackma_cmd(command.Cmd):
                 episode_str_current = "{0}".format(show['my_progress'] or '0')
                 episode_str_last = "{0}".format(show['total'] or '?')
 
-            # get title (and alt. title) and if need be, truncate it
+            # get title
             title_str = show['title']
-            if altnames.get(show['id']):
-                title_str += " [{}]".format(altnames.get(show['id']))
 
             # ensure score is string; anilist can have string scores such as stars or smiles
             score = "{0}".format(show['my_score'])
