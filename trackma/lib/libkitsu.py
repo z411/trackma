@@ -15,7 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""
+Media list provider using Kitsu <https://kitsu.io>.
+
+Example API response: https://kitsu.io/api/edge/anime?filter[text]=build+divide
+"""
+
 import datetime
+from enum import Enum
 import gzip
 import json
 import socket
@@ -28,8 +35,12 @@ from trackma import utils
 from trackma.lib.lib import lib
 
 
-# import http.client
-# http.client.HTTPConnection.debuglevel = 1
+class PosterImageKey(str, Enum):
+    TINY = 'tiny'
+    LARGE = 'large'
+    SMALL = 'small'
+    MEDIUM = 'medium'
+    ORIGINAL = 'original'
 
 
 class libkitsu(lib):
@@ -554,14 +565,18 @@ class libkitsu(lib):
         elif media['type'] == 'drama':
             total = attr['episodeCount']  # TODO Unconfirmed
 
+        poster_image = attr.get('posterImage', {})
+        image = utils.get_any(poster_image, PosterImageKey.SMALL, PosterImageKey.MEDIUM, PosterImageKey.LARGE, PosterImageKey.ORIGINAL)
+        image_thumb = utils.get_any(poster_image, PosterImageKey.TINY)
+
         info.update({
             'id': int(media['id']),
             # TODO : Some shows actually don't have a canonicalTitle; this should be fixed in the future.
             # For now I'm just picking the romaji title in these cases.
             'title':       attr['titles'].get('en_jp') or attr.get('canonicalTitle') or attr['titles'].get('en'),
             'total':       total or 0,
-            'image':       attr['posterImage'] and attr['posterImage']['small'],
-            'image_thumb': attr['posterImage'] and attr['posterImage']['tiny'],
+            'image':       image,
+            'image_thumb': image_thumb,
             'start_date':  self._str2date(attr['startDate']),
             'end_date':    self._str2date(attr['endDate']),
             'type':        self.type_translate.get(attr['subtype'], utils.Type.UNKNOWN),

@@ -250,6 +250,15 @@ def is_media(filename):
     return os.path.splitext(filename)[1] in EXTENSIONS
 
 
+def get_any(dict_, *keys, default=None):
+    """Get the first key present on a dict."""
+    for key in keys:
+        value = dict_.get(key, Ellipsis)
+        if value is not Ellipsis:
+            return value
+    return default
+
+
 def regex_find_videos(subdirectory=''):
     if subdirectory:
         path = os.path.expanduser(subdirectory)
