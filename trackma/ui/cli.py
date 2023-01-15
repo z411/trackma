@@ -991,7 +991,7 @@ class Trackma_cmd(command.Cmd):
             # Check if show is airing and get estimated aired episode
             if show['status'] == utils.Status.AIRING:
                 estimate = utils.estimate_aired_episodes(show)
-                j["estimated_aired_episode"] = estimate
+                j["estimated_aired_episode"] = "{0}".format(estimate)
 
             print(json.dumps(j))
 
