@@ -993,6 +993,9 @@ class Trackma_cmd(command.Cmd):
                 estimate = utils.estimate_aired_episodes(show)
                 j["estimated_aired_episode"] = "{0}".format(estimate)
 
+            # cover image url
+            j["image"] = show['image']
+
             print(json.dumps(j))
 
 class Trackma_accounts(AccountManager):
