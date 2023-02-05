@@ -544,8 +544,13 @@ class Data:
         utils.save_data(self.meta, self.meta_file)
 
     def download_data(self):
-        """Downloads the remote list and overwrites the cache"""
+        """Downloads the remote list and overwrites the cache and info"""
         self.showlist = self.api.fetch_list()
+        try:
+            os.remove(self.info_file)
+        except Exception:
+            pass
+        self.infocache.clear()
 
         if self.api.api_info['merge']:
             # The API needs information to be merged from the
