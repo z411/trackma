@@ -483,13 +483,13 @@ fragment mediaListEntry on MediaList {
                 ('Average score',   item.get('averageScore')),
                 ('Status',          self._translate_status(item['status'])),
             ]
-        })
+        }
         if item.get('nextAiringEpisode', None):
             next_episode_release_time = self._int2date(item.get('nextAiringEpisode').get('airingAt'))
             time_diff  = next_episode_release_time - datetime.datetime.now()
             show_info['extra'].append(('Next Episode', item.get('nextAiringEpisode').get('episode')))
             show_info['extra'].append(('Next Episode In', str(time_diff)))
-        show_info['extra'].append(('Visible data fetched on', datetime.datetime.now().strftime("%d %B, %Y at %I:%M %p")))
+        show_info['extra'].append(('Information fetched on', datetime.datetime.now().strftime("%d %B, %Y at %I:%M %p")))
         info.update(show_info)
         return info
 
