@@ -28,6 +28,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from copy import deepcopy
 from enum import Enum, auto
 
 VERSION = '0.8.5'
@@ -229,6 +230,16 @@ def load_data(filename):
 
 
 def save_data(data, filename):
+    if '.list' in filename:
+        path = expand_path('~/Desktop/Coding_Projects/new-os-setup/linux-backup/anilist.backup')
+        json_data = deepcopy(data)
+        for show in json_data:
+            for key in json_data[show].keys():
+                json_data[show][key] = str(json_data[show][key])
+        with open(path, 'w') as datafile:
+            print('Creating backup of user data...')
+            datafile.write(json.dumps(json_data, indent=4))
+            
     with open(filename, 'wb') as datafile:
         pickle.dump(data, datafile, protocol=2)
 
