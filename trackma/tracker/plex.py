@@ -41,6 +41,7 @@ class PlexTracker(tracker.TrackerBase):
         self.host_port = self.config['plex_host']+":"+self.config['plex_port']
         self.status_log = [None, None]
         self.token = self._get_plex_token()
+        self.http_protocol = 'https://' if self.config['plex_ssl'] else 'http://'
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
     def get_plex_status(self):
@@ -64,7 +65,7 @@ class PlexTracker(tracker.TrackerBase):
             return None
 
         meta = self._get_sessions_info("Video", "key")
-        meta_url = "http://"+self.host_port+meta
+        meta_url = self.http_protocol+self.host_port+meta
         mres = self._get_xml_info(meta_url, "Part", "file")
         name = urllib.parse.unquote(ntpath.basename(mres))
         xstate = self._get_sessions_info("Player", "state")
@@ -190,7 +191,7 @@ class PlexTracker(tracker.TrackerBase):
 
     def _get_sessions_info(self, tag, attr):
         # Get the required info from the /status/sessions url
-        session_url = "http://"+self.host_port+"/status/sessions"
+        session_url = self.http_protocol+self.host_port+"/status/sessions"
         info = self._get_xml_info(session_url, tag, attr)
 
         return info
