@@ -581,6 +581,7 @@ config_defaults = {
     'plex_user': '',
     'plex_passwd': '',
     'plex_uuid': str(uuid.uuid1()),
+    'plex_ssl': False,
     'jellyfin_host': "localhost",
     'jellyfin_port': "8096",
     'jellyfin_api_key': '',
