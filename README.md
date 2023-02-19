@@ -9,7 +9,7 @@ Features
 
 - Manage local list and synchronize when necessary, useful when offline
 - Manage multiple accounts on different media tracking sites
-- Support for several mediatypes (as supported by the site)
+- Support for several media types (as supported by the site)
 - Multiple user interfaces (Qt, GTK, curses, command-line)
 - Detection of running media player, updates list if necessary
 - Ability to launch media player for a requested media in the list and update list if necessary
@@ -49,8 +49,8 @@ Dependencies
 
 The only required dependency to run Trackma is:
 
-- Python 3.4/3.5
-- python3-pip (to install through pip) *or* python3-setuptools (to install through setup.py)
+- Python 3.7+
+- `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
@@ -58,55 +58,33 @@ The following user interfaces are available and their requirements are as follow
 
 | UI | Dependencies |
 | --- | --- |
-| Qt | PyQt5 (python-pyqt5) *or* PyQt4 (python-qt4) |
-| GTK 3 | PyGI (python3-gi and python3-cairo) |
-| curses | Urwid (python3-urwid) |
+| Qt | PyQt5 (`python-pyqt5`) |
+| GTK 3 | PyGI (`python3-gi` and `python3-cairo`) |
+| curses | Urwid (`python3-urwid`) |
 | CLI | None |
 
 The following media recognition trackers are available and their requirements are as follows:
 
 | Tracker | Description | Dependencies |
 | --- | --- | --- |
-| inotify | Instant, but only supported in Linux. Uses it whenever possible. | inotify *or* pyinotify |
-| Polling | Slow, but supported in every POSIX platform. Fallback. | lsof |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | `inotify` *or* `pyinotify` |
+| Polling | Slow, but supported in every POSIX platform. Fallback. | `lsof` |
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Kodi | Connects to Kodi server. Enabled manually. | None |
 | Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
-| MPRIS | Connects to running MPRIS capable media players. | dbus-python |
+| MPRIS | Connects to running MPRIS capable media players. | `dbus-python` |
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional dependencies:
 
-- PIL (python3-pil) - for showing preview images in the Qt/GTK interfaces.
+- PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
 
 Installation
 ------------
 
-Make sure you've installed the proper dependencies (listed above)
-according to the user interface you plan to use, and then run the
-following command:
+Trackma has user-provided packages for several distributions.
 
-    # pip3 install Trackma
-You can also install the git (probably unstable, but newer) version like this:
-
-    # pip3 install -U git+https://github.com/z411/trackma.git
-
-Or download the source code and install:
-
-    # git clone --recursive https://github.com/z411/trackma.git
-    # cd trackma
-    # sudo python3 setup.py install
-
-Then you can run the program with the interface you like.
-
-    $ trackma
-    $ trackma-curses
-    $ trackma-gtk
-    $ trackma-qt
-
-Trackma also has user-provided packages for several distributions.
-
-- **Arch Linux:** <http://aur.archlinux.org/packages/trackma-git>
+- **Arch Linux:** <https://aur.archlinux.org/packages/trackma>, <http://aur.archlinux.org/packages/trackma-git>
 - **Fedora:** <https://copr.fedoraproject.org/coprs/dyskette/trackma/>
 - **Gentoo Linux:** <http://gpo.zugaina.org/net-misc/trackma>
 - **NixOS:** <https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix>
@@ -115,6 +93,90 @@ Trackma also has user-provided packages for several distributions.
 A user from the community also is providing a Docker image:
 
 - **Docker:** <https://hub.docker.com/r/frosty5689/trackma/>
+
+### Manual installation
+
+Make sure you've installed the proper dependencies (listed above)
+according to the user interface you plan to use, and then run the
+following command:
+
+```sh
+$ pip3 install Trackma
+```
+
+You can also install the git (probably unstable, but newer) version like this:
+
+```sh
+$ pip3 install -U git+https://github.com/z411/trackma.git
+```
+
+Or download the source code and install:
+
+```sh
+$ git clone --recursive https://github.com/z411/trackma.git
+$ cd trackma
+$ poetry build
+$ pip3 install dist/trackma-0.8.5-py3-none-any.whl
+```
+
+### Extras (User Interfaces)
+
+All user interfaces except for the default CLI mode require additional dependencies to function.
+You may specify these as "extras" to be installed by the Python package manager.
+
+The following extras are available:
+
+| Extra | Description |
+| --- | --- |
+| `gtk` | The GTK interface. |
+| `qt` | The GTK interface. |
+| `curses` | The curses-based TUI. |
+| `ui` | All user interfaces. |
+| `trackers` | All tracker libraries. |
+| `discord_rpc` | Set your watching activity in Discord. |
+| `twitter` | Announce your watching activity on Twitter. |
+
+If you want to install any of the extras be sure to specify them during installation:
+
+#### pip
+
+```sh
+# With pip
+$ pip3 install Trackma[gtk,trackers,curses]
+$ pip3 install Trackma[ui,twitter,discord_rpc]
+```
+
+Note that pip does not have a way to install all available extras,
+so you'll have to provide them all manually if desired.
+
+Then you can run the program with the interface you like.
+
+```sh
+$ trackma
+$ trackma-curses
+$ trackma-gtk
+$ trackma-qt
+```
+
+#### poetry
+
+When using poetry on the cloned repository (see above),
+you can install your desired extras as follows:
+
+```sh
+$ poetry install -E gtk -E trackers -E curses
+$ poetry install -E ui -E twitter -E discord_rpc
+$ poetry install --all-extras
+```
+
+Then you can run the interface you like in your virtual environment managed by poetry:
+
+```sh
+$ poetry run trackma
+$ poetry run trackma-curses
+$ poetry run trackma-gtk
+$ poetry run trackma-qt
+```
 
 Configuration
 -------------
@@ -129,12 +191,19 @@ Alternatively, the GTK and Qt interfaces provide a visual Settings panel.
 Development
 -----------
 
-The code is hosted as a git repository in [GitHub](https://github.com/z411/trackma).
+The code is hosted as a git repository on [GitHub](https://github.com/z411/trackma).
 
-If you plan to make changes to the code, I suggest using the following method to install Trackma
-instead of the normal way, so the changes you make get reflected immediately:
+Clone the repo and create the virtual environment using `poetry`:
 
-    # python3 setup.py develop
+```sh
+$ git clone --recursive https://github.com/z411/trackma.git
+$ cd trackma
+$ poetry install --all-extras
+$ poetry shell
+```
+
+Use the above commands from the [poetry](#poetry) section
+for how to run your desired interface.
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the GitHub [issue tracker](https://github.com/z411/trackma/issues).

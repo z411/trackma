@@ -24,14 +24,10 @@ from gi.repository import GLib, GdkPixbuf, Gtk
 from trackma import utils
 
 try:
-    import Image
+    from PIL import Image
     imaging_available = True
 except ImportError:
-    try:
-        from PIL import Image
-        imaging_available = True
-    except ImportError:
-        imaging_available = False
+    imaging_available = False
 
 
 class ImageThread(threading.Thread):

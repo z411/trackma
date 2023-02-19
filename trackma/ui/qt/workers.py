@@ -19,15 +19,11 @@ import urllib.error
 import urllib.request
 from io import BytesIO
 
+from PIL import Image
 from PyQt5 import QtCore
 
-try:
-    from PIL import Image
-except ImportError:
-    import Image
-
-from trackma.engine import Engine
 from trackma import utils
+from trackma.engine import Engine
 
 
 class ImageWorker(QtCore.QThread):
