@@ -26,7 +26,7 @@ class DiscordRPC(Thread):
     Updates discord rich presence status periodically.
     """
 
-    _client_id = ""  # set discord application id here
+    _client_id = "1014724581904367696"  # set discord application id here
     _enabled = False
     _update = False
     regret = True
