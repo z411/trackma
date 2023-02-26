@@ -504,20 +504,24 @@ class Trackma_cmd(command.Cmd):
     def do_play(self, args):
         """
         Starts the media player with the specified episode range.
-        Examples of useful episode ranges: '', '1', '3', '#3', '#3-', '-#6'
+        Also, check the "watch_continuously" config option.
+        Examples of useful episode ranges: '', '-', 'n1', 'n3', '3', '3-', '-6'
         _
         Episode range syntax: 'X', 'X-Y', 'X-', '-X'.
-        'X' is relative to the last seen ep:       '1'  is the next ep unwatched.
-        '#X' is absolute ep number:                '#2' is the second ep.
-        'X-' will open 'X' and every ep after:     '#3-' start ep 3 onwards.
-        'X-Y' will open 'X' until 'Y' (inclusive): '#2-#6' ep 2, until ep 6.
-        Range starting with '-' will begin at '1': '-#6' last ep, until ep 6.
+        'X'   is absolute ep number:               '2'  is the second ep.
+        'nX'  is relative to the last seen ep:     'n1' is the next ep unwatched.
+        'X-Y' will open 'X' until 'Y' (inclusive): '2-6' ep 2, until ep 6.
+        'X-'  will open 'X' and every ep after:    '3-' start ep 3 onwards.
+        '-X'  will begin at 'n1':                  '-6' last ep, until ep 6.
         _
         For convenience, some conversions are made:
-        '' -> '-' -> '1-'    - continue watching onwards
-        '4' -> '-4' -> '1-4' - watch next 4 episodes
-        If "watch_continuously" config is "true":
-        '#6' -> '#6-'        - play episode 6 onwards
+        '-'  -> 'n1-'            - continue watching onwards
+        ''   -> '-n1' -> 'n1-n1' - watch next episode
+        'n4' -> '-n4' -> 'n1-n4' - watch next 4 episodes
+        '3'  -> '3-3'            - watch episode 3
+        If "watch_continuously" config is "true", this changes:
+        '' -> 'n1-'              - continue watching onwards
+        '6' -> '6-'              - play episode 6 onwards
 
         :param show Episode index or title.
         :optparam ep Episode range. See syntax above.

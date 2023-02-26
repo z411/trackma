@@ -993,18 +993,23 @@ class Engine:
         Parse a string into a iterable of episode numbers, acording to a custom syntax.
         """
         def parse_num(num_str):
-            if num_str.startswith("#"):
-                return int(num_str.lstrip("#"))
+            if num_str.startswith("n"):
+                return int(num_str.lstrip("n")) + show["my_progress"]
             else:
-                return show["my_progress"] + int(num_str)
+                return int(num_str)
 
-        # convert bare "N" to "-N" and "" to "-"
-        if "-" not in raw_range and not raw_range.startswith("#"):
+        if not raw_range:
+            raw_range = "n1-" if self.config['watch_continuously'] else "-n1"
+        elif raw_range == "n0":
+            raw_range = "n0-n0"
+
+        # convert relative "nX" to "-nX"
+        if "-" not in raw_range and raw_range.startswith("n"):
             raw_range = "-" + raw_range
 
-        # bare "#N"
+        # absolute "X"
         if "-" not in raw_range:
-            first = int(raw_range.lstrip("#"))
+            first = int(raw_range)
             
             if self.config['watch_continuously']:
                 ep_iter = itertools.count(first)
@@ -1012,8 +1017,8 @@ class Engine:
                 ep_iter = (first, )
         else:
             first, last = raw_range.split("-")
-            # a left-open range always expand to 1
-            first = parse_num(first or "1")
+            # a left-open range always expand to n1
+            first = parse_num(first or "n1")
 
             if last:
                 ep_iter = range(first, 1 + parse_num(last))
