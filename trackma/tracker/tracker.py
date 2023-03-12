@@ -107,14 +107,18 @@ class TrackerBase(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def _update_show(self, state, show_tuple):
+    def update_timer(self, state, show_tuple):
         if self.timer_paused:
             return
 
         (show, episode) = show_tuple
 
         self.timer = int(
-            1 + (self.wait_s or self.config['tracker_update_wait_s']) + self.timer_offset - (time.time() - self.last_time))
+            1
+            + (self.wait_s or self.config['tracker_update_wait_s'])
+            + self.timer_offset
+            - (time.time() - self.last_time)
+        )
         self._emit_signal('state', self.get_status())
 
         if self.timer <= 0:
@@ -122,9 +126,11 @@ class TrackerBase(object):
             self.last_updated = True
             action = None
             if state == utils.Tracker.PLAYING:
-                def action(): return self._emit_signal('update', show, episode)
+                def action():
+                    return self._emit_signal('update', show, episode)
             elif state == utils.Tracker.NOT_FOUND:
-                def action(): return self._emit_signal('unrecognised', show, episode)
+                def action():
+                    return self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
                 self.msg.info('Waiting for the player to close.')
@@ -173,7 +179,7 @@ class TrackerBase(object):
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
         if show_tuple and state == self.last_state and show_tuple == self.last_show_tuple and not self.last_updated:
-            self._update_show(state, show_tuple)
+            self.update_timer(state, show_tuple)
             return
 
         if show_tuple and show_tuple != self.last_show_tuple:
@@ -211,7 +217,7 @@ class TrackerBase(object):
                 self.msg.info('Will add %s - %d' %
                               (show['title'], episode))
 
-            self._update_show(state, show_tuple)
+            self.update_timer(state, show_tuple)
         elif self.last_state != state:
             self._update_state(state)
 

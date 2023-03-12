@@ -24,177 +24,95 @@ from pydbus import SessionBus
 from trackma import utils
 from trackma.tracker import tracker
 
+BUS_NAME_PREFIX = 'org.mpris.MediaPlayer2'
+PATH_MPRIS = '/org/mpris/MediaPlayer2'
+IFACE_PROPERTIES = 'org.freedesktop.DBus.Properties'
+IFACE_MPRIS = 'org.mpris.MediaPlayer2'
+IFACE_MPRIS_PLAYER = IFACE_MPRIS + '.Player'
+
+
+def _get_filename(metadata):
+    if 'xesam:title' in metadata and len(metadata['xesam:title']) > 5:
+        return metadata['xesam:title']
+    elif 'xesam:url' in metadata:
+        # TODO : Support for full path
+        return os.path.basename(urllib.parse.unquote_plus(metadata['xesam:url']))
+    else:
+        return None
+
+
+class Player:
+    def __init__(self, tracker, bus_name):
+        self.tracker = tracker
+        self.bus_name = bus_name
+
+        self.proxy = self.tracker.session.get(bus_name, PATH_MPRIS)
+        self.properties = self.proxy[IFACE_PROPERTIES]
+        self.mpris = self.proxy[IFACE_MPRIS]
+        self.mpris_player = self.proxy[IFACE_MPRIS_PLAYER]
+
+        self.filename = _get_filename(self.mpris_player.Metadata)
+        self.status = self.mpris_player.PlaybackStatus
+        self.subscription = self.properties.PropertiesChanged.connect(self._on_update)
+
+    # trackma appears to receive PropertyChanged events multiple times
+    # for each mpv instance(/sender?) that is being opened
+    # and it does not cease to receive these events after the player is closed.
+    # The sender remains.
+    def _on_update(self, iface_name, properties, _rest):
+        self.tracker.msg.debug(
+            f">> PropertiesChanged | {self.bus_name=} | {iface_name=} | {properties=}"
+        )
+        if iface_name != IFACE_MPRIS_PLAYER:
+            return
+
+        updated = False
+
+        if 'Metadata' in properties:
+            # Player is playing a new video. We pass the title
+            # to the tracker and start our playing timer.
+            self.filename = _get_filename(properties['Metadata'])
+            updated = True
+
+        if 'PlaybackStatus' in properties:
+            self.status = properties['PlaybackStatus']
+            updated = True
+
+        if updated:
+            self.tracker._handle_player_update(self)
+
+    def disconnect(self):
+        self.subscription.disconnect()
+
+    def __repr__(self):
+        return f'Player({self.bus_name=}; {self.filename=}; {self.status=})'
+
 
 class MPRISTracker(tracker.TrackerBase):
+
     name = 'Tracker (MPRIS)'
-    mpris_base = 'org.mpris.MediaPlayer2'
 
-    def is_active_player(self, sender):
-        return not self.active_player or self.active_player == sender or self.last_state != utils.Tracker.PLAYING
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def _connect(self, name):
-        # Add and connect new player
-        if self.re_players.search(name):
-            try:
-                sender = self.bus.GetNameOwner(name)
-            except GLib.Error:
-                self.msg.warn("Bus was closed before access: {}".format(name))
-                return
-
-            self.msg.info("Connecting to MPRIS player: {}".format(name))
-            try:
-                proxy = self.session.get(name, '/org/mpris/MediaPlayer2')
-                properties = proxy['org.freedesktop.DBus.Properties']
-
-                # properties.connect(
-                # 'PropertiesChanged', self._on_update, sender_keyword='sender')
-                proxy.PropertiesChanged.connect(
-                    lambda x, props, y: self._on_update(sender, props))
-                metadata = properties.Get(
-                    MPRISTracker.mpris_base + '.Player', 'Metadata')
-
-                status = properties.Get(
-                    MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
-
-                self.filenames[sender] = self._get_filename(metadata)
-                if not self.active_player:
-                    self._handle_status(status, sender)
-
-                if sender not in self.view_offsets:
-                    GLib.timeout_add(
-                        100, self._update_view_offset, sender, properties)
-
-                self._update_view_offset(sender, properties)
-
-            except GLib.Error:
-                self._stopped(sender)
-        else:
-            self.msg.info("Unknown player: {}".format(name))
-
-    def _get_filename(self, metadata):
-        if 'xesam:title' in metadata and len(metadata['xesam:title']) > 5:
-            return metadata['xesam:title']
-        elif 'xesam:url' in metadata:
-            # TODO : Support for full path
-            return os.path.basename(urllib.parse.unquote_plus(metadata['xesam:url']))
-        else:
-            return None
-
-    def _handle_status(self, status, sender):
-        self.msg.debug("New playback status: {}".format(status))
-
-        if status == "Playing":
-            self._playing(self.filenames[sender], sender)
-            self.resume_timer()
-        elif status == "Paused":
-            self._playing(self.filenames[sender], sender)
-            self.pause_timer()
-        elif status == "Stopped":
-            self._stopped(sender)
-
-        self.statuses[sender] = status
-
-    def _playing(self, filename, sender):
-        if filename != self.last_filename:
-            self.msg.debug("New video: {}".format(filename))
-
-            (state, show_tuple) = self._get_playing_show(filename)
-            self.update_show_if_needed(state, show_tuple)
-
-            self.msg.debug("New tracker status: {} (previously: {})".format(
-                state, self.last_state))
-
-            # We can override the active player if this player is playing a valid show.
-            if not self.active_player or self.last_state == utils.Tracker.PLAYING:
-                self.msg.debug("({}) Setting active player: {}".format(
-                    self.last_state, sender))
-                self.active_player = sender
-
-                if not self.timing:
-                    self.msg.debug("Starting MPRIS timer.")
-                    self.timing = True
-
-                    self._pass_timer()
-                    GLib.timeout_add_seconds(1, self._pass_timer)
-
-    def _stopped(self, sender):
-        self.filenames[sender] = None
-
-        if sender == self.active_player:
-            # Active player got closed!
-            self.msg.debug("Clearing active player: {}".format(sender))
-            self.active_player = None
-            self.view_offset = None
-
-            (state, show_tuple) = self._get_playing_show(None)
-            self.update_show_if_needed(state, show_tuple)
-
-            # Remove timer if any
-            self.timing = False
-
-        if sender in self.view_offsets:
-            del self.view_offsets[sender]
-
-    def _update_view_offset(self, sender, properties):
-        try:
-            self.view_offsets[sender] = int(properties.Get(
-                MPRISTracker.mpris_base + '.Player', 'Position'))/1000
-            if self.view_offsets[sender]:
-                if self.is_active_player(sender):
-                    self.view_offset = self.view_offsets[sender]
-            return True
-        except GLib.Error:
-            return False
-
-    def _on_update(self, sender, properties):
-        # We can override the active player if it's not playing a valid show.
-        if self.is_active_player(sender):
-            if 'Metadata' in properties:
-                # Player is playing a new video. We pass the title
-                # to the tracker and start our playing timer.
-                self.filenames[sender] = self._get_filename(
-                    properties['Metadata'])
-
-                if 'PlaybackStatus' not in properties:
-                    # Query the player status if we don't have it
-                    self._handle_status(self.statuses[sender], sender)
-
-            if 'PlaybackStatus' in properties:
-                status = properties['PlaybackStatus']
-                self._handle_status(status, sender)
-
-        else:
-            self.msg.debug("Got signal from an inactive player, ignoring.")
-
-    def _new_name(self, name, old, new):
-        if name.startswith(MPRISTracker.mpris_base):
-            if new:
-                # New MPRIS player found; connect signals.
-                self._connect(name)
-            else:
-                self._stopped(old)
-
-    def _pass_timer(self):
-        self.update_show_if_needed(self.last_state, self.last_show_tuple)
-
-        return self.timing
-
-    def observe(self, config, watch_dirs):
-        self.msg.info("Using MPRIS.")
-
-        self.re_players = re.compile(config['tracker_process'])
-        self.filenames = {}
-        self.statuses = {}
-        self.view_offsets = {}
+        self.re_players = re.compile(self.config['tracker_process'])
+        # Maps "OwnerName"s to Player instances
+        # for monitoring when one appears or disappears
+        # via the `NameOwnerChanged` signal.
+        self.players = {}
         self.timing = False
         self.active_player = None
+
+    def observe(self, _config, _watch_dirs):
+        self.msg.info("Using MPRIS.")
+
         self.session = SessionBus()
-        self.bus = self.session.get('.DBus')
+        self.bus = self.session.get('org.freedesktop.DBus')
 
         # Look for already running players and connect them
-        for name in self.bus.ListNames():
-            if name.startswith(MPRISTracker.mpris_base):
-                self._connect(name)
+        for bus_name in self.bus.ListNames():
+            if bus_name.startswith(BUS_NAME_PREFIX):
+                self._connect(bus_name)
 
         # Connect signal for any new players that could appear
         self.bus.NameOwnerChanged.connect(self._new_name)
@@ -202,3 +120,117 @@ class MPRISTracker(tracker.TrackerBase):
         # Run GLib loop
         loop = GLib.MainLoop()
         loop.run()
+
+    def _connect(self, bus_name):
+        if not self.re_players.search(bus_name):
+            self.msg.info(f"Ignoring unknown player: {bus_name}")
+            return
+
+        try:
+            sender = self.bus.GetNameOwner(bus_name)
+        except GLib.Error:
+            self.msg.warn(f"Bus was closed before access: {bus_name}")
+            return
+
+        self.msg.info(f"Connecting to MPRIS player: {bus_name} ({sender})")
+        try:
+            player = Player(self, bus_name)
+            self.msg.debug(f"{player=}")
+            self.players[sender] = player
+            self._handle_player_update(player)
+
+        except GLib.Error:
+            self.msg.warn(f"Could not initialize player: {bus_name}")
+
+    def _handle_player_update(self, player):
+        # self.msg.debug(f"{self.active_player=} | {player=}")
+        if player == self.active_player:
+            if player.status == "Stopped":
+                self._player_stopped()
+            else:
+                self._update_active_player(player)
+
+        elif self.active_player and self.active_player.status == "Playing":
+            self.msg.debug("Still playing on active player; ignoring update")
+            return
+
+        elif player.status != "Stopped":
+            self._update_active_player(player)
+
+    def _update_active_player(self, player):
+        if player.status == "Playing":
+            self._start_timer()
+        else:
+            self._stop_timer()
+
+        if player.filename == self.last_filename:
+            return
+        self.msg.debug(f"New video: {player.filename}")
+
+        (state, show_tuple) = self._get_playing_show(player.filename)
+        if state == utils.Tracker.UNRECOGNIZED:
+            self.msg.debug("Video not recognized")
+            return
+        elif state == utils.Tracker.NOVIDEO:
+            self.msg.debug("No video loaded")
+            return
+
+        self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
+        self.update_show_if_needed(state, show_tuple)
+
+        if player != self.active_player:
+            self.msg.debug(f"Setting active player: {player}")
+            self.active_player = player
+
+    def _player_stopped(self):
+        # Active player got closed!
+        self.msg.debug(f"Clearing active player: {self.active_player}")
+        self.active_player = None
+        self.view_offset = None
+
+        # TODO look through other playing players?
+        (state, show_tuple) = self._get_playing_show(None)
+        self.update_show_if_needed(state, show_tuple)
+
+        self._stop_timer()
+
+    def _new_name(self, bus_name, old_name, new_name):
+        if not bus_name.startswith(IFACE_MPRIS):
+            return
+        self.msg.debug(f'>> NameOwnerChanged | {bus_name=} {old_name=} {new_name=}')
+        if new_name:
+            self._connect(bus_name)
+        if old_name:
+            self._disconnect(old_name)
+
+    def _disconnect(self, sender):
+        player = self.players.pop(sender, None)
+        if not player:
+            return
+        self.msg.debug(f"Player disconnected: {player}")
+        player.disconnect()
+        if player == self.active_player:
+            self._player_stopped()
+            self.active_player = None
+
+    def _start_timer(self):
+        self.resume_timer()
+        if not self.timing:
+            self.msg.debug("Starting MPRIS timer.")
+            self.timing = True
+
+            self._on_timer()
+            GLib.timeout_add_seconds(1, self._on_timer)
+
+    def _stop_timer(self):
+        self.pause_timer()
+        self.timing = False
+
+    def _on_timer(self):
+        if self.active_player:
+            self.view_offset = int(self.active_player.mpris_player.Position) / 1000
+        if self.last_show_tuple:
+            self.update_timer(self.last_state, self.last_show_tuple)
+        if self.last_updated:
+            self._stop_timer()
+        return self.timing
