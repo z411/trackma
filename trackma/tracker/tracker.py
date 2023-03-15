@@ -20,10 +20,11 @@ import time
 
 from trackma import utils
 from trackma.parser import get_parser_class
+from trackma.messenger import Messenger
 
 
 class TrackerBase(object):
-    msg = None
+    msg: Messenger
     active = True
     list = None
     last_show_tuple = None
