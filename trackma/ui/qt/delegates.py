@@ -23,6 +23,12 @@ class AddListDelegate(QStyledItemDelegate):
         fm = QtGui.QFontMetrics(self.font)
         self.fh = fm.height()
 
+        # Get theme colors
+        palette = QtGui.QPalette()
+        self.alternatebasecolor = palette.color(palette.AlternateBase)
+        self.windowtextcolor = palette.color(palette.WindowText)
+        self.windowcolor = palette.color(palette.Window)
+
         super().__init__(parent)
 
     def _get_extra(self, extra, key):
@@ -42,8 +48,8 @@ class AddListDelegate(QStyledItemDelegate):
         color = index.data(QtCore.Qt.BackgroundRole)
 
         # Draw background box
-        painter.setPen(QtGui.QPen(QtGui.QColor(210, 210, 210)))
-        painter.setBrush(QtGui.QBrush(color.lighter(135)))
+        painter.setPen(QtGui.QPen(self.alternatebasecolor))
+        painter.setBrush(QtGui.QBrush(self.windowcolor))
         painter.drawRect(outerRect)
 
         # Prepare to draw inside
@@ -73,6 +79,8 @@ class AddListDelegate(QStyledItemDelegate):
 
         # Draw title
         painter.drawText(textRect, QtCore.Qt.AlignVCenter, data['title'])
+
+        painter.setPen(QtGui.QPen(self.windowtextcolor))
 
         # Draw the details
         textRect.setHeight(self.fh)
