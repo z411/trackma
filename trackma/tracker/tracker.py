@@ -212,11 +212,9 @@ class TrackerBase(object):
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.Tracker.PLAYING:
-                self.msg.info('Will update %s - %d' %
-                              (show['title'], episode))
+                self.msg.info('Will update %s - %d' % (show['title'], episode))
             elif state == utils.Tracker.NOT_FOUND:
-                self.msg.info('Will add %s - %d' %
-                              (show['title'], episode))
+                self.msg.info('Will add %s - %d' % (show['title'], episode))
 
             self.update_timer(state, show_tuple)
         elif self.last_state != state:
@@ -269,14 +267,13 @@ class TrackerBase(object):
                 return (utils.Tracker.UNRECOGNIZED, None)
 
             playing_show = utils.guess_show(show_title, self.list)
-            self.msg.debug("Show guess: {}: {} ({})".format(
-                show_title, playing_show, show_ep))
+            self.msg.debug("Show guess: {}: {} - {}".format(show_title, playing_show, show_ep))
 
             if playing_show:
                 (redirected_show, redirected_ep) = utils.redirect_show(
                     (playing_show, show_ep), self.redirections, self.list)
                 if (redirected_show, redirected_ep) != (playing_show, show_ep):
-                    self.msg.debug("Redirected to: {} ({})".format(redirected_show, redirected_ep))
+                    self.msg.debug("Redirected to: {} - {}".format(redirected_show, redirected_ep))
                     (playing_show, show_ep) = (redirected_show, redirected_ep)
 
                 return (utils.Tracker.PLAYING, (playing_show, show_ep))
