@@ -198,6 +198,12 @@ class MPRISTracker(tracker.TrackerBase):
         self.timing = False
         self.active_player = None
 
+    def update_list(self, *args, **kwargs):
+        super().update_list(*args, **kwargs)
+        if self.last_state != utils.Tracker.PLAYING:
+            # Re-check if we have any player with a valid show running after a list update
+            self.find_playing_player()
+
     async def observe_async(self):
         async with open_dbus_router() as router:
             name_owner_watcher_task = asyncio.create_task(name_owner_watcher(router, self))
