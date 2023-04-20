@@ -217,6 +217,8 @@ class MPRISTracker(tracker.TrackerBase):
                 for unique_name, wellknown_name in name_map.items()
                 if self.valid_player(wellknown_name)
             }
+            ignored_players = [name for name in name_map.values() if not self.valid_player(name)]
+            self.msg.debug(f"Ignoring players: {ignored_players}")
             for player in self.players.values():
                 self.msg.debug(f"Player connected: {player.wellknown_name}")
             self.find_playing_player()
@@ -267,7 +269,6 @@ class MPRISTracker(tracker.TrackerBase):
     def on_playback_status_change(self, sender, playback_status):
         player = self.players.get(sender)
         if not player:
-            self.msg.debug(f"Received property update from unknown player {sender}")
             return
         player.playback_status = playback_status
         self._handle_player_update(player)
@@ -275,7 +276,6 @@ class MPRISTracker(tracker.TrackerBase):
     def on_filename_change(self, sender, title, url):
         player = self.players.get(sender)
         if not player:
-            self.msg.debug(f"Received property update from unknown player {sender}")
             return
         player.title = title
         player.url = url
