@@ -374,7 +374,7 @@ fragment mediaListEntry on MediaList {
         variables = {'id': item['my_id']}
         self._request(query, variables)
 
-    def search(self, criteria, method):
+    def search(self, criteria, method, page):
         self.check_credentials()
         self.msg.info("Searching for {}...".format(criteria))
 
@@ -415,7 +415,7 @@ fragment mediaListEntry on MediaList {
             infolist.append(self._parse_info(media))
 
         self._emit_signal('show_info_changed', infolist)
-        return infolist
+        return (infolist, len(infolist), 1, 1)
 
     def request_info(self, itemlist):
         self.check_credentials()

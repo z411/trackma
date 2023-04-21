@@ -452,7 +452,7 @@ class libkitsu(lib):
         except urllib.error.URLError as e:
             raise utils.APIError('Error deleting: ' + str(e.reason))
 
-    def search(self, query, method):
+    def search(self, query, method, page):
         self.msg.info("Searching for %s..." % query)
 
         values = {
@@ -475,7 +475,7 @@ class libkitsu(lib):
             if not infolist:
                 raise utils.APIError('No results.')
 
-            return infolist
+            return (infolist, len(infolist), 1, 1,)
         except urllib.error.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
         except urllib.error.URLError as e:
