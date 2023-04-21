@@ -454,16 +454,20 @@ class libkitsu(lib):
 
     def search(self, query, method, page):
         self.msg.info("Searching for %s..." % query)
+        item_per_page = 20
 
         values = {
             "filter[text]": query,
-            "page[limit]": 20,
+            "page[limit]":  item_per_page,
+            "page[offset]": (page - 1) * item_per_page
         }
 
         try:
             data = self._request('GET', self.prefix +
                                  "/" + self.mediatype, get=values)
             shows = json.loads(data)
+            pages = int(shows['meta']['count'] / item_per_page) + \
+                    1 if shows['meta']['count'] % item_per_page != 0 else 0
 
             infolist = []
             for media in shows['data']:
@@ -475,7 +479,7 @@ class libkitsu(lib):
             if not infolist:
                 raise utils.APIError('No results.')
 
-            return (infolist, len(infolist), 1, 1,)
+            return (infolist, shows['meta']['count'], page, pages,)
         except urllib.error.HTTPError as e:
             raise utils.APIError('Error searching: ' + str(e.code))
         except urllib.error.URLError as e:
