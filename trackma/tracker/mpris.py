@@ -252,6 +252,7 @@ class MPRISTracker(tracker.TrackerBase):
         if not self.valid_player(wellknown_name):
             self.msg.debug("Ignoring new bus that does not match configured player:"
                            f" {wellknown_name}")
+            return
         player = await Player.new(router, wellknown_name, unique_name)
         self.msg.debug(f"Player connected: {player.wellknown_name}")
         self.players[unique_name] = player
