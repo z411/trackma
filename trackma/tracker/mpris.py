@@ -202,6 +202,7 @@ class MPRISTracker(tracker.TrackerBase):
         super().update_list(*args, **kwargs)
         if self.last_state != utils.Tracker.PLAYING:
             # Re-check if we have any player with a valid show running after a list update
+            self.last_filename = None
             self.find_playing_player()
 
     async def observe_async(self):
@@ -243,7 +244,7 @@ class MPRISTracker(tracker.TrackerBase):
         # Go through all connected players in random order
         # (or not since dicts are ordered now).
         return any(
-            self._update_active_player(player)
+            self._update_active_player(player, probing=True)
             for player in self.players.values()
             if player.playback_status == PlaybackStatus.PLAYING
         )
@@ -296,33 +297,35 @@ class MPRISTracker(tracker.TrackerBase):
         elif player.playback_status == PlaybackStatus.PLAYING:
             self._update_active_player(player)
 
-    def _update_active_player(self, player: Player) -> bool:
+    def _update_active_player(self, player: Player, probing=False) -> bool:
         is_new_player = player != self.active_player
 
         (state, show_tuple) = (None, None)
         previous_last_filename = self.last_filename
-        if is_new_player or player.filename != self.last_filename:
-            new_show = True
+        new_show = False
+        if player.filename != self.last_filename:
             (state, show_tuple) = self._get_playing_show(player.filename)
             if state in [utils.Tracker.UNRECOGNIZED, utils.Tracker.NOT_FOUND]:
                 self.msg.debug("Video not recognized")
-                new_show = False
             elif state == utils.Tracker.NOVIDEO:
                 self.msg.debug("No video loaded")
-                new_show = False
+            else:
+                new_show = True
 
-            if is_new_player and not new_show:
-                # Ignore this 'new' player & restore `last_filename`.
+        if is_new_player and not new_show:
+            if probing:
+                # Ignore this 'new' player & restore `last_filename`
+                # since we're just looking for a new player candidate.
                 # (this is a hack but a proper fix needs larger refactoring
                 # involving the parent class)
                 self.last_filename = previous_last_filename
-                return False
+            return False
 
-            if new_show:
-                self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
-                self.update_show_if_needed(state, show_tuple)
+        if new_show:
+            self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
+            self.update_show_if_needed(state, show_tuple)
 
-        if is_new_player:
+        if is_new_player and new_show:
             self.msg.debug(f"Setting active player: {player.wellknown_name}")
             self.active_player = player
 
