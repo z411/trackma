@@ -17,7 +17,6 @@ classifiers = [
     "Topic :: Internet",
     "Topic :: Multimedia",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -28,7 +27,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 requests = "^2.28.1"
 inotify = { version = "^0.2.10", optional = true }
 pillow = { version = "^9.2.0", optional = true }
