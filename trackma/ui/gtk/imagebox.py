@@ -58,7 +58,7 @@ class ImageThread(threading.Thread):
     def _save_image(self, img_bytes):
         if imaging_available:
             image = Image.open(img_bytes)
-            image.thumbnail((self._width, self._height), Image.ANTIALIAS)
+            image.thumbnail((self._width, self._height), Image.BICUBIC)
             image.convert("RGB").save(self._filename)
         else:
             with open(self._filename, 'wb') as img_file:
