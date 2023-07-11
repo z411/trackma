@@ -55,7 +55,7 @@ class ImageWorker(QtCore.QThread):
             if self.size:
                 if "imaging_available" in os.environ:
                     im = Image.open(img_file)
-                    im.thumbnail((self.size[0], self.size[1]), Image.ANTIALIAS)
+                    im.thumbnail((self.size[0], self.size[1]), Image.BICUBIC)
                     im.convert("RGB").save(self.local)
             else:
                 with open(self.local, 'wb') as f:
