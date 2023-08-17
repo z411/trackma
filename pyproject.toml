@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "trackma"
-version = "0.8.5"
+version = "0.8.6"
 description = "Open multi-site list manager"
-authors = ["z411 <z411@krutt.org>"]
+authors = ["z411 <z411@omaera.org>"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
 homepage = "https://z411.github.io/trackma/"
