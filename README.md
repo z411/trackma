@@ -72,7 +72,7 @@ The following media recognition trackers are available and their requirements ar
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Kodi | Connects to Kodi server. Enabled manually. | None |
 | Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
-| MPRIS | Connects to running MPRIS capable media players. | `dbus-python` |
+| MPRIS | Connects to running MPRIS capable media players. | `python3-jeepney` |
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional dependencies:

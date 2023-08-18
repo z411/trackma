@@ -848,7 +848,7 @@ class Engine:
                             (show, show_ep_start), self.redirections, tracker_list)
                         show_ep_end = show_ep_start = show_ep
 
-                        self.msg.debug("Redirected to: {} {}".format(
+                        self.msg.debug("Redirected to: {} - {}".format(
                             show['title'], show_ep))
                         library_cache[filename] = (show['id'], show_ep)
                     else:
