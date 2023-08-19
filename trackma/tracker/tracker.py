@@ -19,7 +19,7 @@ import threading
 import time
 
 from trackma import utils
-from trackma.extras import AnimeInfoExtractor
+from trackma.parser import get_parser_class
 
 
 class TrackerBase(object):
@@ -59,6 +59,7 @@ class TrackerBase(object):
         self.timer = None
         self.timer_paused = None
         self.timer_offset = 0
+        self.parser_class = get_parser_class(self.msg, self.config['title_parser'])
 
         self.view_offset = None
 
@@ -204,10 +205,10 @@ class TrackerBase(object):
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.Tracker.PLAYING:
-                self.msg.info('Will update %s %d' %
+                self.msg.info('Will update %s - %d' %
                               (show['title'], episode))
             elif state == utils.Tracker.NOT_FOUND:
-                self.msg.info('Will add %s %d' %
+                self.msg.info('Will add %s - %d' %
                               (show['title'], episode))
 
             self._update_show(state, show_tuple)
@@ -238,27 +239,23 @@ class TrackerBase(object):
             return (utils.Tracker.NOVIDEO, None)
 
         if filename:
+            if filename == self.last_filename:
+                # It's the exact same filename, there's no need to do the processing again
+                return (self.last_state, self.last_show_tuple)
+
+            self.last_filename = filename
             self.msg.debug("Guessing filename: {}".format(filename))
 
             # Trim out watch dir
             if os.path.isabs(filename):
                 for watch_prefix in self.watch_dirs:
                     if filename.startswith(watch_prefix):
-                        filename = filename[len(watch_prefix):]
-                        if filename.startswith(os.path.sep):
-                            filename = filename[len(os.path.sep):]
+                        filename = filename[len(watch_prefix):].lstrip(os.path.sep)
                         break
-
-            if filename == self.last_filename:
-                # It's the exact same filename, there's no need to do the processing again
-                self.msg.debug("Same filename as before. Skipping.")
-                return (self.last_state, self.last_show_tuple)
-
-            self.last_filename = filename
 
             # Do a regex to the filename to get
             # the show title and episode number
-            aie = AnimeInfoExtractor(filename)
+            aie = self.parser_class(self.msg, filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
                 # Format not recognized

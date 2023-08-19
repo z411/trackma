@@ -36,7 +36,8 @@ class AnimeInfoExtractor:
     @note: Does more than what's needed, but that behaviour is well tested
     """
 
-    def __init__(self, filename):
+    def __init__(self, msg, filename):
+        self.msg = msg.with_classname('Parser')
         self.originalFilename = filename
         self.resolution = ''
         self.hash = ''
@@ -306,7 +307,7 @@ class AnimeInfoExtractor:
             self.subberTag = ''
         # Reappend season number
         if self.season and self.season > 1:
-            self.name += " {}".format(self.season)
+            self.name += " Season {}".format(self.season)
 
     def _processFilename(self):
         filename = self.originalFilename

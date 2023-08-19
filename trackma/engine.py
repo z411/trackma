@@ -27,8 +27,8 @@ from decimal import Decimal
 from trackma import data
 from trackma import messenger
 from trackma import utils
-from trackma.extras import AnimeInfoExtractor
 from trackma.extras import redirections
+from trackma.parser import get_parser_class
 
 
 class Engine:
@@ -244,6 +244,8 @@ class Engine:
         if self.loaded:
             raise utils.TrackmaError("Already loaded.")
 
+        self.msg.debug("Starting engine...")
+
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
@@ -280,6 +282,14 @@ class Engine:
             except Exception as e:
                 self.msg.warn("Error parsing anime-relations.txt!")
                 self.msg.debug("{}".format(e))
+
+        # Determine parser library
+        try:
+            self.msg.debug(self.name, "Initializing parser...")
+            self.parser_class = get_parser_class(self.msg, self.config['title_parser'])
+        except ImportError:
+            self.msg.warn(self.name, "Couldn't import specified parser: {}".format(
+                self.config['title_parser']))
 
         # Rescan library if necessary
         if self.config['library_autoscan']:
@@ -336,6 +346,7 @@ class Engine:
                 self.msg.exception(sys.exc_info())
 
         self.loaded = True
+        self.msg.debug("Engine started")
         return True
 
     def unload(self):
@@ -429,9 +440,9 @@ class Engine:
             # Guess show by filename
             self.msg.debug("Guessing by filename.")
 
-            aie = AnimeInfoExtractor(filename)
-            (show_title, ep) = aie.getName(), aie.getEpisode()
-            self.msg.debug("Guessed {}".format(show_title))
+            anime_info = self.parser_class(self.msg, filename)
+            (show_title, ep) = anime_info.getName(), anime_info.getEpisode()
+            self.msg.debug("Show guess: {}".format(show_title))
 
             if show_title:
                 tracker_list = self._get_tracker_list()
@@ -778,7 +789,7 @@ class Engine:
             for fullpath, filename in utils.regex_find_videos(searchdir):
                 if self.config['library_full_path']:
                     filename = self._get_show_name_from_full_path(
-                        searchdir, fullpath).strip()
+                        searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
                     library, library_cache, rescan, fullpath, filename, tracker_list)
 
@@ -834,13 +845,14 @@ class Engine:
             # the information from the filename and do a fuzzy search
             # on the user's list. Cache the information.
             # If it fails, cache it as None.
-            aie = AnimeInfoExtractor(filename)
-            show_title = aie.getName()
-            (show_ep_start, show_ep_end) = aie.getEpisodeNumbers(True)
+            anime_info = self.parser_class(self.msg, filename)
+            show_title = anime_info.getName()
+            (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
                 show = utils.guess_show(show_title, tracker_list)
                 if show:
                     self.msg.debug("Adding to library: {}".format(fullpath))
+                    self.msg.debug("Show guess: {}".format(show_title))
 
                     if show_ep_start == show_ep_end:
                         # TODO : Support redirections for episode ranges
@@ -848,7 +860,7 @@ class Engine:
                             (show, show_ep_start), self.redirections, tracker_list)
                         show_ep_end = show_ep_start = show_ep
 
-                        self.msg.debug("Redirected to: {} {}".format(
+                        self.msg.debug("Redirected to: {} - {}".format(
                             show['title'], show_ep))
                         library_cache[filename] = (show['id'], show_ep)
                     else:
@@ -1015,8 +1027,8 @@ class Engine:
 
     def _get_show_name_from_full_path(self, searchdir, fullpath):
         """Joins the directory name with the file name to return the show name."""
-        relative = fullpath[len(searchdir):]
-        return relative.replace(os.path.sep, " ")
+        relative = fullpath[len(searchdir):].lstrip(os.path.sep)
+        return relative
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""
@@ -1052,7 +1064,7 @@ class Engine:
         return new_status
 
     def _get_tracker_class(self, ttype):
-        # Choose the tracker we want to tart
+        # Choose the tracker we want to start
         if ttype == 'plex':
             from trackma.tracker.plex import PlexTracker
             return PlexTracker
