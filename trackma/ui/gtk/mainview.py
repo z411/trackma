@@ -755,9 +755,9 @@ class NotebookPage(Gtk.ScrolledWindow):
             mb_playep = Gtk.CheckMenuItem(str(i))
             if i == next_ep:
                 mb_playep.set_label(str(i) + " - Next")
-                mb_playep.set_margin_left(10)
                 menu_eps.set_focus_child(mb_playep)
-            mb_playep.set_inconsistent(i < next_ep)
+            if i >= next_ep:
+                mb_playep.set_margin_left(10)
             mb_playep.set_active(i in library_episodes)
             mb_playep.set_draw_as_radio(True)
             mb_playep.connect("activate",

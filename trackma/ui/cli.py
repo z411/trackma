@@ -89,7 +89,7 @@ class Trackma_cmd(command.Cmd):
         super().__init__()
 
         if interactive:
-            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2020  z411')
+            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2023  z411')
             print(
                 'This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
             print('This is free software, and you are welcome to redistribute it')
@@ -164,9 +164,8 @@ class Trackma_cmd(command.Cmd):
 
         if self.interactive:
             print('Initializing engine...')
-            self.engine = Engine(self.account, self.messagehandler)
-        else:
-            self.engine = Engine(self.account)
+        self.engine = Engine(self.account, self.messagehandler)
+        if not self.interactive:
             self.engine.set_config("tracker_enabled", False)
             self.engine.set_config("library_autoscan", False)
             self.engine.set_config("use_hooks", False)
@@ -983,12 +982,12 @@ class Trackma_accounts(AccountManager):
                     password = getpass.getpass('Enter password (no echo): ')
                 elif selected_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
                     username = input('Enter account name: ')
-                    
+
                     auth_url = selected_api[3]
                     if selected_api[2] == utils.Login.OAUTH_PKCE:
                         extra['code_verifier'] = utils.oauth_generate_pkce()
                         auth_url = auth_url % extra['code_verifier']
-                    
+
                     print('OAuth Authentication')
                     print('--------------------')
                     print('This website requires OAuth authentication.')
@@ -1072,8 +1071,8 @@ def main():
         if args.cmd:
             if args.cmd == '-':
                 # Run commands from stdin
-                for cmd in sys.stdin:
-                    main_cmd.onecmd(cmd)
+                for line in sys.stdin:
+                    main_cmd.onecmd(line)
             else:
                 # Run the specified command in the arguments
                 main_cmd.execute(args.cmd, args.args, args.cmd)
@@ -1082,6 +1081,10 @@ def main():
     except utils.TrackmaFatal as e:
         main_cmd.forget_account()
         print("%s%s: %s%s" % (_COLOR_FATAL, type(e).__name__, e, _COLOR_RESET))
+    except KeyboardInterrupt:
+        print()
+        print("Interrupted by user.")
+        main_cmd.onecmd('EOF')  # TODO prints another prompt before exiting
 
 
 if __name__ == '__main__':
