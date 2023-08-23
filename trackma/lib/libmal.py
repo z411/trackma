@@ -338,8 +338,7 @@ class libmal(lib):
     def request_info(self, itemlist):
         self.check_credentials()
         infolist = []
-        
-        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
+        fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title,related_anime,related_manga'
         params = {'fields': fields, 'nsfw': 'true'}
         for item in itemlist:
             data = self._request('GET', self.query_url + '/%s/%d' % (self.mediatype, item['id']), get=params, auth=True)
@@ -372,7 +371,7 @@ class libmal(lib):
         info = utils.show()
         showid = item['id']
         
-        info.update({
+        to_update = {
             'id': showid,
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
@@ -389,11 +388,18 @@ class libmal(lib):
                 ('Synonyms',        item['alternative_titles'].get('synonyms')),
                 ('Synopsis',        item.get('synopsis')),
                 ('Type',            item.get('media_type')),
-                ('Mean score',   item.get('mean')),
+                ('Mean score',      item.get('mean')),
                 ('Status',          self._translate_status(item['status'])),
-            ]
-        })
-        
+            ],
+            'related': {}
+        }
+        for i in (*item.get('related_anime', []), *item.get('related_manga', [])):
+            related_list = to_update["related"].get(i["relation_type_formatted"],{})
+            #related_list.append((i['node']['title'], i['node']['id']))
+            related_list[i['node']['id']] = i['node']['title']
+            to_update["related"][i["relation_type_formatted"]] = related_list
+
+        info.update(to_update)
         return info
         
     def _translate_status(self, orig_status):
