@@ -400,7 +400,7 @@ class SettingsWindow(Gtk.Window):
         self.engine.set_config(
             'autosend_at_exit', self.checkbox_upload_exit.get_active())
         self.engine.set_config('tracker_update_wait_s',
-                               self.spin_tracker_update_wait.get_value())
+                               self.spin_tracker_update_wait.get_value_as_int())
         self.engine.set_config('tracker_update_close',
                                self.checkbox_tracker_update_close.get_active())
         self.engine.set_config('tracker_update_prompt',
