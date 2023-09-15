@@ -575,7 +575,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _open_folder(self, show_id):
         show = self._engine.get_show_info(show_id)
         try:
-            filename = self._engine.get_episode_path(show, 1)
+            filename = self._engine.get_episode_path(show)
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open", os.path.dirname(filename)],

@@ -1185,7 +1185,7 @@ class MainWindow(QMainWindow):
     def s_open_folder(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
         try:
-            filename = self.worker.engine.get_episode_path(show, 1)
+            filename = self.worker.engine.get_episode_path(show)
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open",

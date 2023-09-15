@@ -368,7 +368,7 @@ class Trackma_urwid:
 
         try:
             show = self.engine.get_show_info(item.showid)
-            filename = self.engine.get_episode_path(show, 1)
+            filename = self.engine.get_episode_path(show)
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open",

@@ -885,20 +885,24 @@ class Engine:
 
         return library, library_cache
 
-    def get_episode_path(self, show, episode):
+    def get_episode_path(self, show, episode=0):
         """
         This function returns the full path of the requested episode from the requested show.
+        If the episode is unspecified, it will return any episode from the requested show.
         """
-
         library = self.library()
         showid = show['id']
 
         if showid not in library:
             raise utils.EngineError('Show not in library.')
-        if episode not in library[showid]:
-            raise utils.EngineError('Episode not in library.')
 
-        return library[showid][episode]
+        # Get the specified episode, otherwise get any if unspecified
+        if episode:
+            if episode not in library[showid]:
+                raise utils.EngineError('Episode not in library.')
+            return library[showid][episode]
+        else:
+            return next(iter(library[showid].values()))
 
     def play_random(self):
         """

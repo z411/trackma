@@ -532,7 +532,7 @@ class Trackma_cmd(command.Cmd):
 
         try:
             show = self._get_show(args[0])
-            filename = self.engine.get_episode_path(show, 1)
+            filename = self.engine.get_episode_path(show)
             with open(os.devnull, 'wb') as DEVNULL:
                 if sys.platform == 'darwin':
                     subprocess.Popen(["open",
