@@ -129,7 +129,7 @@ The following extras are available:
 | Extra | Description |
 | --- | --- |
 | `gtk` | The GTK interface. |
-| `qt` | The GTK interface. |
+| `qt` | The Qt interface. |
 | `curses` | The curses-based TUI. |
 | `ui` | All user interfaces. |
 | `trackers` | All tracker libraries. |
