@@ -510,7 +510,62 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
+        'next_ep_time': None
     }
+
+
+# Function that calculates the relative time between 2 datetime objects.
+# If full=False, it returns only the greatest nonzero time unit
+def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True) -> str:
+    if time_end:
+        try:
+            if utc:
+                time_end = time_end.replace(tzinfo=datetime.UTC)
+                current_time = datetime.datetime.now(datetime.UTC)
+            else:
+                current_time = datetime.datetime.now()
+            time_difference = time_end - current_time
+            days = time_difference.days
+            hours, remainder = divmod(time_difference.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            time_units = [("days", days), ("hours", hours), ("minutes", minutes)]
+
+            # Filter out units with a value of 0
+            non_zero_units = [(unit, value) for unit, value in time_units if value != 0]
+
+            if fulltime:
+                result = ", ".join([
+                    f"in {value + (1 if remainder > 0 else 0)} "
+                    f"{unit if value + (1 if remainder > 0 else 0) != 1 else unit[:-1]}"
+                    for unit, value in non_zero_units
+                ])
+            else:
+                # Display only the greatest non-zero unit
+                result = next(
+                    (
+                        f"in {value + (1 if remainder > 0 else 0)} "
+                        f"{unit if value + (1 if remainder > 0 else 0) != 1 else unit[:-1]}"
+                        for unit, value in non_zero_units
+                    ),
+                    "error"
+                )
+            return result
+        except ValueError:
+            return '?'
+    else:
+        return '-'
+
+
+def parse_time_interval(value):
+    # Parse the time interval string and return it as a tuple (days, hours, minutes)
+    match = re.match(r'in\s*(?:(\d+) day(?:s)?)?(?:,\s*)?(?:(\d+) hour(?:s)?)?(?:,\s*)?(?:(\d+) minute(?:s)?)?|[-?]', value)
+    if match:
+        days = int(match.group(1) or 0)
+        hours = int(match.group(2) or 0)
+        minutes = int(match.group(3) or 0)
+        return days, hours, minutes
+    return 0, 0, 0  # Return a default value if the format is not matched
 
 
 class TrackmaError(Exception):
@@ -665,7 +720,7 @@ gtk_defaults = {
     'remember_geometry': False,
     'last_width': 740,
     'last_height': 480,
-    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'visible_columns': ['Title', 'Watched', 'Score', 'Progress'],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
