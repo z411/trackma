@@ -265,7 +265,8 @@ class ShowTreeView(Gtk.TreeView):
         self.connect('query-tooltip', self.show_tooltip)
 
         self.cols = dict()
-        # Defines the default column order as well
+        # Defines the default column order as well. If the default visible columns are renamed or otherwise changed,
+        # _default_column_reset() in mainview.py should be changed to accommodate the new names.
         self.available_columns = (
             ('Title', TreeConstants.TITLE),
             ('Watched', TreeConstants.MY_PROGRESS),

@@ -97,6 +97,7 @@ class MainView(Gtk.Box):
         self._engine_reload(account, mediatype, extern_widget)
 
     def _init_widgets(self):
+        self._visible_column_reset()
         self.image_box = ImageBox(100, 150)
         self.image_box.show()
         self.image_container_box.pack_start(self.image_box, False, False, 0)
@@ -558,6 +559,19 @@ class MainView(Gtk.Box):
             page.set_column_visible(column_name, visible)
 
         utils.save_config(self._config, self._configfile)
+
+    def _visible_column_reset(self):
+        """Should be called when column naming scheme changes to make sure that the default columns are
+        visible by default, regardless of config
+
+        In 1.1:
+        Default column 'Progress' was renamed to 'Watched',
+        Default column 'Percent' was renamed to 'Progress'.
+        'New episode' added to default columns"""
+        column_version = '1.1'  # Column naming version number
+        if self._config['column_version'] != column_version:
+            self._config['visible_columns'] = utils.gtk_defaults['visible_columns']
+            self._config['column_version'] = column_version
 
 
 class NotebookPage(Gtk.ScrolledWindow):

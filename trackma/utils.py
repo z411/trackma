@@ -720,7 +720,7 @@ gtk_defaults = {
     'remember_geometry': False,
     'last_width': 740,
     'last_height': 480,
-    'visible_columns': ['Title', 'Watched', 'Score', 'Progress'],
+    'visible_columns': ['Title', 'Watched', 'Score', 'Progress', 'Next episode'],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
@@ -734,6 +734,7 @@ gtk_defaults = {
         'progress_sub_fg': '#668099',
         'progress_complete': '#99CCB3',
     },
+    'column_version': ['1.1']
 }
 
 qt_defaults = {
