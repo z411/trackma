@@ -458,9 +458,9 @@ class ShowTreeView(Gtk.TreeView):
 
         return False
 
-    # Time based sort function for the "Next episode" column. Always sorts "-" and "?" below everything.
     @staticmethod
     def _next_episode_sort_func(model, iter1, iter2, user_data) -> int:
+        """Time based sort function for the "Next episode" column. Always sorts "-" and "?" below everything."""
         # Get the values from the "Next episode" column for the two rows
         value1 = model.get_value(iter1, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)
         value2 = model.get_value(iter2, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)

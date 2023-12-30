@@ -514,9 +514,9 @@ def show():
     }
 
 
-# Function that calculates the relative time between 2 datetime objects.
-# If full=False, it returns only the greatest nonzero time unit
 def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True) -> str:
+    """Function that calculates the relative time between 2 datetime objects.
+    If full=False, it returns only the greatest nonzero time unit"""
     if time_end:
         try:
             if utc:
@@ -558,7 +558,7 @@ def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True
 
 
 def parse_time_interval(value):
-    # Parse the time interval string and return it as a tuple (days, hours, minutes)
+    """Parse the time interval string and return it as a tuple (days, hours, minutes)"""
     match = re.match(r'in\s*(?:(\d+) day(?:s)?)?(?:,\s*)?(?:(\d+) hour(?:s)?)?(?:,\s*)?(?:(\d+) minute(?:s)?)?|[-?]', value)
     if match:
         days = int(match.group(1) or 0)
