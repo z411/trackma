@@ -611,14 +611,6 @@ class NotebookPage(Gtk.ScrolledWindow):
             self._list,
             config['episodebar_style'],
         )
-        # self._show_tree_view.set_model(
-        #     Gtk.TreeModelSort(
-        #         model=ShowListFilter(
-        #             status=self.status,
-        #             child_model=self._list
-        #         )
-        #     )
-        # )
         self._title.set_text('%s (%d)' % (
             self._title_text,
             len(self._show_tree_view.props.model)

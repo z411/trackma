@@ -517,10 +517,11 @@ def show():
 def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True) -> str:
     """Function that calculates the relative time between 2 datetime objects.
     If full=False, it returns only the greatest nonzero time unit"""
+
     if time_end:
         try:
             if utc:
-                time_end = time_end.replace(tzinfo=datetime.UTC)
+                time_end = time_end.replace(tzinfo=datetime.UTC)    # Make sure that time_end is timezone aware in UTC
                 current_time = datetime.datetime.now(datetime.UTC)
             else:
                 current_time = datetime.datetime.now()
@@ -559,7 +560,18 @@ def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True
 
 def parse_time_interval(value):
     """Parse the time interval string and return it as a tuple (days, hours, minutes)"""
-    match = re.match(r'in\s*(?:(\d+) day(?:s)?)?(?:,\s*)?(?:(\d+) hour(?:s)?)?(?:,\s*)?(?:(\d+) minute(?:s)?)?|[-?]', value)
+
+    pattern = (
+        r'in\s*'
+        r'(?:(\d+) day(?:s)?)?'
+        r'(?:,\s*)?'
+        r'(?:(\d+) hour(?:s)?)?'
+        r'(?:,\s*)?'
+        r'(?:(\d+) minute(?:s)?)?'
+        r'|[-?]'
+    )
+
+    match = re.match(pattern, value)
     if match:
         days = int(match.group(1) or 0)
         hours = int(match.group(2) or 0)

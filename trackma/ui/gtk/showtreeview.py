@@ -184,8 +184,6 @@ class ShowListStore(Gtk.ListStore):
             row[TreeConstants.MY_STATUS] = show['my_status']
         return
 
-        # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
-
     def update_title(self, show, altname=None):
         for row in self:
             if int(row[TreeConstants.SHOW_ID]) == show['id']:
@@ -242,6 +240,7 @@ class ShowTreeView(Gtk.TreeView):
                                        GObject.TYPE_PYOBJECT, (GObject.TYPE_STRING, GObject.TYPE_BOOLEAN))}
 
     def __init__(self, colors, visible_columns, status, _list, progress_style=1):
+        # Sets up the tree
         Gtk.TreeView.__init__(self)
 
         self.colors = colors
@@ -279,6 +278,7 @@ class ShowTreeView(Gtk.TreeView):
             ('Progress', TreeConstants.PROGRESS),
         )
 
+        # Creates pre-defined columns
         for (name, key) in self.available_columns:
             self.cols[name] = Gtk.TreeViewColumn()
             self.cols[name].set_sort_column_id(key)
@@ -351,95 +351,8 @@ class ShowTreeView(Gtk.TreeView):
                 w = w.get_parent()
             w.connect('button-press-event', self._header_button_press)
 
+            # Appends populated columns
             self.append_column(self.cols[name])
-
-        # for (name, key) in self.available_columns:
-        #     self.cols[name] = Gtk.TreeViewColumn(name)
-        #     self.cols[name].set_sort_column_id(key)
-        #     self.cols[name].set_resizable(False)
-        #     self.cols[name].set_reorderable(True)
-        #
-        #     if name == 'Title':
-        #         self.cols[name].set_alignment(0.0)
-        #         self.cols[name].set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
-        #     else:
-        #         self.cols[name].set_alignment(0.5)
-        #         self.cols[name].set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        #
-        #     # This is a hack to allow for right-clickable header
-        #     label = Gtk.Label(name)
-        #     label.show()
-        #     self.cols[name].set_widget(label)
-        #
-        #     w = self.cols[name].get_widget()
-        #     while not isinstance(w, Gtk.Button):
-        #         w = w.get_parent()
-        #
-        #     w.connect('button-press-event', self._header_button_press)
-        #
-        #     if name not in self.visible_columns:
-        #         self.cols[name].set_visible(False)
-        #
-        #     self.append_column(self.cols[name])
-
-        # renderer_title = Gtk.CellRendererText()
-        # self.cols['Title'].pack_start(renderer_title, True)
-        # self.cols['Title'].set_resizable(True)
-        # self.cols['Title'].set_expand(True)
-        # self.cols['Title'].add_attribute(renderer_title, 'text', RowConstants.TITLE)
-        # # Using foreground-gdk does not work, possibly due to the timing of it being set
-        # self.cols['Title'].add_attribute(renderer_title, 'foreground', RowConstants.COLOR)
-        # renderer_title.set_property('ellipsize', Pango.EllipsizeMode.END)
-        #
-        # renderer_progress = Gtk.CellRendererText()
-        # renderer_progress.set_alignment(0.5, 0.5)
-        # self.cols['Progress'].set_reorderable(True)
-        # self.cols['Progress'].pack_start(renderer_progress, False)
-        # self.cols['Progress'].add_attribute(renderer_progress, 'text', RowConstants.EPISODES)
-        #
-        # if self.progress_style == 0:
-        #     renderer_percent = Gtk.CellRendererProgress()
-        #     self.cols['Percent'].pack_start(renderer_percent, False)
-        #     self.cols['Percent'].add_attribute(renderer_percent, 'value', RowConstants.PROGRESS)
-        # else:
-        #     renderer_percent = ProgressCellRenderer(self.colors)
-        #     self.cols['Percent'].pack_start(renderer_percent, False)
-        #     self.cols['Percent'].add_attribute(renderer_percent, 'value', RowConstants.MY_PROGRESS)
-        #     self.cols['Percent'].add_attribute(renderer_percent, 'total', RowConstants.TOTAL_EPS)
-        #     self.cols['Percent'].add_attribute(renderer_percent, 'subvalue', RowConstants.AIRED_EPS)
-        #     self.cols['Percent'].add_attribute(renderer_percent, 'eps', RowConstants.AVAILABLE_EPS)
-        # renderer_percent.set_fixed_size(100, -1)
-        # self.cols['Percent'].set_min_width(100)
-        #
-        # renderer_score = Gtk.CellRendererText()
-        # renderer_score.set_alignment(0.5, 0.5)
-        # self.cols['Score'].pack_end(renderer_score, False)
-        # self.cols['Score'].add_attribute(renderer_score, 'text', RowConstants.SCORE)
-        #
-        # renderer_start = Gtk.CellRendererText()
-        # renderer_start.set_alignment(0.5, 0.5)
-        # self.cols['Start'].pack_start(renderer_start, False)
-        # self.cols['Start'].add_attribute(renderer_start, 'text', RowConstants.START_DATE)
-        #
-        # renderer_end = Gtk.CellRendererText()
-        # renderer_end.set_alignment(0.5, 0.5)
-        # self.cols['End'].pack_start(renderer_end, False)
-        # self.cols['End'].add_attribute(renderer_end, 'text', RowConstants.END_DATE)
-        #
-        # renderer_my_start = Gtk.CellRendererText()
-        # renderer_my_start.set_alignment(0.5, 0.5)
-        # self.cols['My start'].pack_start(renderer_my_start, False)
-        # self.cols['My start'].add_attribute(renderer_my_start, 'text', RowConstants.MY_START_DATE)
-        #
-        # renderer_my_end = Gtk.CellRendererText()
-        # renderer_my_end.set_alignment(0.5, 0.5)
-        # self.cols['My end'].pack_start(renderer_my_end, False)
-        # self.cols['My end'].add_attribute(renderer_my_end, 'text', RowConstants.MY_FINISH_DATE)
-        #
-        # renderer_next_episode = Gtk.CellRendererText()
-        # renderer_next_episode.set_alignment(0.5, 0.5)
-        # self.cols['Next episode'].pack_start(renderer_next_episode, False)
-        # self.cols['Next episode'].add_attribute(renderer_next_episode, 'text', RowConstants.NEXT_EPISODE_AIR_TIME)
 
     def _header_button_press(self, button, event):
         if event.button == 3:
@@ -462,6 +375,7 @@ class ShowTreeView(Gtk.TreeView):
     @staticmethod
     def _next_episode_sort_func(model, iter1, iter2, user_data) -> int:
         """Time based sort function for the "Next episode" column. Always sorts "-" and "?" below everything."""
+
         # Get the values from the "Next episode" column for the two rows
         value1 = model.get_value(iter1, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)
         value2 = model.get_value(iter2, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)
