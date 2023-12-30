@@ -22,24 +22,25 @@ from trackma import utils
 # Declare named constants for the tree references, so it's more unified and easier to read
 # Putting them in their own class also enables whatever we might want to do with it in the future.
 class TreeConstants:
-    SHOW_ID = 0
-    TITLE = 1
-    MY_PROGRESS = 2
-    MY_SCORE = 3
-    EPISODES = 4
-    SCORE = 5
-    TOTAL_EPS = 6
-    AIRED_EPS = 7
-    AVAILABLE_EPS = 8
-    COLOR = 9
-    PROGRESS = 10
-    START_DATE = 11
-    END_DATE = 12
-    MY_START_DATE = 13
-    MY_FINISH_DATE = 14
-    MY_STATUS = 15
-    SHOW_STATUS = 16
-    NEXT_EPISODE_AIR_TIME_RELATIVE = 17
+    SHOW_ID = 0                             # Show ID
+    TITLE = 1                               # Show title
+    MY_PROGRESS = 2                         # Number of watched episodes
+    MY_SCORE = 3                            # User given score
+    WATCHED_EPISODES_FRACTION = 4           # Watched episodes / total episodes. E.g: 7 / 13
+    MY_SCORE_STRING = 5                     # User given score (string), with 'self.decimals' decimals
+    TOTAL_EPS = 6                           # Total number of episodes
+    AIRED_EPS = 7                           # (Estimated) number of episodes aired.
+    # If no number is provided by the lib, 1 episode / week is assumed and calculated accordingly
+    AVAILABLE_EPS = 8                       # Number of available episodes in the local library
+    COLOR = 9                               # Used with the _get_color method to return the color preset for a show
+    PROGRESS_PERCENTAGE = 10                # % of episodes watched. 7 / 13 ->
+    START_DATE = 11                         # Start date of the show
+    END_DATE = 12                           # End date of the show
+    MY_START_DATE = 13                      # Date when the user started watching the show
+    MY_FINISH_DATE = 14                     # Date when the user finished the show
+    MY_STATUS = 15                          # User's show status (watching, paused, completed etc.)
+    SHOW_STATUS = 16                        # Show's status (airing, upcoming etc.)
+    NEXT_EPISODE_AIR_TIME_RELATIVE = 17     # Relative time until the next episode as 'X days / hours / minutes'
 
 
 class ShowListStore(Gtk.ListStore):
@@ -50,13 +51,13 @@ class ShowListStore(Gtk.ListStore):
         (TreeConstants.TITLE, str),
         (TreeConstants.MY_PROGRESS, int),
         (TreeConstants.MY_SCORE, float),
-        (TreeConstants.EPISODES, str),
-        (TreeConstants.SCORE, str),
+        (TreeConstants.WATCHED_EPISODES_FRACTION, str),
+        (TreeConstants.MY_SCORE_STRING, str),
         (TreeConstants.TOTAL_EPS, int),
         (TreeConstants.AIRED_EPS, int),
         (TreeConstants.AVAILABLE_EPS, GObject.TYPE_PYOBJECT),
         (TreeConstants.COLOR, str),
-        (TreeConstants.PROGRESS, int),
+        (TreeConstants.PROGRESS_PERCENTAGE, int),
         (TreeConstants.START_DATE, str),
         (TreeConstants.END_DATE, str),
         (TreeConstants.MY_START_DATE, str),
@@ -108,10 +109,11 @@ class ShowListStore(Gtk.ListStore):
             return None
 
     def append(self, show, altname=None, eps=None):
-        episodes_str = "{} / {}".format(show['my_progress'],
-                                        show['total'] or '?')
+        watched_episodes_fraction = "{} / {}".format(show['my_progress'],
+                                                     show['total'] or '?')
         if show['total'] and show['my_progress'] <= show['total']:
-            progress = (float(show['my_progress']) / show['total']) * 100
+            progress_float = (show['my_progress'] / show['total']) * 100
+            progress = int(progress_float)
         else:
             progress = 0
 
@@ -141,7 +143,7 @@ class ShowListStore(Gtk.ListStore):
                title_str,
                show['my_progress'],
                show['my_score'],
-               episodes_str,
+               watched_episodes_fraction,
                score_str,
                show['total'],
                aired_eps,
@@ -174,12 +176,12 @@ class ShowListStore(Gtk.ListStore):
             episodes_str = "{} / {}".format(show['my_progress'],
                                             show['total'] or '?')
             row[TreeConstants.MY_PROGRESS] = show['my_progress']
-            row[TreeConstants.EPISODES] = episodes_str
+            row[TreeConstants.WATCHED_EPISODES_FRACTION] = episodes_str
 
             score_str = "%0.*f" % (self.decimals, show['my_score'])
 
             row[TreeConstants.MY_SCORE] = show['my_score']
-            row[TreeConstants.SCORE] = score_str
+            row[TreeConstants.MY_SCORE_STRING] = score_str
             row[TreeConstants.COLOR] = self._get_color(show, row[TreeConstants.AVAILABLE_EPS])
             row[TreeConstants.MY_STATUS] = show['my_status']
         return
@@ -275,7 +277,7 @@ class ShowTreeView(Gtk.TreeView):
             ('End', TreeConstants.END_DATE),
             ('My start', TreeConstants.MY_START_DATE),
             ('My end', TreeConstants.MY_FINISH_DATE),
-            ('Progress', TreeConstants.PROGRESS),
+            ('Progress', TreeConstants.PROGRESS_PERCENTAGE),
         )
 
         # Creates pre-defined columns
@@ -288,7 +290,7 @@ class ShowTreeView(Gtk.TreeView):
                 if self.progress_style == 0:
                     renderer = Gtk.CellRendererProgress()
                     self.cols[name].pack_start(renderer, False)
-                    self.cols[name].add_attribute(renderer, 'value', TreeConstants.PROGRESS)
+                    self.cols[name].add_attribute(renderer, 'value', TreeConstants.PROGRESS_PERCENTAGE)
                 else:
                     renderer = ProgressCellRenderer(self.colors)
                     self.cols[name].pack_start(renderer, False)
@@ -314,13 +316,13 @@ class ShowTreeView(Gtk.TreeView):
                     renderer.set_property('ellipsize', Pango.EllipsizeMode.END)
 
                 case 'Watched':
-                    self.cols[name].add_attribute(renderer, 'text', TreeConstants.EPISODES)
+                    self.cols[name].add_attribute(renderer, 'text', TreeConstants.WATCHED_EPISODES_FRACTION)
 
                 case 'Progress':
                     self.cols[name].set_min_width(200)
 
                 case 'Score':
-                    self.cols[name].add_attribute(renderer, 'text', TreeConstants.SCORE)
+                    self.cols[name].add_attribute(renderer, 'text', TreeConstants.MY_SCORE_STRING)
 
                 case 'Start':
                     self.cols[name].add_attribute(renderer, 'text', TreeConstants.START_DATE)
