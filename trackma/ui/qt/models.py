@@ -83,13 +83,12 @@ class ShowListModel(QtCore.QAbstractTableModel):
             del self.colors[row]
 
     def _calculate_next_ep(self, row, show):
-        if self.mediainfo.get('date_next_ep'):
-            if 'next_ep_time' in show:
-                delta = show['next_ep_time'] - datetime.datetime.utcnow()
-                self.next_ep[row] = "%i days, %02d hrs." % (
-                    delta.days, delta.seconds/3600)
-            elif row in self.next_ep:
-                del self.next_ep[row]
+        if self.mediainfo.get('date_next_ep') and show['next_ep_time'] is not None:
+            delta = show['next_ep_time'].replace(tzinfo=datetime.UTC) - datetime.datetime.now(datetime.UTC)
+            self.next_ep[row] = "%i days, %02d hrs." % (
+                delta.days, delta.seconds / 3600)
+        elif row in self.next_ep:
+            del self.next_ep[row]
 
     def _calculate_eps(self, row, show):
         aired_eps = utils.estimate_aired_episodes(show)
