@@ -265,8 +265,9 @@ class ShowTreeView(Gtk.TreeView):
         self.set_property('has-tooltip', True)
         self.connect('query-tooltip', self.show_tooltip)
 
-        self.previous_sort_column = None
+        self.previous_sort_column = 'Title'  # Sets the default "0th" previous column for sorting
         self.cols = dict()
+
         # Defines the default column order as well. If the default visible columns are renamed or otherwise changed,
         # _default_column_reset() in mainview.py should be changed to accommodate the new names.
         self.available_columns = (
@@ -288,6 +289,7 @@ class ShowTreeView(Gtk.TreeView):
             self.cols[name].connect("clicked", lambda _, column_key=key, column=self.cols[name]:
                                     self._on_column_clicked(column_key, column))
             self.cols[name].set_alignment(0.5)
+            self.cols[name].set_title(name)
 
             # Set up the percent / progress bar
             if name == 'Progress':
@@ -390,9 +392,9 @@ class ShowTreeView(Gtk.TreeView):
         value1 = model.get_value(iter1, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)
         value2 = model.get_value(iter2, TreeConstants.NEXT_EPISODE_AIR_TIME_RELATIVE)
 
-        sort_order = user_data.cols['Next episode'].get_sort_order()
-        special_cases = ('-', '?')
+        sort_id, sort_order = user_data.get_model().get_sort_column_id()  # Get the current sort order of the model
 
+        special_cases = ('-', '?')
         if value1 in special_cases:
             return 1 if sort_order == Gtk.SortType.ASCENDING else -1
         elif value2 in special_cases:
@@ -413,44 +415,80 @@ class ShowTreeView(Gtk.TreeView):
             return 1
 
     def _on_column_clicked(self, key, column):
+        # Todo: "Title sort" should sort shows with available episodes first -> custom sort function needed
         """Sets up sorting for the clicked column, based on what the previous sorting was.
         We can't simply use self.cols[name].set_sort_order_column_id(key) because that inevitably allocates screen
-        space for the sort indicator. This way, the sort indicator is only visible (and takes up space) for the
-        currently sorted column
+        space for the sort indicator arrow. This way, the sort indicator is only visible (and takes up space) for the
+        currently sorted column.
+
+        In order to make the list look uniform while keeping the default sort direction logical,
+        e.g: highest score first, we need to dynamically change the sort indicator directions.
 
         We're saving the sorted column because it's not possible to get the column purely from the ID without
         iterating through the columns, so this is more efficient"""
 
-        sort_order_column = column.get_sort_order()  # Sort order passed by the column (defaults to Ascending)
         sort_column_id_model, sort_order_model = self.get_model().get_sort_column_id()
-        sort_column_id_model = sort_column_id_model if sort_column_id_model is not None else 1
-        # Sort order and ID passed by the model. Order defaults to None, ID is the previously sorted column ID,
-        # and NOT the clicked column. Set sort_column_id_model to '1', as that's the default Sort column.
+        sort_column_id_model = sort_column_id_model if sort_column_id_model is not None else TreeConstants.TITLE
+        sort_order_model = sort_order_model if sort_order_model is not None else Gtk.SortType.ASCENDING
+        # Sort order and ID passed by the model. Order and ID default to none and correspond to the previously sorted
+        # column ID, NOT the clicked column. Set sort_column_id_model to 'TreeConstants.TITLE',
+        # as that's the default sort column.
+
+        column_title = column.get_title()  # Gets the clicked column title
+        sort_order_column = column.get_sort_order()  # Sort order passed by the column (indicator direction)
 
         if sort_column_id_model == key:  # Check if we're trying to sort the same column that's already being sorted
-            match sort_order_column:
-                case Gtk.SortType.ASCENDING:  # It was ascending -> set to descending
-                    column.set_sort_order(Gtk.SortType.DESCENDING)
-                    column.set_sort_indicator(True)
+            self._reverse_sort_order(column, sort_order_model, sort_order_column, key)  # Reverse sorting
+
+        else:  # We're trying to sort a new column
+            match column.get_title():  # Check which column and set the sort indicator accordingly
+                case 'Score':  # Default should be large -> small, e.g: 10, 8, 7, 3
+                    column.set_sort_order(Gtk.SortType.ASCENDING)
                     self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
 
-                case Gtk.SortType.DESCENDING:  # It was descending -> set to ascending
+                case 'Watched':  # Default should be large -> small, e.g: 18 / 23, 12 / 13, 7 / 13
                     column.set_sort_order(Gtk.SortType.ASCENDING)
-                    column.set_sort_indicator(True)
+                    self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
+
+                case 'Progress':  # Default should be large -> small
+                    column.set_sort_order(Gtk.SortType.ASCENDING)
+                    self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
+
+                case _:  # Everything else should be normal
+                    column.set_sort_order(Gtk.SortType.ASCENDING)
                     self.get_model().set_sort_column_id(key, Gtk.SortType.ASCENDING)
 
-                case _:  # This isn't really necessary, but for completeness' sake
-                    pass
-        else:  # We're trying to sort a column that's different from the previously sorted one -> default to Ascending
-            # TODO: Change default sort order based on what makes sense for the column
-            column.set_sort_order(Gtk.SortType.ASCENDING)
-            column.set_sort_indicator(True)
+            self.cols[self.previous_sort_column].set_sort_indicator(False)  # Disable the previous sort indicator
+            column.set_sort_indicator(True)  # Enable the new sort indicator
+            self.previous_sort_column = column.get_title()  # Save the new sorting column
+
+    def _reverse_sort_order(self, column, sort_order_model, sort_order_column, key):
+        """Reverses both the actual sort order and the visual sorting indicator arrow direction"""
+
+        if sort_order_model == Gtk.SortType.ASCENDING:
+            self._reverse_sort_indicator(column, sort_order_column)
+            self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
+
+        elif sort_order_model == Gtk.SortType.DESCENDING:
+            self._reverse_sort_indicator(column, sort_order_column)
             self.get_model().set_sort_column_id(key, Gtk.SortType.ASCENDING)
 
-        # If this isn't the first time sorting, and we're sorting a different column, remove the sort indicator
-        if self.previous_sort_column is not None and self.previous_sort_column != column:
-            self.previous_sort_column.set_sort_indicator(False)
-        self.previous_sort_column = column  # Save the sorted column
+        else:
+            raise ValueError("Invalid sort order. Must be Gtk.SortType.ASCENDING or Gtk.SortType.DESCENDING")
+
+    @staticmethod
+    def _reverse_sort_indicator(column, sort_order_column):
+        """Reverses the visual sorting indicator direction"""
+        if sort_order_column == Gtk.SortType.ASCENDING:
+            column.set_sort_order(Gtk.SortType.DESCENDING)
+
+        elif sort_order_column == Gtk.SortType.DESCENDING:
+            column.set_sort_order(Gtk.SortType.ASCENDING)
+
+        else:
+            raise ValueError("Invalid sort order. Must be Gtk.SortType.ASCENDING or Gtk.SortType.DESCENDING")
+
+
 
     @property
     def filter(self):
