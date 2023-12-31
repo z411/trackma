@@ -22,25 +22,25 @@ from trackma import utils
 # Declare named constants for the tree references, so it's more unified and easier to read
 # Putting them in their own class also enables whatever we might want to do with it in the future.
 class TreeConstants:
-    SHOW_ID = 0                             # Show ID
-    TITLE = 1                               # Show title
-    MY_PROGRESS = 2                         # Number of watched episodes
-    MY_SCORE = 3                            # User given score
-    WATCHED_EPISODES_FRACTION = 4           # Watched episodes / total episodes. E.g: 7 / 13
-    MY_SCORE_STRING = 5                     # User given score (string), with 'self.decimals' decimals
-    TOTAL_EPS = 6                           # Total number of episodes
-    AIRED_EPS = 7                           # (Estimated) number of episodes aired.
+    SHOW_ID = 0  # Show ID
+    TITLE = 1  # Show title
+    MY_PROGRESS = 2  # Number of watched episodes
+    MY_SCORE = 3  # User given score
+    WATCHED_EPISODES_FRACTION = 4  # Watched episodes / total episodes. E.g: 7 / 13
+    MY_SCORE_STRING = 5  # User given score (string), with 'self.decimals' decimals
+    TOTAL_EPS = 6  # Total number of episodes
+    AIRED_EPS = 7  # (Estimated) number of episodes aired.
     # If no number is provided by the lib, 1 episode / week is assumed and calculated accordingly
-    AVAILABLE_EPS = 8                       # Number of available episodes in the local library
-    COLOR = 9                               # Used with the _get_color method to return the color preset for a show
-    PROGRESS_PERCENTAGE = 10                # % of episodes watched. 7 / 13 ->
-    START_DATE = 11                         # Start date of the show
-    END_DATE = 12                           # End date of the show
-    MY_START_DATE = 13                      # Date when the user started watching the show
-    MY_FINISH_DATE = 14                     # Date when the user finished the show
-    MY_STATUS = 15                          # User's show status (watching, paused, completed etc.)
-    SHOW_STATUS = 16                        # Show's status (airing, upcoming etc.)
-    NEXT_EPISODE_AIR_TIME_RELATIVE = 17     # Relative time until the next episode as 'X days / hours / minutes'
+    AVAILABLE_EPS = 8  # Number of available episodes in the local library
+    COLOR = 9  # Used with the _get_color method to return the color preset for a show
+    PROGRESS_PERCENTAGE = 10  # % of episodes watched. 7 / 13 ->
+    START_DATE = 11  # Start date of the show
+    END_DATE = 12  # End date of the show
+    MY_START_DATE = 13  # Date when the user started watching the show
+    MY_FINISH_DATE = 14  # Date when the user finished the show
+    MY_STATUS = 15  # User's show status (watching, paused, completed etc.)
+    SHOW_STATUS = 16  # Show's status (airing, upcoming etc.)
+    NEXT_EPISODE_AIR_TIME_RELATIVE = 17  # Relative time until the next episode as 'X days / hours / minutes'
 
 
 class ShowListStore(Gtk.ListStore):
@@ -265,6 +265,7 @@ class ShowTreeView(Gtk.TreeView):
         self.set_property('has-tooltip', True)
         self.connect('query-tooltip', self.show_tooltip)
 
+        self.previous_sort_column = None
         self.cols = dict()
         # Defines the default column order as well. If the default visible columns are renamed or otherwise changed,
         # _default_column_reset() in mainview.py should be changed to accommodate the new names.
@@ -283,7 +284,10 @@ class ShowTreeView(Gtk.TreeView):
         # Creates pre-defined columns
         for (name, key) in self.available_columns:
             self.cols[name] = Gtk.TreeViewColumn()
-            self.cols[name].set_sort_column_id(key)
+            self.cols[name].set_clickable(True)
+            self.cols[name].connect("clicked", lambda _, column_key=key, column=self.cols[name]:
+                                    self._on_column_clicked(column_key, column))
+            self.cols[name].set_alignment(0.5)
 
             # Set up the percent / progress bar
             if name == 'Progress':
@@ -301,6 +305,7 @@ class ShowTreeView(Gtk.TreeView):
             else:
                 renderer = Gtk.CellRendererText()
                 self.cols[name].pack_start(renderer, False)
+                renderer.set_alignment(0.5, 0.5)
 
             if name not in self.visible_columns:
                 self.cols[name].set_visible(False)
@@ -314,6 +319,9 @@ class ShowTreeView(Gtk.TreeView):
                     self.cols[name].add_attribute(renderer, 'text', TreeConstants.TITLE)
                     self.cols[name].add_attribute(renderer, 'foreground', TreeConstants.COLOR)
                     renderer.set_property('ellipsize', Pango.EllipsizeMode.END)
+                    self.cols[name].set_alignment(0)
+                    renderer.set_alignment(0, 0.5)
+                    self.cols[name].set_sort_indicator(True)
 
                 case 'Watched':
                     self.cols[name].add_attribute(renderer, 'text', TreeConstants.WATCHED_EPISODES_FRACTION)
@@ -403,6 +411,46 @@ class ShowTreeView(Gtk.TreeView):
             return 0
         else:
             return 1
+
+    def _on_column_clicked(self, key, column):
+        """Sets up sorting for the clicked column, based on what the previous sorting was.
+        We can't simply use self.cols[name].set_sort_order_column_id(key) because that inevitably allocates screen
+        space for the sort indicator. This way, the sort indicator is only visible (and takes up space) for the
+        currently sorted column
+
+        We're saving the sorted column because it's not possible to get the column purely from the ID without
+        iterating through the columns, so this is more efficient"""
+
+        sort_order_column = column.get_sort_order()  # Sort order passed by the column (defaults to Ascending)
+        sort_column_id_model, sort_order_model = self.get_model().get_sort_column_id()
+        sort_column_id_model = sort_column_id_model if sort_column_id_model is not None else 1
+        # Sort order and ID passed by the model. Order defaults to None, ID is the previously sorted column ID,
+        # and NOT the clicked column. Set sort_column_id_model to '1', as that's the default Sort column.
+
+        if sort_column_id_model == key:  # Check if we're trying to sort the same column that's already being sorted
+            match sort_order_column:
+                case Gtk.SortType.ASCENDING:  # It was ascending -> set to descending
+                    column.set_sort_order(Gtk.SortType.DESCENDING)
+                    column.set_sort_indicator(True)
+                    self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
+
+                case Gtk.SortType.DESCENDING:  # It was descending -> set to ascending
+                    column.set_sort_order(Gtk.SortType.ASCENDING)
+                    column.set_sort_indicator(True)
+                    self.get_model().set_sort_column_id(key, Gtk.SortType.ASCENDING)
+
+                case _:  # This isn't really necessary, but for completeness' sake
+                    pass
+        else:  # We're trying to sort a column that's different from the previously sorted one -> default to Ascending
+            # TODO: Change default sort order based on what makes sense for the column
+            column.set_sort_order(Gtk.SortType.ASCENDING)
+            column.set_sort_indicator(True)
+            self.get_model().set_sort_column_id(key, Gtk.SortType.ASCENDING)
+
+        # If this isn't the first time sorting, and we're sorting a different column, remove the sort indicator
+        if self.previous_sort_column is not None and self.previous_sort_column != column:
+            self.previous_sort_column.set_sort_indicator(False)
+        self.previous_sort_column = column  # Save the sorted column
 
     @property
     def filter(self):
