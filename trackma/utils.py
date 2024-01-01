@@ -521,8 +521,9 @@ def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True
     if time_end:
         try:
             if utc:
-                time_end = time_end.replace(tzinfo=datetime.UTC)    # Make sure that time_end is timezone aware in UTC
-                current_time = datetime.datetime.now(datetime.UTC)
+                time_end = time_end.replace(tzinfo=datetime.timezone.utc)
+                # Make sure that time_end is timezone aware in UTC
+                current_time = datetime.datetime.now(datetime.timezone.utc)
             else:
                 current_time = datetime.datetime.now()
             time_difference = time_end - current_time
