@@ -441,7 +441,7 @@ class ShowTreeView(Gtk.TreeView):
             self._reverse_sort_order(column, sort_order_model, sort_order_column, key)  # Reverse sorting
 
         else:  # We're trying to sort a new column
-            match column.get_title():  # Check which column and set the sort indicator accordingly
+            match column_title:  # Check which column and set the sort indicator accordingly
                 case 'Score':  # Default should be large -> small, e.g: 10, 8, 7, 3
                     column.set_sort_order(Gtk.SortType.ASCENDING)
                     self.get_model().set_sort_column_id(key, Gtk.SortType.DESCENDING)
@@ -460,7 +460,7 @@ class ShowTreeView(Gtk.TreeView):
 
             self.cols[self.previous_sort_column].set_sort_indicator(False)  # Disable the previous sort indicator
             column.set_sort_indicator(True)  # Enable the new sort indicator
-            self.previous_sort_column = column.get_title()  # Save the new sorting column
+            self.previous_sort_column = column_title  # Save the new sorting column
 
     def _reverse_sort_order(self, column, sort_order_model, sort_order_column, key):
         """Reverses both the actual sort order and the visual sorting indicator arrow direction"""
