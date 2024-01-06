@@ -105,6 +105,8 @@ class libmal(lib):
         'manhua': utils.Type.MANGA,
         'one_shot': utils.Type.ONE_SHOT,
         'doujinshi': utils.Type.MANGA,
+        'cm':utils.Type.OTHER,
+        'tv_special': utils.Type.SPECIAL
     }
     
     status_translate = {
