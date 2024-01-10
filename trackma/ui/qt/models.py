@@ -85,7 +85,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
     def _calculate_next_ep(self, row, show):
         if self.mediainfo.get('date_next_ep') and show['next_ep_time'] is not None:
             delta = show['next_ep_time'].replace(tzinfo=datetime.timezone.utc) - \
-                    datetime.datetime.now(datetime.timezone.utc)  # Make sure it's UTC
+                    datetime.datetime.now(tz=datetime.timezone.utc)  # 'next_ep_time has to be UTC' by definition
             self.next_ep[row] = "%i days, %02d hrs." % (
                 delta.days, delta.seconds / 3600)
         elif row in self.next_ep:
