@@ -418,13 +418,14 @@ class libmal(lib):
     @classmethod
     def _next_episode_to_utc_datetime(cls, mal_response_node: dict) -> datetime:
         """MAL is pretty rubbish, and does not provide an actual date for the next episode.
-        Instead, it gives a data for when the show started airing, and the general broadcast schedule as a string.
+        Instead, it gives a date for when the show started airing, and the general broadcast schedule as a string.
         E.g.: {'day_of_the_week': 'friday', 'start_time': '23:00'} — *this is assumed to be JST*
         It does not update for when a show goes on hiatus or anything like that.
 
-        This function takes that string and assumes that the 'day of the week' is this week for an airing show.
-        There is no other way to do this without a 3rd party site. If the show is not airing, this does not matter,
-        as MAL doesn't return anything anyway."""
+        This function takes that string and assumes that the 'day of the week' is the upcoming weekday for an airing
+        show. There is no other way to do this without a 3rd party site. If the show is not airing, this does not
+        matter, as MAL doesn't return anything anyway."""
+
         airing_status = mal_response_node['status']  # Get the status of the show
         next_broadcast_utc = None  # Default 'Next episode' value, in case MAL doesn't return anything
 
