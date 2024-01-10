@@ -83,13 +83,13 @@ class ShowListModel(QtCore.QAbstractTableModel):
             del self.colors[row]
 
     def _calculate_next_ep(self, row, show):
-        if self.mediainfo.get('date_next_ep'):
-            if 'next_ep_time' in show:
-                delta = show['next_ep_time'] - datetime.datetime.utcnow()
-                self.next_ep[row] = "%i days, %02d hrs." % (
-                    delta.days, delta.seconds/3600)
-            elif row in self.next_ep:
-                del self.next_ep[row]
+        if self.mediainfo.get('date_next_ep') and show['next_ep_time'] is not None:
+            delta = show['next_ep_time'].replace(tzinfo=datetime.timezone.utc) - \
+                    datetime.datetime.now(tz=datetime.timezone.utc)  # 'next_ep_time has to be UTC' by definition
+            self.next_ep[row] = "%i days, %02d hrs." % (
+                delta.days, delta.seconds / 3600)
+        elif row in self.next_ep:
+            del self.next_ep[row]
 
     def _calculate_eps(self, row, show):
         aired_eps = utils.estimate_aired_episodes(show)
@@ -138,7 +138,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
         self._calculate_color(row, show)
         self.dataChanged.emit(self.index(
-            row, 0), self.index(row, len(self.columns)-1))
+            row, 0), self.index(row, len(self.columns) - 1))
 
     def rowCount(self, parent):
         if self.showlist:
@@ -185,8 +185,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 if show['total']:
                     total = show['total']
                 else:
-                    total = (int(show['my_progress']/12)+1) * \
-                        12  # Round up to the next cour
+                    total = (int(show['my_progress'] / 12) + 1) * \
+                            12  # Round up to the next cour
 
                 if row in self.eps:
                     return (show['my_progress'], total, self.eps[row][0], self.eps[row][1])
@@ -395,7 +395,8 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row, source_parent):
-        if self.filter_status is not None and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
+        if self.filter_status is not None and self.sourceModel().showlist[source_row]['my_status'] \
+                != self.filter_status:
             return False
 
         if self.filter_columns:

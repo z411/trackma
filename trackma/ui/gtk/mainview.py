@@ -30,12 +30,11 @@ from trackma.ui.gtk.showtreeview import ShowListFilter, ShowListStore, ShowTreeV
 
 @Gtk.Template.from_file(os.path.join(gtk_dir, 'data/mainview.ui'))
 class MainView(Gtk.Box):
-
     __gtype_name__ = 'MainView'
 
     __gsignals__ = {
         'error': (GObject.SignalFlags.RUN_FIRST, None,
-                  (str, )),
+                  (str,)),
         'success': (GObject.SignalFlags.RUN_CLEANUP, None,
                     ()),
         'error-fatal': (GObject.SignalFlags.RUN_FIRST, None,
@@ -98,6 +97,7 @@ class MainView(Gtk.Box):
         self._engine_reload(account, mediatype, extern_widget)
 
     def _init_widgets(self):
+        self._visible_column_reset()
         self.image_box = ImageBox(100, 150)
         self.image_box.show()
         self.image_container_box.pack_start(self.image_box, False, False, 0)
@@ -535,7 +535,8 @@ class MainView(Gtk.Box):
 
     def get_current_status(self):
         print(self._engine.mediainfo['statuses'])
-        return self._current_page.status if self._current_page.status is not None else self._engine.mediainfo['statuses'][-1]
+        return self._current_page.status if self._current_page.status is not None else \
+            self._engine.mediainfo['statuses'][-1]
 
     def get_selected_show(self):
         if not self._current_page:
@@ -559,13 +560,26 @@ class MainView(Gtk.Box):
 
         utils.save_config(self._config, self._configfile)
 
+    def _visible_column_reset(self):
+        """Should be called when column naming scheme changes to make sure that the default columns are
+        visible by default, regardless of config
+
+        In 1.1:
+        Default column 'Progress' was renamed to 'Watched',
+        Default column 'Percent' was renamed to 'Progress'.
+        'New episode' added to default columns"""
+        column_version = '1.1'  # Column naming version number
+        if self._config['column_version'] != column_version:
+            self._config['visible_columns'] = utils.gtk_defaults['visible_columns']
+            self._config['column_version'] = column_version
+
 
 class NotebookPage(Gtk.ScrolledWindow):
     __gtype_name__ = 'NotebookPage'
 
     __gsignals__ = {
         'show-selected': (GObject.SignalFlags.RUN_FIRST, None,
-                          (int, )),
+                          (int,)),
         'show-action': (GObject.SignalFlags.RUN_FIRST, None,
                         (int, object)),
         'column-toggled': (GObject.SignalFlags.RUN_FIRST, None,
@@ -580,7 +594,8 @@ class NotebookPage(Gtk.ScrolledWindow):
         self._selected_show = 0
         self._list = _list
         self._title = title
-        self._title_text = self._engine.mediainfo['statuses_dict'][status] if status in self._engine.mediainfo['statuses_dict'].keys(
+        self._title_text = self._engine.mediainfo['statuses_dict'][status] if status in self._engine.mediainfo[
+            'statuses_dict'].keys(
         ) else 'All'
         self._init_widgets(page_num, status, config)
 
@@ -592,14 +607,9 @@ class NotebookPage(Gtk.ScrolledWindow):
         self._show_tree_view = ShowTreeView(
             config['colors'],
             config['visible_columns'],
-            config['episodebar_style'])
-        self._show_tree_view.set_model(
-            Gtk.TreeModelSort(
-                model=ShowListFilter(
-                    status=self.status,
-                    child_model=self._list
-                )
-            )
+            self.status,
+            self._list,
+            config['episodebar_style'],
         )
         self._title.set_text('%s (%d)' % (
             self._title_text,
@@ -687,17 +697,17 @@ class NotebookPage(Gtk.ScrolledWindow):
         show = self._engine.get_show_info(self._selected_show)
 
         menu = Gtk.Menu()
-        mb_play = Gtk.ImageMenuItem('Play Next',
+        mb_play = Gtk.ImageMenuItem('Play next episode',
                                     Gtk.Image.new_from_icon_name(
                                         "media-playback-start", Gtk.IconSize.MENU))
         mb_play.connect("activate",
                         self._on_mb_activate,
                         ShowEventType.PLAY_NEXT)
-        mb_info = Gtk.MenuItem("Show details...")
+        mb_info = Gtk.MenuItem("Show details")
         mb_info.connect("activate",
                         self._on_mb_activate,
                         ShowEventType.DETAILS)
-        mb_web = Gtk.MenuItem("Open web site")
+        mb_web = Gtk.MenuItem("Open on " + self._engine.api_info['name'])
         mb_web.connect("activate",
                        self._on_mb_activate,
                        ShowEventType.OPEN_WEBSITE)
@@ -709,7 +719,7 @@ class NotebookPage(Gtk.ScrolledWindow):
         mb_copy.connect("activate",
                         self._on_mb_activate,
                         ShowEventType.COPY_TITLE)
-        mb_alt_title = Gtk.MenuItem("Set alternate title...")
+        mb_alt_title = Gtk.MenuItem("Set alternate title")
         mb_alt_title.connect("activate",
                              self._on_mb_activate,
                              ShowEventType.CHANGE_ALTERNATIVE_TITLE)

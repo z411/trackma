@@ -53,7 +53,7 @@ class libmal(lib):
         'statuses_start': ['watching'],
         'statuses_finish': ['completed'],
         'statuses_library': ['watching', 'on_hold', 'plan_to_watch'],
-        'statuses':  ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'],
+        'statuses': ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'],
         'statuses_dict': {
             'watching': 'Watching',
             'completed': 'Completed',
@@ -76,7 +76,7 @@ class libmal(lib):
         'can_date': True,
         'statuses_start': ['reading'],
         'statuses_finish': ['completed'],
-        'statuses':  ['reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'],
+        'statuses': ['reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'],
         'statuses_dict': {
             'reading': 'Reading',
             'completed': 'Completed',
@@ -108,13 +108,13 @@ class libmal(lib):
         'cm':utils.Type.OTHER,
         'tv_special': utils.Type.SPECIAL
     }
-    
+
     status_translate = {
         'currently_airing': utils.Status.AIRING,
         'finished_airing': utils.Status.FINISHED,
         'not_yet_aired': utils.Status.NOTYET,
     }
-    
+
     season_translate = {
         utils.Season.WINTER: 'winter',
         utils.Season.SPRING: 'spring',
@@ -129,7 +129,7 @@ class libmal(lib):
     query_url = "https://api.myanimelist.net/v2"
     client_id = "32c510ab2f47a1048a8dd24de266dc0c"
     user_agent = 'Trackma/{}'.format(utils.VERSION)
-    
+
     library_page_limit = 1000
     search_page_limit = 100
     season_page_limit = 500
@@ -138,15 +138,15 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         self.pin = account['password'].strip()
-        
+
         if 'extra' not in account or 'code_verifier' not in account['extra']:
             raise utils.APIFatal(
                 "This account seems to be using the old MyAnimeList API."
                 "Please re-create and authorize the account.")
-        
+
         self.code_verifier = account['extra']['code_verifier']
         self.userid = self._get_userconfig('userid')
-        
+
         if self.mediatype == 'manga':
             self.total_str = "num_chapters"
             self.watched_str = self.watched_send_str = "num_chapters_read"
@@ -157,10 +157,10 @@ class libmal(lib):
 
         self.opener = urllib.request.build_opener()
         self.opener.addheaders = [
-            ('User-Agent',      self.user_agent),
-            ('Accept',          'application/json'),
+            ('User-Agent', self.user_agent),
+            ('Accept', 'application/json'),
             ('Accept-Encoding', 'gzip'),
-            ('Accept-Charset',  'utf-8'),
+            ('Accept-Charset', 'utf-8'),
         ]
 
     def _request(self, method, url, get=None, post=None, auth=False):
@@ -193,7 +193,7 @@ class libmal(lib):
                 response = gzip.GzipFile(fileobj=response).read().decode('utf-8')
             else:
                 response = response.read().decode('utf-8')
-            
+
             return json.loads(response)
         except urllib.error.HTTPError as e:
             raise utils.APIError("Connection error: %s" % e)
@@ -201,13 +201,13 @@ class libmal(lib):
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
-    
+
     def _request_access_token(self, refresh=False):
         """
         Requests or refreshes the access token through OAuth2
         """
         params = {
-            'client_id':     self.client_id,
+            'client_id': self.client_id,
         }
 
         if refresh:
@@ -221,25 +221,25 @@ class libmal(lib):
             params['code'] = self.pin
             params['code_verifier'] = self.code_verifier
             params['grant_type'] = 'authorization_code'
-            
+
         data = self._request('POST', self.auth_url, post=params)
 
         timestamp = int(time.time())
 
-        self._set_userconfig('access_token',  data['access_token'])
-        self._set_userconfig('token_type',    data['token_type'])
-        self._set_userconfig('expires',       timestamp + data['expires_in'])
+        self._set_userconfig('access_token', data['access_token'])
+        self._set_userconfig('token_type', data['token_type'])
+        self._set_userconfig('expires', timestamp + data['expires_in'])
         self._set_userconfig('refresh_token', data['refresh_token'])
 
         self.logged_in = True
         self._emit_signal('userconfig_changed')
-    
+
     def check_credentials(self):
         timestamp = int(time.time())
-        
+
         if not self._get_userconfig('access_token'):
             self._request_access_token(False)
-        elif (timestamp+60) > self._get_userconfig('expires'):
+        elif (timestamp + 60) > self._get_userconfig('expires'):
             try:
                 self._request_access_token(True)
             except utils.APIError:
@@ -255,18 +255,18 @@ class libmal(lib):
     def fetch_list(self):
         self.check_credentials()
         shows = {}
-        
-        fields = 'id,alternative_titles,title,start_date,main_picture,status,' + self.total_str
+
+        fields = 'id,alternative_titles,title,start_date,main_picture,status,broadcast,' + self.total_str
         listfields = 'score,status,start_date,finish_date,' + self.watched_str
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
             'limit': self.library_page_limit,
             'nsfw': 'true'
         }
-        
+
         url = "{}/users/@me/{}list?{}".format(self.query_url, self.mediatype, urllib.parse.urlencode(params))
         i = 1
-        
+
         while url:
             self.msg.info('Downloading list (page %d)...' % i)
             data = self._request('GET', url, auth=True)
@@ -288,8 +288,9 @@ class libmal(lib):
                     'my_status': item['list_status']['status'],
                     'my_start_date': self._str2date(item['list_status'].get('start_date')),
                     'my_finish_date': self._str2date(item['list_status'].get('finish_date')),
+                    'next_ep_time': self._next_episode_to_utc_datetime(item['node'])
                 })
-            
+
             url = data['paging'].get('next')
             i += 1
 
@@ -304,49 +305,50 @@ class libmal(lib):
         self.check_credentials()
         self.msg.info("Updating item %s..." % item['title'])
         self._update_entry(item)
-    
+
     def delete_show(self, item):
         self.check_credentials()
         self.msg.info("Deleting item %s..." % item['title'])
-        data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), auth=True)
-    
+        data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']),
+                             auth=True)
+
     def search(self, criteria, method):
         self.check_credentials()
         self.msg.info("Searching for {}...".format(criteria))
-        
+
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields, 'nsfw': 'true'}
-        
+
         if method == utils.SearchMethod.KW:
             url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
         elif method == utils.SearchMethod.SEASON:
-            season, season_year = criteria            
+            season, season_year = criteria
 
             url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])
             params['limit'] = self.season_page_limit
         else:
             raise utils.APIError("Invalid search method.")
-        
+
         results = []
         data = self._request('GET', self.query_url + url, get=params, auth=True)
         for item in data['data']:
             results.append(self._parse_info(item['node']))
-        
+
         self._emit_signal('show_info_changed', results)
         return results
-        
+
     def request_info(self, itemlist):
         self.check_credentials()
         infolist = []
-        
+
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields, 'nsfw': 'true'}
         for item in itemlist:
             data = self._request('GET', self.query_url + '/%s/%d' % (self.mediatype, item['id']), get=params, auth=True)
             infolist.append(self._parse_info(data))
-        
+
         self._emit_signal('show_info_changed', infolist)
         return infolist
 
@@ -363,17 +365,19 @@ class libmal(lib):
         if 'my_finish_date' in item:
             values['finish_date'] = item['my_finish_date'] or ""
 
-        data = self._request('PATCH', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), post=values, auth=True)
+        data = self._request('PATCH', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']),
+                             post=values, auth=True)
 
     def _get_aliases(self, item):
-        aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles']['synonyms']
-        
+        aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles'][
+            'synonyms']
+
         return aliases
-    
+
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
-        
+
         info.update({
             'id': showid,
             'title': item['title'],
@@ -386,27 +390,95 @@ class libmal(lib):
             'start_date': self._str2date(item.get('start_date')),
             'end_date': self._str2date(item.get('end_date')),
             'extra': [
-                ('English',         item['alternative_titles'].get('en')),
-                ('Japanese',        item['alternative_titles'].get('ja')),
-                ('Synonyms',        item['alternative_titles'].get('synonyms')),
-                ('Synopsis',        item.get('synopsis')),
-                ('Type',            item.get('media_type')),
-                ('Mean score',   item.get('mean')),
-                ('Status',          self._translate_status(item['status'])),
+                ('English', item['alternative_titles'].get('en')),
+                ('Japanese', item['alternative_titles'].get('ja')),
+                ('Synonyms', item['alternative_titles'].get('synonyms')),
+                ('Synopsis', item.get('synopsis')),
+                ('Type', item.get('media_type')),
+                ('Mean score', item.get('mean')),
+                ('Status', self._translate_status(item['status'])),
             ]
         })
-        
+
         return info
-        
+
     def _translate_status(self, orig_status):
         return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
-    def _str2date(self, string):
+    @staticmethod
+    def _str2date(string):
         if string is None:
             return None
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
-        except Exception:
-            self.msg.debug('Invalid date {}'.format(string))
+        except ValueError:
             return None  # Ignore date if it's invalid
+
+    @classmethod
+    def _next_episode_to_utc_datetime(cls, mal_response_node: dict) -> datetime:
+        """MAL is pretty rubbish, and does not provide an actual date for the next episode.
+        Instead, it gives a date for when the show started airing, and the general broadcast schedule as a string.
+        E.g.: {'day_of_the_week': 'friday', 'start_time': '23:00'} — *this is assumed to be JST*
+        It does not update for when a show goes on hiatus or anything like that.
+
+        This function takes that string and assumes that the 'day of the week' is the upcoming weekday for an airing
+        show. There is no other way to do this without a 3rd party site. If the show is not airing, this does not
+        matter, as MAL doesn't return anything anyway."""
+
+        airing_status = mal_response_node['status']  # Get the status of the show
+        next_broadcast_utc = None  # Default 'Next episode' value, in case MAL doesn't return anything
+
+        # Define JST time-zone and current datetime in JST (there is no DST)
+        jst_timezone = datetime.timezone(datetime.timedelta(hours=9))
+        current_jst_time = datetime.datetime.now(tz=jst_timezone)
+
+        # Potentially return the 'Next episode' time in UTC depending on the status
+        match airing_status:
+            case 'finished_airing':  # There are no new episodes
+                pass
+
+            case 'currently_airing':  # The UTC datetime object needs to be stitched together
+                broadcast_response = mal_response_node.get('broadcast')  # Returned by MAL
+                if broadcast_response is not None:
+                    # Read and strip MAL response, generally looks like this (given in JST): 'friday 23:00'
+                    jst_broadcast_time_day_str = broadcast_response['day_of_the_week']  # 'friday'
+                    jst_broadcast_time_time_str = broadcast_response['start_time']  # '23:00'
+
+                    if jst_broadcast_time_time_str is not None:
+                        jst_broadcast_time_hour, jst_broadcast_time_minute = (
+                            map(int, jst_broadcast_time_time_str.split(':')))
+
+                    else:  # Sometimes MAL doesn't have an exact time entry
+                        jst_broadcast_time_hour, jst_broadcast_time_minute = ('0', '0')
+
+                    # Map weekday names to corresponding indices. Lowercase because MAL uses lowercase for some reason
+                    weekday_indices = {'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5,
+                                       'saturday': 6, 'sunday': 7}
+
+                    # Calculate the days until the next broadcast weekday
+                    days_until_next_broadcast = (weekday_indices[jst_broadcast_time_day_str]
+                                                 - current_jst_time.isoweekday() + 7) % 7
+
+                    # Set the correct day and time
+                    next_broadcast_jst = current_jst_time + datetime.timedelta(days=days_until_next_broadcast)
+                    next_broadcast_jst = next_broadcast_jst.replace(hour=jst_broadcast_time_hour,
+                                                                    minute=jst_broadcast_time_minute,
+                                                                    second=0, microsecond=0)
+
+                    # Convert to UTC
+                    next_broadcast_utc = next_broadcast_jst.astimezone(datetime.timezone.utc)
+
+            # These shows are a mess and return one of the following formats: 'None'/'2024'/'2024 04'/'2024 04 12'
+            case 'not_yet_aired':
+                # _str2date returns 'None' for anything that's not '%Y-%m-%d' compliant, so we don't have to check
+                next_broadcast_jst = cls._str2date(mal_response_node.get('start_date'))
+                if next_broadcast_jst is not None:
+                    # Assign JST timezone, set the broadcast time to 12pm, then convert to UTC
+                    next_broadcast_jst = next_broadcast_jst.replace(tzinfo=jst_timezone, hour=12, microsecond=0)
+                    next_broadcast_utc = next_broadcast_jst.astimezone(tz=datetime.timezone.utc)
+
+            case _:
+                raise ValueError
+
+        return next_broadcast_utc

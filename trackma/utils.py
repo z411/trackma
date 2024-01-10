@@ -510,7 +510,75 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
+        'next_ep_time': None  # Must be a time-zone aware datetime object in UTC
     }
+
+
+def calculate_relative_time(time_end: datetime, utc: bool, fulltime: bool = True) -> str:
+    """Function that calculates the relative time between 2 datetime objects.
+    If full=False, it returns only the greatest nonzero time unit"""
+
+    if time_end:
+        try:
+            if utc:
+                time_end = time_end.replace(tzinfo=datetime.timezone.utc)
+                # Make sure that time_end is time-zone aware in UTC
+                current_time = datetime.datetime.now(tz=datetime.timezone.utc)
+            else:
+                current_time = datetime.datetime.now()
+            time_difference = time_end - current_time
+            days = time_difference.days
+            hours, remainder = divmod(time_difference.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            time_units = [("days", days), ("hours", hours), ("minutes", minutes)]
+
+            # Filter out units with a value of 0
+            non_zero_units = [(unit, value) for unit, value in time_units if value != 0]
+
+            if fulltime:
+                result = ", ".join([
+                    f"in {value + (1 if remainder > 0 else 0)} "
+                    f"{unit if value + (1 if remainder > 0 else 0) != 1 else unit[:-1]}"
+                    for unit, value in non_zero_units
+                ])
+            else:
+                # Display only the greatest non-zero unit
+                result = next(
+                    (
+                        f"in {value + (1 if remainder > 0 else 0)} "
+                        f"{unit if value + (1 if remainder > 0 else 0) != 1 else unit[:-1]}"
+                        for unit, value in non_zero_units
+                    ),
+                    "error"
+                )
+            return result
+        except ValueError:
+            return '?'
+    else:
+        return '-'
+
+
+def parse_time_interval(value):
+    """Parse the time interval string and return it as a tuple (days, hours, minutes)"""
+
+    pattern = (
+        r'in\s*'
+        r'(?:(\d+) day(?:s)?)?'
+        r'(?:,\s*)?'
+        r'(?:(\d+) hour(?:s)?)?'
+        r'(?:,\s*)?'
+        r'(?:(\d+) minute(?:s)?)?'
+        r'|[-?]'
+    )
+
+    match = re.match(pattern, value)
+    if match:
+        days = int(match.group(1) or 0)
+        hours = int(match.group(2) or 0)
+        minutes = int(match.group(3) or 0)
+        return days, hours, minutes
+    return 0, 0, 0  # Return a default value if the format is not matched
 
 
 class TrackmaError(Exception):
@@ -663,9 +731,9 @@ gtk_defaults = {
     'start_in_tray': False,
     'tray_api_icon': False,
     'remember_geometry': False,
-    'last_width': 740,
-    'last_height': 480,
-    'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
+    'last_width': 1080,
+    'last_height': 720,
+    'visible_columns': ['Title', 'Watched', 'Score', 'Progress', 'Next episode'],
     'episodebar_style': 1,
     'colors': {
         'is_airing': '#0099CC',
@@ -679,6 +747,7 @@ gtk_defaults = {
         'progress_sub_fg': '#668099',
         'progress_complete': '#99CCB3',
     },
+    'column_version': ['1.1']
 }
 
 qt_defaults = {
@@ -691,8 +760,8 @@ qt_defaults = {
     'remember_columns': False,
     'last_x': 0,
     'last_y': 0,
-    'last_width': 740,
-    'last_height': 480,
+    'last_width': 1080,
+    'last_height': 720,
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'inline_edit': True,
     'columns_state': None,
