@@ -33,7 +33,7 @@ class TreeConstants:
     # If no number is provided by the lib, 1 episode / week is assumed and calculated accordingly
     AVAILABLE_EPS = 8  # Number of available episodes in the local library
     COLOR = 9  # Used with the _get_color method to return the color preset for a show
-    PROGRESS_PERCENTAGE = 10  # % of episodes watched. 7 / 13 ->
+    PROGRESS_PERCENTAGE = 10  # % of episodes watched. 7 / 13 -> 53
     START_DATE = 11  # Start date of the show
     END_DATE = 12  # End date of the show
     MY_START_DATE = 13  # Date when the user started watching the show
@@ -138,25 +138,25 @@ class ShowListStore(Gtk.ListStore):
         next_episode_air_time_relative = utils.calculate_relative_time(show['next_ep_time'],
                                                                        utc=True, fulltime=False)
 
-        # Corresponds to __cols, but is used locally to store the data before appending.
-        row = [show['id'],
-               title_str,
-               show['my_progress'],
-               show['my_score'],
-               watched_episodes_fraction,
-               score_str,
-               show['total'],
-               aired_eps,
-               available_eps,
-               self._get_color(show, available_eps),
-               progress,
-               start_date,
-               end_date,
-               my_start_date,
-               my_finish_date,
-               show['my_status'],
-               show['status'],
-               next_episode_air_time_relative,
+        # Corresponds to __cols, but is used locally to store the data before appending. Comments are TreeConstants
+        row = [show['id'],  # SHOW_ID
+               title_str,  # TITLE
+               show['my_progress'],  # MY_PROGRESS
+               show['my_score'],  # MY_SCORE
+               watched_episodes_fraction,  # WATCHED_EPISODES_FRACTION
+               score_str,  # MY_SCORE_STRING
+               show['total'],  # TOTAL_EPS
+               aired_eps,  # AIRED_EPS
+               available_eps,  # AVAILABLE_EPS
+               self._get_color(show, available_eps),  # COLOR
+               progress,  # PROGRESS_PERCENTAGE
+               start_date,  # START_DATE
+               end_date,  # END_DATE
+               my_start_date,  # MY_START_DATE
+               my_finish_date,  # MY_FINISH_DATE
+               show['my_status'],  # MY_STATUS
+               show['status'],  # SHOW_STATUS
+               next_episode_air_time_relative,  # NEXT_EPISODE_AIR_TIME_RELATIVE
                ]
         super().append(row)
 
@@ -361,12 +361,12 @@ class ShowTreeView(Gtk.TreeView):
             w = self.cols[name].get_widget()
             while not isinstance(w, Gtk.Button):
                 w = w.get_parent()
-            w.connect('button-press-event', self._header_button_press)
+            w.connect('button-press-event', self._header_right_click)
 
             # Appends populated columns
             self.append_column(self.cols[name])
 
-    def _header_button_press(self, button, event):
+    def _header_right_click(self, button, event):
         if event.button == 3:
             menu = Gtk.Menu()
             for name, sort in self.available_columns:
