@@ -523,6 +523,13 @@ class Trackma_cmd(command.Cmd):
             self.display_error(e)
 
     def do_openfolder(self, args):
+        """
+        Opens the folder containing the show
+
+        :param show Show index or name.
+        :usage openfolder <show index or name>
+        """
+
         try:
             show_id = self._get_show(args[0])['id']
             utils.open_folder(self.engine, show_id, error_callback=self.display_error)

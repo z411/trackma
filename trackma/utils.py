@@ -490,7 +490,14 @@ def get_terminal_size(fd=1):
     return hw
 
 
+# Default 'open folder' function
 def open_folder(engine, show_id, error_callback=None):
+    """
+    Tries to open the folder containing the show of the passed ID.
+    Takes an optional 'error_callback' parameter that lets the invoker specify an error callback method.
+    If no error callback is passed, it defaults to simply raising.
+    """
+
     try:
         show_to_open = engine.get_show_info(show_id)
         filename = engine.get_episode_path(show_to_open)
