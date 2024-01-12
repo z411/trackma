@@ -507,18 +507,11 @@ def open_folder(engine, show_id, error_callback=None):
                 subprocess.Popen(["xdg-open", os.path.dirname(filename)],
                                  stdout=DEVNULL,
                                  stderr=DEVNULL)
-    except OSError:
-        # Open failed.
+    except Exception as e:
         if error_callback:
-            error_callback("Could not open folder.")
+            error_callback(e)
         else:
-            raise EngineError("Could not open folder.")
-    except EngineError:
-        # Show not in library.
-        if error_callback:
-            error_callback("No folder found.")
-        else:
-            raise EngineError("No folder found.")
+            raise e
 
 
 def show():
