@@ -1183,26 +1183,7 @@ class MainWindow(QMainWindow):
             self.ws_changed_show(show, altname=new_altname)
 
     def s_open_folder(self):
-        show = self.worker.engine.get_show_info(self.selected_show_id)
-        try:
-            filename = self.worker.engine.get_episode_path(show)
-            with open(os.devnull, 'wb') as DEVNULL:
-                if sys.platform == 'darwin':
-                    subprocess.Popen(["open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                elif sys.platform == 'win32':
-                    subprocess.Popen(["explorer",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                else:
-                    subprocess.Popen(["/usr/bin/xdg-open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-        except OSError:
-            # xdg-open failed.
-            raise utils.EngineError("Could not open folder.")
-
-        except utils.EngineError:
-            # Show not in library.
-            self.error("No folder found.")
+        utils.open_folder(self.worker.engine, self.selected_show_id, error_callback=self.error)
 
     def s_retrieve(self):
         queue = self.worker.engine.get_queue()
