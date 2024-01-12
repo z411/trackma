@@ -494,24 +494,35 @@ def open_folder(engine, show_id, error_callback=None):
     try:
         show_to_open = engine.get_show_info(show_id)
         filename = engine.get_episode_path(show_to_open)
+
         with open(os.devnull, 'wb') as DEVNULL:
-            if sys.platform == 'darwin':
-                subprocess.Popen(["open", os.path.dirname(filename)],
-                                 stdout=DEVNULL,
-                                 stderr=DEVNULL)
-            elif sys.platform == 'win32':
-                subprocess.Popen(["explorer", os.path.dirname(filename)],
-                                 stdout=DEVNULL,
-                                 stderr=DEVNULL)
-            else:
-                subprocess.Popen(["xdg-open", os.path.dirname(filename)],
-                                 stdout=DEVNULL,
-                                 stderr=DEVNULL)
+            command = []
+
+            match sys.platform:
+                case 'darwin':
+                    command = ["open", os.path.dirname(filename)]
+                case 'win32':
+                    command = ["explorer", os.path.dirname(filename)]
+                case _:
+                    command = ["xdg-open", os.path.dirname(filename)]
+
+            process = subprocess.Popen(command,
+                                       stdout=DEVNULL,
+                                       stderr=subprocess.PIPE,
+                                       universal_newlines=True)
+
+            _, stderr = process.communicate()
+
+            if process.returncode != 0:
+                # Command failed.
+                raise OSError(stderr)
+
     except Exception as e:
         if error_callback:
             error_callback(e)
         else:
             raise e
+
 
 
 def show():
