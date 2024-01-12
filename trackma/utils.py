@@ -517,12 +517,17 @@ def open_folder(engine, show_id, error_callback=None):
                 # Command failed.
                 raise OSError(stderr)
 
+    except OSError as e:
+        if error_callback:
+            error_callback(f'Could not open folder.\n{e}')
+        else:
+            raise e
+
     except Exception as e:
         if error_callback:
             error_callback(e)
         else:
             raise e
-
 
 
 def show():
