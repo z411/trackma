@@ -523,8 +523,11 @@ class Trackma_cmd(command.Cmd):
             self.display_error(e)
 
     def do_openfolder(self, args):
-        show_id = self._get_show(args[0])['id']
-        utils.open_folder(self.engine, show_id, error_callback=self.display_error)
+        try:
+            show_id = self._get_show(args[0])['id']
+            utils.open_folder(self.engine, show_id, error_callback=self.display_error)
+        except utils.TrackmaError as e:
+            self.display_error(e)
 
     def do_update(self, args):
         """
