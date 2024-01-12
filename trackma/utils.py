@@ -490,6 +490,37 @@ def get_terminal_size(fd=1):
     return hw
 
 
+def open_folder(engine, show_id, error_callback=None):
+    try:
+        show_to_open = engine.get_show_info(show_id)
+        filename = engine.get_episode_path(show_to_open)
+        with open(os.devnull, 'wb') as DEVNULL:
+            if sys.platform == 'darwin':
+                subprocess.Popen(["open", os.path.dirname(filename)],
+                                 stdout=DEVNULL,
+                                 stderr=DEVNULL)
+            elif sys.platform == 'win32':
+                subprocess.Popen(["explorer", os.path.dirname(filename)],
+                                 stdout=DEVNULL,
+                                 stderr=DEVNULL)
+            else:
+                subprocess.Popen(["xdg-open", os.path.dirname(filename)],
+                                 stdout=DEVNULL,
+                                 stderr=DEVNULL)
+    except OSError:
+        # Open failed.
+        if error_callback:
+            error_callback("Could not open folder.")
+        else:
+            raise EngineError("Could not open folder.")
+    except EngineError:
+        # Show not in library.
+        if error_callback:
+            error_callback("No folder found.")
+        else:
+            raise EngineError("No folder found.")
+
+
 def show():
     return {
         'id':           0,

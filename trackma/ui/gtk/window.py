@@ -573,29 +573,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             Gtk.show_uri(None, show['url'], Gdk.CURRENT_TIME)
 
     def _open_folder(self, show_id):
-        show = self._engine.get_show_info(show_id)
-        try:
-            filename = self._engine.get_episode_path(show)
-            with open(os.devnull, 'wb') as DEVNULL:
-                if sys.platform == 'darwin':
-                    subprocess.Popen(["open", os.path.dirname(filename)],
-                                     stdout=DEVNULL,
-                                     stderr=DEVNULL)
-                elif sys.platform == 'win32':
-                    subprocess.Popen(["explorer", os.path.dirname(filename)],
-                                     stdout=DEVNULL,
-                                     stderr=DEVNULL)
-                else:
-                    subprocess.Popen(["/usr/bin/xdg-open", os.path.dirname(filename)],
-                                     stdout=DEVNULL,
-                                     stderr=DEVNULL)
-        except OSError:
-            # xdg-open failed.
-            raise utils.EngineError("Could not open folder.")
-
-        except utils.EngineError:
-            # Show not in library.
-            self._error_dialog_idle("No folder found.")
+        utils.open_folder(self._engine, show_id, error_callback=self._error_dialog_idle)
 
     def _copy_title(self, show_id):
         show = self._engine.get_show_info(show_id)

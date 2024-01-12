@@ -523,31 +523,8 @@ class Trackma_cmd(command.Cmd):
             self.display_error(e)
 
     def do_openfolder(self, args):
-        """
-        Opens the folder containing the show
-
-        :param show Show index or name.
-        :usage openfolder <show index or name>
-        """
-
-        try:
-            show = self._get_show(args[0])
-            filename = self.engine.get_episode_path(show)
-            with open(os.devnull, 'wb') as DEVNULL:
-                if sys.platform == 'darwin':
-                    subprocess.Popen(["open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                elif sys.platform == 'win32':
-                    subprocess.Popen(["explorer",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                else:
-                    subprocess.Popen(["/usr/bin/xdg-open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-        except OSError:
-            # xdg-open failed.
-            self.display_error("Could not open folder.")
-        except utils.TrackmaError as e:
-            self.display_error(e)
+        show = self._get_show(args[0])
+        utils.open_folder(self.engine, show.id, error_callback=self.display_error)
 
     def do_update(self, args):
         """
