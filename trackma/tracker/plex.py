@@ -143,8 +143,8 @@ class PlexTracker(tracker.TrackerBase):
             time.sleep(config['tracker_interval'])
 
     def _get_plex_token(self):
-        username = self.config['plex_user']
-        password = self.config['plex_passwd']
+        username = urllib.parse.quote(self.config['plex_user'])
+        password = urllib.parse.quote(self.config['plex_passwd'])
         uuid = self.config['plex_uuid']
 
         if not (username and password):
