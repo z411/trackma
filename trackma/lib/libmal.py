@@ -379,7 +379,7 @@ class libmal(lib):
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
-            'type': self.type_translate[item['media_type']],
+            'type': self.type_translate.get(item['media_type'], utils.Type.UNKNOWN),    
             'total': item[self.total_str],
             'status': self._translate_status(item['status']),
             'image': item.get('main_picture', {}).get('large'),
