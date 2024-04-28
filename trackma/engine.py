@@ -287,9 +287,9 @@ class Engine:
         try:
             self.msg.debug(self.name, "Initializing parser...")
             self.parser_class = get_parser_class(self.msg, self.config['title_parser'])
-        except ImportError:
-            self.msg.warn(self.name, "Couldn't import specified parser: {}".format(
-                self.config['title_parser']))
+        except ImportError as e:
+            self.msg.warn(self.name, "Couldn't import specified parser: {}; {}".format(
+                self.config['title_parser'], e))
 
         # Rescan library if necessary
         if self.config['library_autoscan']:
