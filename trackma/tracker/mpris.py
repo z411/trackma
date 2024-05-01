@@ -17,6 +17,7 @@
 from enum import Enum
 import os
 import re
+import sys
 import threading
 import urllib.parse
 import asyncio
@@ -232,12 +233,12 @@ class MprisTracker(tracker.TrackerBase):
 
             try:
                 await asyncio.gather(*tasks)
-            except Exception as e:
-                self.msg.exception("Error in dbus watchers; cleaning up", e)
+            except Exception:
+                self.msg.exception("Error in dbus watchers; cleaning up", sys.exc_info())
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks)
-                raise e
+                # let the thread die
 
     def observe(self, config, watch_dirs):
         self.msg.info("Using MPRIS.")
