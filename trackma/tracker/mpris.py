@@ -17,6 +17,7 @@
 from enum import Enum
 import os
 import re
+import threading
 import urllib.parse
 import asyncio
 from typing import Dict, Union
@@ -188,6 +189,9 @@ class MprisTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
 
     def __init__(self, *args, **kwargs):
+        # The `TrackerBase.__init__` spawns a new thread
+        # for `observe`.
+        self.initalized = threading.Event()
         super().__init__(*args, **kwargs)
 
         self.re_players = re.compile(self.config['tracker_process'])
@@ -197,6 +201,7 @@ class MprisTracker(tracker.TrackerBase):
         self.players = {}
         self.timing = False
         self.active_player = None
+        self.initalized.set()
 
     def update_list(self, *args, **kwargs):
         super().update_list(*args, **kwargs)
@@ -206,6 +211,7 @@ class MprisTracker(tracker.TrackerBase):
             self.find_playing_player()
 
     async def observe_async(self):
+        self.initalized.wait()
         async with open_dbus_router() as router:
             name_owner_watcher_task = asyncio.create_task(name_owner_watcher(router, self))
             properties_watcher_task = asyncio.create_task(properties_watcher(router, self))
