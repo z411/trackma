@@ -105,7 +105,7 @@ async def properties_watcher(router, tracker):
 
 def handle_properties_changed(tracker, msg):
     # https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-properties
-    (interface_name, changed_properties, invalidated_properties) = msg.body
+    (_, changed_properties, _) = msg.body
     sender = msg.header.fields[HeaderFields.sender]
     try:
         playback_status = safe_get_dbus_value(changed_properties.get('PlaybackStatus'), 's')
@@ -233,7 +233,7 @@ class MPRISTracker(tracker.TrackerBase):
                 await asyncio.gather(*tasks)
                 raise e
 
-    def observe(self, _config, _watch_dirs):
+    def observe(self, config, watch_dirs):
         self.msg.info("Using MPRIS.")
         asyncio.run(self.observe_async())
 
@@ -338,7 +338,8 @@ class MPRISTracker(tracker.TrackerBase):
 
     def _handle_player_stopped(self):
         # Active player got closed!
-        self.msg.debug(f"Clearing active player: {self.active_player.wellknown_name}")
+        if self.active_player:
+            self.msg.debug(f"Clearing active player: {self.active_player.wellknown_name}")
         self.active_player = None
         self.view_offset = None
 
