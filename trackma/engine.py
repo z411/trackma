@@ -1079,8 +1079,8 @@ class Engine:
             from trackma.tracker.kodi import KodiTracker
             return KodiTracker
         elif ttype == 'mpris':
-            from trackma.tracker.mpris import MPRISTracker
-            return MPRISTracker
+            from trackma.tracker.mpris import MprisTracker
+            return MprisTracker
         elif ttype == 'inotify_auto':
             try:
                 return self._get_tracker_class('pyinotify')

@@ -183,7 +183,7 @@ class Player:
         return Properties(address)
 
 
-class MPRISTracker(tracker.TrackerBase):
+class MprisTracker(tracker.TrackerBase):
 
     name = 'Tracker (MPRIS)'
 
