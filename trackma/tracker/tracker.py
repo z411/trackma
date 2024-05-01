@@ -20,10 +20,11 @@ import time
 
 from trackma import utils
 from trackma.parser import get_parser_class
+from trackma.messenger import Messenger
 
 
 class TrackerBase(object):
-    msg = None
+    msg: Messenger
     active = True
     list = None
     last_show_tuple = None
@@ -107,29 +108,34 @@ class TrackerBase(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def _update_show(self, state, show_tuple):
+    def update_timer(self, state, show_tuple):
         if self.timer_paused:
             return
 
         (show, episode) = show_tuple
 
         self.timer = int(
-            1 + (self.wait_s or self.config['tracker_update_wait_s']) + self.timer_offset - (time.time() - self.last_time))
+            1
+            + (self.wait_s or self.config['tracker_update_wait_s'])
+            + self.timer_offset
+            - (time.time() - self.last_time)
+        )
         self._emit_signal('state', self.get_status())
 
         if self.timer <= 0:
             # Perform show update
             self.last_updated = True
-            action = None
-            if state == utils.Tracker.PLAYING:
-                def action(): return self._emit_signal('update', show, episode)
-            elif state == utils.Tracker.NOT_FOUND:
-                def action(): return self._emit_signal('unrecognised', show, episode)
+
+            def action(state=state):
+                if state == utils.Tracker.PLAYING:
+                    return self._emit_signal('update', show, episode)
+                elif state == utils.Tracker.NOT_FOUND:
+                    return self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
                 self.msg.info('Waiting for the player to close.')
                 self.last_close_queue = action
-            elif action:
+            else:
                 action()
 
     def _ignore_current(self):
@@ -173,7 +179,7 @@ class TrackerBase(object):
     def update_show_if_needed(self, state, show_tuple):
         # If the state and show are unchanged, skip to countdown
         if show_tuple and state == self.last_state and show_tuple == self.last_show_tuple and not self.last_updated:
-            self._update_show(state, show_tuple)
+            self.update_timer(state, show_tuple)
             return
 
         if show_tuple and show_tuple != self.last_show_tuple:
@@ -205,13 +211,11 @@ class TrackerBase(object):
             # Start our countdown
             (show, episode) = show_tuple
             if state == utils.Tracker.PLAYING:
-                self.msg.info('Will update %s - %d' %
-                              (show['title'], episode))
+                self.msg.info('Will update %s - %d' % (show['title'], episode))
             elif state == utils.Tracker.NOT_FOUND:
-                self.msg.info('Will add %s - %d' %
-                              (show['title'], episode))
+                self.msg.info('Will add %s - %d' % (show['title'], episode))
 
-            self._update_show(state, show_tuple)
+            self.update_timer(state, show_tuple)
         elif self.last_state != state:
             self._update_state(state)
 
@@ -262,14 +266,13 @@ class TrackerBase(object):
                 return (utils.Tracker.UNRECOGNIZED, None)
 
             playing_show = utils.guess_show(show_title, self.list)
-            self.msg.debug("Show guess: {}: {} ({})".format(
-                show_title, playing_show, show_ep))
+            self.msg.debug("Show guess: {}: {} - {}".format(show_title, playing_show, show_ep))
 
             if playing_show:
                 (redirected_show, redirected_ep) = utils.redirect_show(
                     (playing_show, show_ep), self.redirections, self.list)
                 if (redirected_show, redirected_ep) != (playing_show, show_ep):
-                    self.msg.debug("Redirected to: {} ({})".format(redirected_show, redirected_ep))
+                    self.msg.debug("Redirected to: {} - {}".format(redirected_show, redirected_ep))
                     (playing_show, show_ep) = (redirected_show, redirected_ep)
 
                 return (utils.Tracker.PLAYING, (playing_show, show_ep))

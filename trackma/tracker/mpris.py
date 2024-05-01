@@ -14,191 +14,369 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from enum import Enum
 import os
 import re
+import sys
+import threading
 import urllib.parse
+import asyncio
+from typing import Dict, Union
+from dataclasses import dataclass
 
-from gi.repository import GLib
-from pydbus import SessionBus
+from jeepney import HeaderFields, Properties, DBusAddress
+from jeepney.io.asyncio import open_dbus_router, DBusRouter, Proxy
+from jeepney.bus_messages import message_bus, MatchRule
 
 from trackma import utils
 from trackma.tracker import tracker
 
 
-class MPRISTracker(tracker.TrackerBase):
-    name = 'Tracker (MPRIS)'
-    mpris_base = 'org.mpris.MediaPlayer2'
+BUS_NAMESPACE = 'org.mpris.MediaPlayer2'
+PATH_MPRIS = '/org/mpris/MediaPlayer2'
+IFACE_PROPERTIES = 'org.freedesktop.DBus.Properties'
+IFACE_MPRIS = 'org.mpris.MediaPlayer2'
+IFACE_MPRIS_PLAYER = IFACE_MPRIS + '.Player'
 
-    def is_active_player(self, sender):
-        return not self.active_player or self.active_player == sender or self.last_state != utils.Tracker.PLAYING
 
-    def _connect(self, name):
-        # Add and connect new player
-        if self.re_players.search(name):
-            try:
-                sender = self.bus.GetNameOwner(name)
-            except GLib.Error:
-                self.msg.warn("Bus was closed before access: {}".format(name))
-                return
+class PlaybackStatus(str, Enum):
+    PLAYING = 'Playing'
+    PAUSED = 'Paused'
+    STOPPED = 'Stopped'
 
-            self.msg.info("Connecting to MPRIS player: {}".format(name))
-            try:
-                proxy = self.session.get(name, '/org/mpris/MediaPlayer2')
-                properties = proxy['org.freedesktop.DBus.Properties']
 
-                # properties.connect(
-                # 'PropertiesChanged', self._on_update, sender_keyword='sender')
-                proxy.PropertiesChanged.connect(
-                    lambda x, props, y: self._on_update(sender, props))
-                metadata = properties.Get(
-                    MPRISTracker.mpris_base + '.Player', 'Metadata')
+async def name_owner_watcher(router, tracker):
+    # Select name change signals for the well-known mpris service name.
+    # We only consider players with such a well-known name
+    # and thus treat any changes to the owned name
+    # as a creation and a disappearance of a service.
+    # Signals will be published by the service's unique name,
+    # which is why we need to track it.
+    match_rule = MatchRule(
+        type='signal',
+        sender=message_bus.bus_name,
+        interface=message_bus.interface,
+        member='NameOwnerChanged',
+        path=message_bus.object_path,
+    )
+    match_rule.add_arg_condition(0, BUS_NAMESPACE, kind='namespace')
 
-                status = properties.Get(
-                    MPRISTracker.mpris_base + '.Player', 'PlaybackStatus')
+    message_proxy = Proxy(message_bus, router)
+    await message_proxy.AddMatch(match_rule)
 
-                self.filenames[sender] = self._get_filename(metadata)
-                if not self.active_player:
-                    self._handle_status(status, sender)
+    with router.filter(match_rule, bufsize=20) as queue:
+        while True:
+            # https://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-name-owner-changed
+            msg = await queue.get()
+            (wellknown_name, old_name, new_name) = msg.body
+            if new_name:
+                await tracker.on_bus_added(router, wellknown_name, new_name)
+            elif old_name:
+                tracker.on_bus_removed(wellknown_name, new_name)
 
-                if sender not in self.view_offsets:
-                    GLib.timeout_add(
-                        100, self._update_view_offset, sender, properties)
 
-                self._update_view_offset(sender, properties)
+def safe_get_dbus_value(pair, type_):
+    """Assert the value's type before returning it None-safely."""
+    if pair is None:
+        return None
+    if pair[0] != type_:
+        raise TypeError(f"Expected type {type_!r} but found {pair[0]!r}")
+    return pair[1]
 
-            except GLib.Error:
-                self._stopped(sender)
-        else:
-            self.msg.info("Unknown player: {}".format(name))
 
-    def _get_filename(self, metadata):
-        if 'xesam:title' in metadata and len(metadata['xesam:title']) > 5:
-            return metadata['xesam:title']
-        elif 'xesam:url' in metadata:
+async def properties_watcher(router, tracker):
+    # Select PropertiesChanged signals for the mpris-player subinterface
+    # for all senders.
+    match_rule = MatchRule(
+        type='signal',
+        sender=None,
+        interface=IFACE_PROPERTIES,
+        member='PropertiesChanged',
+        path=PATH_MPRIS,
+    )
+    match_rule.add_arg_condition(0, IFACE_MPRIS_PLAYER)
+
+    message_proxy = Proxy(message_bus, router)
+    await message_proxy.AddMatch(match_rule)
+
+    with router.filter(match_rule, bufsize=10) as queue:
+        while True:
+            msg = await queue.get()
+            handle_properties_changed(tracker, msg)
+
+
+def handle_properties_changed(tracker, msg):
+    # https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-properties
+    (_, changed_properties, _) = msg.body
+    sender = msg.header.fields[HeaderFields.sender]
+    try:
+        playback_status = safe_get_dbus_value(changed_properties.get('PlaybackStatus'), 's')
+        if playback_status:
+            tracker.on_playback_status_change(sender, playback_status)
+
+        metadata = safe_get_dbus_value(changed_properties.get('Metadata'), 'a{sv}')
+        if metadata and ('xesam:title' in metadata or 'xesam:url' in metadata):
+            title = safe_get_dbus_value(metadata.get('xesam:title'), 's')
+            url = safe_get_dbus_value(metadata.get('xesam:url'), 's')
+            tracker.on_filename_change(sender, title, url)
+    except TypeError as e:
+        tracker.msg.warn(f"Failed to read properties for {sender}: {e}")
+
+
+async def collect_names(router) -> Dict[str, str]:
+    """Find all active buses in the known namespace mapped by their unique name."""
+    message_proxy = Proxy(message_bus, router)
+    resp = await message_proxy.ListNames()
+    names = [name for name in resp[0] if name.startswith(BUS_NAMESPACE)]
+    unique_names = await asyncio.gather(*(message_proxy.GetNameOwner(name) for name in names))
+    name_map = {un[0]: n for un, n in zip(unique_names, names)}
+    return name_map
+
+
+@dataclass
+class Player:
+    router: DBusRouter
+    wellknown_name: str
+    unique_name: str
+    playback_status: Union[str, None] = None
+    title: Union[str, None] = None
+    url: Union[str, None] = None
+
+    @classmethod
+    async def new(cls, router, wellknown_name, unique_name):
+        player = Player(router, wellknown_name, unique_name)
+        await asyncio.gather(
+            player.update_filename(),
+            player.update_playback_status(),
+        )
+        return player
+
+    @property
+    def filename(self):
+        if self.title and len(self.title) > 5:
+            return self.title
+        elif self.url:
             # TODO : Support for full path
-            return os.path.basename(urllib.parse.unquote_plus(metadata['xesam:url']))
-        else:
-            return None
+            return os.path.basename(urllib.parse.unquote_plus(self.url))
+        return self.title
 
-    def _handle_status(self, status, sender):
-        self.msg.debug("New playback status: {}".format(status))
+    async def update_filename(self):
+        msg = self._player_properties.get('Metadata')
+        reply = await self.router.send_and_get_reply(msg)
+        metadata = safe_get_dbus_value(reply.body[0], 'a{sv}')
+        self.title = safe_get_dbus_value(metadata.get('xesam:title'), 's') if metadata else None
+        self.url = safe_get_dbus_value(metadata.get('xesam:url'), 's') if metadata else None
+        # return self.filename
 
-        if status == "Playing":
-            self._playing(self.filenames[sender], sender)
-            self.resume_timer()
-        elif status == "Paused":
-            self._playing(self.filenames[sender], sender)
-            self.pause_timer()
-        elif status == "Stopped":
-            self._stopped(sender)
+    async def update_playback_status(self):
+        msg = self._player_properties.get('PlaybackStatus')
+        reply = await self.router.send_and_get_reply(msg)
+        self.playback_status = safe_get_dbus_value(reply.body[0], 's')
+        # return self.playback_status
 
-        self.statuses[sender] = status
+    async def get_position(self):
+        msg = self._player_properties.get('Position')
+        reply = await self.router.send_and_get_reply(msg)
+        return safe_get_dbus_value(reply.body[0], 'x')
 
-    def _playing(self, filename, sender):
-        if filename != self.last_filename:
-            self.msg.debug("New video: {}".format(filename))
+    @property
+    def _player_properties(self):
+        address = DBusAddress(PATH_MPRIS, bus_name=self.unique_name, interface=IFACE_MPRIS_PLAYER)
+        return Properties(address)
 
-            (state, show_tuple) = self._get_playing_show(filename)
-            self.update_show_if_needed(state, show_tuple)
 
-            self.msg.debug("New tracker status: {} (previously: {})".format(
-                state, self.last_state))
+class MprisTracker(tracker.TrackerBase):
 
-            # We can override the active player if this player is playing a valid show.
-            if not self.active_player or self.last_state == utils.Tracker.PLAYING:
-                self.msg.debug("({}) Setting active player: {}".format(
-                    self.last_state, sender))
-                self.active_player = sender
+    name = 'Tracker (MPRIS)'
 
-                if not self.timing:
-                    self.msg.debug("Starting MPRIS timer.")
-                    self.timing = True
+    def __init__(self, *args, **kwargs):
+        # The `TrackerBase.__init__` spawns a new thread
+        # for `observe`.
+        self.initalized = threading.Event()
+        super().__init__(*args, **kwargs)
 
-                    self._pass_timer()
-                    GLib.timeout_add_seconds(1, self._pass_timer)
+        self.re_players = re.compile(self.config['tracker_process'])
+        # Map "OwnerName"s to Player instances
+        # for monitoring when one appears or disappears
+        # via the `NameOwnerChanged` signal.
+        self.players = {}
+        self.timing = False
+        self.active_player = None
+        self.initalized.set()
 
-    def _stopped(self, sender):
-        self.filenames[sender] = None
+    def update_list(self, *args, **kwargs):
+        super().update_list(*args, **kwargs)
+        if self.last_state != utils.Tracker.PLAYING:
+            # Re-check if we have any player with a valid show running after a list update
+            self.last_filename = None
+            self.find_playing_player()
 
-        if sender == self.active_player:
-            # Active player got closed!
-            self.msg.debug("Clearing active player: {}".format(sender))
-            self.active_player = None
-            self.view_offset = None
+    async def observe_async(self):
+        self.initalized.wait()
+        async with open_dbus_router() as router:
+            name_owner_watcher_task = asyncio.create_task(name_owner_watcher(router, self))
+            properties_watcher_task = asyncio.create_task(properties_watcher(router, self))
+            timer_task = asyncio.create_task(self._timer())
+            tasks = [name_owner_watcher_task, properties_watcher_task, timer_task]
 
-            (state, show_tuple) = self._get_playing_show(None)
-            self.update_show_if_needed(state, show_tuple)
+            name_map = await collect_names(router)
+            self.players = {
+                unique_name: await Player.new(router, wellknown_name, unique_name)
+                for unique_name, wellknown_name in name_map.items()
+                if self.valid_player(wellknown_name)
+            }
+            ignored_players = [name for name in name_map.values() if not self.valid_player(name)]
+            self.msg.debug(f"Ignoring players: {ignored_players}")
+            for player in self.players.values():
+                self.msg.debug(f"Player connected: {player.wellknown_name}")
+            self.find_playing_player()
 
-            # Remove timer if any
-            self.timing = False
-
-        if sender in self.view_offsets:
-            del self.view_offsets[sender]
-
-    def _update_view_offset(self, sender, properties):
-        try:
-            self.view_offsets[sender] = int(properties.Get(
-                MPRISTracker.mpris_base + '.Player', 'Position'))/1000
-            if self.view_offsets[sender]:
-                if self.is_active_player(sender):
-                    self.view_offset = self.view_offsets[sender]
-            return True
-        except GLib.Error:
-            return False
-
-    def _on_update(self, sender, properties):
-        # We can override the active player if it's not playing a valid show.
-        if self.is_active_player(sender):
-            if 'Metadata' in properties:
-                # Player is playing a new video. We pass the title
-                # to the tracker and start our playing timer.
-                self.filenames[sender] = self._get_filename(
-                    properties['Metadata'])
-
-                if 'PlaybackStatus' not in properties:
-                    # Query the player status if we don't have it
-                    self._handle_status(self.statuses[sender], sender)
-
-            if 'PlaybackStatus' in properties:
-                status = properties['PlaybackStatus']
-                self._handle_status(status, sender)
-
-        else:
-            self.msg.debug("Got signal from an inactive player, ignoring.")
-
-    def _new_name(self, name, old, new):
-        if name.startswith(MPRISTracker.mpris_base):
-            if new:
-                # New MPRIS player found; connect signals.
-                self._connect(name)
-            else:
-                self._stopped(old)
-
-    def _pass_timer(self):
-        self.update_show_if_needed(self.last_state, self.last_show_tuple)
-
-        return self.timing
+            try:
+                await asyncio.gather(*tasks)
+            except Exception:
+                self.msg.exception("Error in dbus watchers; cleaning up", sys.exc_info())
+                for task in tasks:
+                    task.cancel()
+                await asyncio.gather(*tasks)
+                # let the thread die
 
     def observe(self, config, watch_dirs):
         self.msg.info("Using MPRIS.")
+        asyncio.run(self.observe_async())
 
-        self.re_players = re.compile(config['tracker_process'])
-        self.filenames = {}
-        self.statuses = {}
-        self.view_offsets = {}
-        self.timing = False
+    def valid_player(self, wellknown_name):
+        return self.re_players.search(wellknown_name)
+
+    def find_playing_player(self) -> bool:
+        # Go through all connected players in random order
+        # (or not since dicts are ordered now).
+        return any(
+            self._update_active_player(player, probing=True)
+            for player in self.players.values()
+            if player.playback_status == PlaybackStatus.PLAYING
+        )
+
+    async def on_bus_added(self, router, wellknown_name, unique_name):
+        if not self.valid_player(wellknown_name):
+            self.msg.debug("Ignoring new bus that does not match configured player:"
+                           f" {wellknown_name}")
+            return
+        player = await Player.new(router, wellknown_name, unique_name)
+        self.msg.debug(f"Player connected: {player.wellknown_name}")
+        self.players[unique_name] = player
+        self._handle_player_update(player)
+
+    def on_bus_removed(self, wellknown_name, unique_name):
+        player = self.players.pop(unique_name, None)
+        if not player:
+            return
+        self.msg.debug(f"Player disconnected: {player.wellknown_name}")
+        if player == self.active_player:
+            self._handle_player_stopped()
+            self.active_player = None
+
+    def on_playback_status_change(self, sender, playback_status):
+        player = self.players.get(sender)
+        if not player:
+            return
+        player.playback_status = playback_status
+        self._handle_player_update(player)
+
+    def on_filename_change(self, sender, title, url):
+        player = self.players.get(sender)
+        if not player:
+            return
+        player.title = title
+        player.url = url
+        self._handle_player_update(player)
+
+    def _handle_player_update(self, player):
+        if player == self.active_player:
+            if player.playback_status == PlaybackStatus.STOPPED:
+                self._handle_player_stopped()
+            else:
+                self._update_active_player(player)
+
+        elif self.active_player and self.active_player.playback_status == PlaybackStatus.PLAYING:
+            self.msg.debug("Still playing on active player; ignoring update")
+            return
+
+        elif player.playback_status == PlaybackStatus.PLAYING:
+            self._update_active_player(player)
+
+    def _update_active_player(self, player: Player, probing=False) -> bool:
+        is_new_player = player != self.active_player
+
+        (state, show_tuple) = (None, None)
+        previous_last_filename = self.last_filename
+        new_show = False
+        if player.filename != self.last_filename:
+            (state, show_tuple) = self._get_playing_show(player.filename)
+            if state in [utils.Tracker.UNRECOGNIZED, utils.Tracker.NOT_FOUND]:
+                self.msg.debug("Video not recognized")
+            elif state == utils.Tracker.NOVIDEO:
+                self.msg.debug("No video loaded")
+            else:
+                new_show = True
+
+        if is_new_player and not new_show:
+            if probing:
+                # Ignore this 'new' player & restore `last_filename`
+                # since we're just looking for a new player candidate.
+                # (this is a hack but a proper fix needs larger refactoring
+                # involving the parent class)
+                self.last_filename = previous_last_filename
+            return False
+
+        if new_show:
+            self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
+            self.update_show_if_needed(state, show_tuple)
+
+        if is_new_player and new_show:
+            self.msg.debug(f"Setting active player: {player.wellknown_name}")
+            self.active_player = player
+
+        if player.playback_status == PlaybackStatus.PLAYING:
+            self._start_timer()
+        else:
+            self._stop_timer()
+
+        return True
+
+    def _handle_player_stopped(self):
+        # Active player got closed!
+        if self.active_player:
+            self.msg.debug(f"Clearing active player: {self.active_player.wellknown_name}")
         self.active_player = None
-        self.session = SessionBus()
-        self.bus = self.session.get('.DBus')
+        self.view_offset = None
 
-        # Look for already running players and connect them
-        for name in self.bus.ListNames():
-            if name.startswith(MPRISTracker.mpris_base):
-                self._connect(name)
+        if not self.find_playing_player():
+            (state, show_tuple) = self._get_playing_show(None)
+            self.update_show_if_needed(state, show_tuple)
+            self._stop_timer()
 
-        # Connect signal for any new players that could appear
-        self.bus.NameOwnerChanged.connect(self._new_name)
+    def _start_timer(self):
+        self.resume_timer()
+        if not self.timing:
+            self.timing = True
+            self.msg.debug("MPRIS timer started.")
 
-        # Run GLib loop
-        loop = GLib.MainLoop()
-        loop.run()
+    def _stop_timer(self):
+        self.pause_timer()
+        if self.timing:
+            self.timing = False
+            self.msg.debug("MPRIS timer paused.")
+
+    async def _timer(self):
+        while True:
+            if self.timing:
+                await self._on_tick()
+            await asyncio.sleep(1, True)
+
+    async def _on_tick(self):
+        if self.active_player:
+            self.view_offset = int(await self.active_player.get_position()) / 1000
+        if self.last_show_tuple:
+            self.update_timer(self.last_state, self.last_show_tuple)
+        if self.last_updated:
+            self._stop_timer()
