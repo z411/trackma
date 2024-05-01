@@ -125,18 +125,17 @@ class TrackerBase(object):
         if self.timer <= 0:
             # Perform show update
             self.last_updated = True
-            action = None
-            if state == utils.Tracker.PLAYING:
-                def action():
+
+            def action(state=state):
+                if state == utils.Tracker.PLAYING:
                     return self._emit_signal('update', show, episode)
-            elif state == utils.Tracker.NOT_FOUND:
-                def action():
+                elif state == utils.Tracker.NOT_FOUND:
                     return self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
                 self.msg.info('Waiting for the player to close.')
                 self.last_close_queue = action
-            elif action:
+            else:
                 action()
 
     def _ignore_current(self):
