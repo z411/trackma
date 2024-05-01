@@ -361,9 +361,10 @@ class MPRISTracker(tracker.TrackerBase):
             self.msg.debug("MPRIS timer paused.")
 
     async def _timer(self):
-        while await asyncio.sleep(1, True):
+        while True:
             if self.timing:
                 await self._on_tick()
+            await asyncio.sleep(1, True)
 
     async def _on_tick(self):
         if self.active_player:
