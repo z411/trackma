@@ -304,6 +304,18 @@ class Engine:
             if os.path.isdir(hooks_dir):
                 import pkgutil
 
+                try:
+                    from importlib.util import module_from_spec
+
+                    def load_hook(loader, name):
+                        spec = loader.find_spec(name)
+                        module = module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        return module
+                except ImportError:
+                    def load_hook(loader, name):
+                        return loader.find_module(name).load_module(name)
+
                 self.msg.info("Importing user hooks...")
                 for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
                     # List all the hook files in the hooks folder, import them
@@ -312,7 +324,8 @@ class Engine:
                     # for later calls.
                     try:
                         self.msg.debug("Importing hook {}...".format(name))
-                        module = loader.find_module(name).load_module(name)
+                        module = load_hook(loader, name)
+
                         if hasattr(module, 'init'):
                             module.init(self)
                         self.hooks_available.append(module)
