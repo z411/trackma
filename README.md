@@ -47,10 +47,11 @@ CLI
 Dependencies
 ------------
 
-The only required dependency to run Trackma is:
+The only required dependencies to run Trackma are:
 
-- Python 3.7+
-- `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
+- Python 3.8+
+- `python3-requests`
+- For installation: `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
@@ -78,6 +79,8 @@ The following media recognition trackers are available and their requirements ar
 Additional optional dependencies:
 
 - PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
+- pypresence (???) - for announcing activity on Discord.
+- twitter (`python3-twitter`) - for announcing activity on Twitter.
 
 Installation
 ------------
