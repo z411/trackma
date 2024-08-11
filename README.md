@@ -20,7 +20,7 @@ Currently supported websites
 ----------------------------
 
 - [Anilist](https://anilist.co/) (Anime, Manga)
-- [Kitsu](https://kitsu.io/) (Anime, Manga, Drama)
+- [Kitsu](https://kitsu.app/) (Anime, Manga, Drama)
 - [MyAnimeList](https://myanimelist.net/) (Anime, Manga)
 - [Shikimori](http://shikimori.org/) (Anime, Manga)
 - [VNDB](https://vndb.org/) (VNs)

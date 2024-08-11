@@ -16,9 +16,9 @@
 #
 
 """
-Media list provider using Kitsu <https://kitsu.io>.
+Media list provider using Kitsu <https://kitsu.app>.
 
-Example API response: https://kitsu.io/api/edge/anime?filter[text]=build+divide
+Example API response: https://kitsu.app/api/edge/anime?filter[text]=build+divide
 """
 
 import datetime
@@ -48,7 +48,7 @@ class libkitsu(lib):
     API class to communicate with Kitsu
     Should inherit a base library interface.
 
-    Website: https://kitsu.io/
+    Website: https://kitsu.app/
     API documentation:
     Designed by:
 
@@ -131,8 +131,8 @@ class libkitsu(lib):
         'score_step': 0.25,
     }
 
-    url = 'https://kitsu.io/api'
-    prefix = 'https://kitsu.io/api/edge'
+    url = 'https://kitsu.app/api'
+    prefix = 'https://kitsu.app/api/edge'
 
     # TODO : These values are provisional.
     _client_id = 'dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd'
@@ -578,7 +578,7 @@ class libkitsu(lib):
             'end_date':    self._str2date(attr['endDate']),
             'type':        self.type_translate.get(attr['subtype'], utils.Type.UNKNOWN),
             'status':      self.status_translate.get(attr['status'], utils.Status.UNKNOWN),
-            'url': "https://kitsu.io/{}/{}".format(self.mediatype, attr['slug']),
+            'url': "https://kitsu.app/{}/{}".format(self.mediatype, attr['slug']),
             'aliases':     list(filter(None, attr['titles'].values())),
             'extra': [
                 ('Synopsis',            attr['description']),
