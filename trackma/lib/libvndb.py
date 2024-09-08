@@ -321,14 +321,14 @@ class libvndb(lib):
         if name != 'ok':
             raise utils.APIError("Invalid response (%s)" % name)
 
-    def search(self, criteria, method):
+    def search(self, criteria, method, page):
         self.check_credentials()
 
         results = list()
         self.msg.info('Searching for %s...' % criteria)
 
         (name, data) = self._sendcmd('get vn basic,details (search ~ "%s")' % criteria,
-                                     {'page': 1,
+                                     {'page': page,
                                       'results': self.pagesize_details,
                                       })
 
@@ -345,7 +345,7 @@ class libvndb(lib):
         if not results:
             raise utils.APIError('No results.')
 
-        return results
+        return (results, len(results), 1, 1)
 
     def logout(self):
         self.msg.info('Disconnecting...')
