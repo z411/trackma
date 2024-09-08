@@ -512,7 +512,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
     def _play_next(self, show_id):
         show = self._engine.get_show_info(show_id)
         try:
-            args = self._engine.play_episode(show)
+            args = self._engine.play_episode(show, 0)
             utils.spawn_process(args)
         except utils.TrackmaError as e:
             self._error_dialog(e)
