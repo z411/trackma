@@ -532,4 +532,4 @@ ui = ["pillow", "pycairo", "pygobject", "pyqt5", "urwid"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "4e0aa3a3de8e25f05dea7285c8fb4704ed61d272baf2ebef65518f2daf350cbb"
+content-hash = "72edc39e0524f2130f8bbc1b4184026dd9d1694f5e84b8b00a33cf5c3a56be71"
