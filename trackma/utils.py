@@ -490,6 +490,53 @@ def get_terminal_size(fd=1):
     return hw
 
 
+# Default 'open folder' function
+def open_folder(engine, show_id, error_callback=None):
+    """
+    Tries to open the folder containing the show of the passed ID.
+    Takes an optional 'error_callback' parameter that lets the invoker specify an error callback method.
+    If no error callback is passed, it defaults to simply raising.
+    """
+
+    try:
+        show_to_open = engine.get_show_info(show_id)
+        filename = engine.get_episode_path(show_to_open)
+
+        with open(os.devnull, 'wb') as DEVNULL:
+            command = []
+
+            match sys.platform:
+                case 'darwin':
+                    command = ["open", os.path.dirname(filename)]
+                case 'win32':
+                    command = ["explorer", os.path.dirname(filename)]
+                case _:
+                    command = ["xdg-open", os.path.dirname(filename)]
+
+            process = subprocess.Popen(command,
+                                       stdout=DEVNULL,
+                                       stderr=subprocess.PIPE,
+                                       universal_newlines=True)
+
+            _, stderr = process.communicate()
+
+            if process.returncode != 0:
+                # Command failed.
+                raise OSError(stderr)
+
+    except OSError as e:
+        if error_callback:
+            error_callback(f'Could not open folder.\n{e}')
+        else:
+            raise e
+
+    except Exception as e:
+        if error_callback:
+            error_callback(e)
+        else:
+            raise e
+
+
 def show():
     return {
         'id':           0,
