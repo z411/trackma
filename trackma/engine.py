@@ -836,9 +836,7 @@ class Engine:
                     (show_ep_start, show_ep_end) = show_ep
                 else:
                     show_ep_start = show_ep_end = show_ep
-                self.msg.debug("File in cache: {}".format(fullpath))
             else:
-                self.msg.debug("File in cache but skipped: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
