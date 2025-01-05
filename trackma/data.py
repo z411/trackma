@@ -213,12 +213,12 @@ class Data:
         """Get list from memory"""
         return self.showlist
 
-    def search(self, criteria, method):
+    def search(self, criteria, method, page):
         # Tell API to search
-        results = self.api.search(criteria, method)
+        results = self.api.search(criteria, method, page or 1)
         self.api.logout()
         if results:
-            return results
+            return results if page else results[0]
 
         raise utils.DataError('No results.')
 
