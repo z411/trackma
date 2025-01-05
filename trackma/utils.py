@@ -416,8 +416,11 @@ def redirect_show(show_tuple, redirections, tracker_list):
         return show_tuple
 
     (show, ep) = show_tuple
-    showlist = tracker_list[0]
+    if show.get('total') and ep <= show['total']:
+        # redirect only for invalid ep
+        return show_tuple
 
+    showlist = tracker_list[0]
     if show['id'] in redirections:
         for redirection in redirections[show['id']]:
             (src_eps, dst_id, dst_eps) = redirection
