@@ -502,24 +502,41 @@ class Trackma_cmd(command.Cmd):
 
     def do_play(self, args):
         """
-        Starts the media player with the specified episode number (next if unspecified).
+        Starts the media player with the specified episode range.
+        Also, check the "watch_continuously" config option.
+        Examples of useful episode ranges: '', '-', 'n1', 'n3', '3', '3-', '-6'
+        _
+        Episode range syntax: 'X', 'X-Y', 'X-', '-X'.
+        'X'   is absolute ep number:               '2'  is the second ep.
+        'nX'  is relative to the last seen ep:     'n1' is the next ep unwatched.
+        'X-Y' will open 'X' until 'Y' (inclusive): '2-6' ep 2, until ep 6.
+        'X-'  will open 'X' and every ep after:    '3-' start ep 3 onwards.
+        '-X'  will begin at 'n1':                  '-6' last ep, until ep 6.
+        _
+        For convenience, some conversions are made:
+        '-'  -> 'n1-'            - continue watching onwards
+        ''   -> '-n1' -> 'n1-n1' - watch next episode
+        'n4' -> '-n4' -> 'n1-n4' - watch next 4 episodes
+        '3'  -> '3-3'            - watch episode 3
+        If "watch_continuously" config is "true", this changes:
+        '' -> 'n1-'              - continue watching onwards
+        '6' -> '6-'              - play episode 6 onwards
 
         :param show Episode index or title.
-        :optparam ep Episode number. Assume next if not specified.
-        :usage play <show index or title> [episode number]
+        :optparam ep Episode range. See syntax above.
+
+        :usage play <show index or title> [episode range]
         """
         try:
-            episode = 0
             show = self._get_show(args[0])
 
-            # If the user specified an episode, play it
+            # If the user specified an episode range, play it
             # otherwise play the next episode not watched yet
-            if len(args) > 1:
-                episode = args[1]
-
-            args = self.engine.play_episode(show, episode)
+            raw_range = args[1] if len(args) > 1 else ""
+            ep_iter = self.engine.parse_episode_range(show, raw_range)
+            args = self.engine.play_episode(show, ep_iter)
             utils.spawn_process(args)
-        except utils.TrackmaError as e:
+        except (utils.TrackmaError, ValueError) as e:
             self.display_error(e)
 
     def do_openfolder(self, args):

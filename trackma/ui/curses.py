@@ -357,11 +357,8 @@ class Trackma_urwid:
                      self.update_request, show['my_progress']+1)
 
     def do_play(self):
-        item = self._get_selected_item()
-        if item:
-            show = self.engine.get_show_info(item.showid)
-            self.ask('[Play] Episode # to play: ',
-                     self.play_request, show['my_progress']+1)
+        if self._get_selected_item():
+            self.ask('[Play] Episode range to play (CLI syntax): ', self.play_request, "")
 
     def do_openfolder(self):
         item = self._get_selected_item()
@@ -414,7 +411,7 @@ class Trackma_urwid:
         helptext += "https://github.com/z411/trackma\n\n"
         helptext += "This program is licensed under the GPLv3,\nfor more information read COPYING file.\n\n"
         helptext += "More controls:\n  {prev_filter}/{next_filter}:Change Filter\n  {search}:Search\n  {addsearch}:Add\n  {reload}:Change API/Mediatype\n"
-        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play_random}:Play Random\n  {switch_account}: Change account"
+        helptext += "  {delete}:Delete\n  {send}:Send changes\n  {sort_order}:Change sort order\n  {retrieve}:Retrieve list\n  {details}: View details\n  {open_web}: Open website\n  {openfolder}: Open folder containing show\n  {altname}:Set alternative title\n  {neweps}:Search for new episodes\n  {play}:Play episode or range (see syntax in CLI interface)\n  {play_random}:Play Random\n  {switch_account}: Change account"
         helptext = helptext.format(**self.keymap_str)
         ok_button = urwid.Button('OK', self.help_close)
         ok_button_wrap = urwid.Padding(urwid.AttrMap(
@@ -646,18 +643,18 @@ class Trackma_urwid:
                 self.error(e)
                 return
 
-    def play_request(self, data):
+    def play_request(self, raw_range):
         self.ask_finish(self.play_request)
-        if data:
-            item = self._get_selected_item()
-            show = self.engine.get_show_info(item.showid)
+        item = self._get_selected_item()
+        show = self.engine.get_show_info(item.showid)
 
-            try:
-                args = self.engine.play_episode(show, data)
-                utils.spawn_process(args)
-            except utils.TrackmaError as e:
-                self.error(e)
-                return
+        try:
+            ep_iter = self.engine.parse_episode_range(show, raw_range)
+            args = self.engine.play_episode(show, ep_iter)
+            utils.spawn_process(args)
+        except (utils.TrackmaError, ValueError) as e:
+            self.error(e)
+            return
 
     def prompt_update_request(self, data):
         (show, episode) = self.last_update_prompt

@@ -15,6 +15,7 @@
 #
 
 import datetime
+import itertools
 import os
 import random
 import re
@@ -23,6 +24,7 @@ import shutil
 import sys
 import time
 from decimal import Decimal
+from typing import Iterable
 
 from trackma import data
 from trackma import messenger
@@ -926,55 +928,121 @@ class Engine:
         show = random.choice(newep)
         return self.play_episode(show)
 
-    def play_episode(self, show, playep=0):
+    def play_episode(self, show, playep : int | str | Iterable[int] = 0):
         """
         Does a local search in the hard disk (in the folder specified by the config file)
         for the specified episode (**playep**) for the specified **show**.
 
-        If no **playep** is specified, the next episode of the show will be returned.
+        If no **playep** is zero or not specified, the next episode of the show will be returned.
+        
+        **playep** may also be a iterable of episode numbers, like `range(3, 12)`
         """
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError(
                 'Operation not supported by current site or mediatype.')
 
-        try:
-            playep = int(playep)
-        except ValueError:
-            raise utils.EngineError('Episode must be numeric.')
-
         if not show:
             raise utils.EngineError('Show given is invalid')
 
-        if playep <= 0:
-            playep = show['my_progress'] + 1
+        if isinstance(playep, int) or isinstance(playep, str):
+            try:
+                first_ep = int(playep)
+            except ValueError:
+                raise utils.EngineError('Episode must be a integer.')
 
-        if show['total'] and playep > show['total']:
+            if first_ep <= 0:
+                first_ep = show['my_progress'] + 1
+
+            if self.config['watch_continuously']:
+                ep_iter = itertools.count(first_ep)
+                next(ep_iter) # pop first_ep
+            else:
+                ep_iter = ()
+
+        elif isinstance(playep, Iterable):
+            ep_iter = iter(playep)
+            try:
+                first_ep = next(ep_iter)
+            except StopIteration:
+                raise utils.EngineError('Range of episodes is empty.')
+
+        self.msg.info(
+            f"Searching episode '{first_ep}' of '{show['title']}' from library...")
+
+        if show['total'] > 0 and first_ep > show['total']:
             raise utils.EngineError('Episode beyond limits.')
 
-        self.msg.info("Getting '%s' episode '%s' from library..." %
-                        (show['title'], playep))
+        ep_iter = itertools.chain((first_ep,), ep_iter)
+        filenames = []
+        ep_numbers = []
 
         try:
-            filename = self.get_episode_path(show, playep)
+            for ep in ep_iter:
+                filename = self.get_episode_path(show, ep)
+                filenames.append(filename)
+                ep_numbers.append(ep)
         except utils.EngineError:
-            self.msg.info("Episode not found. Calling hooks...")
-            self._emit_signal("episode_missing", show, playep)
-            return []
-
-        self.msg.info('Found. Starting player...')
+            if not filenames:
+                self.msg.info("Episode not found. Calling hooks...")
+                self._emit_signal("episode_missing", show, first_ep)
+                return []
+        
+        self.msg.info('Found. Playing episodes: ' + repr(ep_numbers))
         args = shlex.split(self.config['player'])
 
         if not args:
             raise utils.EngineError('Player not set up, check your config.json')
 
-        args[0] = shutil.which(args[0])
+        args[0] = shutil.which(args[0]) or ""
 
         if not args[0]:
             raise utils.EngineError('Player not found, check your config.json')
 
-        args.append(filename)
+        args.extend(filenames)
         return args
+
+    def parse_episode_range(self, show, raw_range: str) -> Iterable[int]:
+        """
+        Parse a string into a iterable of episode numbers, acording to a custom syntax.
+        """
+        def parse_num(num_str):
+            if num_str.startswith("n"):
+                return int(num_str.lstrip("n")) + show["my_progress"]
+            else:
+                return int(num_str)
+
+        if not raw_range:
+            raw_range = "n1-" if self.config['watch_continuously'] else "-n1"
+        elif raw_range == "n0":
+            raw_range = "n0-n0"
+
+        # convert relative "nX" to "-nX"
+        if "-" not in raw_range and raw_range.startswith("n"):
+            raw_range = "-" + raw_range
+
+        # absolute "X"
+        if "-" not in raw_range:
+            first = int(raw_range)
+            
+            if self.config['watch_continuously']:
+                ep_iter = itertools.count(first)
+            else:
+                ep_iter = (first, )
+        else:
+            first, last = raw_range.split("-")
+            # a left-open range always expand to n1
+            first = parse_num(first or "n1")
+
+            if last:
+                ep_iter = range(first, 1 + parse_num(last))
+            else:
+                ep_iter = itertools.count(first)
+
+        if first == 0:
+            raise utils.EngineError("0 is a invalid episode number")
+        
+        return ep_iter
 
     def undoall(self):
         """Clears the data handler queue and discards any unsynced change."""
