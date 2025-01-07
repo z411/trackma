@@ -720,7 +720,8 @@ class Trackma_cmd(command.Cmd):
     complete_delete = _complete_show
 
     def complete_filter(self, text, line, begidx, endidx):
-        return [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        all_items = [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        return [i for i in all_items if i.startswith(text)]
 
     def parse_args(self, arg):
         if arg:
