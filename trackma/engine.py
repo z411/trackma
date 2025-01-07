@@ -808,12 +808,11 @@ class Engine:
         # Only remove if the filename matches library entry
         if filename in library_cache and library_cache[filename]:
             (show_id, show_ep) = library_cache[filename]
-            if show_id and show_id in library \
-                    and show_ep and show_ep in library[show_id].keys():
-                if library[show_id][show_ep] == fullpath:
-                    self.msg.debug("File removed from local library: %s" % fullpath)
-                    library_cache.pop(filename, None)
-                    library[show_id].pop(show_ep, None)
+            if show_id and show_ep and show_id \
+                    and library.get(show_id, {}).get(show_ep) == fullpath:
+                self.msg.debug("File removed from local library: %s" % fullpath)
+                library_cache.pop(filename, None)
+                library[show_id].pop(show_ep, None)
 
     def add_to_library(self, path, filename, rescan=False):
         # The inotify tracker tells us when files are created in
