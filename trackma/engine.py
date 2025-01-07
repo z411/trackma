@@ -23,6 +23,7 @@ import shutil
 import sys
 import time
 from decimal import Decimal
+from functools import lru_cache, partial
 
 from trackma import data
 from trackma import messenger
@@ -781,6 +782,7 @@ class Engine:
             self.msg.info("Scanning local library...")
 
         tracker_list = self._get_tracker_list(my_status)
+        guess_show = lru_cache(partial(utils.guess_show, tracker_list=tracker_list))
 
         for searchdir in self.searchdirs:
             self.msg.debug("Directory: %s" % searchdir)
@@ -791,7 +793,7 @@ class Engine:
                     filename = self._get_show_name_from_full_path(
                         searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
-                    library, library_cache, rescan, fullpath, filename, tracker_list)
+                    library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
             self.msg.debug("Time: %s" % (time.time() - t))
             self.data_handler.library_save(library)
@@ -820,10 +822,11 @@ class Engine:
         library_cache = self.data_handler.library_cache_get()
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
+        guess_show = partial(utils.guess_show, tracker_list=tracker_list)
         self._add_show_to_library(
-            library, library_cache, rescan, fullpath, filename, tracker_list)
+            library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
-    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
+    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list, guess_show):
         show_id = None
         if not rescan and filename in library_cache:
             # If the filename was already seen before
@@ -847,7 +850,7 @@ class Engine:
             show_title = anime_info.getName()
             (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
-                show = utils.guess_show(show_title, tracker_list)
+                show = guess_show(show_title)
                 if show:
                     self.msg.debug("Adding to library: {}".format(fullpath))
                     self.msg.debug("Show guess: {}".format(show_title))
