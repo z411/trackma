@@ -80,6 +80,7 @@ class Trackma_cmd(command.Cmd):
         'delete':       1,
         'play':         (1, 2),
         'openfolder':   1,
+        'rescan':       (0, 1),
         'update':       (1, 2),
         'score':        2,
         'status':       2,
@@ -449,8 +450,12 @@ class Trackma_cmd(command.Cmd):
     def do_rescan(self, args):
         """
         Re-scans the local library.
+
+        :optparam path Base path for the scan. Defaults to all library folders if omitted.
+        :usage rescan [path to re-scan]
         """
-        self.engine.scan_library(rescan=True)
+        path = args[0] if args else None
+        self.engine.scan_library(rescan=True, path=path)
 
     def do_random(self, args):
         """
