@@ -707,28 +707,21 @@ class Trackma_cmd(command.Cmd):
         print()
         self.do_quit(args)
 
-    def complete_update(self, text, line, begidx, endidx):
+    def _complete_show(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
 
-    def complete_play(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_score(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_status(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_delete(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
+    complete_info = _complete_show
+    complete_altname = _complete_show
+    complete_update = _complete_show
+    complete_play = _complete_show
+    complete_score = _complete_show
+    complete_status = _complete_show
+    complete_delete = _complete_show
 
     def complete_filter(self, text, line, begidx, endidx):
-        return [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        all_items = [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        return [i for i in all_items if i.startswith(text)]
 
     def parse_args(self, arg):
         if arg:
