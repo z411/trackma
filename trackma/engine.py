@@ -24,6 +24,7 @@ import sys
 import time
 from decimal import Decimal
 from functools import lru_cache, partial
+from pathlib import Path
 
 from trackma import data
 from trackma import messenger
@@ -757,7 +758,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None, rescan=False):
+    def scan_library(self, my_status=None, rescan=False, path=None):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError(
@@ -784,14 +785,14 @@ class Engine:
         tracker_list = self._get_tracker_list(my_status)
         guess_show = lru_cache(partial(utils.guess_show, tracker_list=tracker_list))
 
-        for searchdir in self.searchdirs:
+        paths = [path] if path else self.searchdirs
+        for searchdir in paths:
             self.msg.debug("Directory: %s" % searchdir)
 
             # Do a full listing of the media directory
             for fullpath, filename in utils.regex_find_videos(searchdir):
                 if self.config['library_full_path']:
-                    filename = self._get_show_name_from_full_path(
-                        searchdir, fullpath)
+                    filename = self._get_relative_path_or_basename(searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
                     library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
@@ -1029,10 +1030,16 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
-    def _get_show_name_from_full_path(self, searchdir, fullpath):
-        """Joins the directory name with the file name to return the show name."""
-        relative = fullpath[len(searchdir):].lstrip(os.path.sep)
-        return relative
+    def _get_relative_path_or_basename(self, searchdir, fullpath):
+        """Determine the path relative to a directory or the basename if not a sub-path.
+
+        Used for including the folder name(s) for show detection.
+        """
+        path = Path(fullpath)
+        try:
+            return str(path.relative_to(searchdir))
+        except ValueError:
+            return path.basename
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""
