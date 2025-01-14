@@ -13,6 +13,7 @@ from asyncio import new_event_loop as new_loop
 from asyncio import set_event_loop as set_loop
 from threading import Thread
 
+from pypresence import ActivityType
 from pypresence.client import Client
 from pypresence.exceptions import InvalidID, InvalidPipe
 
@@ -83,6 +84,7 @@ class DiscordRPC(Thread):
                     else:
                         self._rpc.set_activity(
                             pid=self._pid,
+                            activity_type=ActivityType.WATCHING,
                             large_image=self._details['thumb'],
                             large_text=self._details['details'],
                             small_image=self._details['img'],
