@@ -42,7 +42,7 @@ class inotifyTracker(inotifyBase.inotifyBase):
                 | inotify.constants.IN_MOVE
                 | inotify.constants.IN_DELETE)
 
-        i = inotify.adapters.InotifyTrees(watch_dirs, mask=mask)
+        i = inotify.adapters.InotifyTrees(list(watch_dirs), mask=mask)
 
         try:
             for event in i.event_gen():
