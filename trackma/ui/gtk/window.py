@@ -586,7 +586,7 @@ class TrackmaWindow(Gtk.ApplicationWindow):
                                      stdout=DEVNULL,
                                      stderr=DEVNULL)
                 else:
-                    subprocess.Popen(["/usr/bin/xdg-open", os.path.dirname(filename)],
+                    subprocess.Popen(["xdg-open", os.path.dirname(filename)],
                                      stdout=DEVNULL,
                                      stderr=DEVNULL)
         except OSError:

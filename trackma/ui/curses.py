@@ -377,7 +377,7 @@ class Trackma_urwid:
                     subprocess.Popen(["explorer",
                                       os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 else:
-                    subprocess.Popen(["/usr/bin/xdg-open",
+                    subprocess.Popen(["xdg-open",
                                       os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
