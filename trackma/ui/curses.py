@@ -68,7 +68,7 @@ class Trackma_urwid:
 
         palette = []
         for k, color in self.config['palette'].items():
-            palette.append((k, color[0], color[1]))
+            palette.append((k, *color))
 
         # Prepare header
         sys.stdout.write("\x1b]0;Trackma-curses "+utils.VERSION+"\x07")
@@ -122,6 +122,7 @@ class Trackma_urwid:
             self.listframe, header=self.top_pile, footer=self.statusbar)
         self.mainloop = urwid.MainLoop(
             self.view, palette, unhandled_input=self.keystroke, screen=urwid.raw_display.Screen())
+        self.mainloop.screen.set_terminal_properties(colors=256)
 
     def run(self):
         self.mainloop.set_alarm_in(0, self.do_switch_account)
