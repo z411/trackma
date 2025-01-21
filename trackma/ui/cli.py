@@ -670,12 +670,12 @@ class Trackma_cmd(command.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
-    def do_undoall(self, args):
+    def do_clearqueue(self, args):
         """
         Undo all changes in queue.
         """
         try:
-            self.engine.undoall()
+            self.engine.queue_clear()
         except utils.TrackmaError as e:
             self.display_error(e)
 
