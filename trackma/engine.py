@@ -979,7 +979,7 @@ class Engine:
         args.append(filename)
         return args
 
-    def undoall(self):
+    def queue_clear(self):
         """Clears the data handler queue and discards any unsynced change."""
         return self.data_handler.queue_clear()
 
@@ -1016,7 +1016,7 @@ class Engine:
 
     def list_download(self):
         """Asks the data handler to download the remote list."""
-        self.undoall()
+        self.data_handler.queue_clear()
         self.data_handler.download_data()
         self._update_tracker()
 
