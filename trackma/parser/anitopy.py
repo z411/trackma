@@ -36,6 +36,7 @@ class AnitopyWrapper():
         self.file_name = file_name
 
         try:
+            self.msg.debug(f"Parsing {file_name}")
             data = anitopy.parse(file_name)
         except Exception:
             # If Anitopy crashes while parsing a filename, print the traceback
@@ -102,7 +103,7 @@ class AnitopyWrapper():
 
         # Remove all the path separators (except the last one, we'll need it later)
         *parts, last_part = file_name.split(os.path.sep)
-        file_name = ' '.join(parts) + last_part
+        file_name = ' '.join(parts) + ' ' + last_part
 
         # Anitopy can parse S01E01 properly, but not S01OVA01, S01S01, S01NCOP01 etc.
         # So we'll need to break things down for the parser.
@@ -164,7 +165,7 @@ class AnitopyWrapper():
         # Append anime season to the title (if needed)
         anime_season = data.get('anime_season')
         if anime_season:
-            if not isinstance(anime_season, list):
+            if isinstance(anime_season, list):
                 anime_season = anime_season[0]
             if int(anime_season) > 1:
                 anime_title += ' Season ' + anime_season
