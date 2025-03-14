@@ -179,10 +179,10 @@ class AnitopyWrapper():
         # Append anime type to the title (if needed)
         anitype_invalid = ('OP', 'NCOP', 'OPENING', 'ED', 'NCED', 'ENDING', 'PV', 'PREVIEW')
         anitype_specials = ('OAD', 'OAV', 'ONA', 'OVA', 'SPECIAL', 'SPECIALS')
-        anime_type = data.get('anime_type')
-        if anime_type:
-            if not isinstance(anime_type, list):
-                anitype = [anime_type]
+        anitype = data.get('anime_type')
+        if anitype:
+            if not isinstance(anitype, list):
+                anitype = [anitype]
             for t in anitype:
                 # Ignore non-episodes such as openings, endings, previews etc.
                 if t.upper() in anitype_invalid:
