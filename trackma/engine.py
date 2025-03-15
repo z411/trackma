@@ -23,6 +23,8 @@ import shutil
 import sys
 import time
 from decimal import Decimal
+from functools import lru_cache, partial
+from pathlib import Path
 
 from trackma import data
 from trackma import messenger
@@ -756,7 +758,7 @@ class Engine:
     def library(self):
         return self.data_handler.library_get()
 
-    def scan_library(self, my_status=None, rescan=False):
+    def scan_library(self, my_status=None, rescan=False, path=None):
         # Check if operation is supported by the API
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError(
@@ -781,17 +783,18 @@ class Engine:
             self.msg.info("Scanning local library...")
 
         tracker_list = self._get_tracker_list(my_status)
+        guess_show = lru_cache(partial(utils.guess_show, tracker_list=tracker_list))
 
-        for searchdir in self.searchdirs:
+        paths = [path] if path else self.searchdirs
+        for searchdir in paths:
             self.msg.debug("Directory: %s" % searchdir)
 
             # Do a full listing of the media directory
             for fullpath, filename in utils.regex_find_videos(searchdir):
                 if self.config['library_full_path']:
-                    filename = self._get_show_name_from_full_path(
-                        searchdir, fullpath)
+                    filename = self._get_relative_path_or_basename(searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
-                    library, library_cache, rescan, fullpath, filename, tracker_list)
+                    library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
             self.msg.debug("Time: %s" % (time.time() - t))
             self.data_handler.library_save(library)
@@ -806,12 +809,11 @@ class Engine:
         # Only remove if the filename matches library entry
         if filename in library_cache and library_cache[filename]:
             (show_id, show_ep) = library_cache[filename]
-            if show_id and show_id in library \
-                    and show_ep and show_ep in library[show_id].keys():
-                if library[show_id][show_ep] == fullpath:
-                    self.msg.debug("File removed from local library: %s" % fullpath)
-                    library_cache.pop(filename, None)
-                    library[show_id].pop(show_ep, None)
+            if show_id and show_ep and show_id \
+                    and library.get(show_id, {}).get(show_ep) == fullpath:
+                self.msg.debug("File removed from local library: %s" % fullpath)
+                library_cache.pop(filename, None)
+                library[show_id].pop(show_ep, None)
 
     def add_to_library(self, path, filename, rescan=False):
         # The inotify tracker tells us when files are created in
@@ -820,10 +822,11 @@ class Engine:
         library_cache = self.data_handler.library_cache_get()
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
+        guess_show = partial(utils.guess_show, tracker_list=tracker_list)
         self._add_show_to_library(
-            library, library_cache, rescan, fullpath, filename, tracker_list)
+            library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
-    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list):
+    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list, guess_show):
         show_id = None
         if not rescan and filename in library_cache:
             # If the filename was already seen before
@@ -836,9 +839,7 @@ class Engine:
                     (show_ep_start, show_ep_end) = show_ep
                 else:
                     show_ep_start = show_ep_end = show_ep
-                self.msg.debug("File in cache: {}".format(fullpath))
             else:
-                self.msg.debug("File in cache but skipped: {}".format(fullpath))
                 return library, library_cache
         else:
             # If the filename has not been seen, extract
@@ -849,7 +850,7 @@ class Engine:
             show_title = anime_info.getName()
             (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
-                show = utils.guess_show(show_title, tracker_list)
+                show = guess_show(show_title)
                 if show:
                     self.msg.debug("Adding to library: {}".format(fullpath))
                     self.msg.debug("Show guess: {}".format(show_title))
@@ -978,7 +979,7 @@ class Engine:
         args.append(filename)
         return args
 
-    def undoall(self):
+    def queue_clear(self):
         """Clears the data handler queue and discards any unsynced change."""
         return self.data_handler.queue_clear()
 
@@ -1015,7 +1016,7 @@ class Engine:
 
     def list_download(self):
         """Asks the data handler to download the remote list."""
-        self.undoall()
+        self.data_handler.queue_clear()
         self.data_handler.download_data()
         self._update_tracker()
 
@@ -1029,10 +1030,16 @@ class Engine:
         """Asks the data handler for the items in the current queue."""
         return self.data_handler.queue
 
-    def _get_show_name_from_full_path(self, searchdir, fullpath):
-        """Joins the directory name with the file name to return the show name."""
-        relative = fullpath[len(searchdir):].lstrip(os.path.sep)
-        return relative
+    def _get_relative_path_or_basename(self, searchdir, fullpath):
+        """Determine the path relative to a directory or the basename if not a sub-path.
+
+        Used for including the folder name(s) for show detection.
+        """
+        path = Path(fullpath)
+        try:
+            return str(path.relative_to(searchdir))
+        except ValueError:
+            return path.basename
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""

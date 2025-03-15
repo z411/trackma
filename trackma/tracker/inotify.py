@@ -36,14 +36,13 @@ class inotifyTracker(inotifyBase.inotifyBase):
 
         self.msg.debug('Watching the following paths: ' + ','.join(watch_dirs))
 
-        paths = (path.encode('utf-8') for path in watch_dirs)
         mask = (inotify.constants.IN_OPEN
                 | inotify.constants.IN_CLOSE
                 | inotify.constants.IN_CREATE
                 | inotify.constants.IN_MOVE
                 | inotify.constants.IN_DELETE)
 
-        i = inotify.adapters.InotifyTrees(paths, mask=mask)
+        i = inotify.adapters.InotifyTrees(list(watch_dirs), mask=mask)
 
         try:
             for event in i.event_gen():
@@ -59,21 +58,17 @@ class inotifyTracker(inotifyBase.inotifyBase):
                         # If the file is gone, we remove from library
                         if ('IN_MOVED_FROM' in types
                                 or 'IN_DELETE' in types):
-                            self._emit_signal('removed', str(
-                                path, 'utf-8'), str(filename, 'utf-8'))
+                            self._emit_signal('removed', path, filename)
                         # Otherwise we attempt to add it to library
                         # Would check for IN_MOVED_TO or IN_CREATE but no need
                         else:
-                            self._emit_signal('detected', str(
-                                path, 'utf-8'), str(filename, 'utf-8'))
+                            self._emit_signal('detected', path, filename)
 
                         if 'IN_OPEN' in types:
-                            self._proc_open(str(path, 'utf-8'),
-                                            str(filename, 'utf-8'))
+                            self._proc_open(path, filename)
                         elif ('IN_CLOSE_NOWRITE' in types
                               or 'IN_CLOSE_WRITE' in types):
-                            self._proc_close(
-                                str(path, 'utf-8'), str(filename, 'utf-8'))
+                            self._proc_close(path, filename)
                 elif self.last_state != utils.Tracker.NOVIDEO and not self.last_updated:
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did

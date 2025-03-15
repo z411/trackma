@@ -80,6 +80,7 @@ class Trackma_cmd(command.Cmd):
         'delete':       1,
         'play':         (1, 2),
         'openfolder':   1,
+        'rescan':       (0, 1),
         'update':       (1, 2),
         'score':        2,
         'status':       2,
@@ -449,8 +450,12 @@ class Trackma_cmd(command.Cmd):
     def do_rescan(self, args):
         """
         Re-scans the local library.
+
+        :optparam path Base path for the scan. Defaults to all library folders if omitted.
+        :usage rescan [path to re-scan]
         """
-        self.engine.scan_library(rescan=True)
+        path = args[0] if args else None
+        self.engine.scan_library(rescan=True, path=path)
 
     def do_random(self, args):
         """
@@ -541,7 +546,7 @@ class Trackma_cmd(command.Cmd):
                     subprocess.Popen(["explorer",
                                       os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
                 else:
-                    subprocess.Popen(["/usr/bin/xdg-open",
+                    subprocess.Popen(["xdg-open",
                                       os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
         except OSError:
             # xdg-open failed.
@@ -665,12 +670,12 @@ class Trackma_cmd(command.Cmd):
         except utils.TrackmaError as e:
             self.display_error(e)
 
-    def do_undoall(self, args):
+    def do_clearqueue(self, args):
         """
         Undo all changes in queue.
         """
         try:
-            self.engine.undoall()
+            self.engine.queue_clear()
         except utils.TrackmaError as e:
             self.display_error(e)
 
@@ -707,28 +712,21 @@ class Trackma_cmd(command.Cmd):
         print()
         self.do_quit(args)
 
-    def complete_update(self, text, line, begidx, endidx):
+    def _complete_show(self, text, line, begidx, endidx):
         if text:
             return self.engine.regex_list_titles(text)
 
-    def complete_play(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_score(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_status(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
-
-    def complete_delete(self, text, line, begidx, endidx):
-        if text:
-            return self.engine.regex_list_titles(text)
+    complete_info = _complete_show
+    complete_altname = _complete_show
+    complete_update = _complete_show
+    complete_play = _complete_show
+    complete_score = _complete_show
+    complete_status = _complete_show
+    complete_delete = _complete_show
 
     def complete_filter(self, text, line, begidx, endidx):
-        return [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        all_items = [v.lower().replace(' ', '') for v in self.engine.mediainfo['statuses_dict'].values()]
+        return [i for i in all_items if i.startswith(text)]
 
     def parse_args(self, arg):
         if arg:

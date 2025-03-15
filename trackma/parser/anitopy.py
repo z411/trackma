@@ -36,6 +36,7 @@ class AnitopyWrapper():
         self.file_name = file_name
 
         try:
+            self.msg.debug(f"Parsing {file_name}")
             data = anitopy.parse(file_name)
         except Exception:
             # If Anitopy crashes while parsing a filename, print the traceback
@@ -101,8 +102,8 @@ class AnitopyWrapper():
                               + file_name[m.end():])
 
         # Remove all the path separators (except the last one, we'll need it later)
-        *parts, last_part = file_name.split(os.path.sep)
-        file_name = ' '.join(parts) + last_part
+        parts = file_name.split(os.path.sep)
+        file_name = ' '.join(parts)
 
         # Anitopy can parse S01E01 properly, but not S01OVA01, S01S01, S01NCOP01 etc.
         # So we'll need to break things down for the parser.
@@ -164,7 +165,7 @@ class AnitopyWrapper():
         # Append anime season to the title (if needed)
         anime_season = data.get('anime_season')
         if anime_season:
-            if not isinstance(anime_season, list):
+            if isinstance(anime_season, list):
                 anime_season = anime_season[0]
             if int(anime_season) > 1:
                 anime_title += ' Season ' + anime_season
@@ -178,10 +179,10 @@ class AnitopyWrapper():
         # Append anime type to the title (if needed)
         anitype_invalid = ('OP', 'NCOP', 'OPENING', 'ED', 'NCED', 'ENDING', 'PV', 'PREVIEW')
         anitype_specials = ('OAD', 'OAV', 'ONA', 'OVA', 'SPECIAL', 'SPECIALS')
-        anime_type = data.get('anime_type')
-        if anime_type:
-            if not isinstance(anime_type, list):
-                anitype = [anime_type]
+        anitype = data.get('anime_type')
+        if anitype:
+            if not isinstance(anitype, list):
+                anitype = [anitype]
             for t in anitype:
                 # Ignore non-episodes such as openings, endings, previews etc.
                 if t.upper() in anitype_invalid:
