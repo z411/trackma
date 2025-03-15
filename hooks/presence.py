@@ -13,7 +13,7 @@ from asyncio import new_event_loop as new_loop
 from asyncio import set_event_loop as set_loop
 from threading import Thread
 
-from pypresence import ActivityType
+from importlib.util import find_spec
 from pypresence.client import Client
 from pypresence.exceptions import InvalidID, InvalidPipe
 
@@ -31,6 +31,8 @@ class DiscordRPC(Thread):
     _enabled = False
     _update = False
     regret = True
+    _activity = {} if find_spec('pypresence.types') is None \
+        else {"activity_type": __import__('pypresence.types').ActivityType.WATCHING}
 
     _rpc = None
     _pid = None
@@ -84,7 +86,6 @@ class DiscordRPC(Thread):
                     else:
                         self._rpc.set_activity(
                             pid=self._pid,
-                            activity_type=ActivityType.WATCHING,
                             large_image=self._details['thumb'],
                             large_text=self._details['details'],
                             small_image=self._details['img'],
@@ -92,7 +93,8 @@ class DiscordRPC(Thread):
                             buttons=self._details['buttons'],
                             details=self._details['details'],
                             state=self._details['state'],
-                            start=self._details['start']
+                            start=self._details['start'],
+                            **self._watching
                         )
                     self._update = False
                 time.sleep(1)
