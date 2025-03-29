@@ -25,8 +25,6 @@ import shutil
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 import uuid
 from enum import Enum, auto
 
@@ -314,7 +312,7 @@ def sync_file(fname, sync_url):
     if not sync_url:
         return False
 
-    import urllib
+    import urllib.request
     import socket
 
     try:
