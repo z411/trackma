@@ -452,7 +452,7 @@ class Trackma_cmd(command.Cmd):
         Re-scans the local library.
 
         :optparam path Base path for the scan. Defaults to all library folders if omitted.
-        :usage rescan [path to re-scan]
+        :usage rescan [path]
         """
         path = args[0] if args else None
         self.engine.scan_library(rescan=True, path=path)
