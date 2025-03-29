@@ -94,7 +94,7 @@ class DiscordRPC(Thread):
                             details=self._details['details'],
                             state=self._details['state'],
                             start=self._details['start'],
-                            **self._watching
+                            **self._activity
                         )
                     self._update = False
                 time.sleep(1)
