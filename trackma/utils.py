@@ -434,6 +434,15 @@ def redirect_show(show_tuple, redirections, tracker_list):
     return show_tuple
 
 
+def open_folder(path):
+    if sys.platform == 'darwin':
+        spawn_process(["open", path])
+    elif sys.platform == 'win32':
+        spawn_process(["explorer", path])
+    else:
+        spawn_process(["xdg-open", path])
+
+
 _spawned_processes = []
 
 
