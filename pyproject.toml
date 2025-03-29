@@ -52,9 +52,9 @@ twitter = ["twitter", "requests-oauthlib"]
 
 [tool.poetry.scripts]
 trackma = "trackma.ui.cli:main"
-trackma-curses = { callable = "trackma.ui.curses:main", extras= ["curses"] }
-trackma-gtk = { callable = "trackma.ui.gtk:main", extras = ["gtk"] }
-trackma-qt = { callable = "trackma.ui.qt:main", extras = ["qt"] }
+trackma-curses = "trackma.ui.curses:main"
+trackma-gtk = "trackma.ui.gtk:main"
+trackma-qt = "trackma.ui.qt:main"
 
 [build-system]
 requires = ["poetry-core"]
