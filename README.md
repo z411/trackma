@@ -76,11 +76,12 @@ The following media recognition trackers are available and their requirements ar
 | MPRIS | Connects to running MPRIS capable media players. | `python3-jeepney` |
 | Win32 | Recognition for Windows platforms. | None |
 
-Additional optional dependencies:
+Additional optional Python dependencies:
 
 - PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
 - pypresence (???) - for announcing activity on Discord.
 - twitter (`python3-twitter`) - for announcing activity on Twitter.
+- anitopy (-) - for the anitopy title parser
 
 Installation
 ------------
