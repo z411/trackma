@@ -304,17 +304,20 @@ class Engine:
         if self.config['use_hooks']:
             hooks_dir = utils.to_config_path('hooks')
             if os.path.isdir(hooks_dir):
+                import importlib.util
                 import pkgutil
 
                 self.msg.info("Importing user hooks...")
-                for loader, name, ispkg in pkgutil.iter_modules([hooks_dir]):
+                for finder, name, _ in pkgutil.iter_modules([hooks_dir]):
                     # List all the hook files in the hooks folder, import them
                     # and call the init() function if they have them
                     # We build the list "hooks available" with the loaded modules
                     # for later calls.
                     try:
                         self.msg.debug("Importing hook {}...".format(name))
-                        module = loader.find_module(name).load_module(name)
+                        module_spec = finder.find_spec(name)
+                        module = importlib.util.module_from_spec(module_spec)
+                        module_spec.loader.exec_module(module)
                         if hasattr(module, 'init'):
                             module.init(self)
                         self.hooks_available.append(module)
