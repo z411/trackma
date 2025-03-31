@@ -24,9 +24,8 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
-import urllib.error
-import urllib.request
 import uuid
 from enum import Enum, auto
 
@@ -314,7 +313,7 @@ def sync_file(fname, sync_url):
     if not sync_url:
         return False
 
-    import urllib
+    import urllib.request
     import socket
 
     try:
@@ -435,38 +434,46 @@ def redirect_show(show_tuple, redirections, tracker_list):
     return show_tuple
 
 
+def open_folder(path):
+    if sys.platform == 'darwin':
+        spawn_process(["open", path])
+    elif sys.platform == 'win32':
+        spawn_process(["explorer", path])
+    else:
+        spawn_process(["xdg-open", path])
+
+
+_spawned_processes = []
+
+
+def _poll_spawned_processes():
+    """Periodically poll and prune process handles to prevent zombies."""
+    while True:
+        time.sleep(5)
+        _spawned_processes[:] = [child for child in _spawned_processes if child.poll() is None]
+
+
+_process_collector_thread = None
+
+
 def spawn_process(arg_list):
     """
     Helper generic function to spawn a subprocess.
-    Does a double fork on *nix to prevent zombie processes.
+
+    The handles are collected and periodically polled
+    to prevent zombie processes on *NIX.
     """
+    global _process_collector_thread
+
     if not arg_list:
         return
 
-    if not sys.platform.startswith('win32'):
-        try:
-            pid = os.fork()
-            if pid > 0:
-                os.waitpid(pid, 0)
-                return 0
-        except OSError:
-            return -1
+    proc = subprocess.Popen(arg_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    _spawned_processes.append(proc)
 
-        os.setsid()
-        fd = os.open("/dev/null", os.O_RDWR)
-        os.dup2(fd, 0)
-        os.dup2(fd, 1)
-        os.dup2(fd, 2)
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-        except OSError:
-            sys.exit(1)
-        os.execv(arg_list[0], arg_list)
-    else:
-        subprocess.Popen(
-            arg_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not _process_collector_thread:
+        _process_collector_thread = threading.Thread(target=_poll_spawned_processes, daemon=True)
+        _process_collector_thread.start()
 
 
 def get_terminal_size(fd=1):

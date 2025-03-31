@@ -979,6 +979,14 @@ class Engine:
         args.append(filename)
         return args
 
+    def open_show_folder(self, show_id):
+        show = self.get_show_info(show_id)
+        filename = self.get_episode_path(show)
+        try:
+            utils.open_folder(os.path.dirname(filename))
+        except OSError:
+            raise utils.EngineError("Could not open folder.")
+
     def queue_clear(self):
         """Clears the data handler queue and discards any unsynced change."""
         return self.data_handler.queue_clear()

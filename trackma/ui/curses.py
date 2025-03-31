@@ -366,27 +366,10 @@ class Trackma_urwid:
 
     def do_openfolder(self):
         item = self._get_selected_item()
-
         try:
-            show = self.engine.get_show_info(item.showid)
-            filename = self.engine.get_episode_path(show)
-            with open(os.devnull, 'wb') as DEVNULL:
-                if sys.platform == 'darwin':
-                    subprocess.Popen(["open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                elif sys.platform == 'win32':
-                    subprocess.Popen(["explorer",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-                else:
-                    subprocess.Popen(["xdg-open",
-                                      os.path.dirname(filename)], stdout=DEVNULL, stderr=DEVNULL)
-        except OSError:
-            # xdg-open failed.
-            raise utils.EngineError("Could not open folder.")
-
-        except utils.EngineError:
-            # Show not in library.
-            self.error("No folder found.")
+            self.engine.open_show_folder(item.showid)
+        except utils.EngineError as e:
+            self.error(e.args[0])
 
     def do_play_random(self):
         try:
