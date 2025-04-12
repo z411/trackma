@@ -1,3 +1,18 @@
+v0.9
+- New feature: Anitopy wrapper
+- Improvement: MPRIS parser rewrite
+- Improvement: Parser optimizations
+- Improvement: GTK Play Episode menu rehaul
+- Improvement: Enabled curses/urwid 256-color mode
+- Improvement: Several code cleanups
+- Bugfix: Fixed Plex URL encoding for login credentials
+- Bugfix: Several Discord RPC hook fixes
+- Bugfix: Fixed Episode Missing hook episode loop
+- Bugfix: Fixed episode number parse error
+
+v0.8.6
+- Hotfix release
+
 v0.8.5
 - Enhancement: Improved title guessing logic
 - Enhancement: (GTK) Several visual improvements and bugfixes
