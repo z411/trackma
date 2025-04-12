@@ -49,6 +49,8 @@ class SettingsDialog(QDialog):
         self.category_list = QListWidget()
         category_media = QListWidgetItem(
             getIcon('media-playback-start'), 'Media', self.category_list)
+        category_library = QListWidgetItem(
+            getIcon('media-playback-start'), 'Library', self.category_list)
         category_sync = QListWidgetItem(
             getIcon('view-refresh'), 'Sync', self.category_list)
         category_ui = QListWidgetItem(
@@ -197,9 +199,24 @@ class SettingsDialog(QDialog):
 
         g_kodi.setLayout(g_kodi_layout)
 
+        # Media form
+        page_media_layout.addWidget(g_media)
+        page_media_layout.addWidget(g_plex)
+        page_media_layout.addWidget(g_jellyfin)
+        page_media_layout.addWidget(g_kodi)
+        page_media.setLayout(page_media_layout)
+
+        # Library tab
+        page_library = QWidget()
+        page_library_layout = QVBoxLayout()
+        page_library_layout.setAlignment(QtCore.Qt.AlignTop)
+
         # Group: Library
         g_playnext = QGroupBox('Library')
         g_playnext.setFlat(True)
+        self.title_parser = QComboBox()
+        for (n, label) in utils.available_parsers:
+            self.title_parser.addItem(label, n)
         self.player = QLineEdit()
         self.player_browse = QPushButton('Browse...')
         self.player_browse.clicked.connect(self.s_player_browse)
@@ -221,39 +238,38 @@ class SettingsDialog(QDialog):
 
         g_playnext_layout = QGridLayout()
         g_playnext_layout.addWidget(
-            QLabel('Player'),                    0, 0, 1, 1)
+            QLabel('Parser'),                    0, 0, 1, 1)
+        g_playnext_layout.addWidget(
+            self.title_parser,                   0, 1, 1, 1)
+        g_playnext_layout.addWidget(
+            QLabel('Player'),                    1, 0, 1, 1)
         g_playnext_layout.addWidget(self.player,
-                                    0, 1, 1, 1)
+                                                 1, 1, 1, 1)
         g_playnext_layout.addWidget(
-            self.player_browse,                  0, 2, 1, 1)
+            self.player_browse,                  1, 2, 1, 1)
         g_playnext_layout.addWidget(
-            lbl_searchdirs,                      1, 0, 1, 1)
+            lbl_searchdirs,                      2, 0, 1, 1)
         g_playnext_layout.addWidget(
-            self.searchdirs,                     1, 1, 1, 1)
+            self.searchdirs,                     2, 1, 1, 1)
         g_playnext_layout.addLayout(
-            self.searchdirs_buttons,             1, 2, 1, 1)
+            self.searchdirs_buttons,             2, 2, 1, 1)
         g_playnext_layout.addWidget(
-            QLabel('Rescan Library at startup'), 2, 0, 1, 2)
+            QLabel('Rescan Library at startup'), 3, 0, 1, 2)
         g_playnext_layout.addWidget(
-            self.library_autoscan,               2, 2, 1, 1)
+            self.library_autoscan,               3, 2, 1, 1)
         g_playnext_layout.addWidget(
-            QLabel('Scan through whole list'),   3, 0, 1, 2)
+            QLabel('Scan through whole list'),   4, 0, 1, 2)
         g_playnext_layout.addWidget(
-            self.scan_whole_list,                3, 2, 1, 1)
+            self.scan_whole_list,                4, 2, 1, 1)
         g_playnext_layout.addWidget(
-            QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
+            QLabel('Take subdirectory name into account'), 5, 0, 1, 2)
         g_playnext_layout.addWidget(
-            self.library_full_path,              4, 2, 1, 1)
+            self.library_full_path,              5, 2, 1, 1)
 
         g_playnext.setLayout(g_playnext_layout)
 
-        # Media form
-        page_media_layout.addWidget(g_media)
-        page_media_layout.addWidget(g_plex)
-        page_media_layout.addWidget(g_jellyfin)
-        page_media_layout.addWidget(g_kodi)
-        page_media_layout.addWidget(g_playnext)
-        page_media.setLayout(page_media_layout)
+        page_library_layout.addWidget(g_playnext)
+        page_library.setLayout(page_library_layout)
 
         # Sync tab
         page_sync = QWidget()
@@ -451,7 +467,7 @@ class SettingsDialog(QDialog):
 
         # Content
         self.contents = QStackedWidget()
-        for page in (page_media, page_sync, page_ui, page_theme):
+        for page in (page_media, page_library, page_sync, page_ui, page_theme):
             scrollable_page = QScrollArea()
             scrollable_page.setWidgetResizable(True)
             scrollable_page.setWidget(page)
@@ -488,6 +504,8 @@ class SettingsDialog(QDialog):
         engine = self.worker.engine
         tracker_type = self.tracker_type.findData(
             engine.get_config('tracker_type'))
+        title_parser = self.title_parser.findData(
+            engine.get_config('title_parser'))
         autoretrieve = engine.get_config('autoretrieve')
         autosend = engine.get_config('autosend')
 
@@ -506,6 +524,7 @@ class SettingsDialog(QDialog):
         self.tracker_ignore_not_next.setChecked(
             engine.get_config('tracker_ignore_not_next'))
 
+        self.title_parser.setCurrentIndex(max(0, title_parser))
         self.player.setText(engine.get_config('player'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
         self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
@@ -614,6 +633,8 @@ class SettingsDialog(QDialog):
         engine.set_config('tracker_ignore_not_next',
                           self.tracker_ignore_not_next.isChecked())
 
+        engine.set_config('title_parser',          self.title_parser.itemData(
+            self.title_parser.currentIndex()))
         engine.set_config('player',            self.player.text())
         engine.set_config('library_autoscan',
                           self.library_autoscan.isChecked())

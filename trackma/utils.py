@@ -180,6 +180,10 @@ available_trackers = [
     ('win32', 'Win32'),
 ]
 
+available_parsers = [
+    ('aie', 'AnimeInfoExtractor (Default)'),
+    ('anitopy', 'Anitopy (Experimental)'),
+]
 
 def oauth_generate_pkce() -> str:
     import secrets
