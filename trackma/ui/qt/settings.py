@@ -50,7 +50,7 @@ class SettingsDialog(QDialog):
         category_media = QListWidgetItem(
             getIcon('media-playback-start'), 'Media', self.category_list)
         category_library = QListWidgetItem(
-            getIcon('media-playback-start'), 'Library', self.category_list)
+            getIcon('folder'), 'Library', self.category_list)
         category_sync = QListWidgetItem(
             getIcon('view-refresh'), 'Sync', self.category_list)
         category_ui = QListWidgetItem(
