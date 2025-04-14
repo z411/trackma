@@ -310,7 +310,7 @@ class libmal(lib):
         self.msg.info("Deleting item %s..." % item['title'])
         data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), auth=True)
     
-    def search(self, criteria, method):
+    def search(self, criteria, method, page):
         self.check_credentials()
         self.msg.info("Searching for {}...".format(criteria))
         
@@ -335,7 +335,7 @@ class libmal(lib):
             results.append(self._parse_info(item['node']))
         
         self._emit_signal('show_info_changed', results)
-        return results
+        return (results, len(results), 1, 1)
         
     def request_info(self, itemlist):
         self.check_credentials()
