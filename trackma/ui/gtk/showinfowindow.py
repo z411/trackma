@@ -36,11 +36,11 @@ class ShowInfoWindow(Gtk.Dialog):
         self._engine = engine
         self._show = show_data
 
-        info_box = ShowInfoBox(engine)
-        info_box.load(show_data)
-        info_box.show()
+        self._info_box = ShowInfoBox(engine)
+        self._info_box.load(show_data)
+        self._info_box.show()
 
-        self.info_container.pack_start(info_box, True, True, 0)
+        self.info_container.pack_start(self._info_box, True, True, 0)
 
     @Gtk.Template.Callback()
     def _on_dialog_close(self, widget):
@@ -48,5 +48,7 @@ class ShowInfoWindow(Gtk.Dialog):
 
     @Gtk.Template.Callback()
     def _on_btn_website_clicked(self, btn):
-        if self._show['url']:
+        if self._info_box.url != None:
+            Gtk.show_uri(None, self._info_box.url, Gdk.CURRENT_TIME)
+        elif self._show['url']:
             Gtk.show_uri(None, self._show['url'], Gdk.CURRENT_TIME)
