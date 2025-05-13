@@ -126,6 +126,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
         self.endResetModel()
 
     def update(self, showid, is_playing=None):
+        if not self.showlist:
+            return
+
         # Recalculate color and emit the changed signal
         row = self.id_map[showid]
         show = self.showlist[row]
