@@ -165,7 +165,7 @@ available_libs = {
     'mal':       ('MyAnimeList',  DATADIR + '/mal.jpg',     Login.OAUTH_PKCE,
                   "https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=32c510ab2f47a1048a8dd24de266dc0c&code_challenge=%s"),
     'shikimori': ('Shikimori',    DATADIR + '/shikimori.jpg',   Login.OAUTH,
-                  "https://shikimori.org/oauth/authorize?client_id=Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro&redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&response_type=code&scope=user_rates"),
+                  "https://shikimori.one/oauth/authorize?client_id=Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro&redirect_uri=urn%3Aietf%3Awg%3Aoauth%3A2.0%3Aoob&response_type=code&scope=user_rates"),
     'vndb':      ('VNDB',         DATADIR + '/vndb.jpg',        Login.PASSWD),
 }
 
