@@ -29,7 +29,7 @@ class libshikimori(lib):
     """
     API class to communicate with Shikimori
 
-    Website: https://shikimori.me
+    Website: https://shikimori.one
 
     messenger: Messenger object to send useful messages to
     """
@@ -90,9 +90,9 @@ class libshikimori(lib):
     # Supported signals for the data handler
     signals = {'show_info_changed': None, }
 
-    url = "https://shikimori.me"
-    auth_url = "https://shikimori.me/oauth/token"
-    api_url = "https://shikimori.me/api"
+    url = "https://shikimori.one"
+    auth_url = "https://shikimori.one/oauth/token"
+    api_url = "https://shikimori.one/api"
 
     client_id = "Jfu9MKkUKPG4fOC95A6uwUVLHy3pwMo3jJB7YLSp7Ro"
     client_secret = "y7YmQx8n1l7eBRugUSiB7NfNJxaNBMvwppfxJLormXU"
