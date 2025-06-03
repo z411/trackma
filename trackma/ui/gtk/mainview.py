@@ -386,7 +386,7 @@ class MainView(Gtk.Box):
                   (self._current_page.selected_show,))
 
     def _on_spinbtn_score_activate(self, widget):
-        score = self.spinbtn_score.get_value()
+        score = round(self.spinbtn_score.get_value(), self.spinbtn_score.get_digits())
         self.emit('show-action',
                   ShowEventType.SET_SCORE,
                   (self._current_page.selected_show, score))

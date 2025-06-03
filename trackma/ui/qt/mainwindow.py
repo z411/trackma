@@ -1090,11 +1090,12 @@ class MainWindow(QMainWindow):
     def s_set_score(self, showid=None, score=None):
         self._busy(True)
 
+        if not showid:
+            showid = self.selected_show_id
         if score is None:
-            self.worker_call('set_score', self.r_generic,
-                             self.selected_show_id, self.show_score.value())
-        else:
-            self.worker_call('set_score', self.r_generic, showid, score)
+            score = round(self.show_score.value(), self.show_score.decimals())
+
+        self.worker_call('set_score', self.r_generic, showid, score)
 
     def s_set_status(self, index):
         if self.selected_show_id:
