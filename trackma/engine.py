@@ -622,11 +622,15 @@ class Engine:
         if start_date:
             if not isinstance(start_date, datetime.date):
                 raise utils.EngineError('start_date must be a Date object.')
+            self.msg.info("Updating show %s start date to %s..." %
+                      (show['title'], start_date))
             self.data_handler.queue_update(show, 'my_start_date', start_date)
 
         if finish_date:
             if not isinstance(finish_date, datetime.date):
                 raise utils.EngineError('finish_date must be a Date object.')
+            self.msg.info("Updating show %s finish date to %s..." %
+                      (show['title'], finish_date))
             self.data_handler.queue_update(show, 'my_finish_date', finish_date)
 
     def set_score(self, showid, newscore):
@@ -657,7 +661,7 @@ class Engine:
             raise utils.EngineError("Score already at %s" % newscore)
 
         # Change score
-        self.msg.info("Updating show %s to score %s..." %
+        self.msg.info("Updating show %s score to %s..." %
                       (show['title'], newscore))
         self.data_handler.queue_update(show, 'my_score', newscore)
 
