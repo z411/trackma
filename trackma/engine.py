@@ -292,6 +292,8 @@ class Engine:
         except ImportError as e:
             self.msg.warn(self.name, "Couldn't import specified parser: {}; {}".format(
                 self.config['title_parser'], e))
+            self.msg.warn(self.name, "Falling back to aie...")
+            self.parser_class = get_parser_class(self.msg, "aie")
 
         # Rescan library if necessary
         if self.config['library_autoscan']:
