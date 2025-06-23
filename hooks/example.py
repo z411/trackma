@@ -31,6 +31,14 @@ def playing(engine, show, is_playing, episode):
     pass
 
 
+def finished(engine, show, episode):
+    """This is called when a player is closed after successfully finishing a show.
+    `show`: dictionary with the information of the show
+    `episode`: episode number
+    """
+    pass
+
+
 def show_added(engine, show):
     """This is called after an item has been added to the local list.
     `show` contains the item information as a dictionary."""

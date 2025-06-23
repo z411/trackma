@@ -70,6 +70,7 @@ class Engine:
                'sync_complete':     None,
                'queue_changed':     None,
                'playing':           None,
+               'finished': None,
                'prompt_for_update': None,
                'prompt_for_add':    None,
                'tracker_state':     None,
@@ -173,6 +174,8 @@ class Engine:
                     self.msg.info(f"Finished watching {show['title']}.")
             except utils.EngineError as e:
                 self.msg.warn(f"Could not autoplay next episode: {e}")
+
+        self._emit_signal('finished', show, episode)
 
     def _tracker_unrecognised(self, show, episode):
         if self.config['tracker_not_found_prompt']:
