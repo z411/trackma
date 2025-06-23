@@ -159,6 +159,9 @@ class Engine:
             except utils.TrackmaError as e:
                 self.msg.warn("Can't update episode: {}".format(e))
 
+    def _tracker_finished(self, show, episode):
+        pass
+
     def _tracker_unrecognised(self, show, episode):
         if self.config['tracker_not_found_prompt']:
             self._emit_signal('prompt_for_add', show, episode)
@@ -344,6 +347,7 @@ class Engine:
                 self.tracker.connect_signal('removed', self._tracker_removed)
                 self.tracker.connect_signal('playing', self._tracker_playing)
                 self.tracker.connect_signal('update', self._tracker_update)
+                self.tracker.connect_signal('finish', self._tracker_finished)
                 self.tracker.connect_signal(
                     'unrecognised', self._tracker_unrecognised)
                 self.tracker.connect_signal('state', self._tracker_state)
