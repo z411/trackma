@@ -160,7 +160,19 @@ class Engine:
                 self.msg.warn("Can't update episode: {}".format(e))
 
     def _tracker_finished(self, show, episode):
-        pass
+
+        # Attempt autoplay next episode
+        if self.config['autoplay_next']:
+            try:
+                next_episode = episode + 1
+                play_args = self.play_episode(show, next_episode)
+                if play_args:
+                    self.msg.info(f"Autoplaying next episode {next_episode} of {show['title']}")
+                    utils.spawn_process(play_args)
+                else:
+                    self.msg.info(f"Finished watching {show['title']}.")
+            except utils.EngineError as e:
+                self.msg.warn(f"Could not autoplay next episode: {e}")
 
     def _tracker_unrecognised(self, show, episode):
         if self.config['tracker_not_found_prompt']:
