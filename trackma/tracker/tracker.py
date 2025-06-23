@@ -44,6 +44,7 @@ class TrackerBase(object):
         'removed': None,
         'update': None,
         'unrecognised': None,
+        'finish': None
     }
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -224,6 +225,11 @@ class TrackerBase(object):
                 # Video didn't get to update phase before it was closed
                 if self.last_state == utils.Tracker.PLAYING and not self.last_updated:
                     self.msg.info('Player was closed before update.')
+                # Video was playing and timer reached zero but player just closed
+                elif self.last_state == utils.Tracker.PLAYING and self.last_updated and self.last_show_tuple:
+                    self.msg.debug('Player closed after update timer completed.')
+                    show, episode = self.last_show_tuple
+                    self._emit_signal('finish', show, episode)
             # There's a new video playing but the regex didn't recognize the format
             elif state == utils.Tracker.UNRECOGNIZED:
                 self.msg.warn('Found video but the file name format couldn\'t be recognized.')
