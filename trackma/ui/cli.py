@@ -386,14 +386,22 @@ class Trackma_cmd(command.Cmd):
 
     def do_search(self, args):
         """
-        Does a regex search on shows in the local lists.
+        Does a regex search on shows in the local lists, including synonyms and altname.
 
         :param pattern Regex pattern to search for.
         :usage search <pattern>
         """
-        sortedlist = list(v for v in self.sortedlist if re.search(
-            args[0], v[1]['title'], re.I))
-        self._make_list(sortedlist)
+        compiled_pattern = re.compile(args[0], re.I)
+        altnames = self.engine.altnames()
+
+        def matches_show(show):
+            titles = [show['title'], *show['aliases']]
+            if altname := altnames.get(show['id']):
+                titles.append(altname)
+            return any(map(compiled_pattern.search, titles))
+
+        sublist = [v for v in self.sortedlist if matches_show(v[1])]
+        self._make_list(sublist)
 
     def do_add(self, args):
         """
