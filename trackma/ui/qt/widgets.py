@@ -121,7 +121,7 @@ class DetailsWidget(QWidget):
             info_strings = []
             description_strings = []
             # This might come down to personal preference
-            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'}
+            description_keys = {'Synopsis', 'English', 'Japanese',  'Romaji', 'Synonyms'}
 
             for key, value in details['extra']:
                 if not key or not value:
