@@ -257,8 +257,7 @@ class TrackerBase(object):
                         filename = filename[len(watch_prefix):].lstrip(os.path.sep)
                         break
 
-            # Do a regex to the filename to get
-            # the show title and episode number
+            # Invoke the parser to extract show title and episode.
             aie = self.parser_class(self.msg, filename)
             (show_title, show_ep) = (aie.getName(), aie.getEpisode())
             if not show_title:
