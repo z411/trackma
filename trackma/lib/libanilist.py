@@ -103,7 +103,7 @@ class libanilist(lib):
     type_translate = {
         None: utils.Type.UNKNOWN,
         'TV': utils.Type.TV,
-        'TV_SHORT': utils.Type.TV,
+        'TV_SHORT': utils.Type.TV_SHORT,
         'MOVIE': utils.Type.MOVIE,
         'SPECIAL': utils.Type.SP,
         'OVA': utils.Type.OVA,

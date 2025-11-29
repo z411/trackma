@@ -116,6 +116,7 @@ class Type(BaseEnum):
 
     # anime
     TV = "TV"
+    TV_SHORT = "TV Short"
     MOVIE = "Movie"
     OVA = "OVA"
     SPECIAL = "Special"
