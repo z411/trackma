@@ -164,15 +164,17 @@ class Player:
         msg = self._player_properties.get('Metadata')
         reply = await self.router.send_and_get_reply(msg)
         metadata = safe_get_dbus_value(reply.body[0], 'a{sv}')
-        self.title = safe_get_dbus_value(metadata.get('xesam:title'), 's') if metadata else None
-        self.url = safe_get_dbus_value(metadata.get('xesam:url'), 's') if metadata else None
-        # return self.filename
+        if metadata:
+            self.title = safe_get_dbus_value(metadata.get('xesam:title'), 's')
+            self.url = safe_get_dbus_value(metadata.get('xesam:url'), 's')
+        else:
+            self.title = None
+            self.url = None
 
     async def update_playback_status(self):
         msg = self._player_properties.get('PlaybackStatus')
         reply = await self.router.send_and_get_reply(msg)
         self.playback_status = safe_get_dbus_value(reply.body[0], 's')
-        # return self.playback_status
 
     async def get_position(self):
         msg = self._player_properties.get('Position')
@@ -192,7 +194,7 @@ class MprisTracker(tracker.TrackerBase):
     def __init__(self, *args, **kwargs):
         # The `TrackerBase.__init__` spawns a new thread
         # for `observe`.
-        self.initalized = threading.Event()
+        self.initialized = threading.Event()
         super().__init__(*args, **kwargs)
 
         self.re_players = re.compile(self.config['tracker_process'])
@@ -202,7 +204,7 @@ class MprisTracker(tracker.TrackerBase):
         self.players = {}
         self.timing = False
         self.active_player = None
-        self.initalized.set()
+        self.initialized.set()
 
     def update_list(self, *args, **kwargs):
         super().update_list(*args, **kwargs)
@@ -211,8 +213,12 @@ class MprisTracker(tracker.TrackerBase):
             self.last_filename = None
             self.find_playing_player()
 
+    def observe(self, config, watch_dirs):
+        self.msg.info("Using MPRIS.")
+        self.initialized.wait()
+        asyncio.run(self.observe_async())
+
     async def observe_async(self):
-        self.initalized.wait()
         async with open_dbus_router() as router:
             name_owner_watcher_task = asyncio.create_task(name_owner_watcher(router, self))
             properties_watcher_task = asyncio.create_task(properties_watcher(router, self))
@@ -239,10 +245,6 @@ class MprisTracker(tracker.TrackerBase):
                     task.cancel()
                 await asyncio.gather(*tasks)
                 # let the thread die
-
-    def observe(self, config, watch_dirs):
-        self.msg.info("Using MPRIS.")
-        asyncio.run(self.observe_async())
 
     def valid_player(self, wellknown_name):
         return self.re_players.search(wellknown_name)
@@ -323,8 +325,8 @@ class MprisTracker(tracker.TrackerBase):
             if probing:
                 # Ignore this 'new' player & restore `last_filename`
                 # since we're just looking for a new player candidate.
-                # (this is a hack but a proper fix needs larger refactoring
-                # involving the parent class)
+                # (This is a hack but a proper fix needs larger refactoring
+                # involving the parent class.)
                 self.last_filename = previous_last_filename
             return False
 
