@@ -140,7 +140,7 @@ class Tracker(Enum):
     IGNORED = auto()
 
 
-class Season(Enum):
+class Season(BaseEnum):
     WINTER = 'Winter'
     SPRING = 'Spring'
     SUMMER = 'Summer'

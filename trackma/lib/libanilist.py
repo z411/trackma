@@ -128,6 +128,7 @@ class libanilist(lib):
         utils.Season.SUMMER: 'SUMMER',
         utils.Season.FALL: 'FALL',
     }
+    rev_season_translate = {v: k for k, v in season_translate.items()}
 
     # Supported signals for the data handler
     signals = {'show_info_changed': None, }
@@ -404,6 +405,8 @@ fragment mediaListEntry on MediaList {
       synonyms
       averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
+      seasonYear
+      season
     }
   }
 }'''
@@ -438,6 +441,8 @@ fragment mediaListEntry on MediaList {
       synonyms
       averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
+      seasonYear
+      season
   }
 }'''
 
@@ -458,6 +463,13 @@ fragment mediaListEntry on MediaList {
         showid = item['id']
         type_ = self._translate_type(item['format'])
         status = self._translate_status(item['status'])
+        season = self.rev_season_translate.get(item.get('season'))
+        if season and 'seasonYear' in item:
+            season_and_year = f"{season!s} {item['seasonYear']}"
+        elif 'seasonYear' in item:
+            season_and_year = item['seasonYear']
+        else:
+            season_and_year = None
 
         info.update({
             'id': showid,
@@ -476,6 +488,7 @@ fragment mediaListEntry on MediaList {
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
                 ('Synonyms',        item.get('synonyms')),
+                ('Season',          season_and_year),
                 ('Genres',          item.get('genres')),
                 ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
