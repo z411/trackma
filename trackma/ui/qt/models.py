@@ -284,7 +284,7 @@ class AddTableModel(QtCore.QAbstractTableModel):
             if column == 0:
                 return item.get('title')
             elif column == 1:
-                return item.get('type', '?')
+                return str(item.get('type', '?'))
             elif column == 2:
                 return item.get('total', '?')
 
