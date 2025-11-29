@@ -456,14 +456,16 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
+        type_ = self._translate_type(item['format'])
+        status = self._translate_status(item['status'])
 
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
-            'type': self._translate_type(item['format']),
-            'status': self._translate_status(item['status']),
+            'type': type_,
+            'status': status,
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
@@ -475,12 +477,11 @@ fragment mediaListEntry on MediaList {
                 ('Japanese',        item['title'].get('native')),
                 ('Synonyms',        item.get('synonyms')),
                 ('Genres',          item.get('genres')),
-                ('Studios',         [s['name']
-                                     for s in item['studios']['nodes']]),
+                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
-                ('Type',            item.get('format')),
+                ('Type',            type_),
                 ('Average score',   item.get('averageScore')),
-                ('Status',          self._translate_status(item['status'])),
+                ('Status',          status),
             ]
         })
         return info
