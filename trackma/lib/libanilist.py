@@ -395,6 +395,7 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
+      meanScore
       chapters episodes
       status
       startDate { year month day }
@@ -403,7 +404,6 @@ fragment mediaListEntry on MediaList {
       description
       genres
       synonyms
-      averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
       seasonYear
       season
@@ -431,6 +431,7 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
+      meanScore
       chapters episodes
       status
       startDate { year month day }
@@ -439,7 +440,6 @@ fragment mediaListEntry on MediaList {
       description
       genres
       synonyms
-      averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
       seasonYear
       season
@@ -494,6 +494,7 @@ fragment mediaListEntry on MediaList {
                 ('Synopsis',        item.get('description')),
                 ('Type',            type_),
                 ('Average score',   item.get('averageScore')),
+                ('Mean score',      item.get('meanScore')),
                 ('Status',          status),
             ]
         })
