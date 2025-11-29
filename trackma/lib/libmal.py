@@ -95,7 +95,7 @@ class libmal(lib):
         'movie': utils.Type.MOVIE,
         'special': utils.Type.SP,
         'ova': utils.Type.OVA,
-        'ona': utils.Type.OVA,
+        'ona': utils.Type.ONA,
         'music': utils.Type.OTHER,
         'unknown': utils.Type.UNKNOWN,
         'manga': utils.Type.MANGA,
