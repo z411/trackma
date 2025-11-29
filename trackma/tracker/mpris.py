@@ -328,11 +328,11 @@ class MprisTracker(tracker.TrackerBase):
                 self.last_filename = previous_last_filename
             return False
 
-        if new_show:
+        if not is_new_player or new_show:
             self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
             self.update_show_if_needed(state, show_tuple)
 
-        if is_new_player and new_show:
+        if is_new_player:
             self.msg.debug(f"Setting active player: {player.wellknown_name}")
             self.active_player = player
 
