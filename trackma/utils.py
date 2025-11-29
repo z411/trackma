@@ -232,8 +232,14 @@ def load_data(filename):
 
 
 def save_data(data, filename):
-    with open(filename, 'wb') as datafile:
+    # Write to a temporary file first to ensure there is enough space
+    # and we do not end up writing incomplete files.
+    # Do this in the same folder to ensure we are not crossing file systems.
+    tmp_filename = filename + '.tmp'
+    with open(tmp_filename, 'wb') as datafile:
         pickle.dump(data, datafile, protocol=2)
+    os.unlink(filename)
+    os.rename(tmp_filename, filename)
 
 
 def log_error(msg):
