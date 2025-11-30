@@ -121,24 +121,22 @@ class DetailsWidget(QWidget):
             info_strings = []
             description_strings = []
             # This might come down to personal preference
-            description_keys = {'Synopsis', 'English', 'Japanese', 'Synonyms'}
+            description_keys = {'Synopsis', 'English', 'Japanese',  'Romaji', 'Synonyms'}
 
-            for line in details['extra']:
-                if line[0] and line[1]:
-                    if line[0] in description_keys:
-                        description_strings.append(
-                            "<h3>%s</h3><p>%s</p>" % (line[0], line[1]))
-                    else:
-                        if isinstance(line[1], list):
-                            description_strings.append(
-                                "<h3>%s</h3><p>%s</p>" % (line[0], ', '.join(line[1])))
-                        # Avoid short tidbits taking up too much vertical space
-                        elif len("%s" % line[1]) >= 17:
-                            info_strings.append(
-                                "<h3>%s</h3><p>%s</p>" % (line[0], line[1]))
-                        else:
-                            info_strings.append(
-                                "<p><b>%s:</b> %s</p>" % (line[0], line[1]))
+            for key, value in details['extra']:
+                if not key or not value:
+                    continue
+                str_value = ', '.join(value) if isinstance(value, list) else str(value)
+                if key in description_keys or len(str_value) >= 17:
+                    # Avoid short tidbits taking up too much vertical space
+                    html = f"<h3>{key}</h3><p>{str_value}</p>"
+                else:
+                    html = f"<p><b>{key}:</b> {str_value}</p>"
+
+                if key in description_keys:
+                    description_strings.append(html)
+                else:
+                    info_strings.append(html)
 
             info_string = ''.join(info_strings)
             self.show_info.setText(info_string)
