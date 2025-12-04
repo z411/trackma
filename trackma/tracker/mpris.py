@@ -330,13 +330,13 @@ class MprisTracker(tracker.TrackerBase):
                 self.last_filename = previous_last_filename
             return False
 
-        if not is_new_player or new_show:
-            self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
-            self.update_show_if_needed(state, show_tuple)
-
-        if is_new_player:
+        if is_new_player and new_show:
             self.msg.debug(f"Setting active player: {player.wellknown_name}")
             self.active_player = player
+
+        if state:
+            self.msg.debug(f"New tracker status: {state} (previously: {self.last_state})")
+            self.update_show_if_needed(state, show_tuple)
 
         if player.playback_status == PlaybackStatus.PLAYING:
             self._start_timer()
