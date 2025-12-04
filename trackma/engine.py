@@ -499,7 +499,7 @@ class Engine:
 
         return None
 
-    def search(self, criteria, method=utils.SearchMethod.KW):
+    def search(self, criteria, method=utils.SearchMethod.KW, page=None):
         """
         Request a remote list of shows matching the criteria
         and returns it as a list of show dictionaries.
@@ -509,7 +509,7 @@ class Engine:
             raise utils.EngineError(
                 'Search method not supported by API or mediatype.')
 
-        return self.data_handler.search(criteria, method)
+        return self.data_handler.search(criteria, method, page)
 
     def add_show(self, show, status=None):
         """

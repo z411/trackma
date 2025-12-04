@@ -534,7 +534,6 @@ class MainView(Gtk.Box):
         self.emit('show-action', event_type, data)
 
     def get_current_status(self):
-        print(self._engine.mediainfo['statuses'])
         return self._current_page.status if self._current_page.status is not None else self._engine.mediainfo['statuses'][-1]
 
     def get_selected_show(self):
