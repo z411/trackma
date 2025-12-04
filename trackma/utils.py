@@ -116,6 +116,7 @@ class Type(BaseEnum):
 
     # anime
     TV = "TV"
+    TV_SHORT = "TV Short"
     MOVIE = "Movie"
     OVA = "OVA"
     SPECIAL = "Special"
@@ -139,7 +140,7 @@ class Tracker(Enum):
     IGNORED = auto()
 
 
-class Season(Enum):
+class Season(BaseEnum):
     WINTER = 'Winter'
     SPRING = 'Spring'
     SUMMER = 'Summer'

@@ -103,7 +103,7 @@ class libanilist(lib):
     type_translate = {
         None: utils.Type.UNKNOWN,
         'TV': utils.Type.TV,
-        'TV_SHORT': utils.Type.TV,
+        'TV_SHORT': utils.Type.TV_SHORT,
         'MOVIE': utils.Type.MOVIE,
         'SPECIAL': utils.Type.SP,
         'OVA': utils.Type.OVA,
@@ -128,6 +128,7 @@ class libanilist(lib):
         utils.Season.SUMMER: 'SUMMER',
         utils.Season.FALL: 'FALL',
     }
+    rev_season_translate = {v: k for k, v in season_translate.items()}
 
     # Supported signals for the data handler
     signals = {'show_info_changed': None, }
@@ -394,6 +395,7 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
+      meanScore
       chapters episodes
       status
       startDate { year month day }
@@ -402,8 +404,9 @@ fragment mediaListEntry on MediaList {
       description
       genres
       synonyms
-      averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
+      seasonYear
+      season
     }
   }
 }'''
@@ -428,6 +431,7 @@ fragment mediaListEntry on MediaList {
       coverImage { medium large }
       format
       averageScore
+      meanScore
       chapters episodes
       status
       startDate { year month day }
@@ -436,8 +440,9 @@ fragment mediaListEntry on MediaList {
       description
       genres
       synonyms
-      averageScore
       studios(sort: NAME, isMain: true) { nodes { name } }
+      seasonYear
+      season
   }
 }'''
 
@@ -456,14 +461,23 @@ fragment mediaListEntry on MediaList {
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
+        type_ = self._translate_type(item['format'])
+        status = self._translate_status(item['status'])
+        season = self.rev_season_translate.get(item.get('season'))
+        if season and 'seasonYear' in item:
+            season_and_year = f"{season!s} {item['seasonYear']}"
+        elif 'seasonYear' in item:
+            season_and_year = item['seasonYear']
+        else:
+            season_and_year = None
 
         info.update({
             'id': showid,
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
-            'type': self._translate_type(item['format']),
-            'status': self._translate_status(item['status']),
+            'type': type_,
+            'status': status,
             'image': item['coverImage']['large'],
             'image_thumb': item['coverImage']['medium'],
             'url': item['siteUrl'],
@@ -474,13 +488,14 @@ fragment mediaListEntry on MediaList {
                 ('Romaji',          item['title'].get('romaji')),
                 ('Japanese',        item['title'].get('native')),
                 ('Synonyms',        item.get('synonyms')),
+                ('Season',          season_and_year),
                 ('Genres',          item.get('genres')),
-                ('Studios',         [s['name']
-                                     for s in item['studios']['nodes']]),
+                ('Studios',         [s['name'] for s in item['studios']['nodes']]),
                 ('Synopsis',        item.get('description')),
-                ('Type',            item.get('format')),
+                ('Type',            type_),
                 ('Average score',   item.get('averageScore')),
-                ('Status',          self._translate_status(item['status'])),
+                ('Mean score',      item.get('meanScore')),
+                ('Status',          status),
             ]
         })
         return info
