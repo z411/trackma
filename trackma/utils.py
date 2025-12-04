@@ -118,6 +118,7 @@ class Type(BaseEnum):
     TV = "TV"
     MOVIE = "Movie"
     OVA = "OVA"
+    ONA = "ONA"
     SPECIAL = "Special"
 
     # manga
@@ -128,7 +129,6 @@ class Type(BaseEnum):
     # aliases
     SP = SPECIAL
     MUSIC = OTHER
-    ONA = OVA
 
 
 class Tracker(Enum):

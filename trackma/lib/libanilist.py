@@ -107,7 +107,7 @@ class libanilist(lib):
         'MOVIE': utils.Type.MOVIE,
         'SPECIAL': utils.Type.SP,
         'OVA': utils.Type.OVA,
-        'ONA': utils.Type.OVA,
+        'ONA': utils.Type.ONA,
         'MUSIC': utils.Type.OTHER,
         'MANGA': utils.Type.OTHER,
         'NOVEL': utils.Type.OTHER,

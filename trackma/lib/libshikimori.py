@@ -109,7 +109,7 @@ class libshikimori(lib):
         'tv': utils.Type.TV,
         'movie': utils.Type.MOVIE,
         'ova': utils.Type.OVA,
-        'ona': utils.Type.OVA,
+        'ona': utils.Type.ONA,
         'special': utils.Type.SP,
         'music': utils.Type.OTHER,
         'tv_13': utils.Type.TV,
