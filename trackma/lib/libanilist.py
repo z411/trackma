@@ -252,6 +252,7 @@ fragment mediaListEntry on MediaList {
   completedAt { year month day }
   media {
     id
+    idMal
     title { userPreferred romaji english native }
     synonyms
     coverImage { large medium }
@@ -294,6 +295,7 @@ fragment mediaListEntry on MediaList {
                 showdata = {
                     'my_id': item['id'],
                     'id': showid,
+                    'idMal': media['idMal'],
                     'title': media['title']['userPreferred'],
                     'aliases': self._get_aliases(media),
                     'type': self._translate_type(media['format']),
@@ -424,6 +426,7 @@ fragment mediaListEntry on MediaList {
         query = '''query ($id: Int!, $type: MediaType) {
   Media(id: $id, type: $type) {
       id
+      idMal
       title { userPreferred romaji english native }
       coverImage { medium large }
       format
@@ -459,6 +462,7 @@ fragment mediaListEntry on MediaList {
 
         info.update({
             'id': showid,
+            'idMal': item['idMal'],
             'title': item['title']['userPreferred'],
             'total': self._c(item[self.total_str]),
             'aliases': self._get_aliases(item),
