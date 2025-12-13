@@ -922,7 +922,7 @@ class MainWindow(QMainWindow):
                     current_actions = 0
                     length = len(self.play_ep_submenus)
                     self.play_ep_submenus.append(
-                        QMenu('Episodes %d-%d:' % (length*bp_btm + 1, min((length+1)*bp_btm, max_eps))))
+                        QMenu('Episodes %d-%d:' % (length*bp_btm + 1, min((length+1)*bp_btm, max_eps)), menu))
                     if watched_eps > min((length+1)*bp_btm, max_eps):
                         self.play_ep_submenus[-1].setIcon(self.ep_icons['all'])
                     elif watched_eps > length*bp_btm:
@@ -946,7 +946,7 @@ class MainWindow(QMainWindow):
                         current_menus = 0
                         length = len(self.play_ep_sub2menus)
                         self.play_ep_sub2menus.append(QMenu(
-                            'Episodes %d-%d:' % (length*bp_btm*bp_mid + 1, min((length+1)*bp_btm*bp_mid, max_eps))))
+                            'Episodes %d-%d:' % (length*bp_btm*bp_mid + 1, min((length+1)*bp_btm*bp_mid, max_eps)), s))
                     self.play_ep_sub2menus[-1].addMenu(s)
                     if watched_eps > min((length+1)*bp_btm*bp_mid, max_eps):
                         self.play_ep_sub2menus[-1].setIcon(
@@ -971,7 +971,7 @@ class MainWindow(QMainWindow):
                             current_menus = 0
                             length = len(self.play_ep_sub3menus)
                             self.play_ep_sub3menus.append(QMenu(
-                                'Episodes %d-%d:' % (length*bp_btm*bp_mid*bp_mid + 1, min((length+1)*bp_btm*bp_mid*bp_mid, max_eps))))
+                                'Episodes %d-%d:' % (length*bp_btm*bp_mid*bp_mid + 1, min((length+1)*bp_btm*bp_mid*bp_mid, max_eps)), s))
                         self.play_ep_sub3menus[-1].addMenu(s)
                         if watched_eps > min((length+1)*bp_btm*bp_mid*bp_mid, max_eps):
                             self.play_ep_sub3menus[-1].setIcon(
