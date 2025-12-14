@@ -282,7 +282,7 @@ class libshikimori(lib):
         data = self._request(
             "DELETE", self.api_url + "/user_rates/{}".format(item['my_id']), auth=True)
 
-    def search(self, criteria, method):
+    def search(self, criteria, method, page):
         self.check_credentials()
 
         self.msg.info("Searching for {}...".format(criteria))
@@ -293,7 +293,7 @@ class libshikimori(lib):
         except ValueError:
             # An empty document, without any JSON, is returned
             # when there are no results.
-            return []
+            return ([], 0, 0, 0)
 
         showlist = []
 
@@ -314,7 +314,7 @@ class libshikimori(lib):
 
             showlist.append(show)
 
-        return showlist
+        return (showlist, len(showlist), 1, 1)
 
     def request_info(self, itemlist):
         self.check_credentials()

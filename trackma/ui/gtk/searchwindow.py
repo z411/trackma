@@ -25,18 +25,21 @@ from trackma.ui.gtk.showinfobox import ShowInfoBox
 
 
 class SearchThread(threading.Thread):
-    def __init__(self, engine, search_text, callback):
+    def __init__(self, engine, query, callback):
         threading.Thread.__init__(self)
         self._entries = []
         self._error = None
         self._engine = engine
-        self._search_text = search_text
+        if isinstance(query, (tuple,)):
+            self._search_text, self._page = query
+        else:
+            self._search_text, self._page = (query, 1)
         self._callback = callback
         self._stop_request = threading.Event()
 
     def run(self):
         try:
-            self._entries = self._engine.search(self._search_text)
+            self._entries = self._engine.search(self._search_text, page=self._page)
         except utils.TrackmaError as e:
             self._entries = []
             self._error = e
@@ -63,11 +66,23 @@ class SearchWindow(Gtk.Window):
     show_info_container = Gtk.Template.Child()
     progress_spinner = Gtk.Template.Child()
     headerbar = Gtk.Template.Child()
+    search_entry = Gtk.Template.Child()
+
+    # pagination
+    paginator    = Gtk.Template.Child()
+    next_page    = Gtk.Template.Child()
+    prev_page    = Gtk.Template.Child()
+    select_page  = Gtk.Template.Child()
+    page_popover = Gtk.Template.Child()
+    page_entry   = Gtk.Template.Child()
 
     def __init__(self, engine, colors, current_status, transient_for=None):
         Gtk.Window.__init__(self, transient_for=transient_for)
         self.init_template()
         self._entries = []
+        self._pages = 1
+        self._page = 1
+        self._results = 0
         self._selected_show = None
         self._showdict = None
 
@@ -91,46 +106,58 @@ class SearchWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def _on_search_entry_search_changed(self, search_entry):
-        search_text = search_entry.get_text().strip()
+        self._search(1)
+        
+    def _search(self, page):
+        text = self.search_entry.get_text().strip()
         self.progress_spinner.start()
-        if search_text == "":
+
+        if text == "":
             if self._search_thread:
                 self._search_thread.stop()
             self._search_finish()
-        else:
-            self._search(search_text)
-            self.progress_spinner.start()
+            return
 
-    def _search(self, text):
         if self._search_thread:
             self._search_thread.stop()
 
         self.headerbar.set_subtitle("Searching: \"%s\"" % text)
         self._search_thread = SearchThread(self._engine,
-                                           text,
+                                           (text, page),
                                            self._search_finish_idle)
         self._search_thread.start()
 
     def _search_finish(self):
         self.headerbar.set_subtitle(
-            "%s result%s." % ((len(self._entries), 's')
-                              if len(self._entries) > 0
-                              else ('No', '')
-                              )
+            "%s result%s." % ((self._results, 's') if self._results > 0
+                              else ('No', ''))
         )
         self.progress_spinner.stop()
 
     def _search_finish_idle(self, entries, error):
-        self._entries = entries
+        if isinstance(entries, (tuple,)):
+            self._entries, self._results, self._page, self._pages = entries
+        else:
+            self._entries, self._results, self._page, self._pages = (
+                entries, len(entries), 1, 1
+            )
+
         self._showdict = dict()
         self._search_finish()
         self.showlist.append_start()
-        for show in entries:
+        for show in self._entries:
             self._showdict[show['id']] = show
             self.showlist.append(show)
         self.showlist.append_finish()
 
         self.btn_add_show.set_sensitive(False)
+        self.paginator.props.visible = self._pages > 1
+        self.select_page.props.sensitive = self._pages > 1
+
+        if self.paginator.props.visible:
+            self.prev_page.props.sensitive = self._page > 1
+            self.next_page.props.sensitive = self._page < self._pages
+            self.select_page.props.label = '{} / {}'.format(self._page, self._pages)
 
         if error:
             self.emit('search-error', error)
@@ -141,6 +168,48 @@ class SearchWindow(Gtk.Window):
 
         if show is not None:
             self._add_show(show)
+
+    @Gtk.Template.Callback()
+    def _on_prev_page_clicked(self, btn):
+        self._search(self._page - 1)
+
+    @Gtk.Template.Callback()
+    def _on_next_page_clicked(self, btn):
+        self._search(self._page + 1)
+
+    @Gtk.Template.Callback()
+    def _on_select_page_clicked(self, btn):
+        popover = self.page_popover.props
+        entry   = self.page_entry.props
+        popover.relative_to    = btn
+        popover.position       = Gtk.PositionType.BOTTOM
+
+        entry.text                 = str(self._page)
+        entry.placeholder_text     = "1 <= page <= {}".format(self._pages)
+        (entry.secondary_icon_tooltip_text,
+        entry.secondary_icon_name) = ('', '')
+
+        self.page_popover.show()
+        self.page_entry.grab_focus()
+
+    @Gtk.Template.Callback()
+    def _on_page_change(self, *args):
+        props = self.page_entry.props
+
+        if not props.text.isdigit():
+            props.secondary_icon_name = 'dialog-error'
+            props.secondary_icon_tooltip_text = 'Not a number.'
+            return False
+        elif not 1 <= int(self.page_entry.props.text) <= self._pages:
+            props.secondary_icon_name = 'dialog-error'
+            props.secondary_icon_tooltip_text = 'Not in range 1 <= page <= {}'.format(self._pages)
+            return False
+        elif props.secondary_icon_name:
+            props.secondary_icon_name = ''
+            props.secondary_icon_tooltip_text = ''
+
+        self.page_popover.hide()
+        self._search(int(props.text))
 
     def _get_full_selected_show(self):
         for item in self._entries:
