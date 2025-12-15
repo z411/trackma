@@ -247,10 +247,21 @@ class libmal(lib):
         else:
             self.logged_in = True
 
-        # if not self.userid:
-        #     self._refresh_user_info()
+        if not self.userid:
+            self._refresh_user_info()
 
         return True
+
+    def _refresh_user_info(self):
+        self.msg.info('Refreshing user details...')
+
+        data = self._request("GET", self.query_url + "/users/@me", auth=True)
+
+        self._set_userconfig('userid', data['id'])
+        self._set_userconfig('username', data['name'])
+
+        self.userid = data['id']
+        self._emit_signal('userconfig_changed')
 
     def fetch_list(self):
         self.check_credentials()
