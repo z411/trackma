@@ -36,7 +36,8 @@ class Data:
 
     """
     name = 'Data'
-    version = 7
+    # 8: Added "ONA" anime type
+    version = 8
 
     msg = None
     api = None
