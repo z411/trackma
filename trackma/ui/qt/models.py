@@ -38,7 +38,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
     date_format = "%Y-%m-%d"
 
-    progressChanged = QtCore.pyqtSignal(QtCore.QVariant, int)
+    progressChanged = QtCore.pyqtSignal(QtCore.QVariant, float)
     scoreChanged = QtCore.pyqtSignal(QtCore.QVariant, float)
 
     def __init__(self, parent=None, palette=None):
