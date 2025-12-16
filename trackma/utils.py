@@ -28,6 +28,7 @@ import sys
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from enum import Enum, auto
 
 VERSION = '0.9'
@@ -198,7 +199,7 @@ def parse_config(filename, default):
     config = copy.copy(default)
 
     try:
-        with open(filename) as configfile:
+        with open(filename, encoding='utf-8') as configfile:
             loaded_config = json.load(configfile)
             if 'colors' in config and 'colors' in loaded_config:
                 # Need to prevent nested dict from being overwritten with an incomplete dict
@@ -223,9 +224,9 @@ def save_config(config_dict, filename):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-    with open(filename, 'wb') as configfile:
-        configfile.write(json.dumps(config_dict, sort_keys=True,
-                                    indent=4, separators=(',', ': ')).encode('utf-8'))
+    with safe_open(filename, 'w', encoding='utf-8') as configfile:
+        json.dump(config_dict, configfile, sort_keys=True,
+                  indent=4, separators=(',', ': '))
 
 
 def load_data(filename):
@@ -234,8 +235,32 @@ def load_data(filename):
 
 
 def save_data(data, filename):
-    with open(filename, 'wb') as datafile:
+    with safe_open(filename, 'wb') as datafile:
         pickle.dump(data, datafile, protocol=2)
+
+
+@contextmanager
+def safe_open(file, *args, **kwargs):
+    """Safely write a file to protect against incomplete writes.
+
+    Write to a temporary file first to ensure there is enough space
+    and we do not end up writing incomplete files.
+    Unlink the old and move over the temporary file afterwards.
+    Do this in the same folder to reduce the disk of crossing file systems.
+
+    If the target file is a symlink,
+    we copy the temporary file's contents instead.
+    """
+    tmp_file = file + '.tmp'
+    with open(tmp_file, *args, **kwargs) as fp:
+        yield fp
+
+    if os.path.islink(file):
+        shutil.copyfile(tmp_file, file)
+        os.unlink(tmp_file)
+    else:
+        os.unlink(file)
+        os.rename(tmp_file, file)
 
 
 def log_error(msg):
