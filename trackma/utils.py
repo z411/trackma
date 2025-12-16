@@ -254,7 +254,7 @@ def save_data(data, filename):
 
 
 def log_error(msg):
-    with open(to_data_path('error.log'), 'a') as logfile:
+    with open(to_data_path('error.log'), 'a', encoding="utf-8") as logfile:
         logfile.write(msg)
 
 
