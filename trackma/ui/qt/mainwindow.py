@@ -736,6 +736,9 @@ class MainWindow(QMainWindow):
         altnames = self.worker.engine.altnames()
         library = self.worker.engine.library()
 
+        if not self.mediainfo:
+            self.mediainfo = self.worker.engine.mediainfo
+
         # Set allowed ranges (this will be reported by the engine later)
         decimal_places = 0
         if isinstance(self.mediainfo['score_step'], float):
@@ -1301,6 +1304,7 @@ class MainWindow(QMainWindow):
             if not self.view:
                 return  # List not built yet; can be safely avoided
 
+            self._rebuild_view()
             # Update the view of the updated show
             self.view.model().sourceModel().update(show['id'], is_playing)
 
