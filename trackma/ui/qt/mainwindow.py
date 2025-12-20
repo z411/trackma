@@ -780,7 +780,7 @@ class MainWindow(QMainWindow):
                 self.api_config['columns_state']))
             self.view.horizontalHeader().restoreState(state)
         else:
-            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(3, 70)
             self.view.horizontalHeader().resizeSection(4, 100)
 
     def _select_show(self, show):
