@@ -1085,7 +1085,7 @@ class MainWindow(QMainWindow):
     def s_set_episode(self, showid=None, ep=None):
         self._busy(True)
         self.worker_call('set_episode', self.r_generic,
-                         showid or self.selected_show_id, ep or self.show_progress.value())
+                         showid or self.selected_show_id, ep if ep is not None else self.show_progress.value())
 
     def s_set_score(self, showid=None, score=None):
         self._busy(True)
