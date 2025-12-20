@@ -347,12 +347,14 @@ class MainWindow(QMainWindow):
         else:
             self.resize(740, 480)
 
+        spinbox_width = 70
         self.show_image = QLabel('Trackma-qt')
         self.show_image.setFixedHeight(149)
         self.show_image.setMinimumWidth(100)
         self.show_image.setAlignment(QtCore.Qt.AlignCenter)
         show_progress_label = QLabel('Progress:')
         self.show_progress = QSpinBox()
+        self.show_progress.setMinimumWidth(spinbox_width_px)
         self.show_progress_bar = QProgressBar()
         self.show_progress_btn = QPushButton('Update')
         self.show_progress_btn.setToolTip(
@@ -376,6 +378,7 @@ class MainWindow(QMainWindow):
         self.show_dec_btn.setToolTip('Decrement number of episodes watched')
         show_score_label = QLabel('Score:')
         self.show_score = QDoubleSpinBox()
+        self.show_score.setMinimumWidth(spinbox_width_px)
         self.show_score_btn = QPushButton('Set')
         self.show_score_btn.setToolTip('Set score to the value entered above')
         self.show_score_btn.clicked.connect(self.s_set_score)
