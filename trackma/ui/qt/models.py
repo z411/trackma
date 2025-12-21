@@ -218,7 +218,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             if column == ShowListModel.COL_TITLE and show['id'] in self.playing:
                 return getIcon('media-playback-start')
         elif role == QtCore.Qt.TextAlignmentRole:
-            if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE, ShowListModel.COL_MY_UPDATE]:
+            if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE]:
                 return QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter
         elif role == QtCore.Qt.ToolTipRole:
             if column == ShowListModel.COL_PERCENT:
