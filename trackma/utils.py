@@ -516,6 +516,7 @@ def show():
         'my_status':    1,
         'my_score':     0,
         'my_start_date':  None,
+        'my_update_date': None,
         'my_finish_date': None,
         'type':         0,
         'status':       0,

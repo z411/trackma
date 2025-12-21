@@ -21,13 +21,14 @@ class ShowListModel(QtCore.QAbstractTableModel):
     COL_START_DATE = 6
     COL_END_DATE = 7
     COL_MY_START = 8
-    COL_MY_FINISH = 9
-    COL_MY_TAGS = 10
-    COL_MY_STATUS = 11
+    COL_MY_UPDATE = 9
+    COL_MY_FINISH = 10
+    COL_MY_TAGS = 11
+    COL_MY_STATUS = 12
 
     columns = ['ID', 'Title', 'Progress', 'Score',
                'Percent', 'Next Episode', 'Start date', 'End date',
-               'My start', 'My finish', 'Tags', 'Status']
+               'My start', 'My update', 'My finish', 'Tags', 'Status']
 
     editable_columns = [COL_MY_PROGRESS, COL_MY_SCORE]
 
@@ -203,6 +204,8 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return self._date(show['end_date'])
             elif column == ShowListModel.COL_MY_START:
                 return self._date(show['my_start_date'])
+            elif column == ShowListModel.COL_MY_UPDATE:
+                return self._date(show.get('my_update_date'))
             elif column == ShowListModel.COL_MY_FINISH:
                 return self._date(show['my_finish_date'])
             elif column == ShowListModel.COL_MY_TAGS:
@@ -215,7 +218,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             if column == ShowListModel.COL_TITLE and show['id'] in self.playing:
                 return getIcon('media-playback-start')
         elif role == QtCore.Qt.TextAlignmentRole:
-            if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE]:
+            if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE, ShowListModel.COL_MY_UPDATE]:
                 return QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter
         elif role == QtCore.Qt.ToolTipRole:
             if column == ShowListModel.COL_PERCENT:

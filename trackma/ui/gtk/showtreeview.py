@@ -35,6 +35,7 @@ class ShowListStore(Gtk.ListStore):
         ('start', str),
         ('end', str),
         ('my-start', str),
+        ('my-update', str),
         ('my-end', str),
         ('my-status', str),
         ('status', int),
@@ -102,6 +103,7 @@ class ShowListStore(Gtk.ListStore):
         start_date = self.format_date(show['start_date'])
         end_date = self.format_date(show['end_date'])
         my_start_date = self.format_date(show['my_start_date'])
+        my_update_date = self.format_date(show.get('my_update_date'))
         my_finish_date = self.format_date(show['my_finish_date'])
 
         row = [show['id'],
@@ -118,6 +120,7 @@ class ShowListStore(Gtk.ListStore):
                start_date,
                end_date,
                my_start_date,
+               my_update_date,
                my_finish_date,
                show['my_status'],
                show['status']
@@ -147,7 +150,7 @@ class ShowListStore(Gtk.ListStore):
             row[3] = show['my_score']
             row[5] = score_str
             row[9] = self._get_color(show, row[8])
-            row[15] = show['my_status']
+            row[16] = show['my_status']
         return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
@@ -190,7 +193,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
         self._status = status
 
     def status_filter(self, model, iterator, data):
-        return self._status is None or model[iterator][15] == self._status
+        return self._status is None or model[iterator][16] == self._status
 
     def get_value(self, obj, key='id'):
         try:
@@ -228,7 +231,8 @@ class ShowTreeView(Gtk.TreeView):
             ('Start', 11),
             ('End', 12),
             ('My start', 13),
-            ('My end', 14),
+            ('My update', 14),
+            ('My end', 15),
         )
 
         for (name, sort) in self.available_columns:
@@ -299,8 +303,11 @@ class ShowTreeView(Gtk.TreeView):
         self.cols['My start'].pack_start(renderer, False)
         self.cols['My start'].add_attribute(renderer, 'text', 13)
         renderer = Gtk.CellRendererText()
+        self.cols['My update'].pack_start(renderer, False)
+        self.cols['My update'].add_attribute(renderer, 'text', 14)
+        renderer = Gtk.CellRendererText()
         self.cols['My end'].pack_start(renderer, False)
-        self.cols['My end'].add_attribute(renderer, 'text', 14)
+        self.cols['My end'].add_attribute(renderer, 'text', 15)
 
     def _header_button_press(self, button, event):
         if event.button == 3:

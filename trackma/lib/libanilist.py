@@ -250,6 +250,7 @@ fragment mediaListEntry on MediaList {
   score
   progress
   startedAt { year month day }
+  updatedAt
   completedAt { year month day }
   media {
     id
@@ -309,6 +310,7 @@ fragment mediaListEntry on MediaList {
                     'start_date': self._dict2date(media['startDate']),
                     'end_date': self._dict2date(media['endDate']),
                     'my_start_date': self._dict2date(item['startedAt']),
+                    'my_update_date': self._int2date(item['updatedAt']),
                     'my_finish_date': self._dict2date(item['completedAt']),
                 }
                 if media['nextAiringEpisode']:

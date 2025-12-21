@@ -366,6 +366,7 @@ class libkitsu(lib):
                         'my_score': float(rating)/4.00 if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
+                        'my_update_date': self._iso2date(entry['attributes']['updatedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
                     })
 
