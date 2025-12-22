@@ -347,7 +347,7 @@ class MainWindow(QMainWindow):
         else:
             self.resize(740, 480)
 
-        spinbox_width = 70
+        spinbox_width = 75
         self.show_image = QLabel('Trackma-qt')
         self.show_image.setFixedHeight(149)
         self.show_image.setMinimumWidth(100)
