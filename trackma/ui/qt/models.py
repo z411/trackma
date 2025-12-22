@@ -1,4 +1,5 @@
 import datetime
+import locale
 
 from PyQt5 import QtCore, QtGui
 
@@ -126,6 +127,12 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
         self.endResetModel()
 
+    def refresh_relative_date_cols(self):
+        last_row_index = max(0, self.rowCount() - 1)
+        top_left = self.index(0, ShowListModel.COL_MY_UPDATE)
+        bottom_right = self.index(last_row_index, ShowListModel.COL_MY_UPDATE)
+        self.dataChanged.emit(top_left, bottom_right)
+
     def update(self, showid, is_playing=None):
         if not self.showlist:
             return
@@ -144,13 +151,13 @@ class ShowListModel(QtCore.QAbstractTableModel):
         self.dataChanged.emit(self.index(
             row, 0), self.index(row, len(self.columns)-1))
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=QtCore.QModelIndex()):
         if self.showlist:
             return len(self.showlist)
         else:
             return 0
 
-    def columnCount(self, parent):
+    def columnCount(self, parent=QtCore.QModelIndex()):
         return len(self.columns)
 
     def headerData(self, section, orientation, role):
@@ -205,7 +212,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             elif column == ShowListModel.COL_MY_START:
                 return self._date(show['my_start_date'])
             elif column == ShowListModel.COL_MY_UPDATE:
-                return self._date(show.get('my_update_date'))
+                return utils.get_relative_time(show.get('my_update_date'))
             elif column == ShowListModel.COL_MY_FINISH:
                 return self._date(show['my_finish_date'])
             elif column == ShowListModel.COL_MY_TAGS:
@@ -233,6 +240,11 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 tooltip += "Total: %d" % show['total']
 
                 return tooltip
+            elif column == ShowListModel.COL_MY_UPDATE:
+                dt = show.get('my_update_date')
+                if dt is None:
+                    return "No data, please resync"
+                return dt.astimezone().strftime(locale.nl_langinfo(locale.D_T_FMT))
         elif role == QtCore.Qt.EditRole:
             if column == ShowListModel.COL_MY_PROGRESS:
                 return (show['my_progress'], show['total'], 0, 1)
@@ -244,6 +256,12 @@ class ShowListModel(QtCore.QAbstractTableModel):
                     decimals = 0
 
                 return (show['my_score'], self.mediainfo['score_max'], decimals, self.mediainfo['score_step'])
+        elif role == QtCore.Qt.UserRole:
+            if column == ShowListModel.COL_MY_UPDATE:
+                dt = show.get('my_update_date')
+                if dt is None:
+                    return 0
+                return dt.timestamp()
 
     def flags(self, index):
         if index.column() in self.editable_columns:
@@ -412,3 +430,17 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
                     return False
 
         return super(ShowListProxy, self).filterAcceptsRow(source_row, source_parent)
+
+    def lessThan(self, left, right):
+        col = left.column()
+
+        if col == ShowListModel.COL_MY_UPDATE:
+            lv = self.sourceModel().data(left, QtCore.Qt.UserRole)
+            rv = self.sourceModel().data(right, QtCore.Qt.UserRole)
+
+            lnum = lv if isinstance(lv, (int, float)) else 0
+            rnum = rv if isinstance(rv, (int, float)) else 0
+
+            return int(lnum) < int(rnum)
+
+        return super().lessThan(left, right)

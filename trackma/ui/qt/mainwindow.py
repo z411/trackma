@@ -783,6 +783,13 @@ class MainWindow(QMainWindow):
             self.view.horizontalHeader().resizeSection(3, 70)
             self.view.horizontalHeader().resizeSection(4, 100)
 
+        self.update_date_timer = QtCore.QTimer(self)
+        self.update_date_timer.timeout.connect(self.update_relative_times)
+        self.update_date_timer.start(10000)
+
+    def update_relative_times(self):
+        self.view.model().sourceModel().refresh_relative_date_cols()
+
     def _select_show(self, show):
         # Stop any running image timer
         if self.image_timer is not None:
