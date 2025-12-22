@@ -769,11 +769,9 @@ class MainWindow(QMainWindow):
 
         if pyqt_version == 5:
             self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
         else:
             self.view.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
         # Recover column state
@@ -782,8 +780,7 @@ class MainWindow(QMainWindow):
                 self.api_config['columns_state']))
             self.view.horizontalHeader().restoreState(state)
         else:
-            self.view.horizontalHeader().resizeSection(2, 70)
-            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(3, 70)
             self.view.horizontalHeader().resizeSection(4, 100)
 
     def _select_show(self, show):
