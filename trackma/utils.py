@@ -197,7 +197,7 @@ def parse_config(filename, default):
     config = copy.copy(default)
 
     try:
-        with open(filename) as configfile:
+        with open(filename, encoding="utf-8") as configfile:
             loaded_config = json.load(configfile)
             if 'colors' in config and 'colors' in loaded_config:
                 # Need to prevent nested dict from being overwritten with an incomplete dict
@@ -222,9 +222,19 @@ def save_config(config_dict, filename):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-    with open(filename, 'wb') as configfile:
-        configfile.write(json.dumps(config_dict, sort_keys=True,
-                                    indent=4, separators=(',', ': ')).encode('utf-8'))
+    # Write to a temporary file first to ensure there is enough space
+    # and we do not end up writing incomplete files.
+    # Because configuration files are symlinked sometimes,
+    # we do not unlink the original file and move the temporary file.
+    # Instead, we copy the temporary file's contents.
+    # The size of the config file is unlikely to change significantly anyway.
+    tmp_filename = filename + '.tmp'
+    with open(tmp_filename, 'w', encoding="utf-8") as configfile:
+        json.dump(config_dict, configfile, sort_keys=True,
+                  indent=4, separators=(',', ': '))
+
+    shutil.copyfile(tmp_filename, filename)
+    os.unlink(tmp_filename)
 
 
 def load_data(filename):
@@ -233,12 +243,19 @@ def load_data(filename):
 
 
 def save_data(data, filename):
-    with open(filename, 'wb') as datafile:
+    # Write to a temporary file first to ensure there is enough space
+    # and we do not end up writing incomplete files.
+    # Unlink the old and move over the temporary file afterwards.
+    # Do this in the same folder to reduce the disk of crossing file systems.
+    tmp_filename = filename + '.tmp'
+    with open(tmp_filename, 'wb') as datafile:
         pickle.dump(data, datafile, protocol=2)
+    os.unlink(filename)
+    os.rename(tmp_filename, filename)
 
 
 def log_error(msg):
-    with open(to_data_path('error.log'), 'a') as logfile:
+    with open(to_data_path('error.log'), 'a', encoding="utf-8") as logfile:
         logfile.write(msg)
 
 
