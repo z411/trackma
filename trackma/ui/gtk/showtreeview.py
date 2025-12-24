@@ -130,7 +130,7 @@ class ShowListStore(Gtk.ListStore):
         my_update_date_obj = show.get('my_update_date')
         my_update_date = self.format_relative_time(my_update_date_obj)
         my_local_update_date = self.format_local_time(my_update_date_obj)
-        my_update_date_datetime = my_update_date_obj.timestamp() if my_update_date_obj is not None else 0
+        my_update_date_timestamp = my_update_date_obj.timestamp() if my_update_date_obj is not None else 0
 
         row = [show['id'],
                title_str,
@@ -151,7 +151,7 @@ class ShowListStore(Gtk.ListStore):
                show['my_status'],
                show['status'],
                my_local_update_date,
-               my_update_date_datetime,
+               my_update_date_timestamp,
                ]
         super().append(row)
 
