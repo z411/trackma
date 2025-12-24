@@ -423,16 +423,6 @@ class libmal(lib):
             self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid
 
-    def _iso2date(self, string):
-        if string is None:
-            return None
-
-        try:
-            return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S%z").date()
-        except Exception:
-            self.msg.debug('Invalid date {}'.format(string))
-            return None  # Ignore date if it's invalid
-
     def _iso2datetime(self, string):
         if string is None:
             return None

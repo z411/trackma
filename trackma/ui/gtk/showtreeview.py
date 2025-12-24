@@ -41,7 +41,7 @@ class ShowListStore(Gtk.ListStore):
         ('my-status', str),
         ('status', int),
         ('my-local-update', str),
-        ('my-update-datetime', float)
+        ('my-update-timestamp', float)
     )
 
     def __init__(self, decimals=0, colors=dict()):
