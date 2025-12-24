@@ -772,11 +772,9 @@ class MainWindow(QMainWindow):
 
         if pyqt_version == 5:
             self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
         else:
             self.view.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setResizeMode(2, QHeaderView.Fixed)
             self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
 
         # Recover column state
@@ -785,8 +783,7 @@ class MainWindow(QMainWindow):
                 self.api_config['columns_state']))
             self.view.horizontalHeader().restoreState(state)
         else:
-            self.view.horizontalHeader().resizeSection(2, 70)
-            self.view.horizontalHeader().resizeSection(3, 55)
+            self.view.horizontalHeader().resizeSection(3, 70)
             self.view.horizontalHeader().resizeSection(4, 100)
 
     def _select_show(self, show):
@@ -1088,7 +1085,7 @@ class MainWindow(QMainWindow):
     def s_set_episode(self, showid=None, ep=None):
         self._busy(True)
         self.worker_call('set_episode', self.r_generic,
-                         showid or self.selected_show_id, ep or self.show_progress.value())
+                         showid or self.selected_show_id, ep if ep is not None else self.show_progress.value())
 
     def s_set_score(self, showid=None, score=None):
         self._busy(True)
