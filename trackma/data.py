@@ -507,10 +507,7 @@ class Data:
 
     def _save_cache(self):
         self.msg.debug("Saving cache...")
-        try:
-            utils.save_data(self.showlist, self.cache_file)
-        except OSError as e:
-            self.msg.error(f"Unable to save cache: {e}")
+        utils.save_data(self.showlist, self.cache_file)
 
     def _load_info(self):
         self.msg.debug("Reading info DB...")
@@ -518,10 +515,7 @@ class Data:
 
     def _save_info(self):
         self.msg.debug("Saving info DB...")
-        try:
-            utils.save_data(self.infocache, self.info_file)
-        except OSError as e:
-            self.msg.error(f"Unable to save info: {e}")
+        utils.save_data(self.infocache, self.info_file)
 
     def _load_userconfig(self):
         self.msg.debug("Reading userconfig...")
@@ -530,10 +524,7 @@ class Data:
 
     def _save_userconfig(self):
         self.msg.debug("Saving userconfig...")
-        try:
-            utils.save_config(self.userconfig, self.userconfig_file)
-        except OSError as e:
-            self.msg.error(f"Unable to save userconfig: {e}")
+        utils.save_config(self.userconfig, self.userconfig_file)
 
     def _load_queue(self):
         self.msg.debug("Reading queue...")
@@ -541,10 +532,7 @@ class Data:
 
     def _save_queue(self):
         self.msg.debug("Saving queue...")
-        try:
-            utils.save_data(self.queue, self.queue_file)
-        except OSError as e:
-            self.msg.error(f"Unable to save queue: {e}")
+        utils.save_data(self.queue, self.queue_file)
 
     def _load_meta(self):
         self.msg.debug("Reading metadata...")
@@ -553,10 +541,7 @@ class Data:
 
     def _save_meta(self):
         self.msg.debug("Saving metadata...")
-        try:
-            utils.save_data(self.meta, self.meta_file)
-        except OSError as e:
-            self.msg.error(f"Unable to save metadata: {e}")
+        utils.save_data(self.meta, self.meta_file)
 
     def download_data(self):
         """Downloads the remote list and overwrites the cache"""
