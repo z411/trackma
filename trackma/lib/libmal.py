@@ -95,7 +95,7 @@ class libmal(lib):
         'movie': utils.Type.MOVIE,
         'special': utils.Type.SP,
         'ova': utils.Type.OVA,
-        'ona': utils.Type.OVA,
+        'ona': utils.Type.ONA,
         'music': utils.Type.OTHER,
         'unknown': utils.Type.UNKNOWN,
         'manga': utils.Type.MANGA,
@@ -108,13 +108,13 @@ class libmal(lib):
         'cm':utils.Type.OTHER,
         'tv_special': utils.Type.SPECIAL
     }
-    
+
     status_translate = {
         'currently_airing': utils.Status.AIRING,
         'finished_airing': utils.Status.FINISHED,
         'not_yet_aired': utils.Status.NOTYET,
     }
-    
+
     season_translate = {
         utils.Season.WINTER: 'winter',
         utils.Season.SPRING: 'spring',
@@ -129,7 +129,7 @@ class libmal(lib):
     query_url = "https://api.myanimelist.net/v2"
     client_id = "32c510ab2f47a1048a8dd24de266dc0c"
     user_agent = 'Trackma/{}'.format(utils.VERSION)
-    
+
     library_page_limit = 1000
     search_page_limit = 100
     season_page_limit = 500
@@ -138,15 +138,15 @@ class libmal(lib):
         super(libmal, self).__init__(messenger, account, userconfig)
 
         self.pin = account['password'].strip()
-        
+
         if 'extra' not in account or 'code_verifier' not in account['extra']:
             raise utils.APIFatal(
                 "This account seems to be using the old MyAnimeList API."
                 "Please re-create and authorize the account.")
-        
+
         self.code_verifier = account['extra']['code_verifier']
         self.userid = self._get_userconfig('userid')
-        
+
         if self.mediatype == 'manga':
             self.total_str = "num_chapters"
             self.watched_str = self.watched_send_str = "num_chapters_read"
@@ -193,7 +193,7 @@ class libmal(lib):
                 response = gzip.GzipFile(fileobj=response).read().decode('utf-8')
             else:
                 response = response.read().decode('utf-8')
-            
+
             return json.loads(response)
         except urllib.error.HTTPError as e:
             raise utils.APIError("Connection error: %s" % e)
@@ -201,7 +201,7 @@ class libmal(lib):
             raise utils.APIError("URL error: %s" % e)
         except socket.timeout:
             raise utils.APIError("Operation timed out.")
-    
+
     def _request_access_token(self, refresh=False):
         """
         Requests or refreshes the access token through OAuth2
@@ -221,7 +221,7 @@ class libmal(lib):
             params['code'] = self.pin
             params['code_verifier'] = self.code_verifier
             params['grant_type'] = 'authorization_code'
-            
+
         data = self._request('POST', self.auth_url, post=params)
 
         timestamp = int(time.time())
@@ -233,10 +233,10 @@ class libmal(lib):
 
         self.logged_in = True
         self._emit_signal('userconfig_changed')
-    
+
     def check_credentials(self):
         timestamp = int(time.time())
-        
+
         if not self._get_userconfig('access_token'):
             self._request_access_token(False)
         elif (timestamp+60) > self._get_userconfig('expires'):
@@ -266,7 +266,7 @@ class libmal(lib):
     def fetch_list(self):
         self.check_credentials()
         shows = {}
-        
+
         fields = 'id,alternative_titles,title,start_date,main_picture,status,' + self.total_str
         listfields = 'score,status,start_date,finish_date,' + self.watched_str
         params = {
@@ -274,10 +274,10 @@ class libmal(lib):
             'limit': self.library_page_limit,
             'nsfw': 'true'
         }
-        
+
         url = "{}/users/@me/{}list?{}".format(self.query_url, self.mediatype, urllib.parse.urlencode(params))
         i = 1
-        
+
         while url:
             self.msg.info('Downloading list (page %d)...' % i)
             data = self._request('GET', url, auth=True)
@@ -300,7 +300,7 @@ class libmal(lib):
                     'my_start_date': self._str2date(item['list_status'].get('start_date')),
                     'my_finish_date': self._str2date(item['list_status'].get('finish_date')),
                 })
-            
+
             url = data['paging'].get('next')
             i += 1
 
@@ -315,49 +315,49 @@ class libmal(lib):
         self.check_credentials()
         self.msg.info("Updating item %s..." % item['title'])
         self._update_entry(item)
-    
+
     def delete_show(self, item):
         self.check_credentials()
         self.msg.info("Deleting item %s..." % item['title'])
         data = self._request('DELETE', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), auth=True)
-    
+
     def search(self, criteria, method):
         self.check_credentials()
         self.msg.info("Searching for {}...".format(criteria))
-        
+
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields, 'nsfw': 'true'}
-        
+
         if method == utils.SearchMethod.KW:
             url = '/%s' % self.mediatype
             params['q'] = criteria
             params['limit'] = self.search_page_limit
         elif method == utils.SearchMethod.SEASON:
-            season, season_year = criteria            
+            season, season_year = criteria
 
             url = '/%s/season/%d/%s' % (self.mediatype, season_year, self.season_translate[season])
             params['limit'] = self.season_page_limit
         else:
             raise utils.APIError("Invalid search method.")
-        
+
         results = []
         data = self._request('GET', self.query_url + url, get=params, auth=True)
         for item in data['data']:
             results.append(self._parse_info(item['node']))
-        
+
         self._emit_signal('show_info_changed', results)
         return results
-        
+
     def request_info(self, itemlist):
         self.check_credentials()
         infolist = []
-        
+
         fields = 'alternative_titles,end_date,genres,id,main_picture,mean,media_type,' + self.total_str + ',popularity,rating,start_date,status,studios,synopsis,title'
         params = {'fields': fields, 'nsfw': 'true'}
         for item in itemlist:
             data = self._request('GET', self.query_url + '/%s/%d' % (self.mediatype, item['id']), get=params, auth=True)
             infolist.append(self._parse_info(data))
-        
+
         self._emit_signal('show_info_changed', infolist)
         return infolist
 
@@ -378,19 +378,19 @@ class libmal(lib):
 
     def _get_aliases(self, item):
         aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles']['synonyms']
-        
+
         return aliases
-    
+
     def _parse_info(self, item):
         info = utils.show()
         showid = item['id']
-        
+
         info.update({
             'id': showid,
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
-            'type': self.type_translate.get(item['media_type'], utils.Type.UNKNOWN),    
+            'type': self.type_translate.get(item['media_type'], utils.Type.UNKNOWN),
             'total': item[self.total_str],
             'status': self._translate_status(item['status']),
             'image': item.get('main_picture', {}).get('large'),
@@ -406,9 +406,9 @@ class libmal(lib):
                 ('Status',          self._translate_status(item['status'])),
             ]
         })
-        
+
         return info
-        
+
     def _translate_status(self, orig_status):
         return self.status_translate.get(orig_status, utils.Status.UNKNOWN)
 
