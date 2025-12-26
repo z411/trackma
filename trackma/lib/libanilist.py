@@ -250,6 +250,7 @@ fragment mediaListEntry on MediaList {
   score
   progress
   startedAt { year month day }
+  updatedAt
   completedAt { year month day }
   media {
     id
@@ -309,6 +310,7 @@ fragment mediaListEntry on MediaList {
                     'start_date': self._dict2date(media['startDate']),
                     'end_date': self._dict2date(media['endDate']),
                     'my_start_date': self._dict2date(item['startedAt']),
+                    'my_update_date': self._int2datetime(item['updatedAt']),
                     'my_finish_date': self._dict2date(item['completedAt']),
                 }
                 if media['nextAiringEpisode']:
@@ -550,6 +552,14 @@ fragment mediaListEntry on MediaList {
             return None
         try:
             return datetime.datetime.utcfromtimestamp(item)
+        except ValueError:
+            return None
+
+    def _int2datetime(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime.fromtimestamp(item, tz=datetime.timezone.utc)
         except ValueError:
             return None
 

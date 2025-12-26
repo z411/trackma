@@ -366,6 +366,7 @@ class libkitsu(lib):
                         'my_score': float(rating)/4.00 if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
+                        'my_update_date': self._iso2datetime(entry['attributes']['updatedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
                     })
 
@@ -531,6 +532,16 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        except Exception:
+            self.msg.debug('Invalid date {}'.format(string))
+            return None  # Ignore date if it's invalid
+
+    def _iso2datetime(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc)
         except Exception:
             self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid

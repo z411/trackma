@@ -516,6 +516,7 @@ def show():
         'my_status':    1,
         'my_score':     0,
         'my_start_date':  None,
+        'my_update_date': None,
         'my_finish_date': None,
         'type':         0,
         'status':       0,
@@ -736,3 +737,32 @@ qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'columns_state': None,
 }
+
+# Adapted from https://stackoverflow.com/a/5164027 by @josh-segall
+def get_relative_time(dt: datetime.datetime) -> str:
+    """Get a relative time label from a timezone aware datetime object. (e.g. "1 minute ago")"""
+
+    if dt is None or dt.tzinfo is None:
+        return "-"
+
+    delta = datetime.datetime.now(datetime.timezone.utc) - dt
+    s = delta.seconds
+
+    if delta.days > 7 or delta.days < 0:
+        return dt.strftime('%Y-%m-%d')
+    elif delta.days == 1:
+        return '1 day ago'
+    elif delta.days > 1:
+        return '{} days ago'.format(delta.days)
+    elif s <= 1:
+        return 'just now'
+    elif s < 60:
+        return '{} seconds ago'.format(s)
+    elif s < 120:
+        return '1 minute ago'
+    elif s < 3600:
+        return '{} minutes ago'.format(int(s/60))
+    elif s < 7200:
+        return '1 hour ago'
+    else:
+        return '{} hours ago'.format(int(s/3600))
