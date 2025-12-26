@@ -353,11 +353,11 @@ class AddListModel(QtCore.QAbstractListModel):
             return self.thumbs.get(row)
         elif role == QtCore.Qt.BackgroundRole:
             t = self.results[row].get('type')
-            if t == utils.Type.TV or t == utils.Type.ONA:
+            if t == utils.Type.TV:
                 return QtGui.QColor(202, 253, 150)
             elif t == utils.Type.MOVIE:
                 return QtGui.QColor(150, 202, 253)
-            elif t == utils.Type.OVA:
+            elif t == utils.Type.OVA or t == utils.Type.ONA:
                 return QtGui.QColor(253, 253, 150)
             elif t == utils.Type.SP:
                 return QtGui.QColor(253, 150, 150)
