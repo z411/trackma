@@ -610,6 +610,7 @@ config_defaults = {
     'redirections_time': 1,
     'use_hooks': True,
     'title_parser': 'aie',
+    'ani_skip': False
 }
 
 userconfig_defaults = {
