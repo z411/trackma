@@ -55,10 +55,11 @@ class Messenger:
     def warn(self, *msgs):
         self._call_handler(msgs, TYPE_WARN)
 
-    def exception(self, exc_info):
+    def exception(self, *msgs):
         if not self._handler:
             return
+        cn, exc_info = self._parse_msgs(msgs[:2])
         exc_type, exc_value, exc_traceback = exc_info
         for block in traceback.format_exception(exc_type, exc_value, exc_traceback):
             for line in block.splitlines():
-                self._handler(self.classname, TYPE_DEBUG, line)
+                self._handler(cn, TYPE_DEBUG, line)
