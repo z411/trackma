@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import locale
+import datetime
 
 from gi.repository import GObject, Gdk, Gtk, Pango
 
@@ -36,12 +37,12 @@ class ShowListStore(Gtk.ListStore):
         ('start', str),
         ('end', str),
         ('my-start', str),
-        ('my-update', str),
         ('my-end', str),
         ('my-status', str),
         ('status', int),
-        ('my-local-update', str),
-        ('my-update-timestamp', float)
+        ('last-updated', str),
+        ('last-updated-format', str),
+        ('last-updated-timestamp', float)
     )
 
     def __init__(self, decimals=0, colors=dict()):
@@ -78,7 +79,7 @@ class ShowListStore(Gtk.ListStore):
             except ValueError:
                 return '?'
         else:
-            return '-'
+            return 'No data'
 
     @classmethod
     def __columns__(cls):
@@ -127,10 +128,10 @@ class ShowListStore(Gtk.ListStore):
         end_date = self.format_date(show['end_date'])
         my_start_date = self.format_date(show['my_start_date'])
         my_finish_date = self.format_date(show['my_finish_date'])
-        my_update_date_obj = show.get('my_update_date')
-        my_update_date = self.format_relative_time(my_update_date_obj)
-        my_local_update_date = self.format_local_time(my_update_date_obj)
-        my_update_date_timestamp = my_update_date_obj.timestamp() if my_update_date_obj is not None else 0
+        last_updated_date = show.get('last_updated_date')
+        last_updated_date_rel = self.format_relative_time(last_updated_date)
+        last_updated_date_format = self.format_local_time(last_updated_date)
+        last_updated_date_timestamp = last_updated_date.timestamp() if last_updated_date is not None else 0
 
         row = [show['id'],
                title_str,
@@ -146,12 +147,12 @@ class ShowListStore(Gtk.ListStore):
                start_date,
                end_date,
                my_start_date,
-               my_update_date,
                my_finish_date,
                show['my_status'],
                show['status'],
-               my_local_update_date,
-               my_update_date_timestamp,
+               last_updated_date_rel,
+               last_updated_date_format,
+               last_updated_date_timestamp,
                ]
         super().append(row)
 
@@ -178,7 +179,7 @@ class ShowListStore(Gtk.ListStore):
             row[3] = show['my_score']
             row[5] = score_str
             row[9] = self._get_color(show, row[8])
-            row[16] = show['my_status']
+            row[15] = show['my_status']
         return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
@@ -210,6 +211,14 @@ class ShowListStore(Gtk.ListStore):
                     row[9] = self._get_color(show, row[8])
                 return
 
+    def refresh_dynamic_column(self, column_name):
+        if column_name not in utils.dynamic_columns:
+            return
+        if column_name == 'Last updated':
+            for row in self:
+                if row[19] == 0:
+                    continue
+                row[17] = self.format_relative_time(datetime.datetime.fromtimestamp(row[19], tz=datetime.timezone.utc))
 
 class ShowListFilter(Gtk.TreeModelFilter):
     def __init__(self, status=None, *args, **kwargs):
@@ -221,7 +230,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
         self._status = status
 
     def status_filter(self, model, iterator, data):
-        return self._status is None or model[iterator][16] == self._status
+        return self._status is None or model[iterator][15] == self._status
 
     def get_value(self, obj, key='id'):
         try:
@@ -259,22 +268,23 @@ class ShowTreeView(Gtk.TreeView):
             ('Start', 11),
             ('End', 12),
             ('My start', 13),
-            ('My update', 14),
-            ('My end', 15),
+            ('My end', 14),
+            ('Last updated', 17),
         )
 
         for (name, sort) in self.available_columns:
             self.cols[name] = Gtk.TreeViewColumn(name)
-            
-            if name == 'My update':
-                self.cols[name].set_sort_column_id(19)
-            else:
-                self.cols[name].set_sort_column_id(sort)
 
             # This is a hack to allow for right-clickable header
             label = Gtk.Label(name)
             label.show()
             self.cols[name].set_widget(label)
+
+            if name == "Last updated":
+                self.cols[name].set_sort_column_id(19)
+                label.set_tooltip_text("Date and time of the last synced update")
+            else:
+                self.cols[name].set_sort_column_id(sort)
 
             self.append_column(self.cols[name])
 
@@ -335,11 +345,11 @@ class ShowTreeView(Gtk.TreeView):
         self.cols['My start'].pack_start(renderer, False)
         self.cols['My start'].add_attribute(renderer, 'text', 13)
         renderer = Gtk.CellRendererText()
-        self.cols['My update'].pack_start(renderer, False)
-        self.cols['My update'].add_attribute(renderer, 'text', 14)
-        renderer = Gtk.CellRendererText()
         self.cols['My end'].pack_start(renderer, False)
-        self.cols['My end'].add_attribute(renderer, 'text', 15)
+        self.cols['My end'].add_attribute(renderer, 'text', 14)
+        renderer = Gtk.CellRendererText()
+        self.cols['Last updated'].pack_start(renderer, False)
+        self.cols['Last updated'].add_attribute(renderer, 'text', 17)
 
     def _header_button_press(self, button, event):
         if event.button == 3:
@@ -394,8 +404,8 @@ class ShowTreeView(Gtk.TreeView):
             renderer = next(iter(col.get_cells()))
             self.set_tooltip_cell(tip, path, col, renderer)
             return True
-        elif col is self.cols['My update']:
-            tip.set_text(gv('my-local-update'))
+        elif col is self.cols['Last updated']:
+            tip.set_text(gv('last-updated-format'))
             renderer = next(iter(col.get_cells()))
             self.set_tooltip_cell(tip, path, col, renderer)
             return True

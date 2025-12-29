@@ -516,7 +516,6 @@ def show():
         'my_status':    1,
         'my_score':     0,
         'my_start_date':  None,
-        'my_update_date': None,
         'my_finish_date': None,
         'type':         0,
         'status':       0,
@@ -526,6 +525,7 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
+        'last_updated_date': None
     }
 
 
@@ -766,3 +766,5 @@ def get_relative_time(dt: datetime.datetime) -> str:
         return '1 hour ago'
     else:
         return '{} hours ago'.format(int(s/3600))
+
+dynamic_columns = ['Last updated']

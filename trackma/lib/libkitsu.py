@@ -366,8 +366,8 @@ class libkitsu(lib):
                         'my_score': float(rating)/4.00 if rating is not None else 0.0,
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
-                        'my_update_date': self._iso2datetime(entry['attributes']['updatedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
+                        'last_updated_date': self._iso2datetime(entry['attributes']['updatedAt']),
                     })
 
                 if 'included' in data_json:
@@ -433,8 +433,10 @@ class libkitsu(lib):
         data = self._build_data(item)
 
         try:
-            self._request('PATCH', self.prefix + "/library-entries/%s" %
+            data = self._request('PATCH', self.prefix + "/library-entries/%s" %
                           item['my_id'], body=data, auth=True)
+            data_json = json.loads(data)
+            return self._iso2datetime(data_json['data']['attributes']['updatedAt'])
         except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
         except urllib.error.URLError as e:
