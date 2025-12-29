@@ -180,6 +180,9 @@ class ShowListStore(Gtk.ListStore):
             row[5] = score_str
             row[9] = self._get_color(show, row[8])
             row[15] = show['my_status']
+            row[17] = self.format_relative_time(datetime.datetime.fromtimestamp(show['last_updated_date'].timestamp(), tz=datetime.timezone.utc))
+            row[18] = self.format_local_time(show['last_updated_date'])
+            row[19] = show['last_updated_date'].timestamp()
         return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
