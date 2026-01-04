@@ -84,6 +84,10 @@ class MainView(Gtk.Box):
         self._init_widgets()
         self._init_signals()
 
+        self._dynamic_column_timers = {}
+        for col in utils.dynamic_columns:
+            self._dynamic_column_timers[col] = {"id": None, "active": False}
+
     def load_engine_account(self, engine, account):
         self._engine = engine
         self._account = account
@@ -472,6 +476,12 @@ class MainView(Gtk.Box):
     def _on_switch_notebook_page(self, notebook, page, page_num):
         self._current_page = page
         self._update_widgets_for_selected_show()
+        self._update_dynamic_column_timers()
+
+    def _update_dynamic_column_timers(self):
+        visible_dynamic_columns = set(self._config['visible_columns']) & set(utils.dynamic_columns)
+        for col in visible_dynamic_columns:
+            self._start_dynamic_column_timer(col)
 
     def _on_show_selected(self, page, selected_show):
         self._update_widgets_for_selected_show()
@@ -559,6 +569,29 @@ class MainView(Gtk.Box):
 
         utils.save_config(self._config, self._configfile)
 
+        if column_name in self._dynamic_column_timers:
+            if visible:
+                self._refresh_dynamic_column(column_name)
+                self._start_dynamic_column_timer(column_name)
+            else:
+                self._stop_dynamic_column_timer(column_name)
+
+    def _start_dynamic_column_timer(self, column_name):
+        timer = self._dynamic_column_timers[column_name]
+        if not timer["active"]:
+            timer['id'] = GLib.timeout_add(10000, self._refresh_dynamic_column, column_name)
+            timer["active"] = True
+
+    def _stop_dynamic_column_timer(self, column_name):
+        timer = self._dynamic_column_timers[column_name]
+        if timer['active']:
+            GLib.source_remove(timer['id'])
+            timer['id'] = None
+            timer['active'] = False
+
+    def _refresh_dynamic_column(self, column_name):
+        self._list.refresh_dynamic_column(column_name)
+        return True
 
 class NotebookPage(Gtk.ScrolledWindow):
     __gtype_name__ = 'NotebookPage'

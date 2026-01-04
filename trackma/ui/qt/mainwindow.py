@@ -16,8 +16,6 @@
 
 import base64
 import os
-import subprocess
-import sys
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAbstractItemView, QAction, QActionGroup, QApplication, QCheckBox, QComboBox,
@@ -114,15 +112,21 @@ class MainWindow(QMainWindow):
         self.api_config = self._get_api_config(account['api'])
 
         # Timers
-        self.image_timer = QtCore.QTimer()
+        self.image_timer = QtCore.QTimer(self)
         self.image_timer.setInterval(500)
         self.image_timer.setSingleShot(True)
         self.image_timer.timeout.connect(self.s_download_image)
 
-        self.busy_timer = QtCore.QTimer()
+        self.busy_timer = QtCore.QTimer(self)
         self.busy_timer.setInterval(100)
         self.busy_timer.setSingleShot(True)
         self.busy_timer.timeout.connect(self.s_busy)
+
+        self._dynamic_column_timers = {}
+        for col in utils.dynamic_columns:
+            self._dynamic_column_timers[col] = QtCore.QTimer(self)
+            self._dynamic_column_timers[col].setInterval(10000)
+            self._dynamic_column_timers[col].timeout.connect(lambda: self._refresh_dynamic_column(col))
 
         # Build menus
         self.action_play_next = QAction(
@@ -308,7 +312,8 @@ class MainWindow(QMainWindow):
                             'date_end': 7,
                             'my_start': 8,
                             'my_end': 9,
-                            'tag': 10}
+                            'tag': 10,
+                            'last_updated': 12}
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
             action = QAction(column_name, self, checkable=True)
@@ -785,6 +790,13 @@ class MainWindow(QMainWindow):
         else:
             self.view.horizontalHeader().resizeSection(3, 70)
             self.view.horizontalHeader().resizeSection(4, 100)
+
+        visible_dynamic_columns = set(utils.dynamic_columns) & set(self.api_config['visible_columns'])
+        for col in visible_dynamic_columns:
+            self._dynamic_column_timers[col].start()
+
+    def _refresh_dynamic_column(self, column_name):
+        self.view.model().sourceModel().refresh_dynamic_column(column_name)
 
     def _select_show(self, show):
         # Stop any running image timer
@@ -1288,6 +1300,14 @@ class MainWindow(QMainWindow):
         self.view.setColumnHidden(index, not visible)
         if visible and self.view.columnWidth(index) < MIN_WIDTH:
             self.view.setColumnWidth(index, MIN_WIDTH)
+
+        if column_name in self._dynamic_column_timers:
+            timer = self._dynamic_column_timers[column_name]
+            if visible:
+                self._refresh_dynamic_column(column_name)
+                timer.start()
+            else:
+                timer.stop()
 
     # Worker slots
     def ws_changed_status(self, classname, msgtype, msg):
