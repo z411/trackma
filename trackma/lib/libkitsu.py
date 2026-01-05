@@ -367,6 +367,7 @@ class libkitsu(lib):
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
+                        'last_updated_date': self._iso2datetime(entry['attributes']['updatedAt']),
                     })
 
                 if 'included' in data_json:
@@ -432,8 +433,10 @@ class libkitsu(lib):
         data = self._build_data(item)
 
         try:
-            self._request('PATCH', self.prefix + "/library-entries/%s" %
+            data = self._request('PATCH', self.prefix + "/library-entries/%s" %
                           item['my_id'], body=data, auth=True)
+            data_json = json.loads(data)
+            return self._iso2datetime(data_json['data']['attributes']['updatedAt'])
         except urllib.error.HTTPError as e:
             raise utils.APIError('Error updating: ' + str(e.code))
         except urllib.error.URLError as e:
@@ -531,6 +534,16 @@ class libkitsu(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        except Exception:
+            self.msg.debug('Invalid date {}'.format(string))
+            return None  # Ignore date if it's invalid
+
+    def _iso2datetime(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc)
         except Exception:
             self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid

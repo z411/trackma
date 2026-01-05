@@ -250,6 +250,7 @@ fragment mediaListEntry on MediaList {
   score
   progress
   startedAt { year month day }
+  updatedAt
   completedAt { year month day }
   media {
     id
@@ -310,6 +311,7 @@ fragment mediaListEntry on MediaList {
                     'end_date': self._dict2date(media['endDate']),
                     'my_start_date': self._dict2date(item['startedAt']),
                     'my_finish_date': self._dict2date(item['completedAt']),
+                    'last_updated_date': self._int2datetime(item['updatedAt']),
                 }
                 if media['nextAiringEpisode']:
                     showdata['next_ep_number'] = media['nextAiringEpisode']['episode']
@@ -333,7 +335,7 @@ fragment mediaListEntry on MediaList {
     def _update_entry(self, item):
         """
         New entries will lack a list entry id, while updates will include one.
-        In the case of a new entry, we want to record the new id.
+        In the case of a new entry, we want to record the new id. In the case of an update, we want to record the new updated date.
         """
         values = {'mediaId': item['id']}
         if 'my_id' in item and item['my_id']:
@@ -352,21 +354,21 @@ fragment mediaListEntry on MediaList {
         vars_defn = ', '.join(
             ['${}: {}'.format(k, self.args_SaveMediaListEntry[k]) for k in values.keys()])
         subs_defn = ', '.join(['{0}: ${0}'.format(k) for k in values.keys()])
-        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id}} }}'.format(
+        query = 'mutation ({0}) {{ SaveMediaListEntry({1}) {{id updatedAt}} }}'.format(
             vars_defn, subs_defn)
 
         data = self._request(query, values)['data']
-        return data['SaveMediaListEntry']['id']
+        return data['SaveMediaListEntry']
 
     def add_show(self, item):
         self.check_credentials()
         self.msg.info("Adding item %s..." % item['title'])
-        return self._update_entry(item)
+        return self._update_entry(item)['id']
 
     def update_show(self, item):
         self.check_credentials()
         self.msg.info("Updating item %s..." % item['title'])
-        self._update_entry(item)
+        return self._int2datetime(self._update_entry(item)['updatedAt'])
 
     def delete_show(self, item):
         self.check_credentials()
@@ -550,6 +552,14 @@ fragment mediaListEntry on MediaList {
             return None
         try:
             return datetime.datetime.utcfromtimestamp(item)
+        except ValueError:
+            return None
+
+    def _int2datetime(self, item):
+        if not item:
+            return None
+        try:
+            return datetime.datetime.fromtimestamp(item, tz=datetime.timezone.utc)
         except ValueError:
             return None
 

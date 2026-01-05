@@ -18,6 +18,7 @@ import copy
 import datetime
 import difflib
 import json
+import locale
 import os
 import pickle
 import re
@@ -525,6 +526,7 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
+        'last_updated_date': None
     }
 
 
@@ -736,3 +738,15 @@ qt_per_api_defaults = {
     'visible_columns': ['Title', 'Progress', 'Score', 'Percent'],
     'columns_state': None,
 }
+
+def format_local_time(
+    dt: datetime.datetime | None,
+    fallback_message='No data',
+    error_message='?'
+) -> str:
+    if dt is None or dt.tzinfo is None:
+        return fallback_message
+    try:
+        return dt.astimezone().strftime(locale.nl_langinfo(locale.D_T_FMT))
+    except ValueError:
+        return error_message

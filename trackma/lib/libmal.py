@@ -268,7 +268,7 @@ class libmal(lib):
         shows = {}
 
         fields = 'id,alternative_titles,title,start_date,main_picture,status,' + self.total_str
-        listfields = 'score,status,start_date,finish_date,' + self.watched_str
+        listfields = 'score,status,start_date,finish_date,updated_at,' + self.watched_str
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
             'limit': self.library_page_limit,
@@ -299,6 +299,7 @@ class libmal(lib):
                     'my_status': item['list_status']['status'],
                     'my_start_date': self._str2date(item['list_status'].get('start_date')),
                     'my_finish_date': self._str2date(item['list_status'].get('finish_date')),
+                    'last_updated_date': self._iso2datetime(item['list_status'].get('updated_at')),
                 })
 
             url = data['paging'].get('next')
@@ -314,7 +315,7 @@ class libmal(lib):
     def update_show(self, item):
         self.check_credentials()
         self.msg.info("Updating item %s..." % item['title'])
-        self._update_entry(item)
+        return self._iso2datetime(self._update_entry(item)['updated_at'])
 
     def delete_show(self, item):
         self.check_credentials()
@@ -376,6 +377,8 @@ class libmal(lib):
 
         data = self._request('PATCH', self.query_url + '/%s/%d/my_list_status' % (self.mediatype, item['id']), post=values, auth=True)
 
+        return data
+
     def _get_aliases(self, item):
         aliases = [item['alternative_titles']['en'], item['alternative_titles']['ja']] + item['alternative_titles']['synonyms']
 
@@ -418,6 +421,16 @@ class libmal(lib):
 
         try:
             return datetime.datetime.strptime(string, "%Y-%m-%d")
+        except Exception:
+            self.msg.debug('Invalid date {}'.format(string))
+            return None  # Ignore date if it's invalid
+
+    def _iso2datetime(self, string):
+        if string is None:
+            return None
+
+        try:
+            return datetime.datetime.fromisoformat(string).replace(tzinfo=datetime.timezone.utc)
         except Exception:
             self.msg.debug('Invalid date {}'.format(string))
             return None  # Ignore date if it's invalid

@@ -16,8 +16,6 @@
 
 import base64
 import os
-import subprocess
-import sys
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAbstractItemView, QAction, QActionGroup, QApplication, QCheckBox, QComboBox,
@@ -308,7 +306,8 @@ class MainWindow(QMainWindow):
                             'date_end': 7,
                             'my_start': 8,
                             'my_end': 9,
-                            'tag': 10}
+                            'tag': 10,
+                            'last_updated': 12}
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
             action = QAction(column_name, self, checkable=True)
