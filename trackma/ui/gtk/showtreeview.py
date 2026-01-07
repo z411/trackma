@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 from gi.repository import GObject, Gdk, Gtk, Pango
 
 from trackma import utils
@@ -38,6 +37,8 @@ class ShowListStore(Gtk.ListStore):
         ('my-end', str),
         ('my-status', str),
         ('status', int),
+        ('last-updated', str),
+        ('last-updated-timestamp', float)
     )
 
     def __init__(self, decimals=0, colors=dict()):
@@ -103,6 +104,9 @@ class ShowListStore(Gtk.ListStore):
         end_date = self.format_date(show['end_date'])
         my_start_date = self.format_date(show['my_start_date'])
         my_finish_date = self.format_date(show['my_finish_date'])
+        last_updated_date_dt = show.get('last_updated_date')
+        last_updated_date = utils.format_local_time(last_updated_date_dt)
+        last_updated_date_timestamp = last_updated_date_dt.timestamp() if last_updated_date_dt is not None else 0
 
         row = [show['id'],
                title_str,
@@ -120,7 +124,9 @@ class ShowListStore(Gtk.ListStore):
                my_start_date,
                my_finish_date,
                show['my_status'],
-               show['status']
+               show['status'],
+               last_updated_date,
+               last_updated_date_timestamp,
                ]
         super().append(row)
 
@@ -148,6 +154,11 @@ class ShowListStore(Gtk.ListStore):
             row[5] = score_str
             row[9] = self._get_color(show, row[8])
             row[15] = show['my_status']
+
+            last_update_date = show['last_updated_date']
+
+            row[17] = utils.format_local_time(last_update_date)
+            row[18] = show['last_updated_date'].timestamp() if show['last_updated_date'] is not None else 0
         return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])
@@ -194,7 +205,7 @@ class ShowListFilter(Gtk.TreeModelFilter):
 
     def get_value(self, obj, key='id'):
         try:
-            if type(obj) == Gtk.TreePath:
+            if type(obj) is Gtk.TreePath:
                 obj = self.get_iter(obj)
             if isinstance(key, (str,)):
                 key = self.props.child_model.column(key)
@@ -229,16 +240,22 @@ class ShowTreeView(Gtk.TreeView):
             ('End', 12),
             ('My start', 13),
             ('My end', 14),
+            ('Last updated', 17),
         )
 
         for (name, sort) in self.available_columns:
             self.cols[name] = Gtk.TreeViewColumn(name)
-            self.cols[name].set_sort_column_id(sort)
 
             # This is a hack to allow for right-clickable header
             label = Gtk.Label(name)
             label.show()
             self.cols[name].set_widget(label)
+
+            if name == "Last updated":
+                self.cols[name].set_sort_column_id(18)
+                label.set_tooltip_text("Date and time of the last synced update")
+            else:
+                self.cols[name].set_sort_column_id(sort)
 
             self.append_column(self.cols[name])
 
@@ -301,6 +318,9 @@ class ShowTreeView(Gtk.TreeView):
         renderer = Gtk.CellRendererText()
         self.cols['My end'].pack_start(renderer, False)
         self.cols['My end'].add_attribute(renderer, 'text', 14)
+        renderer = Gtk.CellRendererText()
+        self.cols['Last updated'].pack_start(renderer, False)
+        self.cols['Last updated'].add_attribute(renderer, 'text', 17)
 
     def _header_button_press(self, button, event):
         if event.button == 3:
@@ -331,31 +351,37 @@ class ShowTreeView(Gtk.TreeView):
             return False
 
         _, col, _, _ = view.get_path_at_pos(tx, ty)
-        if col != self.cols['Percent']:
-            return False
 
         def gv(key):
             return model.get_value(tree_iter, ShowListStore.column(key))
 
-        lines = []
-        lines.append("Watched: %d" % gv('stat'))
+        if col is self.cols['Percent']:
+            lines = []
+            lines.append("Watched: %d" % gv('stat'))
 
-        aired = gv('subvalue')
-        status = gv('status')
-        if aired and not status == utils.Status.NOTYET:
-            lines.append("Aired%s: %d" % (
-                ' (estimated)' if status == utils.Status.AIRING else '', aired))
+            aired = gv('subvalue')
+            status = gv('status')
+            if aired and not status == utils.Status.NOTYET:
+                lines.append("Aired%s: %d" % (
+                    ' (estimated)' if status == utils.Status.AIRING else '', aired))
 
-        avail_eps = gv('avail-eps')
-        if len(avail_eps) > 0:
-            lines.append("Available: %d" % max(avail_eps))
+            avail_eps = gv('avail-eps')
+            if len(avail_eps) > 0:
+                lines.append("Available: %d" % max(avail_eps))
 
-        lines.append("Total: %s" % (gv('total-eps') or '?'))
+            lines.append("Total: %s" % (gv('total-eps') or '?'))
 
-        tip.set_markup('\n'.join(lines))
-        renderer = next(iter(col.get_cells()))
-        self.set_tooltip_cell(tip, path, col, renderer)
-        return True
+            tip.set_markup('\n'.join(lines))
+            renderer = next(iter(col.get_cells()))
+            self.set_tooltip_cell(tip, path, col, renderer)
+            return True
+        elif col is self.cols['Last updated']:
+            tip.set_text(gv('last-updated'))
+            renderer = next(iter(col.get_cells()))
+            self.set_tooltip_cell(tip, path, col, renderer)
+            return True
+
+        return False
 
     def _header_menu_item(self, w, column_name, visible):
         self.emit('column-toggled', column_name, visible)

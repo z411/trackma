@@ -401,7 +401,10 @@ class Data:
                         if my_id:
                             show['my_id'] = my_id
                     elif operation == 'update':
-                        self.api.update_show(item)
+                        last_updated_date = self.api.update_show(item)
+                        
+                        if last_updated_date:
+                            show['last_updated_date'] = last_updated_date
                     elif operation == 'delete':
                         self.api.delete_show(item)
                     else:
