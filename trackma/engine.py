@@ -70,6 +70,7 @@ class Engine:
                'sync_complete':     None,
                'queue_changed':     None,
                'playing':           None,
+               'finished': None,
                'prompt_for_update': None,
                'prompt_for_add':    None,
                'tracker_state':     None,
@@ -158,6 +159,23 @@ class Engine:
                 self.set_episode(show['id'], episode)
             except utils.TrackmaError as e:
                 self.msg.warn("Can't update episode: {}".format(e))
+
+    def _tracker_finished(self, show, episode):
+
+        # Attempt autoplay next episode
+        if self.config['autoplay_next']:
+            try:
+                next_episode = episode + 1
+                play_args = self.play_episode(show, next_episode)
+                if play_args:
+                    self.msg.info(f"Autoplaying next episode {next_episode} of {show['title']}")
+                    utils.spawn_process(play_args)
+                else:
+                    self.msg.info(f"Finished watching {show['title']}.")
+            except utils.EngineError as e:
+                self.msg.warn(f"Could not autoplay next episode: {e}")
+
+        self._emit_signal('finished', show, episode)
 
     def _tracker_unrecognised(self, show, episode):
         if self.config['tracker_not_found_prompt']:
@@ -344,6 +362,7 @@ class Engine:
                 self.tracker.connect_signal('removed', self._tracker_removed)
                 self.tracker.connect_signal('playing', self._tracker_playing)
                 self.tracker.connect_signal('update', self._tracker_update)
+                self.tracker.connect_signal('finish', self._tracker_finished)
                 self.tracker.connect_signal(
                     'unrecognised', self._tracker_unrecognised)
                 self.tracker.connect_signal('state', self._tracker_state)
