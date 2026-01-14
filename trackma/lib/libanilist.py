@@ -311,7 +311,7 @@ fragment mediaListEntry on MediaList {
                     'end_date': self._dict2date(media['endDate']),
                     'my_start_date': self._dict2date(item['startedAt']),
                     'my_finish_date': self._dict2date(item['completedAt']),
-                    'last_updated_date': self._int2datetime(item['updatedAt']),
+                    'my_last_update': self._int2datetime(item['updatedAt']),
                 }
                 if media['nextAiringEpisode']:
                     showdata['next_ep_number'] = media['nextAiringEpisode']['episode']

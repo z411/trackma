@@ -299,7 +299,7 @@ class libmal(lib):
                     'my_status': item['list_status']['status'],
                     'my_start_date': self._str2date(item['list_status'].get('start_date')),
                     'my_finish_date': self._str2date(item['list_status'].get('finish_date')),
-                    'last_updated_date': self._iso2datetime(item['list_status'].get('updated_at')),
+                    'my_last_update': self._iso2datetime(item['list_status'].get('updated_at')),
                 })
 
             url = data['paging'].get('next')

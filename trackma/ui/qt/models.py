@@ -208,7 +208,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
             elif column == ShowListModel.COL_MY_START:
                 return self._date(show['my_start_date'])
             elif column == ShowListModel.COL_LAST_UPDATED:
-                return utils.format_local_time(show.get('last_updated_date'))
+                return utils.format_local_time(show.get('my_last_update'))
             elif column == ShowListModel.COL_MY_FINISH:
                 return self._date(show['my_finish_date'])
             elif column == ShowListModel.COL_MY_TAGS:
@@ -237,7 +237,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
 
                 return tooltip
             elif column == ShowListModel.COL_LAST_UPDATED:
-                return utils.format_local_time(show.get('last_updated_date'))
+                return utils.format_local_time(show.get('my_last_update'))
         elif role == QtCore.Qt.EditRole:
             if column == ShowListModel.COL_MY_PROGRESS:
                 return (show['my_progress'], show['total'], 0, 1)
@@ -251,7 +251,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return (show['my_score'], self.mediainfo['score_max'], decimals, self.mediainfo['score_step'])
         elif role == QtCore.Qt.UserRole:
             if column == ShowListModel.COL_LAST_UPDATED:
-                dt = show.get('last_updated_date')
+                dt = show.get('my_last_update')
                 return dt.timestamp() if dt is not None else 0
 
     def flags(self, index):

@@ -367,7 +367,7 @@ class libkitsu(lib):
                         'my_status': entry['attributes']['status'],
                         'my_start_date': self._iso2date(entry['attributes']['startedAt']),
                         'my_finish_date': self._iso2date(entry['attributes']['finishedAt']),
-                        'last_updated_date': self._iso2datetime(entry['attributes']['updatedAt']),
+                        'my_last_update': self._iso2datetime(entry['attributes']['updatedAt']),
                     })
 
                 if 'included' in data_json:

@@ -307,7 +307,7 @@ class MainWindow(QMainWindow):
                             'my_start': 8,
                             'my_end': 9,
                             'tag': 10,
-                            'last_updated': 12}
+                            'my_last_update': 12}
 
         for i, column_name in enumerate(self.view.model().sourceModel().columns):
             action = QAction(column_name, self, checkable=True)

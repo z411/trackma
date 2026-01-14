@@ -104,9 +104,9 @@ class ShowListStore(Gtk.ListStore):
         end_date = self.format_date(show['end_date'])
         my_start_date = self.format_date(show['my_start_date'])
         my_finish_date = self.format_date(show['my_finish_date'])
-        last_updated_date_dt = show.get('last_updated_date')
-        last_updated_date = utils.format_local_time(last_updated_date_dt)
-        last_updated_date_timestamp = last_updated_date_dt.timestamp() if last_updated_date_dt is not None else 0
+        my_last_update_dt = show.get('my_last_update')
+        my_last_update = utils.format_local_time(my_last_update_dt)
+        my_last_update_timestamp = my_last_update_dt.timestamp() if my_last_update_dt is not None else 0
 
         row = [show['id'],
                title_str,
@@ -125,8 +125,8 @@ class ShowListStore(Gtk.ListStore):
                my_finish_date,
                show['my_status'],
                show['status'],
-               last_updated_date,
-               last_updated_date_timestamp,
+               my_last_update,
+               my_last_update_timestamp,
                ]
         super().append(row)
 
@@ -155,10 +155,10 @@ class ShowListStore(Gtk.ListStore):
             row[9] = self._get_color(show, row[8])
             row[15] = show['my_status']
 
-            last_update_date = show['last_updated_date']
+            my_last_update = show['my_last_update']
 
             row[17] = utils.format_local_time(last_update_date)
-            row[18] = show['last_updated_date'].timestamp() if show['last_updated_date'] is not None else 0
+            row[18] = show['my_last_update'].timestamp() if show['my_last_update'] is not None else 0
         return
 
         # print("Warning: Show ID not found in ShowView (%d)" % show['id'])

@@ -526,7 +526,7 @@ def show():
         'image':        '',
         'image_thumb':  '',
         'queued':       False,
-        'last_updated_date': None
+        'my_last-update': None
     }
 
 
