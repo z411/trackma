@@ -17,8 +17,8 @@
 
 import os
 import time
-
-import requests
+import urllib.request
+import json
 
 from trackma.tracker import tracker
 
@@ -86,7 +86,8 @@ class JellyfinTracker(tracker.TrackerBase):
             time.sleep(config['tracker_interval'])
 
     def _get_sessions_info(self):
-        session_url = self.host_port+"/Sessions?api_key={}".format(self.api_key)
+        session_url = self.host_port+"/Sessions"
+        auth_header = "MediaBrowser Token=\"{}\"".format(self.api_key)
 
         info = {
             "status": NOT_RUNNING,
@@ -95,11 +96,12 @@ class JellyfinTracker(tracker.TrackerBase):
             "view_offset": None
         }
 
-        try:
-            response = requests.get(session_url)
-            response_json = response.json()
-        except requests.exceptions.ConnectionError:
-            return info
+        req = urllib.request.Request(session_url)
+        req.add_header("Authorization", auth_header)
+        req.add_header("Accept", "application/json")
+
+        with urllib.request.urlopen(req) as response:
+            response_json = json.load(response)
 
         for session in response_json:
             if 'UserName' not in session:

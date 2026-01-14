@@ -152,7 +152,7 @@ class SettingsDialog(QDialog):
         self.jellyfin_host = QLineEdit()
         self.jellyfin_port = QLineEdit()
         self.jellyfin_user = QLineEdit()
-        self.jellyfin_apikey = QLineEdit()
+        self.jellyfin_api_key = QLineEdit()
 
         g_jellyfin_layout = QGridLayout()
         g_jellyfin_layout.addWidget(
@@ -163,7 +163,7 @@ class SettingsDialog(QDialog):
                                 0, 2, 1, 2)
         g_jellyfin_layout.addWidget(
             QLabel('API and User'),                   1, 0, 1, 1)
-        g_jellyfin_layout.addWidget(self.jellyfin_apikey,
+        g_jellyfin_layout.addWidget(self.jellyfin_api_key,
                                 1, 1, 1, 1)
         g_jellyfin_layout.addWidget(self.jellyfin_user,
                                 1, 2, 1, 2)
@@ -543,7 +543,7 @@ class SettingsDialog(QDialog):
         self.jellyfin_host.setText(engine.get_config('jellyfin_host'))
         self.jellyfin_port.setText(engine.get_config('jellyfin_port'))
         self.jellyfin_user.setText(engine.get_config('jellyfin_user'))
-        self.jellyfin_apikey.setText(engine.get_config('jellyfin_api_key'))
+        self.jellyfin_api_key.setText(engine.get_config('jellyfin_api_key'))
 
         self.kodi_host.setText(engine.get_config('kodi_host'))
         self.kodi_port.setText(engine.get_config('kodi_port'))
@@ -653,7 +653,7 @@ class SettingsDialog(QDialog):
         engine.set_config('jellyfin_host',         self.jellyfin_host.text())
         engine.set_config('jellyfin_port',         self.jellyfin_port.text())
         engine.set_config('jellyfin_user',         self.jellyfin_user.text())
-        engine.set_config('jellyfin_apikey',       self.jellyfin_apikey.text())
+        engine.set_config('jellyfin_api_key',       self.jellyfin_api_key.text())
 
         engine.set_config('kodi_host',         self.kodi_host.text())
         engine.set_config('kodi_port',         self.kodi_port.text())
@@ -743,7 +743,7 @@ class SettingsDialog(QDialog):
         self.jellyfin_host.setEnabled(state)
         self.jellyfin_port.setEnabled(state)
         self.jellyfin_user.setEnabled(state)
-        self.jellyfin_apikey.setEnabled(state)
+        self.jellyfin_api_key.setEnabled(state)
 
     def tracker_type_change(self, checked):
         if self.tracker_enabled.isChecked():

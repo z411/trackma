@@ -71,7 +71,7 @@ class SettingsWindow(Gtk.Window):
     entry_jellyfin_host = Gtk.Template.Child()
     spin_jellyfin_port = Gtk.Template.Child()
     entry_jellyfin_username = Gtk.Template.Child()
-    entry_jellyfin_apikey = Gtk.Template.Child()
+    entry_jellyfin_api_key = Gtk.Template.Child()
 
     checkbox_tracker_update_close = Gtk.Template.Child()
     checkbox_tracker_update_prompt = Gtk.Template.Child()
@@ -196,7 +196,7 @@ class SettingsWindow(Gtk.Window):
             int(self.engine.get_config('jellyfin_port')))
         self.entry_jellyfin_username.set_text(
             self.engine.get_config('jellyfin_user'))
-        self.entry_jellyfin_apikey.set_text(
+        self.entry_jellyfin_api_key.set_text(
             self.engine.get_config('jellyfin_api_key'))
 
         self.spin_tracker_update_wait.set_value(
@@ -336,7 +336,7 @@ class SettingsWindow(Gtk.Window):
         self.entry_jellyfin_host.set_sensitive(enable)
         self.spin_jellyfin_port.set_sensitive(enable)
         self.entry_jellyfin_username.set_sensitive(enable)
-        self.entry_jellyfin_apikey.set_sensitive(enable)
+        self.entry_jellyfin_api_key.set_sensitive(enable)
 
     def _load_directories(self, paths):
         if isinstance(paths, str):
@@ -394,7 +394,7 @@ class SettingsWindow(Gtk.Window):
         self.engine.set_config(
             'jellyfin_user', self.entry_jellyfin_username.get_text())
         self.engine.set_config(
-            'jellyfin_api_key', self.entry_jellyfin_apikey.get_text())
+            'jellyfin_api_key', self.entry_jellyfin_api_key.get_text())
         self.engine.set_config(
             'tracker_enabled', self.switch_tracker.get_active())
         self.engine.set_config(
