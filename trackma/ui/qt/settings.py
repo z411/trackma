@@ -92,6 +92,7 @@ class SettingsDialog(QDialog):
         self.tracker_update_prompt = QCheckBox()
         self.tracker_not_found_prompt = QCheckBox()
         self.tracker_ignore_not_next = QCheckBox()
+        self.tracker_prefer_media_title = QCheckBox()
 
         g_media_layout.addRow('Enable tracker', self.tracker_enabled)
         g_media_layout.addRow('Tracker type', self.tracker_type)
@@ -108,6 +109,7 @@ class SettingsDialog(QDialog):
                               self.tracker_not_found_prompt)
         g_media_layout.addRow('Ignore if not next episode',
                               self.tracker_ignore_not_next)
+        g_media_layout.addRow('Prefer media title', self.tracker_prefer_media_title)
 
         g_media.setLayout(g_media_layout)
 
@@ -523,6 +525,8 @@ class SettingsDialog(QDialog):
             engine.get_config('tracker_not_found_prompt'))
         self.tracker_ignore_not_next.setChecked(
             engine.get_config('tracker_ignore_not_next'))
+        self.tracker_prefer_media_title.setChecked(
+            engine.get_config('tracker_prefer_media_title'))
 
         self.title_parser.setCurrentIndex(max(0, title_parser))
         self.player.setText(engine.get_config('player'))
@@ -632,6 +636,8 @@ class SettingsDialog(QDialog):
                           self.tracker_not_found_prompt.isChecked())
         engine.set_config('tracker_ignore_not_next',
                           self.tracker_ignore_not_next.isChecked())
+        engine.set_config('tracker_prefer_media_title',
+                          self.tracker_prefer_media_title.isChecked())
 
         engine.set_config('title_parser',          self.title_parser.itemData(
             self.title_parser.currentIndex()))
