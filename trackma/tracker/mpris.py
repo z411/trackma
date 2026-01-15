@@ -154,7 +154,7 @@ class Player:
 
     @property
     def filename(self):
-        if self.title and len(self.title) > 5:
+        if self.config['tracker_prefer_media_title'] and self.title and len(self.title) > 5:
             return self.title
         elif self.url:
             url = urllib.parse.unquote_plus(self.url)
