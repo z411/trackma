@@ -36,7 +36,7 @@ class ThemedColorPicker(QDialog):
             for role in self.roles:
                 self.colors.append(QPushButton())
                 self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor(
-                    QtGui.QPalette().color(group, role)).name())
+                    QtGui.QPalette().color(QtGui.QPalette.ColorGroup(group), QtGui.QPalette.ColorRole(role))).name())
                 self.colors[-1].setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
                 self.colors[-1].clicked.connect(self.s_select(group, role))
                 colorbox.addWidget(self.colors[-1], row, col, 1, 1)
@@ -60,9 +60,9 @@ class ThemedColorPicker(QDialog):
     @staticmethod
     def do(parent=None, default=None):
         dialog = ThemedColorPicker(parent, default)
-        result = dialog.exec_()
+        result = dialog.exec()
 
-        if result == QDialog.Accepted:
+        if result == QDialog.DialogCode.Accepted:
             return dialog.colorString
         else:
             return None
