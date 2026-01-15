@@ -24,8 +24,6 @@ from trackma import utils
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.widgets import AddCardView, AddTableDetailsView
 
-pyqt_version = 5
-
 
 class AddDialog(QDialog):
     worker = None

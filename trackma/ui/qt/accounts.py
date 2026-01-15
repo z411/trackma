@@ -21,8 +21,6 @@ from PyQt6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, Q
 
 from trackma import utils
 
-pyqt_version = 5
-
 
 class AccountDialog(QDialog):
 
@@ -169,10 +167,7 @@ class AccountDialog(QDialog):
             self.table.setItem(i, 1, AccountItem(
                 k, account['api'], self.icons.get(account['api'])))
 
-        if pyqt_version == 5:
-            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        else:
-            self.table.horizontalHeader().setResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def select(self, checked):
         if not self.selected_account_num:
@@ -281,10 +276,7 @@ class AccountAddDialog(QDialog):
             self.username.setText("")
             self.password.setText("")
 
-        if pyqt_version == 5:
-            apiname = self.api.itemData(index)
-        else:
-            apiname = str(self.api.itemData(index))
+        apiname = self.api.itemData(index)
         self.adding_api = utils.available_libs[apiname]
         if self.adding_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             self.lbl_username.setText('Name:')

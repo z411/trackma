@@ -35,9 +35,6 @@ from trackma.ui.qt.util import FilterBar, getIcon
 from trackma.ui.qt.widgets import ShowsTableView
 from trackma.ui.qt.workers import EngineWorker, ImageWorker
 
-pyqt_version = 5
-
-
 class MainWindow(QMainWindow):
     """
     Main GUI class
@@ -502,7 +499,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if not self.started or not self.worker.engine.loaded:
             event.accept()
-            if pyqt_version == 5 and self.finish:
+            if self.finish:
                 QApplication.instance().quit()
         elif self.config['show_tray'] and self.config['close_to_tray']:
             event.ignore()
@@ -769,12 +766,8 @@ class MainWindow(QMainWindow):
             if column not in self.api_config['visible_columns']:
                 self.view.setColumnHidden(i, True)
 
-        if pyqt_version == 5:
-            self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-            self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        else:
-            self.view.horizontalHeader().setResizeMode(1, QHeaderView.ResizeMode.Stretch)
-            self.view.horizontalHeader().setResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
 
         # Recover column state
         if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
@@ -1199,9 +1192,9 @@ class MainWindow(QMainWindow):
                                              queue),
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
 
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.StandardButton.Yes:
                 self.s_send(True)
-            elif reply == QMessageBox.No:
+            elif reply == QMessageBox.StandardButton.No:
                 self._busy(True)
                 self.worker_call('list_download', self.r_list_retrieved)
         else:

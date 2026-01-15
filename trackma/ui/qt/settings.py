@@ -25,8 +25,6 @@ from trackma.ui.qt.delegates import ShowsTableDelegate
 from trackma.ui.qt.themedcolorpicker import ThemedColorPicker
 from trackma.ui.qt.util import FilterBar, getColor, getIcon
 
-pyqt_version = 5
-
 
 class SettingsDialog(QDialog):
     worker = None
@@ -473,9 +471,6 @@ class SettingsDialog(QDialog):
             scrollable_page.setWidget(page)
             self.contents.addWidget(scrollable_page)
 
-        if pyqt_version != 5:
-            self.contents.layout().setMargin(0)
-
         # Bottom buttons
         bottombox = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
@@ -805,12 +800,8 @@ class SettingsDialog(QDialog):
         self.auto_status_change_if_scored.setEnabled(checked)
 
     def s_player_browse(self):
-        if pyqt_version == 5:
-            self.player.setText(QFileDialog.getOpenFileName(
-                caption='Choose player executable')[0])
-        else:
-            self.player.setText(QFileDialog.getOpenFileName(
-                caption='Choose player executable'))
+        self.player.setText(QFileDialog.getOpenFileName(
+            caption='Choose player executable')[0])
 
     def s_searchdirs_add(self):
         self._add_dir(QFileDialog.getExistingDirectory(

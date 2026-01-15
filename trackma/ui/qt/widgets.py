@@ -25,8 +25,6 @@ from trackma.ui.qt.delegates import AddListDelegate, ShowsTableDelegate
 from trackma.ui.qt.models import AddListModel, AddListProxy, AddTableModel, ShowListModel, ShowListProxy
 from trackma.ui.qt.workers import ImageWorker
 
-pyqt_version = 5
-
 
 class DetailsWidget(QWidget):
     def __init__(self, parent, worker):
@@ -166,10 +164,7 @@ class ShowsTableView(QTableView):
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.horizontalHeader().setHighlightSections(False)
-        if pyqt_version == 5:
-            self.horizontalHeader().setSectionsMovable(True)
-        else:
-            self.horizontalHeader().setMovable(True)
+        self.horizontalHeader().setSectionsMovable(True)
         self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.verticalHeader().hide()
         self.setGridStyle(QtCore.Qt.PenStyle.NoPen)
@@ -245,10 +240,7 @@ class AddTableDetailsView(QSplitter):
         self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.SortOrder.AscendingOrder)
         self.table.setSortingEnabled(True)
 
-        if pyqt_version == 5:
-            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        else:
-            self.table.horizontalHeader().setResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
         self.table.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.addWidget(self.table)
