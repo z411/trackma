@@ -43,7 +43,7 @@ class Messenger:
 
     def _parse_msgs(self, msgs):
         if len(msgs) >= 2:
-            return (msgs[0], " ".join(msgs[1:]) if msgs[2:] else msgs[1])
+            return (msgs[0], " ".join(msgs[1:]))
         return (self.classname, msgs[0])
 
     def debug(self, *msgs):
