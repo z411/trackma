@@ -578,6 +578,7 @@ config_defaults = {
     'tracker_interval': 10,
     'tracker_process': 'mplayer|mplayer2|mpv',
     'tracker_ignore_not_next': True,
+    'tracker_prefer_media_title': False,
     'autoretrieve': 'days',
     'autoretrieve_days': 3,
     'autosend': 'minutes',
