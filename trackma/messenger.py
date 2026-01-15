@@ -16,6 +16,8 @@
 
 import traceback
 
+from trackma.utils import log_error
+
 TYPE_DEBUG = 1
 TYPE_INFO = 2
 # TYPE_ERROR = 3
@@ -61,5 +63,6 @@ class Messenger:
         self._call_handler(msgs, TYPE_WARN)
         exc_type, exc_value, exc_traceback = exc_info
         for block in traceback.format_exception(exc_type, exc_value, exc_traceback):
+            log_error(block)
             for line in block.splitlines():
                 self._handler(self.classname, TYPE_DEBUG, line)
