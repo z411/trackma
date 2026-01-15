@@ -173,7 +173,7 @@ class ShowsTableDelegate(QStyledItemDelegate):
                 prog_options.rect = rect
                 prog_options.text = '%d%%' % (value*100/maximum)
                 prog_options.textVisible = self._show_text
-                option.widget.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+                option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBar, prog_options, painter)
 
             elif self._bar_style is self.BarStyle04:
                 painter.setBrush(getColor(self.colors['progress_bg']))
@@ -195,25 +195,25 @@ class ShowsTableDelegate(QStyledItemDelegate):
 
             elif self._bar_style is self.BarStyleHybrid:
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_Source)
+                    QtGui.QPainter.CompositionMode.CompositionMode_Source)
                 painter.fillRect(rect, QtCore.Qt.GlobalColor.transparent)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceOver)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
                 prog_options = QStyleOptionProgressBar()
                 prog_options.maximum = maximum
                 prog_options.progress = value
                 prog_options.rect = rect
                 prog_options.text = '%d%%' % (value*100/maximum)
-                option.widget.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+                option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBar, prog_options, painter)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceAtop)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceAtop)
                 painter.setPen(QtCore.Qt.GlobalColor.transparent)
                 self.paintSubValue(painter, rect, subvalue, maximum)
                 self.paintEpisodes(painter, rect, episodes, maximum)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceOver)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
                 if self._show_text:
-                    option.widget.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
+                    option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBarLabel, prog_options, painter)
 
             painter.restore()
         else:
