@@ -39,10 +39,10 @@ def main():
         debug = True
 
     try:
-        from PyQt5.QtWidgets import QApplication, QMessageBox
+        from PyQt6.QtWidgets import QApplication, QMessageBox
     except ImportError:
-        print("Couldn't import Qt5 dependencies. "
-              "Make sure you installed the PyQt5 package.")
+        print("Couldn't import Qt6 dependencies. "
+              "Make sure you installed the PyQt6 package.")
 
     try:
         from PIL import Image
@@ -61,6 +61,6 @@ def main():
     try:
         # keep the variable around to prevent it from being gc'ed
         main_window = MainWindow(debug)
-        sys.exit(app.exec_())
+        sys.exit(app.exec())
     except utils.TrackmaFatal as e:
-        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.Ok)
+        QMessageBox.critical(None, 'Fatal Error', "{0}".format(e), QMessageBox.StandardButton.Ok)

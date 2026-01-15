@@ -14,8 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
                              QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QVBoxLayout)
 
@@ -42,11 +42,11 @@ class AccountDialog(QDialog):
         # Create list
         self.table = QTableWidget()
         self.table.horizontalHeader().setHighlightSections(False)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().hide()
-        self.table.setGridStyle(QtCore.Qt.NoPen)
+        self.table.setGridStyle(QtCore.Qt.PenStyle.NoPen)
         self.table.doubleClicked.connect(self.select)
         self.table.itemSelectionChanged.connect(self.update_selection)
 
@@ -63,11 +63,11 @@ class AccountDialog(QDialog):
         self.edit_btns.addItem('Delete')
         self.edit_btns.addItem('Purge')
         self.edit_btns.setItemData(
-            1, 'Change the local password/PIN for this account', QtCore.Qt.ToolTipRole)
+            1, 'Change the local password/PIN for this account', QtCore.Qt.ItemDataRole.ToolTipRole)
         self.edit_btns.setItemData(
-            2, 'Remove this account from Trackma', QtCore.Qt.ToolTipRole)
+            2, 'Remove this account from Trackma', QtCore.Qt.ItemDataRole.ToolTipRole)
         self.edit_btns.setItemData(
-            3, 'Clear local DB for this account', QtCore.Qt.ToolTipRole)
+            3, 'Clear local DB for this account', QtCore.Qt.ItemDataRole.ToolTipRole)
         self.edit_btns.setCurrentIndex(0)
         self.edit_btns.blockSignals(False)
         self.edit_btns.activated.connect(self.s_edit)
@@ -170,9 +170,9 @@ class AccountDialog(QDialog):
                 k, account['api'], self.icons.get(account['api'])))
 
         if pyqt_version == 5:
-            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         else:
-            self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
+            self.table.horizontalHeader().setResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def select(self, checked):
         if not self.selected_account_num:
@@ -247,7 +247,7 @@ class AccountAddDialog(QDialog):
         if self.edit:
             self.username.setEnabled(False)
             self.api.setCurrentIndex(
-                self.api.findData(api, QtCore.Qt.UserRole))
+                self.api.findData(api, QtCore.Qt.ItemDataRole.UserRole))
             self.api.setEnabled(False)
 
         # Finish layouts

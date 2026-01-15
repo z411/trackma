@@ -33,7 +33,7 @@ pycairo = { version = "^1.20.0", optional = true }
 pygobject = { version = "^3.42.1", optional = true }
 pyinotify = { version = "^0.9.6", optional = true }
 pypresence = { version = "^4.2.1", optional = true }
-pyqt5 = { version = "^5.15.7", optional = true }
+pyqt6 = { version = "^6.10.2", optional = true }
 requests-oauthlib = { version = "^1.2.0 || ^2.0.0", optional = true }
 twitter = { version = "^1.19.3", optional = true }
 urwid = { version = "^2.1.2", optional = true }
@@ -43,9 +43,9 @@ urllib3 = "^2.6.0"
 
 [tool.poetry.extras]
 gtk = ["pygobject", "pycairo", "pillow"]
-qt = ["pyqt5", "pillow"]
+qt = ["pyqt6", "pillow"]
 curses = ["urwid"]
-ui = ["pygobject", "pycairo", "pillow", "pyqt5", "urwid"]
+ui = ["pygobject", "pycairo", "pillow", "pyqt6", "urwid"]
 trackers = ["inotify", "pyinotify", "jeepney"]
 discord_rpc = ["pypresence"]
 twitter = ["twitter", "requests-oauthlib"]

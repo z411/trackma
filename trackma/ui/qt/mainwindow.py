@@ -17,8 +17,9 @@
 import base64
 import os
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (QAbstractItemView, QAction, QActionGroup, QApplication, QCheckBox, QComboBox,
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtGui import QAction, QActionGroup
+from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
                              QDoubleSpinBox, QFormLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
                              QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QSpinBox, QStyle,
                              QStyleOptionButton, QSystemTrayIcon, QTabBar, QToolButton, QVBoxLayout, QWidget)
@@ -150,7 +151,7 @@ class MainWindow(QMainWindow):
         self.action_add.triggered.connect(self.s_add)
         self.action_delete = QAction(getIcon('edit-delete'), '&Delete', self)
         self.action_delete.setStatusTip('Remove this show from your list.')
-        self.action_delete.setShortcut(QtCore.Qt.Key_Delete)
+        self.action_delete.setShortcut(QtCore.Qt.Key.Key_Delete)
         self.action_delete.triggered.connect(self.s_delete)
         action_quit = QAction(getIcon('application-exit'), '&Quit', self)
         action_quit.setShortcut('Ctrl+Q')
@@ -219,16 +220,16 @@ class MainWindow(QMainWindow):
         # Make icons for viewed episodes
         rect = QtCore.QSize(16, 16)
         buffer = QtGui.QPixmap(rect)
-        ep_icon_states = {'all': QStyle.State_On,
-                          'part': QStyle.State_NoChange,
-                          'none': QStyle.State_Off}
+        ep_icon_states = {'all': QStyle.StateFlag.State_On,
+                          'part': QStyle.StateFlag.State_NoChange,
+                          'none': QStyle.StateFlag.State_Off}
         self.ep_icons = {}
         for key, state in ep_icon_states.items():
-            buffer.fill(QtCore.Qt.transparent)
+            buffer.fill(QtCore.Qt.GlobalColor.transparent)
             painter = QtGui.QPainter(buffer)
             opt = QStyleOptionButton()
             opt.state = state
-            self.style().drawPrimitive(QStyle.PE_IndicatorMenuCheckMark, opt, painter)
+            self.style().drawPrimitive(QStyle.PrimitiveElement.PE_IndicatorMenuCheckMark, opt, painter)
             self.ep_icons[key] = QtGui.QIcon(buffer)
             painter.end()
 
@@ -350,7 +351,7 @@ class MainWindow(QMainWindow):
         self.show_image = QLabel('Trackma-qt')
         self.show_image.setFixedHeight(149)
         self.show_image.setMinimumWidth(100)
-        self.show_image.setAlignment(QtCore.Qt.AlignCenter)
+        self.show_image.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         show_progress_label = QLabel('Progress:')
         self.show_progress = QSpinBox()
         self.show_progress.setMinimumWidth(spinbox_width)
@@ -392,7 +393,7 @@ class MainWindow(QMainWindow):
         small_btns_hbox.addWidget(self.show_dec_btn)
         small_btns_hbox.addWidget(self.show_play_btn)
         small_btns_hbox.addWidget(self.show_inc_btn)
-        small_btns_hbox.setAlignment(QtCore.Qt.AlignCenter)
+        small_btns_hbox.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         left_box.addRow(self.show_image)
         left_box.addRow(self.show_progress_bar)
@@ -516,11 +517,11 @@ class MainWindow(QMainWindow):
 
     def error(self, msg):
         self.status('Error: {}'.format(msg))
-        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.StandardButton.Ok)
 
     def fatal(self, msg):
         QMessageBox.critical(
-            self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.Ok)
+            self, 'Fatal Error', "Fatal Error! Reason:\n\n{0}".format(msg), QMessageBox.StandardButton.Ok)
         self.accountman.set_default(None)
         self._busy()
         self.finish = False
@@ -634,9 +635,9 @@ class MainWindow(QMainWindow):
 
     def _apply_view(self):
         if self.config['inline_edit']:
-            self.view.setEditTriggers(QAbstractItemView.AllEditTriggers)
+            self.view.setEditTriggers(QAbstractItemView.EditTrigger.AllEditTriggers)
         else:
-            self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
     def _apply_tray(self):
         if self.tray.isVisible() and not self.config['show_tray']:
@@ -761,8 +762,7 @@ class MainWindow(QMainWindow):
 
     def _init_view(self):
         # Set view options
-        self.view.sortByColumn(
-            self.config['sort_index'], self.config['sort_order'])
+        self.view.sortByColumn(self.config['sort_index'], QtCore.Qt.SortOrder(self.config['sort_order']))
 
         # Hide invisible columns
         for i, column in enumerate(self.view.model().sourceModel().columns):
@@ -770,11 +770,11 @@ class MainWindow(QMainWindow):
                 self.view.setColumnHidden(i, True)
 
         if pyqt_version == 5:
-            self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+            self.view.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            self.view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
         else:
-            self.view.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
-            self.view.horizontalHeader().setResizeMode(3, QHeaderView.Fixed)
+            self.view.horizontalHeader().setResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            self.view.horizontalHeader().setResizeMode(3, QHeaderView.ResizeMode.Fixed)
 
         # Recover column state
         if self.config['remember_columns'] and isinstance(self.api_config['columns_state'], str):
@@ -826,7 +826,7 @@ class MainWindow(QMainWindow):
         # Update information
         metrics = QtGui.QFontMetrics(self.show_title.font())
         title = metrics.elidedText(
-            show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+            show['title'], QtCore.Qt.TextElideMode.ElideRight, self.show_title.width())
         self.show_title.setText(title)
 
         self.show_progress.setValue(show['my_progress'])
@@ -1019,7 +1019,7 @@ class MainWindow(QMainWindow):
 
     def s_update_sort(self, index, order):
         self.config['sort_index'] = index
-        self.config['sort_order'] = order
+        self.config['sort_order'] = order.value
 
     def s_download_image(self):
         show = self.worker.engine.get_show_info(self.selected_show_id)
@@ -1044,7 +1044,6 @@ class MainWindow(QMainWindow):
     def s_filter_changed(self):
         # TODOMVC DEPRECATED
         expression = self.show_filter.text()
-        casesens = self.show_filter_casesens.isChecked()
 
         # Determine if a show matches a filter. True -> match -> do not hide
         # Advanced search: Separate the expression into specific field terms, fail if any are not met
@@ -1067,7 +1066,10 @@ class MainWindow(QMainWindow):
             expression = ' '.join(expr_list)
             self.view.model().setFilterColumns(expr_dict)
 
-        self.view.model().setFilterCaseSensitivity(casesens)
+        if self.show_filter_casesens.isChecked():
+            self.view.model().setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseSensitive)
+        else:
+            self.view.model().setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self.view.model().setFilterFixedString(expression)
 
     def s_plus_episode(self):
@@ -1158,9 +1160,9 @@ class MainWindow(QMainWindow):
             show = self.worker.engine.get_show_info(self.selected_show_id)
             reply = QMessageBox.question(self, 'Confirmation',
                                          'Are you sure you want to delete %s?' % show['title'],
-                                         QMessageBox.Yes, QMessageBox.No)
+                                         QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
 
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.StandardButton.Yes:
                 self.worker_call('delete_show', self.r_generic, show)
 
     def s_scan_library(self):
@@ -1195,7 +1197,7 @@ class MainWindow(QMainWindow):
             reply = QMessageBox.question(self, 'Confirmation',
                                          'There are %d unsynced changes. Do you want to send them first? (Choosing No will discard them!)' % len(
                                              queue),
-                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
 
             if reply == QMessageBox.Yes:
                 self.s_send(True)
@@ -1252,7 +1254,7 @@ class MainWindow(QMainWindow):
         dialog = SettingsDialog(
             None, self.worker, self.config, self.configfile)
         dialog.saved.connect(self._update_config)
-        dialog.exec_()
+        dialog.exec()
 
     def s_about(self):
         QMessageBox.about(self, 'About Trackma-qt %s' % utils.VERSION,
@@ -1268,7 +1270,7 @@ class MainWindow(QMainWindow):
     def s_show_menu_columns(self, pos):
         globalPos = self.sender().mapToGlobal(pos)
         globalPos += QtCore.QPoint(3, 3)
-        self.menu_columns.exec_(globalPos)
+        self.menu_columns.exec(globalPos)
 
     def s_toggle_column(self, visible):
         w = self.sender()
@@ -1343,9 +1345,9 @@ class MainWindow(QMainWindow):
         box = QMessageBox(self)
         box.setWindowTitle("Update prompt")
         box.setText(f"Do you want to update {show['title']} to {episode}?")
-        box.setIcon(QMessageBox.Question)
-        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        box.setAttribute(QtCore.Qt.WA_ShowWithoutActivating)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        box.setAttribute(QtCore.Qt.WidgetAttribute.WA_ShowWithoutActivating)
         box.setModal(False)
         box.accepted.connect(lambda:
                 self.worker_call('set_episode', self.r_generic,
@@ -1359,7 +1361,7 @@ class MainWindow(QMainWindow):
         addwindow = AddDialog(
             None, self.worker, current_status, default=show['title'])
         addwindow.setModal(True)
-        if addwindow.exec_():
+        if addwindow.exec():
             self.worker_call('set_episode', self.r_generic,
                              addwindow.selected_show['id'], episode)
 
