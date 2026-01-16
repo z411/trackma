@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt5 import QtCore, QtGui
+from PyQt6 import QtCore, QtGui
 
 from trackma import utils
 from trackma.ui.qt.thumbs import ThumbManager
@@ -33,9 +33,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
     editable_columns = [COL_MY_PROGRESS, COL_MY_SCORE]
 
     common_flags = \
-        QtCore.Qt.ItemIsSelectable | \
-        QtCore.Qt.ItemIsEnabled | \
-        QtCore.Qt.ItemNeverHasChildren
+        QtCore.Qt.ItemFlag.ItemIsSelectable | \
+        QtCore.Qt.ItemFlag.ItemIsEnabled | \
+        QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     date_format = "%Y-%m-%d"
 
@@ -154,9 +154,9 @@ class ShowListModel(QtCore.QAbstractTableModel):
         return len(self.columns)
 
     def headerData(self, section, orientation, role):
-        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole and orientation == QtCore.Qt.Orientation.Horizontal:
             return self.columns[section]
-        elif role == QtCore.Qt.ToolTipRole and orientation == QtCore.Qt.Horizontal:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole and orientation == QtCore.Qt.Orientation.Horizontal:
             if section == ShowListModel.COL_LAST_UPDATED:
                 return 'Date and time of the last synced update'
 
@@ -175,7 +175,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
         row, column = index.row(), index.column()
         show = self.showlist[row]
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if column == ShowListModel.COL_ID:
                 return show['id']
             elif column == ShowListModel.COL_TITLE:
@@ -215,15 +215,15 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return show.get('my_tags', '-')
             elif column == ShowListModel.COL_MY_STATUS:
                 return self.mediainfo['statuses_dict'][show['my_status']]
-        elif role == QtCore.Qt.BackgroundRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundRole:
             return self.colors.get(row)
-        elif role == QtCore.Qt.DecorationRole:
+        elif role == QtCore.Qt.ItemDataRole.DecorationRole:
             if column == ShowListModel.COL_TITLE and show['id'] in self.playing:
                 return getIcon('media-playback-start')
-        elif role == QtCore.Qt.TextAlignmentRole:
+        elif role == QtCore.Qt.ItemDataRole.TextAlignmentRole:
             if column in [ShowListModel.COL_MY_PROGRESS, ShowListModel.COL_MY_SCORE]:
-                return QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter
-        elif role == QtCore.Qt.ToolTipRole:
+                return QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             if column == ShowListModel.COL_PERCENT:
                 tooltip = "Watched: %d<br>" % show['my_progress']
                 if self.eps.get(row):
@@ -238,7 +238,7 @@ class ShowListModel(QtCore.QAbstractTableModel):
                 return tooltip
             elif column == ShowListModel.COL_LAST_UPDATED:
                 return utils.format_local_time(show.get('my_last_update'))
-        elif role == QtCore.Qt.EditRole:
+        elif role == QtCore.Qt.ItemDataRole.EditRole:
             if column == ShowListModel.COL_MY_PROGRESS:
                 return (show['my_progress'], show['total'], 0, 1)
             elif column == ShowListModel.COL_MY_SCORE:
@@ -249,14 +249,14 @@ class ShowListModel(QtCore.QAbstractTableModel):
                     decimals = 0
 
                 return (show['my_score'], self.mediainfo['score_max'], decimals, self.mediainfo['score_step'])
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             if column == ShowListModel.COL_LAST_UPDATED:
                 dt = show.get('my_last_update')
                 return dt.timestamp() if dt is not None else 0
 
     def flags(self, index):
         if index.column() in self.editable_columns:
-            return self.common_flags | QtCore.Qt.ItemIsEditable
+            return self.common_flags | QtCore.Qt.ItemFlag.ItemIsEditable
         else:
             return self.common_flags
 
@@ -284,13 +284,13 @@ class AddTableModel(QtCore.QAbstractTableModel):
         return 3
 
     def headerData(self, section, orientation, role):
-        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole and orientation == QtCore.Qt.Orientation.Horizontal:
             return self.columns[section]
 
     def data(self, index, role):
         row, column = index.row(), index.column()
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             item = self.results[row]
 
             if column == 0:
@@ -322,7 +322,7 @@ class AddListModel(QtCore.QAbstractListModel):
     def gotThumb(self, iid, thumb):
         iid = int(iid)
         self.thumbs[iid] = thumb.scaled(
-            100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            100, 140, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
 
         self.dataChanged.emit(self.index(iid), self.index(iid))
 
@@ -345,7 +345,7 @@ class AddListModel(QtCore.QAbstractListModel):
 
                     if self.pool.exists(filename):
                         self.thumbs[row] = self.pool.getThumb(filename).scaled(
-                            100, 140, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                            100, 140, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
                     else:
                         self.pool.queueDownload(row, item['image'], filename)
 
@@ -359,11 +359,11 @@ class AddListModel(QtCore.QAbstractListModel):
 
     def data(self, index, role):
         row = index.row()
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self.results[row]
-        elif role == QtCore.Qt.DecorationRole:
+        elif role == QtCore.Qt.ItemDataRole.DecorationRole:
             return self.thumbs.get(row)
-        elif role == QtCore.Qt.BackgroundRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundRole:
             t = self.results[row].get('type')
             if t == utils.Type.TV:
                 return QtGui.QColor(202, 253, 150)
@@ -381,8 +381,8 @@ class AddListModel(QtCore.QAbstractListModel):
 
 class AddListProxy(QtCore.QSortFilterProxyModel):
     def lessThan(self, left, right):
-        leftData = self.sourceModel().data(left, QtCore.Qt.DisplayRole)
-        rightData = self.sourceModel().data(right, QtCore.Qt.DisplayRole)
+        leftData = self.sourceModel().data(left, QtCore.Qt.ItemDataRole.DisplayRole)
+        rightData = self.sourceModel().data(right, QtCore.Qt.ItemDataRole.DisplayRole)
 
         return leftData['type'] < rightData['type']
 
@@ -410,7 +410,7 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
             for col in range(self.sourceModel().columnCount(source_parent)):
                 index = self.sourceModel().index(source_row, col)
                 if (col in self.filter_columns and
-                        self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.DisplayRole))):
+                        self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.ItemDataRole.DisplayRole))):
                     return False
 
         return super(ShowListProxy, self).filterAcceptsRow(source_row, source_parent)
@@ -419,8 +419,8 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
         col = left.column()
 
         if col == ShowListModel.COL_LAST_UPDATED:
-            lv = self.sourceModel().data(left, QtCore.Qt.UserRole)
-            rv = self.sourceModel().data(right, QtCore.Qt.UserRole)
+            lv = self.sourceModel().data(left, QtCore.Qt.ItemDataRole.UserRole)
+            rv = self.sourceModel().data(right, QtCore.Qt.ItemDataRole.UserRole)
 
             lnum = lv if isinstance(lv, (int, float)) else 0
             rnum = rv if isinstance(rv, (int, float)) else 0

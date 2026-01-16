@@ -20,7 +20,7 @@ import urllib.request
 from io import BytesIO
 
 from PIL import Image
-from PyQt5 import QtCore
+from PyQt6 import QtCore
 
 from trackma import utils
 from trackma.engine import Engine

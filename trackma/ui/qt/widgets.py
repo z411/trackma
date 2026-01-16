@@ -16,16 +16,14 @@
 
 import os
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import (QAbstractItemView, QGridLayout, QHeaderView, QLabel, QListView, QScrollArea, QSplitter,
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtWidgets import (QAbstractItemView, QGridLayout, QHeaderView, QLabel, QListView, QScrollArea, QSplitter,
                              QTableView, QVBoxLayout, QWidget)
 
 from trackma import utils
 from trackma.ui.qt.delegates import AddListDelegate, ShowsTableDelegate
 from trackma.ui.qt.models import AddListModel, AddListProxy, AddTableModel, ShowListModel, ShowListProxy
 from trackma.ui.qt.workers import ImageWorker
-
-pyqt_version = 5
 
 
 class DetailsWidget(QWidget):
@@ -42,20 +40,20 @@ class DetailsWidget(QWidget):
         show_title_font = QtGui.QFont()
         show_title_font.setBold(True)
         show_title_font.setPointSize(12)
-        self.show_title.setAlignment(QtCore.Qt.AlignCenter)
+        self.show_title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.show_title.setFont(show_title_font)
 
         info_area = QWidget()
         info_layout = QGridLayout()
 
         self.show_image = QLabel()
-        self.show_image.setAlignment(QtCore.Qt.AlignTop)
+        self.show_image.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.show_info = QLabel()
         self.show_info.setWordWrap(True)
-        self.show_info.setAlignment(QtCore.Qt.AlignTop)
+        self.show_info.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.show_description = QLabel()
         self.show_description.setWordWrap(True)
-        self.show_description.setAlignment(QtCore.Qt.AlignTop)
+        self.show_description.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         info_layout.addWidget(self.show_image,        0, 0, 1, 1)
         info_layout.addWidget(self.show_info,         1, 0, 1, 1)
@@ -64,7 +62,7 @@ class DetailsWidget(QWidget):
         info_area.setLayout(info_layout)
 
         scroll_area = QScrollArea()
-        scroll_area.setBackgroundRole(QtGui.QPalette.Light)
+        scroll_area.setBackgroundRole(QtGui.QPalette.ColorRole.Light)
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(info_area)
 
@@ -81,12 +79,12 @@ class DetailsWidget(QWidget):
     def load(self, show):
         metrics = QtGui.QFontMetrics(self.show_title.font())
         title = metrics.elidedText(
-            show['title'], QtCore.Qt.ElideRight, self.show_title.width())
+            show['title'], QtCore.Qt.TextElideMode.ElideRight, self.show_title.width())
 
         self.show_title.setText("<a href=\"%s\">%s</a>" % (show['url'], title))
-        self.show_title.setTextFormat(QtCore.Qt.RichText)
+        self.show_title.setTextFormat(QtCore.Qt.TextFormat.RichText)
         self.show_title.setTextInteractionFlags(
-            QtCore.Qt.TextBrowserInteraction)
+            QtCore.Qt.TextInteractionFlag.TextBrowserInteraction)
         self.show_title.setOpenExternalLinks(True)
 
         # Load show info
@@ -163,24 +161,21 @@ class ShowsTableView(QTableView):
         self.setModel(proxymodel)
 
         self.setItemDelegate(ShowsTableDelegate(self, palette=palette))
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.horizontalHeader().setHighlightSections(False)
-        if pyqt_version == 5:
-            self.horizontalHeader().setSectionsMovable(True)
-        else:
-            self.horizontalHeader().setMovable(True)
-        self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.horizontalHeader().setSectionsMovable(True)
+        self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.verticalHeader().hide()
-        self.setGridStyle(QtCore.Qt.NoPen)
+        self.setGridStyle(QtCore.Qt.PenStyle.NoPen)
 
     def contextMenuEvent(self, event):
-        action = self.context_menu.exec_(event.globalPos())
+        action = self.context_menu.exec(event.globalPos())
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
 
-        if event.button() == QtCore.Qt.MidButton:
+        if event.button() == QtCore.Qt.MouseButton.MiddleButton:
             self.middleClicked.emit()
 
 
@@ -193,14 +188,14 @@ class AddCardView(QListView):
         m = AddListModel(api_info=api_info)
         proxy = AddListProxy()
         proxy.setSourceModel(m)
-        proxy.sort(0, QtCore.Qt.AscendingOrder)
+        proxy.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         self.setItemDelegate(AddListDelegate())
-        self.setFlow(QListView.LeftToRight)
+        self.setFlow(QListView.Flow.LeftToRight)
         self.setWrapping(True)
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.setModel(proxy)
 
         self.selectionModel().currentRowChanged.connect(self.s_show_selected)
@@ -235,20 +230,17 @@ class AddTableDetailsView(QSplitter):
         proxy = QtCore.QSortFilterProxyModel()
         proxy.setSourceModel(m)
 
-        self.table.setGridStyle(QtCore.Qt.NoPen)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setGridStyle(QtCore.Qt.PenStyle.NoPen)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setModel(proxy)
 
         # Allow sorting but don't sort by default
-        self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.AscendingOrder)
+        self.table.horizontalHeader().setSortIndicator(-1, QtCore.Qt.SortOrder.AscendingOrder)
         self.table.setSortingEnabled(True)
 
-        if pyqt_version == 5:
-            self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        else:
-            self.table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
         self.table.selectionModel().currentRowChanged.connect(self.s_show_selected)
         self.addWidget(self.table)

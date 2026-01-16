@@ -1,10 +1,10 @@
 import os
 import queue
 
-from PyQt5 import QtCore, QtGui, QtNetwork
+from PyQt6 import QtCore, QtGui, QtNetwork
 
-ATTRIB_FILE = 1000
-ATTRIB_ID = 1001
+ATTRIB_FILE = QtNetwork.QNetworkRequest.Attribute(1000)
+ATTRIB_ID = QtNetwork.QNetworkRequest.Attribute(1001)
 
 
 class ThumbManager(QtCore.QObject):
@@ -42,9 +42,9 @@ class ThumbManager(QtCore.QObject):
 
             request = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
             request.setAttribute(
-                QtNetwork.QNetworkRequest.Attribute(ATTRIB_FILE), filename)
-            request.setAttribute(
                 QtNetwork.QNetworkRequest.Attribute(ATTRIB_ID), iid)
+            request.setAttribute(
+                QtNetwork.QNetworkRequest.Attribute(ATTRIB_FILE), filename)
 
             reply = self.manager.get(request)
             self.downloads[filename] = reply
@@ -59,7 +59,7 @@ class ThumbManager(QtCore.QObject):
         data = reply.readAll()
         image = QtGui.QImage.fromData(data)
         thumb = image.scaled(
-            200, 280, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            200, 280, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
         thumb.save(fname)
 
         self.downloads.pop(fname)

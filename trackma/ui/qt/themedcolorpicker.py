@@ -14,8 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QGridLayout, QPushButton, QVBoxLayout
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QGridLayout, QPushButton, QVBoxLayout
 
 
 class ThemedColorPicker(QDialog):
@@ -36,15 +36,15 @@ class ThemedColorPicker(QDialog):
             for role in self.roles:
                 self.colors.append(QPushButton())
                 self.colors[-1].setStyleSheet('background-color: ' + QtGui.QColor(
-                    QtGui.QPalette().color(group, role)).name())
-                self.colors[-1].setFocusPolicy(QtCore.Qt.NoFocus)
+                    QtGui.QPalette().color(QtGui.QPalette.ColorGroup(group), QtGui.QPalette.ColorRole(role))).name())
+                self.colors[-1].setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
                 self.colors[-1].clicked.connect(self.s_select(group, role))
                 colorbox.addWidget(self.colors[-1], row, col, 1, 1)
                 col += 1
             row += 1
         bottombox = QDialogButtonBox()
-        bottombox.addButton(QDialogButtonBox.Ok)
-        bottombox.addButton(QDialogButtonBox.Cancel)
+        bottombox.addButton(QDialogButtonBox.StandardButton.Ok)
+        bottombox.addButton(QDialogButtonBox.StandardButton.Cancel)
         bottombox.accepted.connect(self.accept)
         bottombox.rejected.connect(self.reject)
         layout.addLayout(colorbox)
@@ -60,9 +60,9 @@ class ThemedColorPicker(QDialog):
     @staticmethod
     def do(parent=None, default=None):
         dialog = ThemedColorPicker(parent, default)
-        result = dialog.exec_()
+        result = dialog.exec()
 
-        if result == QDialog.Accepted:
+        if result == QDialog.DialogCode.Accepted:
             return dialog.colorString
         else:
             return None

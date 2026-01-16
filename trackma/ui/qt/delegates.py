@@ -1,5 +1,5 @@
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QDoubleSpinBox, QStyle, QStyleOptionProgressBar, QStyledItemDelegate
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtWidgets import QDoubleSpinBox, QStyle, QStyleOptionProgressBar, QStyledItemDelegate
 
 from trackma.ui.qt.util import getColor
 
@@ -25,9 +25,9 @@ class AddListDelegate(QStyledItemDelegate):
 
         # Get theme colors
         palette = QtGui.QPalette()
-        self.alternatebasecolor = palette.color(palette.AlternateBase)
-        self.windowtextcolor = palette.color(palette.WindowText)
-        self.windowcolor = palette.color(palette.Window)
+        self.alternatebasecolor = palette.color(palette.ColorRole.AlternateBase)
+        self.windowtextcolor = palette.color(palette.ColorRole.WindowText)
+        self.windowcolor = palette.color(palette.ColorRole.Window)
 
         super().__init__(parent)
 
@@ -41,11 +41,11 @@ class AddListDelegate(QStyledItemDelegate):
             QtCore.QMargins(MARGIN, MARGIN, MARGIN, MARGIN)
 
         data = index.data()
-        thumb = index.data(QtCore.Qt.DecorationRole)
+        thumb = index.data(QtCore.Qt.ItemDataRole.DecorationRole)
 
         painter.save()
 
-        color = index.data(QtCore.Qt.BackgroundRole)
+        color = index.data(QtCore.Qt.ItemDataRole.BackgroundRole)
 
         # Draw background box
         painter.setPen(QtGui.QPen(self.alternatebasecolor))
@@ -55,7 +55,7 @@ class AddListDelegate(QStyledItemDelegate):
         # Prepare to draw inside
         baseRect = outerRect - \
             QtCore.QMargins(PADDING, PADDING, PADDING, PADDING)
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
 
         # Draw thumbnail (if any)
         if thumb:
@@ -69,7 +69,7 @@ class AddListDelegate(QStyledItemDelegate):
 
         # Set our font to bold
         bfont = QtGui.QFont(self.font)
-        bfont.setWeight(QtGui.QFont.Bold)
+        bfont.setWeight(QtGui.QFont.Weight.Bold)
 
         painter.setFont(bfont)
         painter.setPen(QtGui.QPen(QtGui.QColor(10, 10, 10)))
@@ -78,7 +78,7 @@ class AddListDelegate(QStyledItemDelegate):
         textRect -= QtCore.QMargins(5, 0, 5, 0)
 
         # Draw title
-        painter.drawText(textRect, QtCore.Qt.AlignVCenter, data['title'])
+        painter.drawText(textRect, QtCore.Qt.AlignmentFlag.AlignVCenter, data['title'])
 
         painter.setPen(QtGui.QPen(self.windowtextcolor))
 
@@ -87,9 +87,9 @@ class AddListDelegate(QStyledItemDelegate):
         dataRect = textRect.adjusted(75, 0, 0, 0)
 
         textRect.translate(0, self.fh + 10)
-        painter.drawText(textRect, QtCore.Qt.AlignTop, "Date")
+        painter.drawText(textRect, QtCore.Qt.AlignmentFlag.AlignTop, "Date")
         textRect.translate(0, self.fh + 5)
-        painter.drawText(textRect, QtCore.Qt.AlignTop, "Episodes")
+        painter.drawText(textRect, QtCore.Qt.AlignmentFlag.AlignTop, "Episodes")
 
         # Draw data
         painter.setFont(self.font)
@@ -105,10 +105,10 @@ class AddListDelegate(QStyledItemDelegate):
             d_end = '?'
 
         dataRect.translate(0, self.fh + 10)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop,
+        painter.drawText(dataRect, QtCore.Qt.AlignmentFlag.AlignTop,
                          "{} to {}".format(d_from, d_end))
         dataRect.translate(0, self.fh + 5)
-        painter.drawText(dataRect, QtCore.Qt.AlignTop,
+        painter.drawText(dataRect, QtCore.Qt.AlignmentFlag.AlignTop,
                          str(data.get('total') or '?'))
 
         # Draw synopsis
@@ -116,12 +116,12 @@ class AddListDelegate(QStyledItemDelegate):
         textRect.setBottomRight(baseRect.bottomRight())
 
         if 'extra' in data:
-            painter.drawText(textRect, QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self._get_extra(
+            painter.drawText(textRect, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.TextFlag.TextWordWrap, self._get_extra(
                 data['extra'], 'Synopsis'))
 
         # Draw select box
-        if option.state & QStyle.State_Selected:
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode_Overlay)
+        if option.state & QStyle.StateFlag.State_Selected:
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Overlay)
             # painter.setOpacity(0.5)
             painter.fillRect(outerRect, option.palette.highlight())
 
@@ -173,11 +173,11 @@ class ShowsTableDelegate(QStyledItemDelegate):
                 prog_options.rect = rect
                 prog_options.text = '%d%%' % (value*100/maximum)
                 prog_options.textVisible = self._show_text
-                option.widget.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+                option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBar, prog_options, painter)
 
             elif self._bar_style is self.BarStyle04:
                 painter.setBrush(getColor(self.colors['progress_bg']))
-                painter.setPen(QtCore.Qt.transparent)
+                painter.setPen(QtCore.Qt.GlobalColor.transparent)
                 painter.drawRect(rect)
                 self.paintSubValue(painter, rect, subvalue, maximum)
                 if value > 0:
@@ -195,25 +195,25 @@ class ShowsTableDelegate(QStyledItemDelegate):
 
             elif self._bar_style is self.BarStyleHybrid:
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_Source)
-                painter.fillRect(rect, QtCore.Qt.transparent)
+                    QtGui.QPainter.CompositionMode.CompositionMode_Source)
+                painter.fillRect(rect, QtCore.Qt.GlobalColor.transparent)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceOver)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
                 prog_options = QStyleOptionProgressBar()
                 prog_options.maximum = maximum
                 prog_options.progress = value
                 prog_options.rect = rect
                 prog_options.text = '%d%%' % (value*100/maximum)
-                option.widget.style().drawControl(QStyle.CE_ProgressBar, prog_options, painter)
+                option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBar, prog_options, painter)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceAtop)
-                painter.setPen(QtCore.Qt.transparent)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceAtop)
+                painter.setPen(QtCore.Qt.GlobalColor.transparent)
                 self.paintSubValue(painter, rect, subvalue, maximum)
                 self.paintEpisodes(painter, rect, episodes, maximum)
                 painter.setCompositionMode(
-                    QtGui.QPainter.CompositionMode_SourceOver)
+                    QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
                 if self._show_text:
-                    option.widget.style().drawControl(QStyle.CE_ProgressBarLabel, prog_options, painter)
+                    option.widget.style().drawControl(QStyle.ControlElement.CE_ProgressBarLabel, prog_options, painter)
 
             painter.restore()
         else:
@@ -261,7 +261,7 @@ class ShowsTableDelegate(QStyledItemDelegate):
 
     def setEditorData(self, editor, index):
         (value, maximum, decimals, step) = index.model().data(
-            index, QtCore.Qt.EditRole)
+            index, QtCore.Qt.ItemDataRole.EditRole)
 
         editor.setMaximum(maximum or 999)
         editor.setDecimals(decimals or 0)
@@ -272,8 +272,8 @@ class ShowsTableDelegate(QStyledItemDelegate):
 
     def setModelData(self, editor, model, index):
         editor.interpretText()
-        old_value = index.model().data(index, QtCore.Qt.EditRole)[0]
+        old_value = index.model().data(index, QtCore.Qt.ItemDataRole.EditRole)[0]
         new_value = editor.value()
 
         if new_value != old_value:
-            model.setData(index, new_value, QtCore.Qt.EditRole)
+            model.setData(index, new_value, QtCore.Qt.ItemDataRole.EditRole)

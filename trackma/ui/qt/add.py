@@ -16,15 +16,13 @@
 
 from datetime import date
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
                              QRadioButton, QSpinBox, QSplitter, QStackedWidget, QVBoxLayout)
 
 from trackma import utils
 from trackma.ui.qt.details import DetailsDialog
 from trackma.ui.qt.widgets import AddCardView, AddTableDetailsView
-
-pyqt_version = 5
 
 
 class AddDialog(QDialog):
@@ -65,7 +63,7 @@ class AddDialog(QDialog):
             top_layout.addWidget(self.search_rad)
             top_layout.addWidget(self.search_txt)
         else:
-            top_layout.setAlignment(QtCore.Qt.AlignRight)
+            top_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
 
         top_layout.addWidget(self.search_btn)
 
@@ -93,10 +91,10 @@ class AddDialog(QDialog):
             filters_layout.addWidget(self.season_combo)
             filters_layout.addWidget(self.season_year)
 
-            filters_layout.setAlignment(QtCore.Qt.AlignLeft)
+            filters_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
             filters_layout.addWidget(QSplitter())
         else:
-            filters_layout.setAlignment(QtCore.Qt.AlignRight)
+            filters_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
 
         view_combo = QComboBox()
         view_combo.addItem('Card view')
@@ -123,9 +121,9 @@ class AddDialog(QDialog):
         # self.set_results([{'id': 1, 'title': 'Hola', 'image': 'https://omaera.org/icon.png'}])
 
         bottom_buttons = QDialogButtonBox()
-        bottom_buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
+        bottom_buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
         self.add_btn = bottom_buttons.addButton(
-            "Add", QDialogButtonBox.AcceptRole)
+            "Add", QDialogButtonBox.ButtonRole.AcceptRole)
         self.add_btn.setEnabled(False)
         bottom_buttons.accepted.connect(self.s_add)
         bottom_buttons.rejected.connect(self.close)
