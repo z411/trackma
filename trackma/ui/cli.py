@@ -90,7 +90,7 @@ class Trackma_cmd(command.Cmd):
         super().__init__()
 
         if interactive:
-            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2025  z411')
+            print('Trackma v'+utils.VERSION+'  Copyright (C) 2012-2026  z411')
             print(
                 'This program comes with ABSOLUTELY NO WARRANTY; for details type `about\'')
             print('This is free software, and you are welcome to redistribute it')
