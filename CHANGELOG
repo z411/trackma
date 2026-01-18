@@ -1,3 +1,26 @@
+v0.10
+- New feature: (Qt) PyQt6 support
+- New feature: New Last updated column
+- Improvement: Separate OVA and ONA show types
+- Improvement: Added fallback to aie if anitopy can't load
+- Improvement: Add TV Short type
+- Improvement: (Anilist) Fetch season data and mean score
+- Improvement: (MAL) Using new icon
+- Improvement: (Shikimori) Using new Shikimori domain
+- Improvement: (CLI) Consider all titles for search
+- Improvement: (CLI) Show altname in info block
+- Improvement: (Qt) Display romaji in description
+- Improvement: (Qt) Improved column widths and allow resizing
+- Bugfix: Don't change dates for rewatches
+- Bugfix: (MAL) Fetching user info in new API
+- Bugfix: (MPRIS) Fixed tracker status not resetting on unrecognized show
+- Bugfix: (MPRIS) Fixed tracker state updating
+- Bugfix: (Qt/GTK) Fixed decimal scoring
+- Bugfix: (Qt) Fixed display of type in Add modal table
+- Bugfix: (Qt) Fixed display of lists in description segment
+- Bugfix: (Qt) Fixed crash when attempting to update empty list
+- Bugfix: (Qt) Fixed library icon
+
 v0.9
 - New feature: Anitopy wrapper
 - Improvement: MPRIS parser rewrite
