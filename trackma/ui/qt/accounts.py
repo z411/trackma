@@ -297,7 +297,7 @@ class AccountAddDialog(QDialog):
     @staticmethod
     def do(parent=None, icons=None, edit=False, username='', password='', api='', extra={}):
         dialog = AccountAddDialog(parent, icons, edit, username, password, api)
-        result = dialog.exec_()
+        result = dialog.exec()
 
         if result == QDialog.DialogCode.Accepted:
             currentIndex = dialog.api.currentIndex()
