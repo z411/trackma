@@ -137,17 +137,17 @@ class AccountDialog(QDialog):
 
     def delete(self):
         reply = QMessageBox.question(
-            self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.Yes, QMessageBox.No)
+            self, 'Confirmation', 'Do you want to delete the selected account?', QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             self.accountman.delete_account(self.selected_account_num)
             self.rebuild()
 
     def purge(self):
         reply = QMessageBox.question(
-            self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.Yes, QMessageBox.No)
+            self, 'Confirmation', 'Do you want to purge the selected account\'s local data?', QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             self.accountman.purge_account(self.selected_account_num)
             self.rebuild()
 
@@ -182,7 +182,7 @@ class AccountDialog(QDialog):
         self.close()
 
     def _error(self, msg):
-        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', str(msg), QMessageBox.StandardButton.Ok)
 
 
 class AccountItem(QTableWidgetItem):
@@ -230,8 +230,8 @@ class AccountAddDialog(QDialog):
         formlayout.addRow(self.lbl_password, pin_layout)
 
         bottombox = QDialogButtonBox()
-        bottombox.addButton(QDialogButtonBox.Save)
-        bottombox.addButton(QDialogButtonBox.Cancel)
+        bottombox.addButton(QDialogButtonBox.StandardButton.Save)
+        bottombox.addButton(QDialogButtonBox.StandardButton.Cancel)
         bottombox.accepted.connect(self.validate)
         bottombox.rejected.connect(self.reject)
 
@@ -281,25 +281,25 @@ class AccountAddDialog(QDialog):
         if self.adding_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
             self.lbl_username.setText('Name:')
             self.lbl_password.setText('PIN:')
-            self.password.setEchoMode(QLineEdit.Normal)
+            self.password.setEchoMode(QLineEdit.EchoMode.Normal)
             self.api_auth.show()
             self.adding_allow = False
         else:
             self.lbl_username.setText('Username:')
             self.lbl_password.setText('Password:')
-            self.password.setEchoMode(QLineEdit.Password)
+            self.password.setEchoMode(QLineEdit.EchoMode.Password)
             self.api_auth.hide()
             self.adding_allow = True
 
     def _error(self, msg):
-        QMessageBox.critical(self, 'Error', msg, QMessageBox.Ok)
+        QMessageBox.critical(self, 'Error', msg, QMessageBox.StandardButton.Ok)
 
     @staticmethod
     def do(parent=None, icons=None, edit=False, username='', password='', api='', extra={}):
         dialog = AccountAddDialog(parent, icons, edit, username, password, api)
         result = dialog.exec_()
 
-        if result == QDialog.Accepted:
+        if result == QDialog.DialogCode.Accepted:
             currentIndex = dialog.api.currentIndex()
             return (
                 str(dialog.username.text()),
