@@ -993,7 +993,7 @@ class MainWindow(QMainWindow):
                 self.show()
 
     def s_tray_clicked(self, reason):
-        if reason == QSystemTrayIcon.Trigger:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.s_hide()
 
     def s_busy(self):
