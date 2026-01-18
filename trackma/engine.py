@@ -324,8 +324,7 @@ class Engine:
                             module.init(self)
                         self.hooks_available.append(module)
                     except ImportError:
-                        self.msg.warn("Error importing hook {}.".format(name))
-                        self.msg.exception(sys.exc_info())
+                        self.msg.exception("Error importing hook {}.".format(name), exc_info=sys.exc_info())
 
         # Start tracker
         if self.mediainfo.get('can_play') and self.config['tracker_enabled']:
@@ -348,9 +347,10 @@ class Engine:
                     'unrecognised', self._tracker_unrecognised)
                 self.tracker.connect_signal('state', self._tracker_state)
             except ImportError:
-                self.msg.warn("Couldn't import specified tracker: {}".format(
-                    self.config['tracker_type']))
-                self.msg.exception(sys.exc_info())
+                self.msg.exception(
+                    "Couldn't import specified tracker: {}".format(self.config['tracker_type']),
+                    exc_info=sys.exc_info(),
+                )
 
         self.loaded = True
         self.msg.debug("Engine started")
