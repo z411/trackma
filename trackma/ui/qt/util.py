@@ -41,7 +41,7 @@ def getColor(colorString):
     else:
         (group, role) = [int(i) for i in colorString.split(',')]
         if (0 <= group <= 2) and (0 <= role <= 19):
-            return QtGui.QColor(QtGui.QPalette().color(group, role))
+            return QtGui.QColor(QtGui.QPalette().color(QtGui.QPalette.ColorGroup(group), QtGui.QPalette.ColorRole(role)))
         else:
             # Failsafe - return black
             return QtGui.QColor()
