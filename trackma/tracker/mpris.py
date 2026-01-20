@@ -379,8 +379,15 @@ class MprisTracker(tracker.TrackerBase):
 
     async def _on_tick(self):
         if self.active_player:
-            self.view_offset = int(await self.active_player.get_position()) / 1000
+            try:
+                self.view_offset = int(await self.active_player.get_position()) / 1000
+            except TypeError:
+                self.view_offset = None
+                # The view_offset is not important, so we ignore errors.
+                pass
+
         if self.last_show_tuple:
             self.update_timer(self.last_state, self.last_show_tuple)
+
         if self.last_updated:
             self._stop_timer()
