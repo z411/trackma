@@ -54,7 +54,8 @@ def safe_get_dbus_value(pair, type_):
     if pair is None:
         return None
     if pair[0] != type_:
-        raise TypeError(f"Expected type {type_!r} but found {pair[0]!r}")
+        msg = f"Expected type {type_!r} but found {pair[0]!r}; value: {pair[1]!r}"
+        raise TypeError(msg)
     return pair[1]
 
 
