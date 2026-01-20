@@ -205,10 +205,10 @@ class MprisTracker(tracker.TrackerBase):
                 # https://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-name-owner-changed
                 msg = await queue.get()
                 (wellknown_name, old_name, new_name) = msg.body
+                if old_name:
+                    self.on_bus_removed(wellknown_name, old_name)
                 if new_name:
                     await self.on_bus_added(router, wellknown_name, new_name)
-                elif old_name:
-                    self.on_bus_removed(wellknown_name, new_name)
 
     async def on_bus_added(self, router, wellknown_name, unique_name):
         if not self.valid_player(wellknown_name):
