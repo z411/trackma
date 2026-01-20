@@ -19,10 +19,12 @@ import os
 import re
 import sys
 import threading
+import time
 import urllib.parse
 import asyncio
 from typing import Any, Dict, Union
 from dataclasses import dataclass
+from collections import deque
 
 from jeepney import HeaderFields, Properties, DBusAddress
 from jeepney.io.asyncio import open_dbus_router, DBusRouter, Proxy
@@ -152,7 +154,18 @@ class MprisTracker(tracker.TrackerBase):
     def observe(self, config, watch_dirs):
         self.msg.info("Using MPRIS.")
         self.initialized.wait()
-        asyncio.run(self.observe_async())
+
+        # Permit 5 starts within 60 seconds,
+        # waiting for 5s between each retry.
+        # If it fails more frequently,
+        # we consider the tracker to be broken and let it die.
+        start_times = deque(maxlen=5)
+        while len(start_times) < 5 or start_times[0] + 60 < time.time():
+            start_times.append(time.time())
+            asyncio.run(self.observe_async())
+            time.sleep(5)
+
+        self.msg.warn("Reached restart limit for MPRIS tracker.")
 
     async def observe_async(self):
         async with open_dbus_router() as router:
@@ -180,7 +193,6 @@ class MprisTracker(tracker.TrackerBase):
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks)
-                # let the thread die
 
     async def name_owner_watcher(self, router):
         # Select name change signals for the well-known mpris service name.
