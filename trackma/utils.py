@@ -740,7 +740,7 @@ qt_per_api_defaults = {
 }
 
 def format_local_time(
-    dt: datetime.datetime | None,
+    dt,
     fallback_message='No data',
     error_message='?'
 ) -> str:
