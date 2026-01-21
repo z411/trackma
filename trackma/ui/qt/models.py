@@ -390,6 +390,7 @@ class AddListProxy(QtCore.QSortFilterProxyModel):
 class ShowListProxy(QtCore.QSortFilterProxyModel):
     filter_columns = None
     filter_status = None
+    filter_invert = False
 
     def setFilterStatus(self, status):
         self.filter_status = status
@@ -402,6 +403,9 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
         self.filter_columns = columns
         self.invalidateFilter()
 
+    def setFilterInvert(self, invert):
+        self.filter_invert = invert
+
     def filterAcceptsRow(self, source_row, source_parent):
         if self.filter_status is not None and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
             return False
@@ -411,9 +415,9 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
                 index = self.sourceModel().index(source_row, col)
                 if (col in self.filter_columns and
                         self.filter_columns[col] not in str(self.sourceModel().data(index, QtCore.Qt.ItemDataRole.DisplayRole))):
-                    return False
+                    return self.filter_invert
 
-        return super(ShowListProxy, self).filterAcceptsRow(source_row, source_parent)
+        return self.filter_invert != super(ShowListProxy, self).filterAcceptsRow(source_row, source_parent)
 
     def lessThan(self, left, right):
         col = left.column()

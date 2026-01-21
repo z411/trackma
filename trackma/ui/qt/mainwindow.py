@@ -1063,6 +1063,7 @@ class MainWindow(QMainWindow):
             self.view.model().setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseSensitive)
         else:
             self.view.model().setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        self.view.model().setFilterInvert(self.show_filter_invert.isChecked())
         self.view.model().setFilterFixedString(expression)
 
     def s_plus_episode(self):
