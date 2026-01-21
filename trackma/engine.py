@@ -248,6 +248,14 @@ class Engine:
 
         self.msg.debug("Starting engine...")
 
+        # Temporary deprecation warning for Python 3.9
+        if sys.version_info[:2] == (3, 9):
+            self.msg.warn("\n==============="
+                          "\nDEPRECATION WARNING: Python 3.9 has reached end of life."
+                          "\nTrackma will drop support for it soon. It is recommended"
+                          "\nto upgrade to Python 3.10 or newer."
+                          "\n===============")
+
         # Start the data handler
         try:
             (self.api_info, self.mediainfo) = self.data_handler.start()
