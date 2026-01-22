@@ -19,10 +19,12 @@ import os
 import re
 import sys
 import threading
+import time
 import urllib.parse
 import asyncio
-from typing import Dict, Union
+from typing import Any, Dict, Union
 from dataclasses import dataclass
+from collections import deque
 
 from jeepney import HeaderFields, Properties, DBusAddress
 from jeepney.io.asyncio import open_dbus_router, DBusRouter, Proxy
@@ -30,6 +32,10 @@ from jeepney.bus_messages import message_bus, MatchRule
 
 from trackma import utils
 from trackma.tracker import tracker
+
+__all__ = [
+    'MprisTracker',
+]
 
 
 BUS_NAMESPACE = 'org.mpris.MediaPlayer2'
@@ -45,82 +51,14 @@ class PlaybackStatus(str, Enum):
     STOPPED = 'Stopped'
 
 
-async def name_owner_watcher(router, tracker):
-    # Select name change signals for the well-known mpris service name.
-    # We only consider players with such a well-known name
-    # and thus treat any changes to the owned name
-    # as a creation and a disappearance of a service.
-    # Signals will be published by the service's unique name,
-    # which is why we need to track it.
-    match_rule = MatchRule(
-        type='signal',
-        sender=message_bus.bus_name,
-        interface=message_bus.interface,
-        member='NameOwnerChanged',
-        path=message_bus.object_path,
-    )
-    match_rule.add_arg_condition(0, BUS_NAMESPACE, kind='namespace')
-
-    message_proxy = Proxy(message_bus, router)
-    await message_proxy.AddMatch(match_rule)
-
-    with router.filter(match_rule, bufsize=20) as queue:
-        while True:
-            # https://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-name-owner-changed
-            msg = await queue.get()
-            (wellknown_name, old_name, new_name) = msg.body
-            if new_name:
-                await tracker.on_bus_added(router, wellknown_name, new_name)
-            elif old_name:
-                tracker.on_bus_removed(wellknown_name, new_name)
-
-
 def safe_get_dbus_value(pair, type_):
     """Assert the value's type before returning it None-safely."""
     if pair is None:
         return None
     if pair[0] != type_:
-        raise TypeError(f"Expected type {type_!r} but found {pair[0]!r}")
+        msg = f"Expected type {type_!r} but found {pair[0]!r}; value: {pair[1]!r}"
+        raise TypeError(msg)
     return pair[1]
-
-
-async def properties_watcher(router, tracker):
-    # Select PropertiesChanged signals for the mpris-player subinterface
-    # for all senders.
-    match_rule = MatchRule(
-        type='signal',
-        sender=None,
-        interface=IFACE_PROPERTIES,
-        member='PropertiesChanged',
-        path=PATH_MPRIS,
-    )
-    match_rule.add_arg_condition(0, IFACE_MPRIS_PLAYER)
-
-    message_proxy = Proxy(message_bus, router)
-    await message_proxy.AddMatch(match_rule)
-
-    with router.filter(match_rule, bufsize=10) as queue:
-        while True:
-            msg = await queue.get()
-            handle_properties_changed(tracker, msg)
-
-
-def handle_properties_changed(tracker, msg):
-    # https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-properties
-    (_, changed_properties, _) = msg.body
-    sender = msg.header.fields[HeaderFields.sender]
-    try:
-        playback_status = safe_get_dbus_value(changed_properties.get('PlaybackStatus'), 's')
-        if playback_status:
-            tracker.on_playback_status_change(sender, playback_status)
-
-        metadata = safe_get_dbus_value(changed_properties.get('Metadata'), 'a{sv}')
-        if metadata and ('xesam:title' in metadata or 'xesam:url' in metadata):
-            title = safe_get_dbus_value(metadata.get('xesam:title'), 's')
-            url = safe_get_dbus_value(metadata.get('xesam:url'), 's')
-            tracker.on_filename_change(sender, title, url)
-    except TypeError as e:
-        tracker.msg.warn(f"Failed to read properties for {sender}: {e}")
 
 
 async def collect_names(router) -> Dict[str, str]:
@@ -216,12 +154,23 @@ class MprisTracker(tracker.TrackerBase):
     def observe(self, config, watch_dirs):
         self.msg.info("Using MPRIS.")
         self.initialized.wait()
-        asyncio.run(self.observe_async())
+
+        # Permit 5 starts within 60 seconds,
+        # waiting for 5s between each retry.
+        # If it fails more frequently,
+        # we consider the tracker to be broken and let it die.
+        start_times = deque(maxlen=5)
+        while len(start_times) < 5 or start_times[0] + 60 < time.time():
+            start_times.append(time.time())
+            asyncio.run(self.observe_async())
+            time.sleep(5)
+
+        self.msg.warn("Reached restart limit for MPRIS tracker.")
 
     async def observe_async(self):
         async with open_dbus_router() as router:
-            name_owner_watcher_task = asyncio.create_task(name_owner_watcher(router, self))
-            properties_watcher_task = asyncio.create_task(properties_watcher(router, self))
+            name_owner_watcher_task = asyncio.create_task(self.name_owner_watcher(router))
+            properties_watcher_task = asyncio.create_task(self.properties_watcher(router))
             timer_task = asyncio.create_task(self._timer())
             tasks = [name_owner_watcher_task, properties_watcher_task, timer_task]
 
@@ -244,19 +193,35 @@ class MprisTracker(tracker.TrackerBase):
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks)
-                # let the thread die
 
-    def valid_player(self, wellknown_name):
-        return self.re_players.search(wellknown_name)
-
-    def find_playing_player(self) -> bool:
-        # Go through all connected players in random order
-        # (or not since dicts are ordered now).
-        return any(
-            self._update_active_player(player, probing=True)
-            for player in self.players.values()
-            if player.playback_status == PlaybackStatus.PLAYING
+    async def name_owner_watcher(self, router):
+        # Select name change signals for the well-known mpris service name.
+        # We only consider players with such a well-known name
+        # and thus treat any changes to the owned name
+        # as a creation and a disappearance of a service.
+        # Signals will be published by the service's unique name,
+        # which is why we need to track it.
+        match_rule = MatchRule(
+            type='signal',
+            sender=message_bus.bus_name,
+            interface=message_bus.interface,
+            member='NameOwnerChanged',
+            path=message_bus.object_path,
         )
+        match_rule.add_arg_condition(0, BUS_NAMESPACE, kind='namespace')
+
+        message_proxy = Proxy(message_bus, router)
+        await message_proxy.AddMatch(match_rule)
+
+        with router.filter(match_rule, bufsize=20) as queue:
+            while True:
+                # https://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-name-owner-changed
+                msg = await queue.get()
+                (wellknown_name, old_name, new_name) = msg.body
+                if old_name:
+                    self.on_bus_removed(wellknown_name, old_name)
+                if new_name:
+                    await self.on_bus_added(router, wellknown_name, new_name)
 
     async def on_bus_added(self, router, wellknown_name, unique_name):
         if not self.valid_player(wellknown_name):
@@ -276,6 +241,55 @@ class MprisTracker(tracker.TrackerBase):
         if player == self.active_player:
             self._handle_player_stopped()
             self.active_player = None
+
+    async def properties_watcher(self, router):
+        # Select PropertiesChanged signals for the mpris-player subinterface
+        # for all senders.
+        match_rule = MatchRule(
+            type='signal',
+            sender=None,
+            interface=IFACE_PROPERTIES,
+            member='PropertiesChanged',
+            path=PATH_MPRIS,
+        )
+        match_rule.add_arg_condition(0, IFACE_MPRIS_PLAYER)
+
+        message_proxy = Proxy(message_bus, router)
+        await message_proxy.AddMatch(match_rule)
+
+        with router.filter(match_rule, bufsize=10) as queue:
+            while True:
+                msg = await queue.get()
+                self.handle_properties_changed(msg)
+
+    def handle_properties_changed(self, msg):
+        # https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-properties
+        (_, changed_properties, _) = msg.body
+        sender = msg.header.fields[HeaderFields.sender]
+        try:
+            playback_status = safe_get_dbus_value(changed_properties.get('PlaybackStatus'), 's')
+            if playback_status:
+                self.on_playback_status_change(sender, playback_status)
+
+            metadata = safe_get_dbus_value(changed_properties.get('Metadata'), 'a{sv}')
+            if metadata and ('xesam:title' in metadata or 'xesam:url' in metadata):
+                title = safe_get_dbus_value(metadata.get('xesam:title'), 's')
+                url = safe_get_dbus_value(metadata.get('xesam:url'), 's')
+                self.on_filename_change(sender, title, url)
+        except TypeError as e:
+            self.msg.warn(f"Failed to read properties for {sender}: {e}")
+
+    def valid_player(self, wellknown_name):
+        return self.re_players.search(wellknown_name)
+
+    def find_playing_player(self) -> bool:
+        # Go through all connected players in random order
+        # (or not since dicts are ordered now).
+        return any(
+            self._update_active_player(player, probing=True)
+            for player in self.players.values()
+            if player.playback_status == PlaybackStatus.PLAYING
+        )
 
     def on_playback_status_change(self, sender, playback_status):
         player = self.players.get(sender)
@@ -377,8 +391,15 @@ class MprisTracker(tracker.TrackerBase):
 
     async def _on_tick(self):
         if self.active_player:
-            self.view_offset = int(await self.active_player.get_position()) / 1000
+            try:
+                self.view_offset = int(await self.active_player.get_position()) / 1000
+            except TypeError:
+                self.view_offset = None
+                # The view_offset is not important, so we ignore errors.
+                pass
+
         if self.last_show_tuple:
             self.update_timer(self.last_state, self.last_show_tuple)
+
         if self.last_updated:
             self._stop_timer()
