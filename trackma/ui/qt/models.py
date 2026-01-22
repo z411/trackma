@@ -405,6 +405,7 @@ class ShowListProxy(QtCore.QSortFilterProxyModel):
 
     def setFilterInvert(self, invert):
         self.filter_invert = invert
+        self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row, source_parent):
         if self.filter_status is not None and self.sourceModel().showlist[source_row]['my_status'] != self.filter_status:
