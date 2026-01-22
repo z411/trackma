@@ -1,3 +1,14 @@
+v0.10.3
+- Bugfix: (Qt) Fixed filter's Invert checkbox
+- Bugfix: (MPRIS) Misc bugfixes and cleanup
+- Relaxed dependencies
+
+v0.10.2
+- PyQt6 migration hotfix
+
+v0.10.1
+- PyQt6 migration hotfix
+
 v0.10
 - New feature: (Qt) PyQt6 support
 - New feature: New Last updated column
