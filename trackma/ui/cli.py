@@ -22,6 +22,7 @@ import shlex
 import subprocess
 import sys
 import textwrap
+import json
 from operator import itemgetter  # Used for sorting list
 
 from trackma import messenger
@@ -75,6 +76,7 @@ class Trackma_cmd(command.Cmd):
         'mediatype':    (0, 1),
         'info':         1,
         'search':       1,
+        'list_json':    (0, 1),
         'add':          1,
         'del':          1,
         'delete':       1,
@@ -361,6 +363,24 @@ class Trackma_cmd(command.Cmd):
         """
         # Show the list in memory
         self._make_list(self.sortedlist)
+
+    def do_list_json(self, args):
+        """
+        Print list of shows in json format.
+        Use the command `filter` without arguments to see the available statuses.
+
+        :name list_json
+        :usage list_json <status>
+        """
+        if args:
+            try:
+                self.filter_num = self._guess_status(args[0].lower())
+                self._load_list()
+            except KeyError:
+                print("Invalid filter.")
+                return
+
+        self._make_list_json(self.sortedlist)
 
     def do_info(self, args):
         """
@@ -954,6 +974,38 @@ class Trackma_cmd(command.Cmd):
         print('%d results' % len(showlist))
         print()
 
+    def _make_list_json(self, showlist):
+        """
+        helper function for printing a json formatted show list
+        """
+
+        # list shows
+        for index, show in showlist:
+            if self.engine.mediainfo['has_progress']:
+                episode_str_current = "{0}".format(show['my_progress'] or '0')
+                episode_str_last = "{0}".format(show['total'] or '?')
+
+            # ensure score is string; anilist can have string scores such as stars or smiles
+            score = "{0}".format(show['my_score'])
+
+            # json dictionary
+            j = {
+                "title": show['title'],
+                "current_episode": episode_str_current,
+                "total_episodes": episode_str_last,
+                "score": score,
+                "status": show['status'].value
+            }
+
+            # Check if show is airing and get estimated aired episode
+            if show['status'] == utils.Status.AIRING:
+                estimate = utils.estimate_aired_episodes(show)
+                j["estimated_aired_episode"] = "{0}".format(estimate)
+
+            # cover image url
+            j["image"] = show['image']
+
+            print(json.dumps(j))
 
 class Trackma_accounts(AccountManager):
     def _get_id(self, index):
