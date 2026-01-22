@@ -334,7 +334,7 @@ class MainWindow(QMainWindow):
         colkeys = ', '.join(sorted(self.column_keys.keys()))
         self.show_filter.setToolTip(filter_tooltip + colkeys + '.')
         self.show_filter_invert = QCheckBox()
-        self.show_filter_invert.stateChanged.connect(self.s_filter_changed)
+        self.show_filter_invert.stateChanged.connect(self.s_filter_invert_changed)
         self.show_filter_casesens = QCheckBox()
         self.show_filter_casesens.stateChanged.connect(self.s_filter_changed)
 
@@ -1064,6 +1064,9 @@ class MainWindow(QMainWindow):
         else:
             self.view.model().setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self.view.model().setFilterFixedString(expression)
+
+    def s_filter_invert_changed(self):
+        self.view.model().setFilterInvert(self.show_filter_invert.isChecked())
 
     def s_plus_episode(self):
         self._busy(True)
