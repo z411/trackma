@@ -73,6 +73,7 @@ async def collect_names(router) -> Dict[str, str]:
 
 @dataclass
 class Player:
+    config: dict[str, Any]
     router: DBusRouter
     wellknown_name: str
     unique_name: str
@@ -81,8 +82,8 @@ class Player:
     url: Union[str, None] = None
 
     @classmethod
-    async def new(cls, router, wellknown_name, unique_name):
-        player = Player(router, wellknown_name, unique_name)
+    async def new(cls, config, router, wellknown_name, unique_name):
+        player = Player(config, router, wellknown_name, unique_name)
         await asyncio.gather(
             player.update_filename(),
             player.update_playback_status(),
@@ -91,11 +92,15 @@ class Player:
 
     @property
     def filename(self):
-        if self.title and len(self.title) > 5:
+        if self.config['tracker_prefer_media_title'] and self.title and len(self.title) > 5:
             return self.title
         elif self.url:
-            # TODO : Support for full path
-            return os.path.basename(urllib.parse.unquote_plus(self.url))
+            url = urllib.parse.unquote_plus(self.url)
+            # We only trust URLs using the file protocol to be full paths.
+            if self.config['library_full_path'] and url.startswith('file://'):
+                return url.removeprefix('file://')
+            else:
+                return os.path.basename(url)
         return self.title
 
     async def update_filename(self):
@@ -130,8 +135,8 @@ class MprisTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
 
     def __init__(self, *args, **kwargs):
-        # The `TrackerBase.__init__` spawns a new thread
-        # for `observe`.
+        # `TrackerBase.__init__` spawns a new thread for `observe`
+        # where we wait for this event.
         self.initialized = threading.Event()
         super().__init__(*args, **kwargs)
 
@@ -176,7 +181,7 @@ class MprisTracker(tracker.TrackerBase):
 
             name_map = await collect_names(router)
             self.players = {
-                unique_name: await Player.new(router, wellknown_name, unique_name)
+                unique_name: await Player.new(self.config, router, wellknown_name, unique_name)
                 for unique_name, wellknown_name in name_map.items()
                 if self.valid_player(wellknown_name)
             }
@@ -228,7 +233,7 @@ class MprisTracker(tracker.TrackerBase):
             self.msg.debug("Ignoring new bus that does not match configured player:"
                            f" {wellknown_name}")
             return
-        player = await Player.new(router, wellknown_name, unique_name)
+        player = await Player.new(self.config, router, wellknown_name, unique_name)
         self.msg.debug(f"Player connected: {player.wellknown_name}")
         self.players[unique_name] = player
         self._handle_player_update(player)
