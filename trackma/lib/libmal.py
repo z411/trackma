@@ -267,7 +267,7 @@ class libmal(lib):
         self.check_credentials()
         shows = {}
 
-        fields = 'id,alternative_titles,title,start_date,main_picture,status,' + self.total_str
+        fields = 'id,alternative_titles,title,start_date,end_date,main_picture,status,' + self.total_str
         listfields = 'score,status,start_date,finish_date,updated_at,' + self.watched_str
         params = {
             'fields': '%s,list_status{%s}' % (fields, listfields),
@@ -294,6 +294,7 @@ class libmal(lib):
                     'total': item['node'][self.total_str],
                     'status': self._translate_status(item['node']['status']),
                     'start_date': self._str2date(item['node'].get('start_date')),
+                    'end_date': self._str2date(item['node'].get('end_date')),
                     'my_progress': item['list_status'][self.watched_str],
                     'my_score': item['list_status']['score'],
                     'my_status': item['list_status']['status'],
