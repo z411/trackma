@@ -286,6 +286,7 @@ class libmal(lib):
                 shows[showid] = utils.show()
                 shows[showid].update({
                     'id': showid,
+                    'idMal': showid,
                     'title': item['node']['title'],
                     'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
                     'aliases': self._get_aliases(item['node']),
@@ -391,6 +392,7 @@ class libmal(lib):
 
         info.update({
             'id': showid,
+            'idMal': item['idMal'],
             'title': item['title'],
             'url': "https://myanimelist.net/%s/%d" % (self.mediatype, showid),
             'aliases': self._get_aliases(item),
