@@ -93,8 +93,11 @@ class Player:
     @property
     def filename(self):
         if self.url:
-            # TODO : Support for full path
-            return os.path.basename(urllib.parse.unquote_plus(self.url))
+            unquoted_url = urllib.parse.unquote_plus(self.url)
+            # We only trust URLs using the file protocol to be full paths.
+            if self.config['library_full_path'] and unquoted_url.startswith('file://'):
+                return unquoted_url.removeprefix('file://')
+            return os.path.basename(unquoted_url)
         else:
             return self.title
 
