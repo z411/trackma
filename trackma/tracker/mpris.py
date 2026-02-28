@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import annotations
 
 from enum import Enum
 import os
@@ -22,7 +23,7 @@ import threading
 import time
 import urllib.parse
 import asyncio
-from typing import Any, Dict, Union
+from typing import Any
 from dataclasses import dataclass
 from collections import deque
 
@@ -61,7 +62,7 @@ def safe_get_dbus_value(pair, type_):
     return pair[1]
 
 
-async def collect_names(router) -> Dict[str, str]:
+async def collect_names(router) -> dict[str, str]:
     """Find all active buses in the known namespace mapped by their unique name."""
     message_proxy = Proxy(message_bus, router)
     resp = await message_proxy.ListNames()
@@ -77,9 +78,9 @@ class Player:
     router: DBusRouter
     wellknown_name: str
     unique_name: str
-    playback_status: Union[str, None] = None
-    title: Union[str, None] = None
-    url: Union[str, None] = None
+    playback_status: str | None = None
+    title: str | None = None
+    url: str | None = None
 
     @classmethod
     async def new(cls, config, router, wellknown_name, unique_name):
