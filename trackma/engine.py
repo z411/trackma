@@ -191,12 +191,12 @@ class Engine:
         if isinstance(filter_num, type(None)):
             source_list = self.get_list()
         elif isinstance(filter_num, list):
+            status_list = [s for s in filter_num if s is not self.mediainfo['statuses_finish']]
+            status_list_display = [self.mediainfo['statuses_dict'][s] for s in status_list]
+            self.msg.debug(f"Scanning for {', '.join(status_list_display)}")
             source_list = []
-            for status in filter_num:
-                if status is not self.mediainfo['statuses_finish']:
-                    self.msg.debug("Scanning for "
-                                   "{}".format(self.mediainfo['statuses_dict'][status]))
-                    source_list = source_list + self.filter_list(status)
+            for status in status_list:
+                source_list.extend(self.filter_list(status))
         else:
             source_list = self.filter_list(filter_num)
 
