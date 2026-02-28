@@ -91,12 +91,11 @@ class Player:
 
     @property
     def filename(self):
-        if self.title and len(self.title) > 5:
-            return self.title
-        elif self.url:
+        if self.url:
             # TODO : Support for full path
             return os.path.basename(urllib.parse.unquote_plus(self.url))
-        return self.title
+        else:
+            return self.title
 
     async def update_filename(self):
         msg = self._player_properties.get('Metadata')
