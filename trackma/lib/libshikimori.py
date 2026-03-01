@@ -115,6 +115,7 @@ class libshikimori(lib):
         'tv_13': utils.Type.TV,
         'tv_24': utils.Type.TV,
         'tv_48': utils.Type.TV,
+        'tv_special': utils.Type.SP,
     }
 
     def __init__(self, messenger, account, userconfig):
@@ -250,8 +251,8 @@ class libshikimori(lib):
                 'my_id': item['id'],
                 'title': item[self.mediatype]['name'],
                 'aliases': [item[self.mediatype]['russian']],
-                'type': self.type_translate[item[self.mediatype]['kind']],
-                'status': self.status_translate[item[self.mediatype]['status']],
+                'type': self.type_translate.get(item[self.mediatype]['kind'], utils.Type.UNKNOWN),
+                'status': self.status_translate.get(item[self.mediatype]['status'], utils.Status.AIRING),
                 'my_progress': item[self.watched_str],
                 'my_status': item['status'],
                 'my_score': item['score'],
@@ -304,8 +305,8 @@ class libshikimori(lib):
                 'id': showid,
                 'title': item['name'],
                 'aliases': [item['russian']],
-                'type': self.type_translate[item['kind']],
-                'status': self.status_translate[item['status']],
+                'type': self.type_translate.get(item['kind'], utils.Type.UNKNOWN),
+                'status': self.status_translate.get(item['status'], utils.Status.AIRING),
                 'my_status': self.media_info()['statuses_start'][0],
                 'total': item[self.total_str],
                 'image': self.url + item['image']['original'],
@@ -362,8 +363,8 @@ class libshikimori(lib):
         info.update({
             'id': item['id'],
             'title': item['name'],
-            'type': self.type_translate[item['kind']],
-            'status': self.status_translate[item['status']],
+            'type': self.type_translate.get(item['kind'], utils.Type.UNKNOWN),
+            'status': self.status_translate.get(item['status'], utils.Status.AIRING),
             'image': self.url + item['image']['original'],
             'url': self.url + item['url'],
             'extra': [
