@@ -29,7 +29,7 @@ from pathlib import Path
 from trackma import data
 from trackma import messenger
 from trackma import utils
-from trackma.extras import redirections
+from trackma.extras import redirections, ani_skip
 from trackma.parser import get_parser_class
 
 
@@ -995,6 +995,10 @@ class Engine:
 
         if not args[0]:
             raise utils.EngineError('Player not found, check your config.json')
+
+        if self.config['ani_skip']:
+            self.msg.debug("Fetching chapters from ani-skip")
+            args.append(ani_skip.get_args(playep, show, self.config['player']))
 
         args.append(filename)
         return args
