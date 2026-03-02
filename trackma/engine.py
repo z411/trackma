@@ -31,6 +31,7 @@ from trackma import messenger
 from trackma import utils
 from trackma.extras import redirections
 from trackma.parser import get_parser_class
+from trackma import hooks
 
 
 class Engine:
@@ -312,22 +313,12 @@ class Engine:
 
         # Load hook files
         if self.config['use_hooks']:
-            hooks_dir = utils.to_config_path('hooks')
-            if os.path.isdir(hooks_dir):
-                import importlib.util
-                import pkgutil
-
+            if hooks.init():
                 self.msg.info("Importing user hooks...")
-                for finder, name, _ in pkgutil.iter_modules([hooks_dir]):
-                    # List all the hook files in the hooks folder, import them
-                    # and call the init() function if they have them
-                    # We build the list "hooks available" with the loaded modules
-                    # for later calls.
+                for name in hooks.iter():
                     try:
                         self.msg.debug("Importing hook {}...".format(name))
-                        module_spec = finder.find_spec(name)
-                        module = importlib.util.module_from_spec(module_spec)
-                        module_spec.loader.exec_module(module)
+                        module = hooks.load(name)
                         if hasattr(module, 'init'):
                             module.init(self)
                         self.hooks_available.append(module)
