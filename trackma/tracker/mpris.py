@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import annotations
 
 from enum import Enum
 import os
@@ -22,7 +23,7 @@ import threading
 import time
 import urllib.parse
 import asyncio
-from typing import Any, Dict, Union
+from typing import Any
 from dataclasses import dataclass
 from collections import deque
 
@@ -61,7 +62,7 @@ def safe_get_dbus_value(pair, type_):
     return pair[1]
 
 
-async def collect_names(router) -> Dict[str, str]:
+async def collect_names(router) -> dict[str, str]:
     """Find all active buses in the known namespace mapped by their unique name."""
     message_proxy = Proxy(message_bus, router)
     resp = await message_proxy.ListNames()
@@ -73,16 +74,17 @@ async def collect_names(router) -> Dict[str, str]:
 
 @dataclass
 class Player:
+    config: dict[str, Any]
     router: DBusRouter
     wellknown_name: str
     unique_name: str
-    playback_status: Union[str, None] = None
-    title: Union[str, None] = None
-    url: Union[str, None] = None
+    playback_status: str | None = None
+    title: str | None = None
+    url: str | None = None
 
     @classmethod
-    async def new(cls, router, wellknown_name, unique_name):
-        player = Player(router, wellknown_name, unique_name)
+    async def new(cls, config, router, wellknown_name, unique_name):
+        player = Player(config, router, wellknown_name, unique_name)
         await asyncio.gather(
             player.update_filename(),
             player.update_playback_status(),
@@ -91,12 +93,14 @@ class Player:
 
     @property
     def filename(self):
-        if self.title and len(self.title) > 5:
+        if self.url:
+            unquoted_url = urllib.parse.unquote_plus(self.url)
+            # We only trust URLs using the file protocol to be full paths.
+            if self.config['library_full_path'] and unquoted_url.startswith('file://'):
+                return unquoted_url.removeprefix('file://')
+            return os.path.basename(unquoted_url)
+        else:
             return self.title
-        elif self.url:
-            # TODO : Support for full path
-            return os.path.basename(urllib.parse.unquote_plus(self.url))
-        return self.title
 
     async def update_filename(self):
         msg = self._player_properties.get('Metadata')
@@ -130,8 +134,8 @@ class MprisTracker(tracker.TrackerBase):
     name = 'Tracker (MPRIS)'
 
     def __init__(self, *args, **kwargs):
-        # The `TrackerBase.__init__` spawns a new thread
-        # for `observe`.
+        # `TrackerBase.__init__` spawns a new thread for `observe`
+        # where we wait for this event.
         self.initialized = threading.Event()
         super().__init__(*args, **kwargs)
 
@@ -176,7 +180,7 @@ class MprisTracker(tracker.TrackerBase):
 
             name_map = await collect_names(router)
             self.players = {
-                unique_name: await Player.new(router, wellknown_name, unique_name)
+                unique_name: await Player.new(self.config, router, wellknown_name, unique_name)
                 for unique_name, wellknown_name in name_map.items()
                 if self.valid_player(wellknown_name)
             }
@@ -228,7 +232,7 @@ class MprisTracker(tracker.TrackerBase):
             self.msg.debug("Ignoring new bus that does not match configured player:"
                            f" {wellknown_name}")
             return
-        player = await Player.new(router, wellknown_name, unique_name)
+        player = await Player.new(self.config, router, wellknown_name, unique_name)
         self.msg.debug(f"Player connected: {player.wellknown_name}")
         self.players[unique_name] = player
         self._handle_player_update(player)
