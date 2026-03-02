@@ -433,8 +433,6 @@ class Data:
             self._save_cache()
             self._save_queue()
             self._emit_signal('sync_complete', items_processed)
-        else:
-            self.msg.debug('No items in queue.')
 
         self.meta['lastsend'] = time.time()
 
