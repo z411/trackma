@@ -579,7 +579,7 @@ class Engine:
         oldstatus = show['my_status']
         if self.config['auto_status_change'] and self.mediainfo.get('can_status'):
             try:
-                if newep == show['total'] and self.mediainfo.get('statuses_finish'):
+                if show['total'] and newep == show['total'] and self.mediainfo.get('statuses_finish'):
                     if (
                             not self.config['auto_status_change_if_scored'] or
                             not self.mediainfo.get('can_score') or
@@ -606,7 +606,7 @@ class Engine:
 
                 if newep == 1 and show['my_status'] == initial_status:
                     start_date = datetime.date.today()
-                if newep == show['total'] and oldstatus == initial_status:
+                if show['total'] and newep == show['total'] and oldstatus == initial_status:
                     finish_date = datetime.date.today()
 
                 self.set_dates(show['id'], start_date, finish_date)
