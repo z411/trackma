@@ -189,7 +189,7 @@ class MprisTracker(tracker.TrackerBase):
             try:
                 await asyncio.gather(*tasks)
             except Exception:
-                self.msg.exception("Error in dbus watchers; cleaning up", sys.exc_info())
+                self.msg.exception("Error in dbus watchers; cleaning up", exc_info=sys.exc_info())
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks)
