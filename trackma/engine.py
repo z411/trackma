@@ -868,7 +868,16 @@ class Engine:
             # If it fails, cache it as None.
             anime_info = self.parser_class(self.msg, filename)
             show_title = anime_info.getName()
-            (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
+            if self.config['library_full_path']:
+                ep_info = self.parser_class(self.msg, os.path.basename(filename))
+                (show_ep_start, show_ep_end) = ep_info.getEpisodeNumbers(False)
+                if show_ep_start is None:
+                    (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
+                else:
+                    show_ep_start = int(show_ep_start)
+                    show_ep_end = int(show_ep_end) if show_ep_end is not None else show_ep_start
+            else:
+                (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
             if show_title:
                 show = guess_show(show_title)
                 if show:
