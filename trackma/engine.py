@@ -816,7 +816,7 @@ class Engine:
                 (library, library_cache) = self._add_show_to_library(
                     library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
 
-            self.msg.debug("Time: %s" % (time.time() - t))
+            self.msg.debug(f"Time: {time.time() - t:.3}s")
             self.data_handler.library_save(library)
             self.data_handler.library_cache_save(library_cache)
         return library
