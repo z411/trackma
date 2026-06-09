@@ -1067,7 +1067,7 @@ class Engine:
         try:
             return str(path.relative_to(searchdir))
         except ValueError:
-            return path.basename
+            return path.name
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""
