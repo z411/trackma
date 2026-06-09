@@ -482,7 +482,7 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if re.search(regex, v['title'], re.I))
+        return list(v for v in showlist.values() if re.search(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
@@ -824,7 +824,6 @@ class Engine:
     def remove_from_library(self, path, filename):
         library = self.data_handler.library_get()
         library_cache = self.data_handler.library_cache_get()
-        tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
         # Only remove if the filename matches library entry
         if filename in library_cache and library_cache[filename]:
@@ -991,11 +990,11 @@ class Engine:
         if not args:
             raise utils.EngineError('Player not set up, check your config.json')
 
-        args[0] = shutil.which(args[0])
-
-        if not args[0]:
+        full_command = shutil.which(args[0])
+        if not full_command:
             raise utils.EngineError('Player not found, check your config.json')
 
+        args[0] = full_command
         args.append(filename)
         return args
 
@@ -1040,7 +1039,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
+        return list(v for v in showlist.values() if v['my_status'] == status_num)
 
     def list_download(self):
         """Asks the data handler to download the remote list."""
