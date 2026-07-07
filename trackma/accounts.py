@@ -61,7 +61,7 @@ class AccountManager:
         self.accounts['next'] += 1
         self._save()
 
-    def edit_account(self, num, username, password, api, extra={}):
+    def edit_account(self, num, username, password, api, extra=None):
         """
         Updates data for account *num* with the specified
         *username*, *password*, and *api*.
@@ -75,6 +75,9 @@ class AccountManager:
             raise utils.AccountError('Empty password.')
         if api not in available_libs:
             raise utils.AccountError('That API doesn\'t exist.')
+
+        if extra is None:
+            extra = self.accounts['accounts'][num].get('extra', {})
 
         account = {'username': username,
                    'password': password,
