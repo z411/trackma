@@ -36,13 +36,11 @@ class PollingTracker(tracker.TrackerBase):
         for path in watch_dirs:
             cmd.extend(['+D', path])  # or-combined, recursive path lookup
         try:
-            lsof = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            output = subprocess.check_output(cmd, text=True)
         except OSError:
             self.msg.warn("Couldn't execute lsof. Disabling tracker.")
             self.disable()
             return None
-
-        output = lsof.communicate()[0].decode('utf-8')
 
         for line in output.splitlines():
             if line[0] == 'n' and utils.is_media(line):
