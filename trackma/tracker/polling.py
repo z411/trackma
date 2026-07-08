@@ -26,21 +26,27 @@ class PollingTracker(tracker.TrackerBase):
     name = 'Tracker (polling)'
 
     def get_playing_file(self, watch_dirs, players):
+        cmd = [
+            'lsof',
+            '-a',  # cause selection options to be AND-combined
+            '-w',  # suppress warnings (the man-page is ambiguous here but it's -w)
+            '-F', 'n',  # output only the name
+            '-c', f'/{players}/',  # match process (extended regex)
+        ]
         for path in watch_dirs:
-            # TODO: We'll run lsof once for each directory for now.
-            try:
-                lsof = subprocess.Popen(
-                    ['lsof', '-w', '-n', '-c', ''.join(['/', players, '/']), '-Fn', path], stdout=subprocess.PIPE)
-            except OSError:
-                self.msg.warn("Couldn't execute lsof. Disabling tracker.")
-                self.disable()
-                return None
+            cmd.extend(['+D', path])  # or-combined, recursive path lookup
+        try:
+            lsof = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        except OSError:
+            self.msg.warn("Couldn't execute lsof. Disabling tracker.")
+            self.disable()
+            return None
 
-            output = lsof.communicate()[0].decode('utf-8')
+        output = lsof.communicate()[0].decode('utf-8')
 
-            for line in output.splitlines():
-                if line[0] == 'n' and utils.is_media(line):
-                    return os.path.basename(line[1:])
+        for line in output.splitlines():
+            if line[0] == 'n' and utils.is_media(line):
+                return os.path.basename(line[1:])
 
         return None
 
