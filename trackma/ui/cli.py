@@ -962,6 +962,28 @@ class Trackma_accounts(AccountManager):
 
         return index
 
+    def _request_oauth_code(self, selected_api, extra=None):
+        if extra is None:
+            extra = {}
+
+        print('OAuth Authentication')
+        print('--------------------')
+        print('This website requires OAuth authentication.')
+        print('Please go to the following URL with your browser,')
+        print('follow the steps and paste the given PIN code here.')
+        print()
+
+        auth_url = selected_api[3]
+        if selected_api[2] == utils.Login.OAUTH_PKCE:
+            extra = dict(extra)
+            extra['code_verifier'] = utils.oauth_generate_pkce()
+            auth_url = auth_url % extra['code_verifier']
+
+        print(auth_url)
+        print()
+
+        return input('PIN: '), extra
+
     def select_account(self, bypass):
         if not bypass and self.get_default():
             return self.get_default()
@@ -972,7 +994,7 @@ class Trackma_accounts(AccountManager):
             print('--- Accounts ---')
             self.list_accounts()
             key = input(
-                "Input account number ([r#]emember, [a]dd, [c]ancel, [d]elete, [q]uit): ")
+                "Input account number ([r#]emember, [a]dd, [e]dit, [c]ancel, [d]elete, [q]uit): ")
 
             if key.lower() == 'a':
                 available_libs = ', '.join(sorted(utils.available_libs.keys()))
@@ -992,24 +1014,42 @@ class Trackma_accounts(AccountManager):
                     password = getpass.getpass('Enter password (no echo): ')
                 elif selected_api[2] in [utils.Login.OAUTH, utils.Login.OAUTH_PKCE]:
                     username = input('Enter account name: ')
-
-                    auth_url = selected_api[3]
-                    if selected_api[2] == utils.Login.OAUTH_PKCE:
-                        extra['code_verifier'] = utils.oauth_generate_pkce()
-                        auth_url = auth_url % extra['code_verifier']
-
-                    print('OAuth Authentication')
-                    print('--------------------')
-                    print('This website requires OAuth authentication.')
-                    print('Please go to the following URL with your browser,')
-                    print('follow the steps and paste the given PIN code here.')
-                    print()
-                    print(auth_url)
-                    print()
-                    password = input('PIN: ')
+                    password, extra = self._request_oauth_code(selected_api, extra)
 
                 try:
                     self.add_account(username, password, api, extra)
+                    print('Done.')
+                except utils.AccountError as e:
+                    print('Error: %s' % e)
+            elif key.lower() == 'e':
+                print("--- Edit account ---")
+                import getpass
+                num = input('Account number to edit: ')
+                try:
+                    num = int(num)
+                    account_id = self._get_id(num)
+                    account = self.get_account(account_id)
+                except ValueError:
+                    print("Invalid value.")
+                    continue
+                except IndexError:
+                    print("Account doesn't exist.")
+                    continue
+
+                selected_api = utils.available_libs[account['api']]
+                username = account['username']
+                api = account['api']
+                extra = account.get('extra', {})
+
+                if selected_api[2] == utils.Login.PASSWD:
+                    password = getpass.getpass('Enter new password (leave blank to keep current): ')
+                    if not password:
+                        password = account['password']
+                else:
+                    password, extra = self._request_oauth_code(selected_api, extra)
+
+                try:
+                    self.edit_account(account_id, username, password, api, extra)
                     print('Done.')
                 except utils.AccountError as e:
                     print('Error: %s' % e)
