@@ -19,13 +19,23 @@ from __future__ import annotations
 import os
 import threading
 import time
+from collections.abc import Callable
+from typing import Any
 
 from trackma import utils
 from trackma.messenger import Messenger
 from trackma.parser import get_parser_class
 
+ShowTuple = tuple[dict[str, Any], int]
+TrackerState = utils.Tracker
+TrackerResolution = tuple[TrackerState, ShowTuple | None]
+ResolvePlayingShowCallback = Callable[[str | None], TrackerResolution]
+OnStateCallback = Callable[[TrackerState, ShowTuple | None, str | None], None]
+OnPlaybackCallback = Callable[[bool], None]
+OnTickCallback = Callable[[float | None], None]
 
-class TrackerBase(object):
+
+class TrackerBase:
     msg: Messenger
     active = True
     list = None
@@ -34,7 +44,7 @@ class TrackerBase(object):
     last_state = utils.Tracker.NOVIDEO
     last_time: int | float = 0
     last_updated = False
-    last_close_queue = None
+    last_close_queue: Callable[[], None] | None = None
     timer = None
 
     name = 'Tracker'
@@ -77,7 +87,7 @@ class TrackerBase(object):
         """Changes the message handler function on the fly."""
         self.msg = message_handler.with_classname(self.name)
 
-    def disable(self):
+    def disable(self) -> None:
         self.msg.info('Unloading...')
         self.active = False
 
@@ -90,7 +100,7 @@ class TrackerBase(object):
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
 
-    def observe(self, _config, _watch_dirs, /):
+    def observe(self, _config, _watch_dirs, /) -> None:
         raise NotImplementedError
 
     def get_status(self):
@@ -111,7 +121,7 @@ class TrackerBase(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def update_timer(self, state=None, show_tuple=None):
+    def update_timer(self, state: TrackerState | None = None, show_tuple: ShowTuple | None = None) -> None:
         if self.timer_paused:
             return
 
@@ -132,27 +142,27 @@ class TrackerBase(object):
             # Perform show update
             self.last_updated = True
 
-            def action(state=state):
+            def emit_update() -> None:
                 (show, episode) = show_tuple
                 if state == utils.Tracker.PLAYING:
-                    return self._emit_signal('update', show, episode)
+                    self._emit_signal('update', show, episode)
                 elif state == utils.Tracker.NOT_FOUND:
-                    return self._emit_signal('unrecognised', show, episode)
+                    self._emit_signal('unrecognised', show, episode)
 
             if self.config['tracker_update_close']:
                 self.msg.info('Waiting for the player to close.')
-                self.last_close_queue = action
+                self.last_close_queue = emit_update
             else:
-                action()
+                emit_update()
 
-    def _ignore_current(self):
+    def _ignore_current(self) -> None:
         # Stops attempt to update current episode
         self.last_updated = True
         self.last_state = utils.Tracker.IGNORED
         self.timer = None
         self._emit_signal('state', self.get_status())
 
-    def _update_state(self, state):
+    def _update_state(self, state: TrackerState) -> None:
         # Call when show or state is changed. Perform queued update if any.
         if self.last_close_queue:
             self.last_close_queue()
@@ -170,20 +180,20 @@ class TrackerBase(object):
                 self._emit_signal(
                     'playing', last_show['id'], False, last_show_ep)
 
-    def pause_timer(self):
+    def pause_timer(self) -> None:
         if not self.timer_paused:
             self.timer_paused = time.time()
 
             self._emit_signal('state', self.get_status())
 
-    def resume_timer(self):
+    def resume_timer(self) -> None:
         if self.timer_paused:
             self.timer_offset += time.time() - self.timer_paused
             self.timer_paused = None
 
             self._emit_signal('state', self.get_status())
 
-    def update_show_if_needed(self, state, show_tuple, filename=None):
+    def update_show_if_needed(self, state: TrackerState, show_tuple: ShowTuple, filename: str | None = None):
         self.last_filename = filename
 
         # If the state and show are unchanged, skip to countdown
@@ -246,7 +256,7 @@ class TrackerBase(object):
         self.last_state = state
         self._emit_signal('state', self.get_status())
 
-    def resolve_playing_show(self, filename):
+    def resolve_playing_show(self, filename: str) -> TrackerResolution:
         if not self.active:
             # Don't do anything if the Tracker is disabled
             return (utils.Tracker.NOVIDEO, None)

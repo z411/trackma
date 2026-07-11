@@ -23,17 +23,25 @@ import threading
 import time
 import urllib.parse
 from collections import deque
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import Any
 
 from jeepney import DBusAddress, HeaderFields, Properties
 from jeepney.bus_messages import MatchRule, message_bus
 from jeepney.io.asyncio import DBusRouter, Proxy, open_dbus_router
 
 from trackma import utils
-from trackma.tracker import tracker
+from .tracker import (
+    OnPlaybackCallback,
+    OnStateCallback,
+    OnTickCallback,
+    TrackerBase,
+    ResolvePlayingShowCallback,
+    ShowTuple,
+    TrackerResolution,
+    TrackerState,
+)
 
 __all__ = [
     'MprisTracker',
@@ -45,17 +53,6 @@ PATH_MPRIS = '/org/mpris/MediaPlayer2'
 IFACE_PROPERTIES = 'org.freedesktop.DBus.Properties'
 IFACE_MPRIS = 'org.mpris.MediaPlayer2'
 IFACE_MPRIS_PLAYER = IFACE_MPRIS + '.Player'
-
-if TYPE_CHECKING:
-    from typing import Any, TypeAlias
-    ShowTuple: TypeAlias = tuple[dict[str, Any], int]
-    TrackerState: TypeAlias = utils.Tracker
-    TrackerResolution: TypeAlias = tuple[TrackerState, ShowTuple | None]
-    ResolvePlayingShowCallback: TypeAlias = Callable[[str | None], TrackerResolution]
-    OnStateCallback: TypeAlias = Callable[[TrackerState, ShowTuple | None, str | None], None]
-    OnPlaybackCallback: TypeAlias = Callable[[bool], None]
-    OnTickCallback: TypeAlias = Callable[[float | None], None]
-
 
 class PlaybackStatus(str, Enum):
     PLAYING = 'Playing'
@@ -358,7 +355,7 @@ class MprisDbusWatcher:
         self,
         player: Player,
         state: TrackerState | None = None,
-        show_tuple: tuple[dict[str, Any], int] | None = None,
+        show_tuple: ShowTuple | None = None,
     ) -> None:
         if state is None or show_tuple is None:
             state, show_tuple = self._resolve_player(player)
@@ -406,7 +403,7 @@ class MprisDbusWatcher:
         self.on_tick(view_offset)
 
 
-class MprisTracker(tracker.TrackerBase):
+class MprisTracker(TrackerBase):
 
     name = 'Tracker (MPRIS)'
 
@@ -444,7 +441,7 @@ class MprisTracker(tracker.TrackerBase):
     def _on_tracker_state(
         self,
         state: TrackerState,
-        show_tuple: tuple[dict[str, Any], int] | None,
+        show_tuple: ShowTuple | None,
         filename: str | None,
     ) -> None:
         self.update_show_if_needed(state, show_tuple, filename)

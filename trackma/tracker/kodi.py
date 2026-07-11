@@ -20,7 +20,7 @@ import time
 import urllib.error
 import urllib.request
 
-from trackma.tracker import tracker
+from .tracker import TrackerBase, TrackerResolution
 
 NOT_RUNNING = 0
 IDLE = 1
@@ -31,7 +31,7 @@ PLAYING = 4
 PAUSED = 5
 
 
-class KodiTracker(tracker.TrackerBase):
+class KodiTracker(TrackerBase):
     name = 'Tracker (Kodi)'
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -39,7 +39,7 @@ class KodiTracker(tracker.TrackerBase):
 
         self.host_port = "{}:{}".format(
             self.config['kodi_host'], self.config['kodi_port'])
-        self.status_log = [None, None]
+        self.status_log: list[int | None] = [None, None]
         self.headers = {'content-type': 'application/json'}
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
@@ -144,7 +144,8 @@ class KodiTracker(tracker.TrackerBase):
                     self.wait_s = self._timer_from_file()
 
                 player = self._playing_file()
-                (state, show_tuple) = self.resolve_playing_show(player[0])
+                resolution: TrackerResolution = self.resolve_playing_show(player[0])
+                state, show_tuple = resolution
 
                 self.update_show_if_needed(state, show_tuple, player[0])
 

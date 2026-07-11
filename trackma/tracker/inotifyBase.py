@@ -19,10 +19,10 @@ import re
 import time
 
 from trackma import utils
-from trackma.tracker import tracker
+from .tracker import TrackerBase, TrackerResolution
 
 
-class inotifyBase(tracker.TrackerBase):
+class inotifyBase(TrackerBase):
     open_file = (None, None, None)
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -118,7 +118,8 @@ class inotifyBase(tracker.TrackerBase):
             self.open_file = (pathname, pid, fd)
 
             filename = pathname if self.config['library_full_path'] else name
-            (state, show_tuple) = self.resolve_playing_show(filename)
+            resolution: TrackerResolution = self.resolve_playing_show(filename)
+            state, show_tuple = resolution
             self.msg.debug("Got status: {} {}".format(state, show_tuple))
             self.update_show_if_needed(state, show_tuple, filename)
         else:
@@ -141,5 +142,6 @@ class inotifyBase(tracker.TrackerBase):
         self._emit_signal('detected', path, name)
         self.open_file = (None, None, None)
 
-        (state, show_tuple) = self.resolve_playing_show(None)
+        resolution: TrackerResolution = self.resolve_playing_show(None)
+        state, show_tuple = resolution
         self.update_show_if_needed(state, show_tuple, None)

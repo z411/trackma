@@ -20,7 +20,7 @@ import time
 import urllib.request
 import json
 
-from trackma.tracker import tracker
+from .tracker import TrackerBase, TrackerResolution
 
 NOT_RUNNING = 0
 ACTIVE = 1
@@ -30,7 +30,7 @@ PAUSED = 4
 IDLE = 5
 
 
-class JellyfinTracker(tracker.TrackerBase):
+class JellyfinTracker(TrackerBase):
     name = 'Tracker (Jellyfin)'
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -57,7 +57,8 @@ class JellyfinTracker(tracker.TrackerBase):
                     self.wait_s = config['tracker_update_wait_s']
 
                 try:
-                    (state, show_tuple) = self.resolve_playing_show(session_info['file_name'])
+                    resolution: TrackerResolution = self.resolve_playing_show(session_info['file_name'])
+                    state, show_tuple = resolution
 
                     self.view_offset = int(session_info['view_offset'])
 

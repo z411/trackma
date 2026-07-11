@@ -22,7 +22,7 @@ import urllib.request
 import xml.dom.minidom as xdmd
 
 import trackma.utils as utils
-from trackma.tracker import tracker
+from .tracker import TrackerBase, TrackerResolution
 
 NOT_RUNNING = 0
 ACTIVE = 1
@@ -32,7 +32,7 @@ PAUSED = 4
 IDLE = 5
 
 
-class PlexTracker(tracker.TrackerBase):
+class PlexTracker(TrackerBase):
     name = 'Tracker (Plex)'
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -108,7 +108,8 @@ class PlexTracker(tracker.TrackerBase):
                     xuser = self._get_sessions_info("User", "title")
 
                     player = self.playing_file()
-                    (state, show_tuple) = self.resolve_playing_show(player[0])
+                    resolution: TrackerResolution = self.resolve_playing_show(player[0])
+                    state, show_tuple = resolution
 
                     if self.token:
                         if self.config['plex_user'] == xuser:

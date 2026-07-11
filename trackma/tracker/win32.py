@@ -18,10 +18,10 @@ import ctypes
 import re
 import time
 
-from trackma.tracker import tracker
+from .tracker import TrackerBase, TrackerResolution
 
 
-class Win32Tracker(tracker.TrackerBase):
+class Win32Tracker(TrackerBase):
     name = 'Tracker (win32)'
 
     def __init__(self, messenger, tracker_list, config, watch_dirs, redirections=None):
@@ -79,7 +79,8 @@ class Win32Tracker(tracker.TrackerBase):
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self._get_playing_file_win32()
-            (state, show_tuple) = self.resolve_playing_show(filename)
+            resolution: TrackerResolution = self.resolve_playing_show(filename)
+            state, show_tuple = resolution
             self.update_show_if_needed(state, show_tuple, filename)
 
             # Wait for the interval before running check again
