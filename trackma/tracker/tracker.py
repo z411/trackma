@@ -178,7 +178,7 @@ class TrackerBase:
         self.timer = None
         self._emit_signal('state', self.get_status())
 
-    def _update_state(self, state: TrackerState) -> None:
+    def _prepare_state_change(self) -> None:
         # Call when show or state is changed. Perform queued update if any.
         if self.last_close_queue:
             self.last_close_queue()
@@ -223,7 +223,7 @@ class TrackerBase:
         show_tuple = resolution.show_tuple()
         if resolution != self.last_resolution and show_tuple:
             (show, episode) = show_tuple
-            self._update_state(resolution.state)
+            self._prepare_state_change()
             # There's a new show/ep detected, so let's save the show information
             self.last_resolution = resolution
             self.last_updated = False
@@ -255,7 +255,7 @@ class TrackerBase:
 
             self.update_timer(resolution)
         elif self.last_state != resolution.state:
-            self._update_state(resolution.state)
+            self._prepare_state_change()
 
             # React depending on state
             if resolution.state == utils.Tracker.NOVIDEO:  # No video is playing
