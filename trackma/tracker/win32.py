@@ -79,8 +79,8 @@ class Win32Tracker(tracker.TrackerBase):
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self._get_playing_file_win32()
-            (state, show_tuple) = self._get_playing_show(filename)
-            self.update_show_if_needed(state, show_tuple)
+            (state, show_tuple) = self.resolve_playing_show(filename)
+            self.update_show_if_needed(state, show_tuple, filename)
 
             # Wait for the interval before running check again
             time.sleep(1)

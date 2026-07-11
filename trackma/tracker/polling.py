@@ -50,8 +50,8 @@ class PollingTracker(tracker.TrackerBase):
             # This runs the tracker and update the playing show if necessary
             filename = self.get_playing_file(
                 watch_dirs, config['tracker_process'])
-            (state, show_tuple) = self._get_playing_show(filename)
-            self.update_show_if_needed(state, show_tuple)
+            (state, show_tuple) = self.resolve_playing_show(filename)
+            self.update_show_if_needed(state, show_tuple, filename)
 
             # Wait for the interval before running check again
             time.sleep(config['tracker_interval'])

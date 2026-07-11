@@ -73,7 +73,7 @@ class inotifyTracker(inotifyBase.inotifyBase):
                     # Default blocking duration is 1 second
                     # This will count down like inotifyx impl. did
                     self.update_show_if_needed(
-                        self.last_state, self.last_show_tuple)
+                        self.last_state, self.last_show_tuple, self.last_filename)
         finally:
             self.msg.info('Tracker has stopped.')
             # inotify resource is cleaned-up automatically

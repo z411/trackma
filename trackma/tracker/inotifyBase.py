@@ -117,12 +117,10 @@ class inotifyBase(tracker.TrackerBase):
             self._emit_signal('detected', path, name)
             self.open_file = (pathname, pid, fd)
 
-            if self.config['library_full_path']:
-                (state, show_tuple) = self._get_playing_show(pathname)
-            else:
-                (state, show_tuple) = self._get_playing_show(name)
+            filename = pathname if self.config['library_full_path'] else name
+            (state, show_tuple) = self.resolve_playing_show(filename)
             self.msg.debug("Got status: {} {}".format(state, show_tuple))
-            self.update_show_if_needed(state, show_tuple)
+            self.update_show_if_needed(state, show_tuple, filename)
         else:
             self.msg.debug("Not played by player, ignoring.")
 
@@ -143,5 +141,5 @@ class inotifyBase(tracker.TrackerBase):
         self._emit_signal('detected', path, name)
         self.open_file = (None, None, None)
 
-        (state, show_tuple) = self._get_playing_show(None)
-        self.update_show_if_needed(state, show_tuple)
+        (state, show_tuple) = self.resolve_playing_show(None)
+        self.update_show_if_needed(state, show_tuple, None)

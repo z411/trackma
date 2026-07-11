@@ -14,13 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import annotations
+
 import os
 import threading
 import time
 
 from trackma import utils
-from trackma.parser import get_parser_class
 from trackma.messenger import Messenger
+from trackma.parser import get_parser_class
 
 
 class TrackerBase(object):
@@ -30,7 +32,7 @@ class TrackerBase(object):
     last_show_tuple = None
     last_filename = None
     last_state = utils.Tracker.NOVIDEO
-    last_time = 0
+    last_time: int | float = 0
     last_updated = False
     last_close_queue = None
     timer = None
@@ -88,7 +90,7 @@ class TrackerBase(object):
         except KeyError:
             raise utils.EngineFatal("Invalid signal.")
 
-    def observe(self, config, watch_dirs):
+    def observe(self, _config, _watch_dirs, /):
         raise NotImplementedError
 
     def get_status(self):
@@ -103,8 +105,9 @@ class TrackerBase(object):
 
     def _emit_signal(self, signal, *args):
         try:
-            if self.signals[signal]:
-                self.signals[signal](*args)
+            callback = self.signals[signal]
+            if callback is not None:
+                callback(*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
 
@@ -176,7 +179,9 @@ class TrackerBase(object):
 
             self._emit_signal('state', self.get_status())
 
-    def update_show_if_needed(self, state, show_tuple):
+    def update_show_if_needed(self, state, show_tuple, filename=None):
+        self.last_filename = filename
+
         # If the state and show are unchanged, skip to countdown
         if show_tuple and state == self.last_state and show_tuple == self.last_show_tuple and not self.last_updated:
             self.update_timer(state, show_tuple)
@@ -226,7 +231,7 @@ class TrackerBase(object):
                     self.msg.info('Player was closed before update.')
             # There's a new video playing but the regex didn't recognize the format
             elif state == utils.Tracker.UNRECOGNIZED:
-                self.msg.warn('Found video but the file name format couldn\'t be recognized.')
+                self.msg.warn("Found video but the file name format couldn't be recognized.")
             elif state == utils.Tracker.NOT_FOUND:  # There's a new video playing but an associated show wasn't found
                 self.msg.warn('Found player but show not in list.')
 
@@ -237,17 +242,12 @@ class TrackerBase(object):
         self.last_state = state
         self._emit_signal('state', self.get_status())
 
-    def _get_playing_show(self, filename):
+    def resolve_playing_show(self, filename):
         if not self.active:
             # Don't do anything if the Tracker is disabled
             return (utils.Tracker.NOVIDEO, None)
 
         if filename:
-            if filename == self.last_filename:
-                # It's the exact same filename, there's no need to do the processing again
-                return (self.last_state, self.last_show_tuple)
-
-            self.last_filename = filename
             self.msg.debug("Guessing filename: {}".format(filename))
 
             # Trim out watch dir
@@ -284,5 +284,4 @@ class TrackerBase(object):
                 else:
                     return (utils.Tracker.NOT_FOUND, None)
         else:
-            self.last_filename = None
             return (utils.Tracker.NOVIDEO, None)  # Not playing

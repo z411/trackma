@@ -99,7 +99,7 @@ class pyinotifyTracker(inotifyBase.inotifyBase):
                     self.msg.debug("Sending last state {} {}".format(
                         self.last_state, self.last_show_tuple))
                     self.update_show_if_needed(
-                        self.last_state, self.last_show_tuple)
+                        self.last_state, self.last_show_tuple, self.last_filename)
         finally:
             notifier.stop()
             self.msg.info('Tracker has stopped.')

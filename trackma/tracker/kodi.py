@@ -144,9 +144,9 @@ class KodiTracker(tracker.TrackerBase):
                     self.wait_s = self._timer_from_file()
 
                 player = self._playing_file()
-                (state, show_tuple) = self._get_playing_show(player[0])
+                (state, show_tuple) = self.resolve_playing_show(player[0])
 
-                self.update_show_if_needed(state, show_tuple)
+                self.update_show_if_needed(state, show_tuple, player[0])
 
                 if player[1] == PAUSED:
                     self.pause_timer()

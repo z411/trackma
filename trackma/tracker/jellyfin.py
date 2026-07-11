@@ -57,11 +57,11 @@ class JellyfinTracker(tracker.TrackerBase):
                     self.wait_s = config['tracker_update_wait_s']
 
                 try:
-                    (state, show_tuple) = self._get_playing_show(session_info['file_name'])
+                    (state, show_tuple) = self.resolve_playing_show(session_info['file_name'])
 
                     self.view_offset = int(session_info['view_offset'])
 
-                    self.update_show_if_needed(state, show_tuple)
+                    self.update_show_if_needed(state, show_tuple, session_info['file_name'])
 
                     if session_info['state'] == PAUSED:
                         self.pause_timer()
@@ -70,8 +70,7 @@ class JellyfinTracker(tracker.TrackerBase):
 
                 except (IndexError, TypeError):
                     if self.status_log[-1] == IDLE:
-                        self.last_filename = None
-                        self.update_show_if_needed(0, None)
+                        self.update_show_if_needed(0, None, None)
                     else:
                         pass
 

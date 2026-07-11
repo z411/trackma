@@ -108,19 +108,19 @@ class PlexTracker(tracker.TrackerBase):
                     xuser = self._get_sessions_info("User", "title")
 
                     player = self.playing_file()
-                    (state, show_tuple) = self._get_playing_show(player[0])
+                    (state, show_tuple) = self.resolve_playing_show(player[0])
 
                     if self.token:
                         if self.config['plex_user'] == xuser:
                             self.view_offset = int(self._get_sessions_info("Video", "viewOffset"))
-                            self.update_show_if_needed(state, show_tuple)
+                            self.update_show_if_needed(state, show_tuple, player[0])
 
                             if player[1] == PAUSED:
                                 self.pause_timer()
                             elif player[1] == PLAYING:
                                 self.resume_timer()
                     else:
-                        self.update_show_if_needed(state, show_tuple)
+                        self.update_show_if_needed(state, show_tuple, player[0])
 
                         if player[1] == PAUSED:
                             self.pause_timer()
@@ -128,8 +128,7 @@ class PlexTracker(tracker.TrackerBase):
                             self.resume_timer()
                 except IndexError:
                     if self.status_log[-1] == IDLE:
-                        self.last_filename = None
-                        self.update_show_if_needed(0, None)
+                        self.update_show_if_needed(0, None, None)
                     else:
                         pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:
