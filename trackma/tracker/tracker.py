@@ -26,13 +26,12 @@ from trackma import utils
 from trackma.messenger import Messenger
 from trackma.parser import get_parser_class
 
-TrackerState = utils.Tracker
 OnPlaybackCallback = Callable[[bool], None]
 OnTickCallback = Callable[[float | None], None]
 
 
 class TrackerResolution(NamedTuple):
-    state: TrackerState
+    state: utils.Tracker
     show: dict[str, Any] | None
     show_ep: int | None
 
@@ -144,7 +143,8 @@ class TrackerBase:
             return
 
         resolution = resolution or self.last_resolution
-        if not resolution or not resolution.show or resolution.show_ep is None:
+        if not resolution or not resolution.show or resolution.show_ep is None or resolution.state != utils.Tracker.PLAYING:
+            self.timer = None
             return
 
         self.timer = int(
@@ -170,13 +170,6 @@ class TrackerBase:
                 self.last_close_queue = emit_update
             else:
                 emit_update()
-
-    def _ignore_current(self) -> None:
-        # Stops attempt to update current episode
-        self.last_updated = True
-        self.last_state = utils.Tracker.IGNORED
-        self.timer = None
-        self._emit_signal('state', self.get_status())
 
     def _prepare_state_change(self) -> None:
         # Call when show or state is changed. Perform queued update if any.
@@ -226,26 +219,9 @@ class TrackerBase:
             self._prepare_state_change()
             # There's a new show/ep detected, so let's save the show information
             self.last_resolution = resolution
-            self.last_updated = False
+            self.last_updated = False  # TODO do we need to set this to True if IGNORED?
             if resolution.state == utils.Tracker.PLAYING:
                 self._emit_signal('playing', show['id'], True, episode)
-                # Check if we shouldn't update the show
-                expected_next_ep = show['my_progress'] + 1
-                if self.config['tracker_ignore_not_next'] and episode != expected_next_ep:
-                    self.msg.warn(
-                        'Not playing the next episode of {} (expected: {}, found: {}). Ignoring.'
-                            .format(show['title'], expected_next_ep, episode),
-                    )
-                    self._ignore_current()
-                    return
-                if episode == show['my_progress']:
-                    self.msg.warn('Playing the current episode of %s. Ignoring.' % show['title'])
-                    self._ignore_current()
-                    return
-                if episode < 1 or (show['total'] and episode > show['total']):
-                    self.msg.warn('Playing an invalid episode of %s. Ignoring.' % show['title'])
-                    self._ignore_current()
-                    return
 
             # Start our countdown
             if resolution.state == utils.Tracker.PLAYING:
@@ -308,7 +284,11 @@ class TrackerBase:
                 self.msg.debug("Redirected to: {} - {}".format(redirected_show, redirected_ep))
                 (playing_show, show_ep) = (redirected_show, redirected_ep)
 
-            return TrackerResolution(utils.Tracker.PLAYING, playing_show, show_ep)
+            state = utils.Tracker.PLAYING
+            if self._should_ignore(playing_show, show_ep):
+                state = utils.Tracker.IGNORED
+            return TrackerResolution(state, playing_show, show_ep)
+
         else:
             # Show not in list
             if self.config['tracker_not_found_prompt']:
@@ -317,3 +297,20 @@ class TrackerBase:
                 return TrackerResolution(utils.Tracker.NOT_FOUND, show, show_ep)
             else:
                 return TrackerResolution(utils.Tracker.NOT_FOUND, None, None)
+
+    def _should_ignore(self, playing_show: Any, show_ep: int) -> bool:
+        expected_ep = playing_show['my_progress'] + 1
+        title = playing_show['title']
+        if show_ep == playing_show['my_progress']:
+            self.msg.warn(f"Playing the current episode of {title}. Ignoring.")
+            return True
+        elif show_ep < 1 or (playing_show['total'] and show_ep > playing_show['total']):
+            self.msg.warn(f"Playing an invalid episode of {title}. Ignoring.")
+            return True
+        elif self.config['tracker_ignore_not_next'] and show_ep != expected_ep:
+            self.msg.warn(
+                f'Not playing the next episode of {title}'
+                f' (expected: {expected_ep}, found: {show_ep}). Ignoring.',
+            )
+            return True
+        return False

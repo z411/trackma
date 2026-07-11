@@ -33,13 +33,13 @@ from jeepney.bus_messages import MatchRule, message_bus
 from jeepney.io.asyncio import DBusRouter, Proxy, open_dbus_router
 
 from trackma import utils
+
 from .tracker import (
     OnPlaybackCallback,
     OnStateCallback,
     OnTickCallback,
     TrackerBase,
     TrackerResolution,
-    TrackerState,
 )
 
 __all__ = [
@@ -52,6 +52,7 @@ PATH_MPRIS = '/org/mpris/MediaPlayer2'
 IFACE_PROPERTIES = 'org.freedesktop.DBus.Properties'
 IFACE_MPRIS = 'org.mpris.MediaPlayer2'
 IFACE_MPRIS_PLAYER = IFACE_MPRIS + '.Player'
+
 
 class PlaybackStatus(str, Enum):
     PLAYING = 'Playing'
@@ -317,49 +318,57 @@ class MprisDbusWatcher:
             if player.playback_status == PlaybackStatus.STOPPED:
                 self.clear_state()
                 self.reselect()
-                return
+            else:
+                resolution = self._resolve_player(player)
+                self._commit_resolution(resolution)
 
-            self._commit_player(player)
-            return
-
-        if self.active_player and self.active_player.playback_status == PlaybackStatus.PLAYING:
+        elif (
+            self.active_player
+            and self.active_player.playback_status == PlaybackStatus.PLAYING
+            and self.active_resolution.state == utils.Tracker.PLAYING
+        ):
             self.msg.debug("Still playing on active player; ignoring update")
-            return
 
-        if player.playback_status == PlaybackStatus.PLAYING:
+        elif player.playback_status == PlaybackStatus.PLAYING:
             self._activate_player(player)
 
     def _activate_player(self, player: Player) -> bool:
         resolution = self._resolve_player(player)
-        if resolution.state != utils.Tracker.PLAYING:
-            return False
 
         if player != self.active_player:
             self.msg.debug(f"Setting active player: {player.wellknown_name}")
             self.active_player = player
 
-        self._commit_player(player, resolution)
-        return True
+        self._commit_resolution(resolution)
+        return resolution.state == utils.Tracker.PLAYING
 
     def _resolve_player(self, player: Player) -> TrackerResolution:
         filename = player.filename
         if filename == self.active_filename:
             return self.active_resolution
-        self.active_filename = filename
 
-        self.active_resolution = self.resolve_playing_show(filename)
-        return self.active_resolution
+        return self.resolve_playing_show(filename)
 
-    def _commit_player(
+    def _commit_resolution(
         self,
-        player: Player,
-        resolution: TrackerResolution | None = None,
+        resolution: TrackerResolution,
     ) -> None:
-        resolution = resolution or self._resolve_player(player)
+        if not self.active_player:
+            return
+
+        playing = (
+            self.active_player.playback_status == PlaybackStatus.PLAYING
+            and resolution.state == utils.Tracker.PLAYING
+        )
+        self._set_timer_state(playing)
+
+        if resolution == self.active_resolution:
+            return
 
         self.msg.debug(f"New tracker status: {resolution.state} (previously: {self.active_resolution[0]})")
-        self.on_state(resolution, player.filename)
-        self._set_timer_state(player.playback_status)
+        self.active_resolution = resolution
+        self.active_filename = self.active_player.filename
+        self.on_state(resolution, self.active_player.filename)
 
     def clear_state(self) -> None:
         if self.active_player:
@@ -368,10 +377,9 @@ class MprisDbusWatcher:
         self.active_filename = None
         self.active_resolution = TrackerResolution.NO_VIDEO()
         self.on_state(TrackerResolution.NO_VIDEO(), None)
-        self._set_timer_state(PlaybackStatus.STOPPED)
+        self._set_timer_state(False)
 
-    def _set_timer_state(self, playback_status: str | None) -> None:
-        playing = playback_status == PlaybackStatus.PLAYING
+    def _set_timer_state(self, playing: bool) -> None:
         if playing and not self.timing:
             self.timing = True
             self.msg.debug("MPRIS timer started.")
@@ -411,10 +419,10 @@ class MprisTracker(TrackerBase):
         self.watcher = MprisDbusWatcher(
             self.config,
             self.msg,
-            self.resolve_playing_show,
-            self._on_tracker_state,
-            self._on_tracker_playback,
-            self._on_tracker_tick,
+            resolve_playing_show=self.resolve_playing_show,
+            on_state=self._on_tracker_state,
+            on_playback=self._on_tracker_playback,
+            on_tick=self._on_tracker_tick,
         )
         self.initialized.set()
 
