@@ -19,6 +19,7 @@ import json
 import time
 import urllib.error
 import urllib.request
+from collections import deque
 
 from .tracker import TrackerBase
 
@@ -39,7 +40,7 @@ class KodiTracker(TrackerBase):
 
         self.host_port = "{}:{}".format(
             self.config['kodi_host'], self.config['kodi_port'])
-        self.status_log: list[int | None] = [None, None]
+        self.status_log: deque[int | None] = deque((None, None), maxlen=2)
         self.headers = {'content-type': 'application/json'}
         super().__init__(messenger, tracker_list, config, watch_dirs, redirections)
 
@@ -56,13 +57,12 @@ class KodiTracker(TrackerBase):
             else:
                 return IDLE
         except urllib.error.URLError as e:
-            if hasattr(e, 'code'):
-                if e.code == 401:
-                    return AUTH_REQUIRED
-                else:
-                    return NOT_RUNNING
-            else:
+            code = getattr(e, 'code', None)
+            if code is None:
                 return NOT_RUNNING
+            elif code == 401:
+                return AUTH_REQUIRED
+            return NOT_RUNNING
 
     def _playing_file(self):
         # returns the filename of the currently playing file
@@ -159,8 +159,6 @@ class KodiTracker(TrackerBase):
                 self.msg.warn("Authentication needed by Kodi, login in the settings and restart trackma.")
             elif self.status_log[-1] == NOT_RUNNING:
                 self.msg.warn("Kodi HTTP Server is not running.")
-
-            del self.status_log[0]
 
             # Wait for the interval before running check again
             time.sleep(config['tracker_interval'])
