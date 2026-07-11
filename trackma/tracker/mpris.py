@@ -23,6 +23,7 @@ import threading
 import time
 import urllib.parse
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -37,8 +38,6 @@ from .tracker import (
     OnStateCallback,
     OnTickCallback,
     TrackerBase,
-    ResolvePlayingShowCallback,
-    ShowTuple,
     TrackerResolution,
     TrackerState,
 )
@@ -142,7 +141,7 @@ class MprisDbusWatcher:
         self,
         config: dict[str, Any],
         msg,
-        resolve_playing_show: ResolvePlayingShowCallback,
+        resolve_playing_show: Callable[[str | None], TrackerResolution],
         on_state: OnStateCallback,
         on_playback: OnPlaybackCallback,
         on_tick: OnTickCallback,
@@ -150,7 +149,7 @@ class MprisDbusWatcher:
         # Note: all these should be considered private.
         self.config = config
         self.msg = msg
-        self.resolve_playing_show: ResolvePlayingShowCallback = resolve_playing_show
+        self.resolve_playing_show: Callable[[str | None], TrackerResolution] = resolve_playing_show
         self.on_state: OnStateCallback = on_state
         self.on_playback: OnPlaybackCallback = on_playback
         self.on_tick: OnTickCallback = on_tick
@@ -162,7 +161,7 @@ class MprisDbusWatcher:
         self.players: dict[str, Player] = {}
         self.active_player: Player | None = None
         self.active_filename: str | None = None
-        self.active_resolution: TrackerResolution = (utils.Tracker.NOVIDEO, None)
+        self.active_resolution: TrackerResolution = TrackerResolution.NO_VIDEO()
         self.timing = False
 
     async def run(self):
@@ -331,15 +330,15 @@ class MprisDbusWatcher:
             self._activate_player(player)
 
     def _activate_player(self, player: Player) -> bool:
-        state, show_tuple = self._resolve_player(player)
-        if state != utils.Tracker.PLAYING:
+        resolution = self._resolve_player(player)
+        if resolution.state != utils.Tracker.PLAYING:
             return False
 
         if player != self.active_player:
             self.msg.debug(f"Setting active player: {player.wellknown_name}")
             self.active_player = player
 
-        self._commit_player(player, state, show_tuple)
+        self._commit_player(player, resolution)
         return True
 
     def _resolve_player(self, player: Player) -> TrackerResolution:
@@ -354,14 +353,12 @@ class MprisDbusWatcher:
     def _commit_player(
         self,
         player: Player,
-        state: TrackerState | None = None,
-        show_tuple: ShowTuple | None = None,
+        resolution: TrackerResolution | None = None,
     ) -> None:
-        if state is None or show_tuple is None:
-            state, show_tuple = self._resolve_player(player)
+        resolution = resolution or self._resolve_player(player)
 
-        self.msg.debug(f"New tracker status: {state} (previously: {self.active_resolution[0]})")
-        self.on_state(state, show_tuple, player.filename)
+        self.msg.debug(f"New tracker status: {resolution.state} (previously: {self.active_resolution[0]})")
+        self.on_state(resolution, player.filename)
         self._set_timer_state(player.playback_status)
 
     def clear_state(self) -> None:
@@ -369,8 +366,8 @@ class MprisDbusWatcher:
             self.msg.debug(f"Clearing active player: {self.active_player.wellknown_name}")
         self.active_player = None
         self.active_filename = None
-        self.active_resolution = (utils.Tracker.NOVIDEO, None)
-        self.on_state(utils.Tracker.NOVIDEO, None, None)
+        self.active_resolution = TrackerResolution.NO_VIDEO()
+        self.on_state(TrackerResolution.NO_VIDEO(), None)
         self._set_timer_state(PlaybackStatus.STOPPED)
 
     def _set_timer_state(self, playback_status: str | None) -> None:
@@ -440,11 +437,10 @@ class MprisTracker(TrackerBase):
 
     def _on_tracker_state(
         self,
-        state: TrackerState,
-        show_tuple: ShowTuple | None,
+        resolution: TrackerResolution,
         filename: str | None,
     ) -> None:
-        self.update_show_if_needed(state, show_tuple, filename)
+        self.update_show_if_needed(resolution, filename)
 
     def _on_tracker_playback(self, playing: bool) -> None:
         if playing:

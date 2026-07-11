@@ -22,7 +22,7 @@ import urllib.request
 import xml.dom.minidom as xdmd
 
 import trackma.utils as utils
-from .tracker import TrackerBase, TrackerResolution
+from .tracker import TrackerBase
 
 NOT_RUNNING = 0
 ACTIVE = 1
@@ -108,20 +108,19 @@ class PlexTracker(TrackerBase):
                     xuser = self._get_sessions_info("User", "title")
 
                     player = self.playing_file()
-                    resolution: TrackerResolution = self.resolve_playing_show(player[0])
-                    state, show_tuple = resolution
+                    resolution = self.resolve_playing_show(player[0])
 
                     if self.token:
                         if self.config['plex_user'] == xuser:
                             self.view_offset = int(self._get_sessions_info("Video", "viewOffset"))
-                            self.update_show_if_needed(state, show_tuple, player[0])
+                            self.update_show_if_needed(resolution, player[0])
 
                             if player[1] == PAUSED:
                                 self.pause_timer()
                             elif player[1] == PLAYING:
                                 self.resume_timer()
                     else:
-                        self.update_show_if_needed(state, show_tuple, player[0])
+                        self.update_show_if_needed(resolution, player[0])
 
                         if player[1] == PAUSED:
                             self.pause_timer()
@@ -129,7 +128,7 @@ class PlexTracker(TrackerBase):
                             self.resume_timer()
                 except IndexError:
                     if self.status_log[-1] == IDLE:
-                        self.update_show_if_needed(0, None, None)
+                        self.update_show_if_needed(self.resolve_playing_show(None), None)
                     else:
                         pass
             elif self.status_log[-1] == CLAIMED and self.status_log[-2] == CLAIMED:

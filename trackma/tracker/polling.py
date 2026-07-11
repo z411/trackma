@@ -19,7 +19,7 @@ import subprocess
 import time
 
 from trackma import utils
-from .tracker import TrackerBase, TrackerResolution
+from .tracker import TrackerBase
 
 
 class PollingTracker(TrackerBase):
@@ -50,9 +50,8 @@ class PollingTracker(TrackerBase):
             # This runs the tracker and update the playing show if necessary
             filename = self.get_playing_file(
                 watch_dirs, config['tracker_process'])
-            resolution: TrackerResolution = self.resolve_playing_show(filename)
-            state, show_tuple = resolution
-            self.update_show_if_needed(state, show_tuple, filename)
+            resolution = self.resolve_playing_show(filename)
+            self.update_show_if_needed(resolution, filename)
 
             # Wait for the interval before running check again
             time.sleep(config['tracker_interval'])

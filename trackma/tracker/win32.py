@@ -18,7 +18,7 @@ import ctypes
 import re
 import time
 
-from .tracker import TrackerBase, TrackerResolution
+from .tracker import TrackerBase
 
 
 class Win32Tracker(TrackerBase):
@@ -79,9 +79,8 @@ class Win32Tracker(TrackerBase):
         while self.active:
             # This runs the tracker and update the playing show if necessary
             filename = self._get_playing_file_win32()
-            resolution: TrackerResolution = self.resolve_playing_show(filename)
-            state, show_tuple = resolution
-            self.update_show_if_needed(state, show_tuple, filename)
+            resolution = self.resolve_playing_show(filename)
+            self.update_show_if_needed(resolution, filename)
 
             # Wait for the interval before running check again
             time.sleep(1)

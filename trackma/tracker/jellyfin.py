@@ -15,12 +15,12 @@
 
 # TODO: Add gui stuff for this
 
+import json
 import os
 import time
 import urllib.request
-import json
 
-from .tracker import TrackerBase, TrackerResolution
+from .tracker import TrackerBase
 
 NOT_RUNNING = 0
 ACTIVE = 1
@@ -57,12 +57,11 @@ class JellyfinTracker(TrackerBase):
                     self.wait_s = config['tracker_update_wait_s']
 
                 try:
-                    resolution: TrackerResolution = self.resolve_playing_show(session_info['file_name'])
-                    state, show_tuple = resolution
+                    resolution = self.resolve_playing_show(session_info['file_name'])
 
                     self.view_offset = int(session_info['view_offset'])
 
-                    self.update_show_if_needed(state, show_tuple, session_info['file_name'])
+                    self.update_show_if_needed(resolution, session_info['file_name'])
 
                     if session_info['state'] == PAUSED:
                         self.pause_timer()
@@ -71,7 +70,7 @@ class JellyfinTracker(TrackerBase):
 
                 except (IndexError, TypeError):
                     if self.status_log[-1] == IDLE:
-                        self.update_show_if_needed(0, None, None)
+                        self.update_show_if_needed(self.resolve_playing_show(None), None)
                     else:
                         pass
 

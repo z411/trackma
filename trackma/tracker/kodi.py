@@ -20,7 +20,7 @@ import time
 import urllib.error
 import urllib.request
 
-from .tracker import TrackerBase, TrackerResolution
+from .tracker import TrackerBase
 
 NOT_RUNNING = 0
 IDLE = 1
@@ -144,10 +144,11 @@ class KodiTracker(TrackerBase):
                     self.wait_s = self._timer_from_file()
 
                 player = self._playing_file()
-                resolution: TrackerResolution = self.resolve_playing_show(player[0])
-                state, show_tuple = resolution
+                if not player:
+                    continue
 
-                self.update_show_if_needed(state, show_tuple, player[0])
+                resolution = self.resolve_playing_show(player[0])
+                self.update_show_if_needed(resolution, player[0])
 
                 if player[1] == PAUSED:
                     self.pause_timer()
