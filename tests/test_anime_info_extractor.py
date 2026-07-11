@@ -1,6 +1,7 @@
 from pprint import pprint
 
-from trackma.extras import AnimeInfoExtractor
+from trackma.messenger import Messenger
+from trackma.parser.animeinfoextractor import AnimeInfoExtractor
 
 DEFAULTS = {
     'resolution': '',
@@ -26,7 +27,7 @@ def _assert_aie(filename, **assertions):
 
     Accepts a dict of assertions and asserts everything not provided as unchanged.
     """
-    aie = AnimeInfoExtractor(filename)
+    aie = AnimeInfoExtractor(Messenger(None, "Test"), filename)
     pprint(vars(aie))  # print details for quicker debugging on failure
     for key, default in DEFAULTS.items():
         expected = assertions.get(key, default)
@@ -139,7 +140,7 @@ def test_with_number_in_episode_title():
 def test_with_standalone_number_in_episode_title():
     _assert_aie(
         "Monogatari - S02E01 - Karen Bee - Part 2.mkv",
-        name="Monogatari 2",
+        name="Monogatari Season 2",
         season=2,
         episodeStart=1,
         extension="mkv",
@@ -149,7 +150,7 @@ def test_with_standalone_number_in_episode_title():
 def test_sXXeXX_and_sdtv():
     _assert_aie(
         "Clannad - S02E01 - A Farewell to the End of Summer SDTV.mkv",
-        name="Clannad 2",
+        name="Clannad Season 2",
         season=2,
         episodeStart=1,
         extension="mkv",
@@ -161,7 +162,7 @@ def test_sXXeXX_and_sdtv():
 def test_sXXeXX_and_trailing_hyphen():
     _assert_aie(
         "ReZERO -Starting Life in Another World- S02E06 [1080p][E-AC3].mkv",
-        name="ReZERO -Starting Life in Another World- 2",
+        name="ReZERO -Starting Life in Another World- Season 2",
         season=2,
         episodeStart=6,
         extension="mkv",
