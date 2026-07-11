@@ -457,5 +457,4 @@ class MprisTracker(tracker.TrackerBase):
 
     def _on_tracker_tick(self, view_offset: float | None) -> None:
         self.view_offset = view_offset
-        if self.last_show_tuple:
-            self.update_timer(self.last_state, self.last_show_tuple)
+        self.update_timer()

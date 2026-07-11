@@ -111,11 +111,14 @@ class TrackerBase(object):
         except KeyError:
             raise Exception("Call to undefined signal.")
 
-    def update_timer(self, state, show_tuple):
+    def update_timer(self, state=None, show_tuple=None):
         if self.timer_paused:
             return
 
-        (show, episode) = show_tuple
+        show_tuple = show_tuple or self.last_show_tuple
+        state = state or self.last_state
+        if not show_tuple or not state:
+            return
 
         self.timer = int(
             1
@@ -130,6 +133,7 @@ class TrackerBase(object):
             self.last_updated = True
 
             def action(state=state):
+                (show, episode) = show_tuple
                 if state == utils.Tracker.PLAYING:
                     return self._emit_signal('update', show, episode)
                 elif state == utils.Tracker.NOT_FOUND:
