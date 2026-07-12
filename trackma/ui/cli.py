@@ -127,7 +127,7 @@ class Trackma_cmd(command.Cmd):
             c_u=_PCOLOR_USER,
             c_a=_PCOLOR_API,
             c_mt=_PCOLOR_MEDIATYPE,
-            c_s=_COLOR_RESET
+            c_s=_PCOLOR_RESET,
         )
 
     def _load_list(self, *args):
