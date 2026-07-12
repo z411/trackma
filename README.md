@@ -91,12 +91,8 @@ Trackma has user-provided packages for several distributions.
 - **Arch Linux:** <https://aur.archlinux.org/packages/trackma>, <http://aur.archlinux.org/packages/trackma-git>
 - **Fedora:** <https://copr.fedoraproject.org/coprs/dyskette/trackma/>
 - **Gentoo Linux:** <http://gpo.zugaina.org/net-misc/trackma>
-- **NixOS:** <https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/misc/trackma/default.nix>
+- **NixOS:** <https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/tr/trackma/package.nix>
 - **Void Linux:** <https://github.com/void-linux/void-packages/blob/master/srcpkgs/trackma/template>
-
-A user from the community also is providing a Docker image:
-
-- **Docker:** <https://hub.docker.com/r/frosty5689/trackma/>
 
 ### Manual installation
 
