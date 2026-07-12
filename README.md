@@ -49,8 +49,8 @@ Dependencies
 
 The only required dependencies to run Trackma are:
 
-- Python 3.9+
-- For installation: `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
+- Python 3.10+
+- For installation: `python3-pip` (to install through `pip`) *or* `uv`
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
@@ -118,8 +118,8 @@ Or download the source code and install:
 ```sh
 $ git clone --recursive https://github.com/z411/trackma.git
 $ cd trackma
-$ poetry build
-$ pip3 install dist/trackma-0.8.5-py3-none-any.whl
+$ uv build
+$ pip3 install dist/trackma-0.10.3-py3-none-any.whl
 ```
 
 ### Extras (User Interfaces)
@@ -161,24 +161,23 @@ $ trackma-gtk
 $ trackma-qt
 ```
 
-#### poetry
+#### uv
 
-When using poetry on the cloned repository (see above),
-you can install your desired extras as follows:
+When using `uv` on the cloned repository, you can install your desired extras as follows:
 
 ```sh
-$ poetry install -E gtk -E trackers -E curses
-$ poetry install -E ui -E twitter -E discord_rpc
-$ poetry install --all-extras
+$ uv sync --extra gtk --extra trackers --extra curses
+$ uv sync --extra ui --extra twitter --extra discord_rpc
+$ uv sync --all-extras
 ```
 
-Then you can run the interface you like in your virtual environment managed by poetry:
+Then you can run the interface you like in your virtual environment with `uv run`:
 
 ```sh
-$ poetry run trackma
-$ poetry run trackma-curses
-$ poetry run trackma-gtk
-$ poetry run trackma-qt
+$ uv run trackma
+$ uv run trackma-curses
+$ uv run trackma-gtk
+$ uv run trackma-qt
 ```
 
 Configuration
@@ -196,17 +195,16 @@ Development
 
 The code is hosted as a git repository on [GitHub](https://github.com/z411/trackma).
 
-Clone the repo and create the virtual environment using `poetry`:
+Clone the repo and create the virtual environment using `uv`:
 
 ```sh
 $ git clone --recursive https://github.com/z411/trackma.git
 $ cd trackma
-$ poetry install --all-extras
-$ poetry shell
+$ uv sync --all-extras
 ```
 
-Use the above commands from the [poetry](#poetry) section
-for how to run your desired interface.
+Use `uv run` with the commands from the [uv](#uv) section
+to run your desired interface.
 
 If you encounter any problems or have anything to suggest, please don't
 hesitate to submit an issue in the GitHub [issue tracker](https://github.com/z411/trackma/issues).
