@@ -54,12 +54,13 @@ The only required dependencies to run Trackma are:
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
-The following user interfaces are available and their requirements are as follows:
+The following user interfaces are available
+and their requirements (on a Debian-based system) are as follows:
 
 | UI | Dependencies |
 | --- | --- |
-| Qt | PyQt6 (`python-pyqt6`) |
-| GTK 3 | PyGI (`python3-gi` and `python3-cairo`) |
+| Qt | PyQt6 (`python3-pyqt6`) |
+| GTK 3 | PyGObject (`python3-gi` and `python3-cairo`) |
 | curses | Urwid (`python3-urwid`) |
 | CLI | None |
 
@@ -67,7 +68,7 @@ The following media recognition trackers are available and their requirements ar
 
 | Tracker | Description | Dependencies |
 | --- | --- | --- |
-| inotify | Instant, but only supported in Linux. Uses it whenever possible. | `inotify` *or* `pyinotify` |
+| inotify | Instant, but only supported in Linux. Uses it whenever possible. | `python3-inotify` *or* `python3-pyinotify` |
 | Polling | Slow, but supported in every POSIX platform. Fallback. | `lsof` |
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Kodi | Connects to Kodi server. Enabled manually. | None |
@@ -78,9 +79,9 @@ The following media recognition trackers are available and their requirements ar
 Additional optional Python dependencies:
 
 - PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
-- pypresence (???) - for announcing activity on Discord.
+- pypresence (-) - for announcing activity on Discord.
 - twitter (`python3-twitter`) - for announcing activity on Twitter.
-- anitopy (-) - for the anitopy title parser
+- anitopy (-) - for the anitopy title parser.
 
 Installation
 ------------
