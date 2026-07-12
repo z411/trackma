@@ -101,7 +101,7 @@ according to the user interface you plan to use, and then run the
 following command:
 
 ```sh
-$ pip3 install Trackma
+$ pip3 install trackma
 ```
 
 You can also install the git (probably unstable, but newer) version like this:
@@ -116,7 +116,7 @@ Or download the source code and install:
 $ git clone --recursive https://github.com/z411/trackma.git
 $ cd trackma
 $ uv build
-$ pip3 install dist/trackma-0.10.3-py3-none-any.whl
+$ pip3 install dist/trackma-*-py3-none-any.whl
 ```
 
 ### Extras (User Interfaces)
