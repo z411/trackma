@@ -1308,8 +1308,8 @@ class MainWindow(QMainWindow):
                 if episode == (show['my_progress'] + 1):
                     delay = self.worker.engine.get_config(
                         'tracker_update_wait_s')
-                    self.tray.showMessage('Trackma Tracker', "Playing %s %s. Will update in %d seconds." % (
-                        show['title'], episode, delay))
+                    self.tray.showMessage('Trackma Tracker', "Playing %s (%s / %s). Will update in %d seconds." % (
+                        show['title'], episode, show['total'] or '?', delay))
 
     def ws_changed_show_status(self, show, old_status=None):
         # Update the view of the new show
