@@ -58,10 +58,14 @@ class AnitopyWrapper():
         if self.episode_number is None:
             return 1
 
-        if type(self.episode_number) is list:
-            return int(self.episode_number[-1])
-        else:
-            return int(self.episode_number)
+        try:
+            if type(self.episode_number) is list:
+                return int(Decimal(self.episode_number[-1]))
+            else:
+                return int(Decimal(self.episode_number))
+        except ArithmeticError:
+            self.msg.warn("Unable to parse episode number '{}' of: {}"
+                              .format(self.episode_number, self.original_file_name))
 
     def getEpisodeNumbers(self, force_numbers=False):
         # Returns the episode range as a tuple
