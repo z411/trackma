@@ -57,10 +57,6 @@ trackers = [
     "jeepney>=0.8.0,<0.9",
 ]
 discord_rpc = ["pypresence>=4.2.1,<5"]
-twitter = [
-    "twitter>=1.19.3,<2",
-    "requests-oauthlib>=2.0.0,<3",
-]
 anitopy = ["anitopy>=2.0.0,<3"]
 
 [project.urls]
