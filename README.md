@@ -50,7 +50,7 @@ Dependencies
 The only required dependencies to run Trackma are:
 
 - Python 3.9+
-- For installation: `python3-pip` (to install through `pip`) *or* `python3-poetry` (to install through `poetry`)
+- For installation: `python-pip` (to install through `pip`) *or* `python-uv` (to install through `uv`)
 
 But only basic features will work (only CLI interface and no tracker). Everything else is optional.
 
@@ -59,8 +59,8 @@ The following user interfaces are available and their requirements are as follow
 | UI | Dependencies |
 | --- | --- |
 | Qt | PyQt6 (`python-pyqt6`) |
-| GTK 3 | PyGI (`python3-gi` and `python3-cairo`) |
-| curses | Urwid (`python3-urwid`) |
+| GTK 3 | PyGI (`python-gi` and `python-cairo`) |
+| curses | Urwid (`python-urwid`) |
 | CLI | None |
 
 The following media recognition trackers are available and their requirements are as follows:
@@ -72,14 +72,13 @@ The following media recognition trackers are available and their requirements ar
 | Plex | Connects to Plex server. Enabled manually. | None |
 | Kodi | Connects to Kodi server. Enabled manually. | None |
 | Jellyfin | Connects to Jellyfin server. Enabled manually. | None |
-| MPRIS | Connects to running MPRIS capable media players. | `python3-jeepney` |
+| MPRIS | Connects to running MPRIS capable media players. | `python-jeepney` |
 | Win32 | Recognition for Windows platforms. | None |
 
 Additional optional Python dependencies:
 
-- PIL (`python3-pil`) - for showing preview images in the Qt/GTK interfaces.
+- PIL (`python-pil`) - for showing preview images in the Qt/GTK interfaces.
 - pypresence (???) - for announcing activity on Discord.
-- twitter (`python3-twitter`) - for announcing activity on Twitter.
 - anitopy (-) - for the anitopy title parser
 
 Installation
@@ -118,7 +117,7 @@ Or download the source code and install:
 ```sh
 $ git clone --recursive https://github.com/z411/trackma.git
 $ cd trackma
-$ poetry build
+$ uv build
 $ pip3 install dist/trackma-0.8.5-py3-none-any.whl
 ```
 
@@ -161,24 +160,24 @@ $ trackma-gtk
 $ trackma-qt
 ```
 
-#### poetry
+#### uv
 
-When using poetry on the cloned repository (see above),
+When using uv on the cloned repository (see above),
 you can install your desired extras as follows:
 
 ```sh
-$ poetry install -E gtk -E trackers -E curses
-$ poetry install -E ui -E twitter -E discord_rpc
-$ poetry install --all-extras
+$ uv sync --extra gtk --extra trackers --extra curses
+$ uv sync --extra ui --extra discord_rpc
+$ uv sync --all-extras
 ```
 
-Then you can run the interface you like in your virtual environment managed by poetry:
+Then you can run the interface you like in your virtual environment managed by uv:
 
 ```sh
-$ poetry run trackma
-$ poetry run trackma-curses
-$ poetry run trackma-gtk
-$ poetry run trackma-qt
+$ uv run trackma
+$ uv run trackma-curses
+$ uv run trackma-gtk
+$ uv run trackma-qt
 ```
 
 Configuration
@@ -196,16 +195,15 @@ Development
 
 The code is hosted as a git repository on [GitHub](https://github.com/z411/trackma).
 
-Clone the repo and create the virtual environment using `poetry`:
+Clone the repo and create the virtual environment using `uv`:
 
 ```sh
 $ git clone --recursive https://github.com/z411/trackma.git
 $ cd trackma
-$ poetry install --all-extras
-$ poetry shell
+$ uv sync --all-extras
 ```
 
-Use the above commands from the [poetry](#poetry) section
+Use the above commands from the [uv](#uv) section
 for how to run your desired interface.
 
 If you encounter any problems or have anything to suggest, please don't
