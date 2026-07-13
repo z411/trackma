@@ -149,6 +149,7 @@ class SettingsDialog(QDialog):
         g_jellyfin.setFlat(True)
         self.jellyfin_host = QLineEdit()
         self.jellyfin_port = QLineEdit()
+        self.jellyfin_ssl = QCheckBox()
         self.jellyfin_user = QLineEdit()
         self.jellyfin_api_key = QLineEdit()
 
@@ -159,12 +160,13 @@ class SettingsDialog(QDialog):
                                 0, 1, 1, 1)
         g_jellyfin_layout.addWidget(self.jellyfin_port,
                                 0, 2, 1, 2)
+        g_jellyfin_layout.addWidget(QLabel('Use SSL'), 1, 0, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_ssl, 1,2,1,1)
         g_jellyfin_layout.addWidget(
-            QLabel('API and User'),                   1, 0, 1, 1)
+            QLabel('API and User'),                   2, 0, 1, 1)
         g_jellyfin_layout.addWidget(self.jellyfin_api_key,
-                                1, 1, 1, 1)
-        g_jellyfin_layout.addWidget(self.jellyfin_user,
-                                1, 2, 1, 2)
+                                2, 1, 1, 1)
+        g_jellyfin_layout.addWidget(self.jellyfin_user, 2, 2, 1, 2)
 
         g_jellyfin.setLayout(g_jellyfin_layout)
 
@@ -537,6 +539,7 @@ class SettingsDialog(QDialog):
 
         self.jellyfin_host.setText(engine.get_config('jellyfin_host'))
         self.jellyfin_port.setText(engine.get_config('jellyfin_port'))
+        self.jellyfin_ssl.setChecked(engine.get_config('jellyfin_ssl'))
         self.jellyfin_user.setText(engine.get_config('jellyfin_user'))
         self.jellyfin_api_key.setText(engine.get_config('jellyfin_api_key'))
 
@@ -647,6 +650,7 @@ class SettingsDialog(QDialog):
 
         engine.set_config('jellyfin_host',         self.jellyfin_host.text())
         engine.set_config('jellyfin_port',         self.jellyfin_port.text())
+        engine.set_config('jellyfin_ssl',        self.jellyfin_ssl.isChecked())
         engine.set_config('jellyfin_user',         self.jellyfin_user.text())
         engine.set_config('jellyfin_api_key',       self.jellyfin_api_key.text())
 
@@ -738,6 +742,7 @@ class SettingsDialog(QDialog):
         self.jellyfin_host.setEnabled(state)
         self.jellyfin_port.setEnabled(state)
         self.jellyfin_user.setEnabled(state)
+        self.jellyfin_ssl.setEnabled(state)
         self.jellyfin_api_key.setEnabled(state)
 
     def tracker_type_change(self, checked):
