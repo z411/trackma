@@ -1,15 +1,21 @@
-[tool.poetry]
+[project]
 name = "trackma"
 version = "0.10.3"
 description = "Open multi-site list manager"
-authors = ["z411 <z411@omaera.org>"]
-license = "GPL-3.0-or-later"
+authors = [{ name = "z411", email = "z411@omaera.org" }]
+requires-python = ">=3.9,<4"
 readme = "README.md"
-homepage = "https://z411.github.io/trackma/"
-repository = "https://github.com/z411/trackma"
+license = "GPL-3.0-or-later"
 keywords = [
-    "list manager", "curses", "gtk", "qt", "myanimelist",
-    "kitsu", "anilist", "shikimori",  "vndb"
+    "list manager",
+    "curses",
+    "gtk",
+    "qt",
+    "myanimelist",
+    "kitsu",
+    "anilist",
+    "shikimori",
+    "vndb",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -27,38 +33,51 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 
+[project.optional-dependencies]
+gtk = [
+    "pygobject>=3.42.1,<4",
+    "pycairo>=1.20.0,<2",
+    "pillow>=11.0.0,<12",
+]
+qt = [
+    "pyqt6>=6.2.0,<7",
+    "pillow>=11.0.0,<12",
+]
+curses = ["urwid>=2.1.2,<3"]
+ui = [
+    "pygobject>=3.42.1,<4",
+    "pycairo>=1.20.0,<2",
+    "pillow>=11.0.0,<12",
+    "pyqt6>=6.2.0,<7",
+    "urwid>=2.1.2,<3",
+]
+trackers = [
+    "inotify>=0.2.10,<0.3",
+    "pyinotify>=0.9.6,<0.10",
+    "jeepney>=0.8.0,<0.9",
+]
+discord_rpc = ["pypresence>=4.2.1,<5"]
+twitter = [
+    "twitter>=1.19.3,<2",
+    "requests-oauthlib>=2.0.0,<3",
+]
+anitopy = ["anitopy>=2.0.0,<3"]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-inotify = { version = "^0.2.10", optional = true }
-pillow = { version = "^11.0.0", optional = true }
-pycairo = { version = "^1.20.0", optional = true }
-pygobject = { version = "^3.42.1", optional = true }
-pyinotify = { version = "^0.9.6", optional = true }
-pypresence = { version = "^4.2.1", optional = true }
-pyqt6 = { version = "^6.2.0", optional = true }
-requests-oauthlib = { version = "^1.2.0 || ^2.0.0", optional = true }
-twitter = { version = "^1.19.3", optional = true }
-urwid = { version = "^2.1.2", optional = true }
-jeepney = {version = "^0.8.0", optional = true}
-anitopy = {version = "^2.0.0", optional = true}
+[project.urls]
+Homepage = "https://z411.github.io/trackma/"
+Repository = "https://github.com/z411/trackma"
 
-[tool.poetry.extras]
-gtk = ["pygobject", "pycairo", "pillow"]
-qt = ["pyqt6", "pillow"]
-curses = ["urwid"]
-ui = ["pygobject", "pycairo", "pillow", "pyqt6", "urwid"]
-trackers = ["inotify", "pyinotify", "jeepney"]
-discord_rpc = ["pypresence"]
-twitter = ["twitter", "requests-oauthlib"]
-anitopy = ["anitopy"]
-
-[tool.poetry.scripts]
+[project.scripts]
 trackma = "trackma.ui.cli:main"
 trackma-curses = "trackma.ui.curses:main"
 trackma-gtk = "trackma.ui.gtk:main"
 trackma-qt = "trackma.ui.qt:main"
 
+[tool.uv]
+
+[tool.uv.build-backend]
+module-root = ""
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.24,<0.12.0"]
+build-backend = "uv_build"
