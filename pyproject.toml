@@ -1,6 +1,6 @@
 [project]
 name = "trackma"
-version = "0.10.3"
+version = "0.10.4"
 description = "Open multi-site list manager"
 authors = [{ name = "z411", email = "z411@omaera.org" }]
 requires-python = ">=3.9,<4"
