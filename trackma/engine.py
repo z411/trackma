@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import annotations
 
 import datetime
 import os
@@ -25,12 +26,16 @@ import time
 from decimal import Decimal
 from functools import lru_cache, partial
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from trackma import data
 from trackma import messenger
 from trackma import utils
 from trackma.extras import redirections
 from trackma.parser import get_parser_class
+
+if TYPE_CHECKING:
+    from .tracker import TrackerBase
 
 
 class Engine:
@@ -50,11 +55,11 @@ class Engine:
     The **message_handler** is a reference to a messaging function for the engine
     to send to. Optional.
     """
-    data_handler = None
-    tracker = None
+    data_handler: data.Data
+    tracker: TrackerBase | None = None
     redirections = None
     config = {}
-    msg = None
+    msg: messenger.Messenger
     loaded = False
     playing = False
     hooks_available = []
@@ -482,7 +487,7 @@ class Engine:
         list of show dictionaries with all the matches.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if re.search(regex, v['title'], re.I))
+        return list(v for v in showlist.values() if re.search(regex, v['title'], re.I))
 
     def regex_list_titles(self, pattern):
         # TODO : Temporal hack for the client autocomplete function
@@ -824,7 +829,6 @@ class Engine:
     def remove_from_library(self, path, filename):
         library = self.data_handler.library_get()
         library_cache = self.data_handler.library_cache_get()
-        tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
         # Only remove if the filename matches library entry
         if filename in library_cache and library_cache[filename]:
@@ -991,11 +995,11 @@ class Engine:
         if not args:
             raise utils.EngineError('Player not set up, check your config.json')
 
-        args[0] = shutil.which(args[0])
-
-        if not args[0]:
+        full_command = shutil.which(args[0])
+        if not full_command:
             raise utils.EngineError('Player not found, check your config.json')
 
+        args[0] = full_command
         args.append(filename)
         return args
 
@@ -1040,7 +1044,7 @@ class Engine:
         If you need a list with all the shows, use :func:`get_list`.
         """
         showlist = self.data_handler.get()
-        return list(v for k, v in showlist.items() if v['my_status'] == status_num)
+        return list(v for v in showlist.values() if v['my_status'] == status_num)
 
     def list_download(self):
         """Asks the data handler to download the remote list."""
@@ -1067,7 +1071,7 @@ class Engine:
         try:
             return str(path.relative_to(searchdir))
         except ValueError:
-            return path.basename
+            return path.name
 
     def _searchdir_exists(self, path):
         """Variation of dir_exists that warns the user if the path doesn't exist."""

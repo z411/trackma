@@ -15,6 +15,7 @@
 #
 
 import os
+import sys
 import threading
 import time
 
@@ -103,8 +104,8 @@ class TrackerBase(object):
 
     def _emit_signal(self, signal, *args):
         try:
-            if self.signals[signal]:
-                self.signals[signal](*args)
+            if callback := self.signals[signal]:
+                callback(*args)
         except KeyError:
             raise Exception("Call to undefined signal.")
 
@@ -258,8 +259,12 @@ class TrackerBase(object):
                         break
 
             # Invoke the parser to extract show title and episode.
-            aie = self.parser_class(self.msg, filename)
-            (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+            try:
+                aie = self.parser_class(self.msg, filename)
+                (show_title, show_ep) = (aie.getName(), aie.getEpisode())
+            except Exception:
+                self.msg.exception('Failed to parse filename', sys.exc_info())
+                return (utils.Tracker.UNRECOGNIZED, None)
             if not show_title:
                 # Format not recognized
                 return (utils.Tracker.UNRECOGNIZED, None)
