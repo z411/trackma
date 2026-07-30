@@ -47,7 +47,7 @@ class Data:
     config = dict()
     meta = {'lastget': 0, 'lastsend': 0, 'version': '', 'apiversion': '',
             'altnames': {}, 'library': {}, 'library_cache': {},
-            'library_scan_signature': None, }
+            'library_scan_signature': None, 'show_folders': {}, }
 
     autosend_timer = None
 
@@ -549,6 +549,21 @@ class Data:
 
     def library_scan_signature_save(self, signature):
         self.meta['library_scan_signature'] = signature
+
+    def show_folder_get(self, showid):
+        return self.meta['show_folders'].get(showid)
+
+    def show_folder_set(self, showid, path):
+        self.meta['show_folders'][showid] = path
+        self._save_meta()
+
+    def show_folder_clear(self, showid):
+        if showid in self.meta['show_folders']:
+            del self.meta['show_folders'][showid]
+            self._save_meta()
+
+    def show_folders_get(self):
+        return self.meta['show_folders']
 
     def get_show_attr(self, show, key):
         return show.get(key)

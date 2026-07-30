@@ -20,9 +20,10 @@ import os
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtGui import QAction, QActionGroup
 from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-                             QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
-                             QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QSpinBox, QStyle,
-                             QStyleOptionButton, QSystemTrayIcon, QTabBar, QToolButton, QVBoxLayout, QWidget)
+                             QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog,
+                             QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton,
+                             QSpinBox, QStyle, QStyleOptionButton, QSystemTrayIcon, QTabBar, QToolButton,
+                             QVBoxLayout, QWidget)
 
 from hakubun import messenger
 from hakubun import utils
@@ -191,6 +192,13 @@ class MainWindow(QMainWindow):
         action_rescan_library.triggered.connect(self.s_rescan_library)
         action_open_folder = QAction('Open containing folder', self)
         action_open_folder.triggered.connect(self.s_open_folder)
+        self.action_set_folder = QAction('Set folder...', self)
+        self.action_set_folder.setStatusTip(
+            'Manually point this show at a local folder, bypassing '
+            'filename guessing -- for folders the parser can\'t match.')
+        self.action_set_folder.triggered.connect(self.s_set_folder)
+        self.action_clear_folder = QAction('Clear folder', self)
+        self.action_clear_folder.triggered.connect(self.s_clear_folder)
 
         self.action_reload = QAction('Switch &Account', self)
         self.action_reload.setStatusTip('Switch to a different account.')
@@ -242,9 +250,12 @@ class MainWindow(QMainWindow):
         self.menu_show_context.addAction(self.action_details)
         self.menu_show_context.addMenu(self.menu_move_to)
         self.menu_show_context.addAction(action_open_folder)
+        self.menu_show_context.addAction(self.action_set_folder)
+        self.menu_show_context.addAction(self.action_clear_folder)
         self.menu_show_context.addAction(self.action_altname)
         self.menu_show_context.addSeparator()
         self.menu_show_context.addAction(self.action_delete)
+        self.menu_show_context.aboutToShow.connect(self._update_folder_actions)
 
         # Make icons for viewed episodes
         rect = QtCore.QSize(16, 16)
@@ -1305,6 +1316,30 @@ class MainWindow(QMainWindow):
             self.worker.engine.open_show_folder(self.selected_show_id)
         except utils.EngineError as e:
             self.error(e.args[0])
+
+    def s_set_folder(self):
+        if not self.selected_show_id:
+            return
+        current = self.worker.engine.get_show_folder(self.selected_show_id)
+        folder = QFileDialog.getExistingDirectory(
+            self, 'Select folder', current or os.path.expanduser('~'))
+        if not folder:
+            return
+        self.worker_call('set_show_folder', self.r_library_scanned,
+                         self.selected_show_id, folder)
+
+    def s_clear_folder(self):
+        if not self.selected_show_id:
+            return
+        self.worker.engine.unset_show_folder(self.selected_show_id)
+        self.status('Folder cleared.')
+
+    def _update_folder_actions(self):
+        has_folder = bool(self.selected_show_id and self.worker.engine.get_show_folder(
+            self.selected_show_id))
+        self.action_clear_folder.setEnabled(has_folder)
+        self.action_set_folder.setText(
+            'Change folder...' if has_folder else 'Set folder...')
 
     def s_retrieve(self):
         queue = self.worker.engine.get_queue()

@@ -1,4 +1,5 @@
 Unreleased
+- New feature: Right-click a show and "Set folder..." to manually point it at a specific local folder (Qt and GTK) -- every video file under it is attributed straight to that show (only the episode number is still parsed from the filename), bypassing title-based guessing entirely. The escape hatch for a folder name the parser/guesser can't match. Pinned folders are swept on every library scan, not just when first assigned, and can live outside the configured search directories; "Clear folder" removes the pin.
 - New feature: Optional Kitsu GraphQL backend, selectable in the interface settings. Its library request can retrieve up to 2,000 entries at once, batches detail lookups, and omits synopses from list downloads to reduce transfer time.
 - New feature: Undo and redo for progress, score, status, and tag changes in the GTK and Qt interfaces.
 - New feature: GTK and Qt now show Season, Type, and Platform Score columns; search results identify shows already in the user's list.

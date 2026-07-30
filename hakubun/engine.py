@@ -908,10 +908,13 @@ class Engine:
         mediatype switch, which previously re-did this even when nothing
         on disk had changed at all.
         """
-        if not self.mediainfo.get('can_play') or not self.config['searchdir']:
+        show_folders = self.data_handler.show_folders_get()
+        if not self.mediainfo.get('can_play') \
+                or not (self.config['searchdir'] or show_folders):
             return
 
-        signature = self._library_dirs_signature(self.searchdirs)
+        signature = self._library_dirs_signature(
+            self.searchdirs + list(show_folders.values()))
         cached_signature = self.data_handler.library_scan_signature_get()
 
         if cached_signature is not None \
@@ -927,7 +930,8 @@ class Engine:
         if not self.mediainfo.get('can_play'):
             raise utils.EngineError(
                 'Operation not supported by current site or mediatype.')
-        if not self.config['searchdir']:
+        show_folders = self.data_handler.show_folders_get()
+        if not path and not self.config['searchdir'] and not show_folders:
             raise utils.EngineError('Media directories not set.')
 
         t = time.time()
@@ -949,8 +953,24 @@ class Engine:
         tracker_list = self._get_tracker_list(my_status)
         guess_show = lru_cache(partial(utils.guess_show, tracker_list=tracker_list))
 
-        paths = [path] if path else self.searchdirs
-        for searchdir in paths:
+        if path:
+            # An explicit single directory (CLI's --scan-library-dir):
+            # unchanged behaviour, still guessed by title.
+            scan_targets = [(path, None)]
+        else:
+            scan_targets = [(d, None) for d in self.searchdirs]
+            # Manually pinned show folders (set_show_folder) are swept on
+            # every full scan too, not just when first assigned -- they
+            # may live outside searchdir entirely, and a show removed
+            # from the list since is simply skipped.
+            for show_id, folder in show_folders.items():
+                try:
+                    forced_show = self.get_show_info(show_id)
+                except utils.EngineError:
+                    continue
+                scan_targets.append((folder, forced_show))
+
+        for searchdir, forced_show in scan_targets:
             self.msg.debug("Directory: %s" % searchdir)
 
             # Do a full listing of the media directory
@@ -958,20 +978,58 @@ class Engine:
                 if self.config['library_full_path']:
                     filename = self._get_relative_path_or_basename(searchdir, fullpath)
                 (library, library_cache) = self._add_show_to_library(
-                    library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
+                    library, library_cache, rescan, fullpath, filename, tracker_list,
+                    guess_show, forced_show=forced_show)
 
             self.msg.debug(f"Time: {time.time() - t:.3}s")
             self.data_handler.library_save(library)
             self.data_handler.library_cache_save(library_cache)
 
         if path is None:
-            # Only a full scan (all searchdirs) produces a signature that's
-            # safe to cache -- a single-directory scan wouldn't reflect the
-            # true state of the others.
-            signature = self._library_dirs_signature(self.searchdirs)
+            # Only a full scan (all searchdirs + pinned show folders)
+            # produces a signature that's safe to cache -- a single-
+            # directory scan wouldn't reflect the true state of the
+            # others. Must match _scan_library_if_changed's own inputs.
+            signature = self._library_dirs_signature(
+                self.searchdirs + list(show_folders.values()))
             self.data_handler.library_scan_signature_save(signature)
 
         return library
+
+    def set_show_folder(self, show_id, path):
+        """Manually pin a show to a specific local folder: every video
+        file under it is attributed directly to this show (only the
+        episode number is still parsed from the filename), bypassing
+        title-based guessing entirely -- the escape hatch for a folder
+        whose name the parser/guesser can't (or shouldn't have to)
+        make sense of. Scanned immediately so it takes effect now, and
+        swept again on every future full library scan (scan_library)."""
+        if not self.mediainfo.get('can_play'):
+            raise utils.EngineError(
+                'Operation not supported by current site or mediatype.')
+        show = self.get_show_info(show_id)
+        self.data_handler.show_folder_set(show_id, path)
+
+        library = self.data_handler.library_get()
+        library_cache = self.data_handler.library_cache_get()
+        tracker_list = self._get_tracker_list()
+        for fullpath, filename in utils.regex_find_videos(path):
+            if self.config['library_full_path']:
+                filename = self._get_relative_path_or_basename(path, fullpath)
+            (library, library_cache) = self._add_show_to_library(
+                library, library_cache, True, fullpath, filename, tracker_list,
+                None, forced_show=show)
+        self.data_handler.library_save(library)
+        self.data_handler.library_cache_save(library_cache)
+
+    def unset_show_folder(self, show_id):
+        """Un-pin a show's manually assigned folder. Already-cached
+        library entries from it are left alone (harmless either way)
+        until the next full library scan re-derives them normally."""
+        self.data_handler.show_folder_clear(show_id)
+
+    def get_show_folder(self, show_id):
+        return self.data_handler.show_folder_get(show_id)
 
     def remove_from_library(self, path, filename):
         library = self.data_handler.library_get()
@@ -995,10 +1053,24 @@ class Engine:
         tracker_list = self._get_tracker_list()
         fullpath = path+"/"+filename
         guess_show = partial(utils.guess_show, tracker_list=tracker_list)
+        # A newly-created file inside a manually pinned show folder
+        # (set_show_folder) is attributed straight to that show, same
+        # as a full scan would -- the whole point of pinning a folder
+        # is to never depend on the guesser for it.
+        forced_show = None
+        for show_id, folder in self.data_handler.show_folders_get().items():
+            if path == folder or path.startswith(folder.rstrip('/') + '/'):
+                try:
+                    forced_show = self.get_show_info(show_id)
+                except utils.EngineError:
+                    pass
+                break
         self._add_show_to_library(
-            library, library_cache, rescan, fullpath, filename, tracker_list, guess_show)
+            library, library_cache, rescan, fullpath, filename, tracker_list, guess_show,
+            forced_show=forced_show)
 
-    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename, tracker_list, guess_show):
+    def _add_show_to_library(self, library, library_cache, rescan, fullpath, filename,
+                             tracker_list, guess_show, forced_show=None):
         show_id = None
         if not rescan and filename in library_cache:
             # If the filename was already seen before
@@ -1021,32 +1093,33 @@ class Engine:
             anime_info = self.parser_class(self.msg, filename)
             show_title = anime_info.getName()
             (show_ep_start, show_ep_end) = anime_info.getEpisodeNumbers(True)
-            if show_title:
+            # A manually pinned folder (forced_show) already tells us
+            # the show -- skip guessing by title entirely, since that's
+            # precisely the step a pinned folder exists to bypass.
+            show = forced_show
+            if show is None and show_title:
                 show = guess_show(show_title)
-                if show:
-                    self.msg.debug("Adding to library: {}".format(fullpath))
-                    self.msg.debug("Show guess: {}".format(show_title))
+            if show:
+                self.msg.debug("Adding to library: {}".format(fullpath))
+                self.msg.debug("Show guess: {}".format(show_title))
 
-                    if show_ep_start == show_ep_end:
-                        # TODO : Support redirections for episode ranges
-                        (show, show_ep) = utils.redirect_show(
-                            (show, show_ep_start), self.redirections, tracker_list)
-                        show_ep_end = show_ep_start = show_ep
+                if show_ep_start == show_ep_end:
+                    # TODO : Support redirections for episode ranges
+                    (show, show_ep) = utils.redirect_show(
+                        (show, show_ep_start), self.redirections, tracker_list)
+                    show_ep_end = show_ep_start = show_ep
 
-                        self.msg.debug("Redirected to: {} - {}".format(
-                            show['title'], show_ep))
-                        library_cache[filename] = (show['id'], show_ep)
-                    else:
-                        library_cache[filename] = (
-                            show['id'], (show_ep_start, show_ep_end))
-
-                    show_id = show['id']
+                    self.msg.debug("Redirected to: {} - {}".format(
+                        show['title'], show_ep))
+                    library_cache[filename] = (show['id'], show_ep)
                 else:
-                    self.msg.debug("Unable to match '{}', skipping: {}"
-                                   .format(show_title, fullpath))
-                    library_cache[filename] = None
+                    library_cache[filename] = (
+                        show['id'], (show_ep_start, show_ep_end))
+
+                show_id = show['id']
             else:
-                self.msg.debug("Not recognized, skipping: {}".format(fullpath))
+                self.msg.debug("Unable to match '{}', skipping: {}"
+                               .format(show_title, fullpath))
                 library_cache[filename] = None
 
         # After we got our information, add it to our library

@@ -599,6 +599,10 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._open_website(*data)
         elif event_type == ShowEventType.OPEN_FOLDER:
             self._open_folder(*data)
+        elif event_type == ShowEventType.SET_FOLDER:
+            self._set_folder(*data)
+        elif event_type == ShowEventType.CLEAR_FOLDER:
+            self._clear_folder(*data)
         elif event_type == ShowEventType.COPY_TITLE:
             self._copy_title(*data)
         elif event_type == ShowEventType.CHANGE_ALTERNATIVE_TITLE:
@@ -708,6 +712,42 @@ class TrackmaWindow(Gtk.ApplicationWindow):
             self._engine.open_show_folder(show_id)
         except utils.EngineError as e:
             self._error_dialog_idle(e.args[0])
+
+    def _set_folder(self, show_id):
+        show = self._engine.get_show_info(show_id)
+        current = self._engine.get_show_folder(show_id)
+        dialog = Gtk.FileChooserDialog(
+            title='Select folder for %s' % show['title'],
+            parent=self, action=Gtk.FileChooserAction.SELECT_FOLDER)
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        if current:
+            dialog.set_filename(current)
+        response = dialog.run()
+        folder = dialog.get_filename() if response == Gtk.ResponseType.OK else None
+        dialog.destroy()
+        if not folder:
+            return
+        threading.Thread(target=self._set_folder_task,
+                         args=(show_id, folder)).start()
+
+    def _set_folder_task(self, show_id, folder):
+        # Manually pointing a show at a folder bypasses filename
+        # guessing for it -- the escape hatch for a folder the parser
+        # can't (or shouldn't have to) make sense of. Mirrors
+        # _scanfiles_task: runs off the main thread since it walks the
+        # folder immediately, same as any other library scan.
+        self._set_buttons_sensitive_idle(False)
+        try:
+            self._engine.set_show_folder(show_id, folder)
+        except utils.HakubunError as e:
+            self._error_dialog_idle(e)
+        finally:
+            self._set_buttons_sensitive_idle(True)
+
+    def _clear_folder(self, show_id):
+        self._engine.unset_show_folder(show_id)
+        self._main_view.set_status_idle('Folder cleared.')
 
     def _copy_title(self, show_id):
         show = self._engine.get_show_info(show_id)

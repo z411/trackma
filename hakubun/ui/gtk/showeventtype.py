@@ -34,3 +34,5 @@ class ShowEventType(GObject.GEnum):
     SET_SCORE = 13
     SET_STATUS = 14
     PLAY_EPISODE_PICK = 15
+    SET_FOLDER = 16
+    CLEAR_FOLDER = 17
