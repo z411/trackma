@@ -601,6 +601,7 @@ config_defaults = {
     'plex_ssl': False,
     'jellyfin_host': "localhost",
     'jellyfin_port': "8096",
+    'jellyfin_ssl': False,
     'jellyfin_api_key': '',
     'jellyfin_user': '',
     'kodi_host': "localhost",

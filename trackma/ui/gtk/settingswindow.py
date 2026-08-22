@@ -71,6 +71,7 @@ class SettingsWindow(Gtk.Window):
     radio_tracker_jellyfin = Gtk.Template.Child()
     entry_jellyfin_host = Gtk.Template.Child()
     spin_jellyfin_port = Gtk.Template.Child()
+    checkbox_jellyfin_ssl = Gtk.Template.Child()
     entry_jellyfin_username = Gtk.Template.Child()
     entry_jellyfin_api_key = Gtk.Template.Child()
 
@@ -195,6 +196,7 @@ class SettingsWindow(Gtk.Window):
             self.engine.get_config('jellyfin_host'))
         self.spin_jellyfin_port.set_value(
             int(self.engine.get_config('jellyfin_port')))
+        self.checkbox_jellyfin_ssl.set_active(self.engine.get_config('jellyfin_ssl'))
         self.entry_jellyfin_username.set_text(
             self.engine.get_config('jellyfin_user'))
         self.entry_jellyfin_api_key.set_text(
@@ -350,6 +352,7 @@ class SettingsWindow(Gtk.Window):
     def _enable_jellyfin(self, enable):
         self.entry_jellyfin_host.set_sensitive(enable)
         self.spin_jellyfin_port.set_sensitive(enable)
+        self.checkbox_jellyfin_ssl.set_sensitive(enable)
         self.entry_jellyfin_username.set_sensitive(enable)
         self.entry_jellyfin_api_key.set_sensitive(enable)
 
@@ -404,6 +407,7 @@ class SettingsWindow(Gtk.Window):
             'plex_passwd', self.entry_plex_password.get_text())
         self.engine.set_config(
             'jellyfin_host', self.entry_jellyfin_host.get_text())
+        self.engine.set_config('jellyfin_ssl', self.checkbox_jellyfin_ssl.get_active())
         self.engine.set_config('jellyfin_port', str(
             int(self.spin_jellyfin_port.get_value())))
         self.engine.set_config(
