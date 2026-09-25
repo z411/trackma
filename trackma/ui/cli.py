@@ -70,6 +70,7 @@ class Trackma_cmd(command.Cmd):
     sortedlist = []
     needed_args = {
         'altname':      (1, 2),
+        'autoplay':     (0,1),
         'filter':       (0, 1),
         'sort':         1,
         'mediatype':    (0, 1),
@@ -516,6 +517,31 @@ class Trackma_cmd(command.Cmd):
                 print("Not started")
         except utils.TrackmaError as e:
             self.display_error(e)
+
+    def do_autoplay(self, args):
+        """
+        Automatically play the next episode when the current one ends.
+        View the current autoplay status with no arguments.
+        :optparam on|off Enable or disable autoplay mode.
+
+        :usage: autoplay <on|off>
+        """
+
+        if args:
+            if args[0].lower() == "on":
+                self.engine.set_config("autoplay_next", True)
+                print("Autoplay enabled.")
+            elif args[0].lower() == "off":
+                self.engine.set_config("autoplay_next", False)
+                print("Autoplay disabled.")
+            else:
+                print("Invalid argument. Use 'on' or 'off'.")
+        else:
+            print(
+                "Autoplay is {}.".format(
+                    "enabled" if self.engine.get_config("autoplay_next") else "disabled"
+                )
+            )
 
     def do_play(self, args):
         """
