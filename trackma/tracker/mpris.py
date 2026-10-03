@@ -196,7 +196,7 @@ class MprisTracker(tracker.TrackerBase):
                 self.msg.exception("Error in dbus watchers; cleaning up", sys.exc_info())
                 for task in tasks:
                     task.cancel()
-                await asyncio.gather(*tasks)
+                await asyncio.gather(*tasks, return_exceptions=True)
 
     async def name_owner_watcher(self, router):
         # Select name change signals for the well-known mpris service name.
@@ -396,7 +396,8 @@ class MprisTracker(tracker.TrackerBase):
     async def _on_tick(self):
         if self.active_player:
             try:
-                self.view_offset = int(await self.active_player.get_position()) / 1000
+                position = await self.active_player.get_position()
+                self.view_offset = int(position) / 1000 if position is not None else None
             except TypeError:
                 self.view_offset = None
                 # The view_offset is not important, so we ignore errors.
